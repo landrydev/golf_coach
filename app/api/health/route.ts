@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { productAccessConfigurationReady } from "@/lib/product-access";
+import { shareTokenPepperConfigurationReady } from "@/lib/tokens";
 import {
   billingConfigured,
   checkoutConfiguration,
@@ -12,7 +13,9 @@ export async function GET() {
     database: false,
     media: false,
     applicationOrigin: validProductionOrigin(process.env.APP_URL),
-    shareTokenPepper: Boolean(process.env.SHARE_TOKEN_PEPPER?.trim()),
+    shareTokenPepper: shareTokenPepperConfigurationReady(
+      process.env.SHARE_TOKEN_PEPPER,
+    ),
     abuseLimitPepper: (process.env.ABUSE_LIMIT_PEPPER?.trim().length ?? 0) >= 32,
     billingCheckoutPolicy: billingCheckoutPolicyReady(),
     instructorAccessPolicy: productAccessConfigurationReady({
@@ -69,7 +72,7 @@ function billingCheckoutPolicyReady(): boolean {
   // Match checkoutEnabled() exactly. Whitespace or any non-canonical value is
   // a configuration error, never a silently normalized enable/disable flag.
   const enabled = process.env.BILLING_CHECKOUT_ENABLED;
-  if (!enabled || enabled === "false") return true;
+  if (enabled === "false") return true;
   return enabled === "true" && billingConfigured() && Boolean(checkoutConfiguration());
 }
 

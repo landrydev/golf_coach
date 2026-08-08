@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
 import styles from "../workspace.module.css";
+
+const ERROR_SUMMARY_ID = "profile-form-error-summary";
 
 export function ProfileForm(props: {
   displayName: string;
@@ -13,6 +16,7 @@ export function ProfileForm(props: {
   accentColor?: string;
 }) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const [state, setState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [message, setMessage] = useState("");
 
@@ -41,7 +45,12 @@ export function ProfileForm(props: {
   }
 
   return (
-    <form className={styles.form} onSubmit={submit}>
+    <form
+      ref={formRef}
+      className={styles.form}
+      aria-describedby={ERROR_SUMMARY_ID}
+      onSubmit={submit}
+    >
       <section className={styles.formCard}>
         <fieldset className={styles.formSection}>
           <legend>Identity your golfers recognize</legend>
@@ -74,8 +83,14 @@ export function ProfileForm(props: {
           </div>
         </fieldset>
       </section>
-      {message ? (
-        <div className={state === "error" ? styles.errorStatus : styles.formStatus} role={state === "error" ? "alert" : "status"}>
+      <FormErrorSummary
+        id={ERROR_SUMMARY_ID}
+        message={state === "error" ? message : ""}
+        formRef={formRef}
+        className={styles.errorStatus}
+      />
+      {state === "saved" && message ? (
+        <div className={styles.formStatus} role="status">
           {message}
         </div>
       ) : null}

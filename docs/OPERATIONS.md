@@ -3,7 +3,7 @@
 **Document status:** Operating model and runbook specification under `AUTH-005`; not evidence that production is provisioned, live, monitored, backed up, recoverable, or accepted
 **System:** [Production SaaS Architecture](ARCHITECTURE.md)
 **Security/privacy controls:** [Security and Privacy Plan](SECURITY_PRIVACY.md)
-**Last updated:** 2026-08-07
+**Last updated:** 2026-08-08
 
 ## Operating position
 
@@ -58,9 +58,14 @@ The inventory records a name, purpose, environment, provider owner, last rotatio
 | Owner-private access pepper | Runtime secret | At least 32 characters, unique and independent; rotate atomically with every owner-email HMAC digest |
 | Owner-private email digests | Runtime configuration | Comma-separated HMAC-SHA-256 hex digests only; never plaintext email |
 | Subscription access statuses | Runtime configuration | Explicit owner-approved status list; there is no code default |
+| Checkout enabled policy | Runtime configuration | `BILLING_CHECKOUT_ENABLED` must be the exact canonical `true` or `false`; missing or malformed values fail health and keep Checkout unavailable |
 | Stripe secret key | Runtime secret | Test/live modes separated; least privilege where provider permits; rotate on suspected exposure |
 | Stripe webhook secret | Runtime secret | Endpoint- and environment-specific; verify against raw body; rotate with overlap/replay plan |
-| Stripe Price ID | Runtime configuration, not a secret | Must identify the exact approved product/price; browser values never override it |
+| Stripe Checkout Price ID | Runtime configuration, not a secret | `STRIPE_CHECKOUT_PRICE_ID` must identify the exact approved product/price; browser values never override it |
+| Recognized Stripe Price IDs | Runtime configuration, not a secret | `STRIPE_RECOGNIZED_PRICE_IDS` lists every current or historical Price whose provider state may update the projection |
+| Entitlement Stripe Price IDs | Runtime configuration, not a secret | `SUBSCRIPTION_ENTITLEMENT_PRICE_IDS` is an explicit recognized-Price subset allowed to grant product access |
+| Maximum subscription projection age | Runtime configuration | `SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS` must be explicitly set from 900 through 31536000 seconds in subscription mode; no default is selected |
+| Checkout Session lifetime | Runtime configuration | `STRIPE_CHECKOUT_SESSION_LIFETIME_SECONDS` must be explicitly set from 1860 through 86400 seconds before Checkout is enabled |
 | Canonical application origin | Runtime configuration | Exact approved HTTPS origin; used for redirect and absolute-URL allowlisting |
 | Release identifier | Build configuration | Immutable commit/artifact identifier exposed to health/diagnostic output without secrets |
 
@@ -280,7 +285,7 @@ Immediately classify whether the event involves cross-tenant access, raw capabil
 ### Stripe webhook delayed, duplicated, or out of order
 
 - Inspect durable event receipt and signature outcome; do not edit entitlement from a browser screenshot.
-- Retry idempotent processing and reconcile the subscription against Stripe using the authenticated account mapping.
+- Retry idempotent processing and reconcile the subscription against Stripe using the authenticated account mapping. The instructor's **Refresh billing status** action may read only that account's existing local Checkout/subscription references; it never creates or changes a provider object.
 - Keep duplicate event IDs no-op and record the result.
 - Apply approved grace/failure/cancel policy; do not invent access consequences during the incident.
 - Correct customer-visible state and audit the reconciliation.
@@ -310,7 +315,15 @@ Support themes feed product improvement and self-serve evidence. They do not jus
 ## Billing operations
 
 - Maintain a production/test Stripe inventory: account owner, product/Price IDs, portal configuration, webhook endpoint/secrets, tax settings, supported account changes, and policy version.
-- Reconcile accepted webhook events and local subscription projections on a defined schedule.
+- Reconcile accepted webhook events and local subscription projections through the bounded five-minute Worker schedule and the authenticated account refresh. The schedule selects only due existing provider-backed Checkout work, failed/expired reconciliation targets, and stale nonterminal subscription projections; it does not create a provider object or sweep every subscription speculatively. It safely does no provider work when Stripe credentials or the complete billing policy are absent.
+- Use the tenant-scoped refresh for an authenticated account when a signed webhook is delayed. Its durable reconciliation target records lease, retry, failure, and success state; provider generation fencing prevents an older GET response from overwriting a newer provider projection.
+- Automatic retries use bounded backoff and stop after eight consecutive
+  automatic failures; successful refreshes reset that failure budget without
+  erasing the total attempt history. The durable dead-letter timestamp and a
+  structured error log are the operator signal. A signed webhook that later
+  resolves the exact object clears the matching failed or in-flight target
+  atomically with its provider projection. Alert delivery, named response ownership, and a real
+  Stripe recovery exercise remain operational evidence dependencies.
 - Review failed webhook deliveries, duplicate customers/subscriptions, entitlement mismatches, disputes, refunds, and failed payments under approved policy.
 - Ensure customer-facing price, recurrence, taxes, trial, cancel/pause, refund, and data consequences match Stripe configuration.
 - Keep SaaS billing support separate from the instructor's external coach-package transaction.

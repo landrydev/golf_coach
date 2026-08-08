@@ -40,6 +40,9 @@ export async function startD1Worker(bindingOverrides = {}, runtimeOptions = {}) 
     ...(runtimeOptions.outboundService
       ? { outboundService: runtimeOptions.outboundService }
       : {}),
+    ...(runtimeOptions.triggerHandlers
+      ? { unsafeTriggerHandlers: true }
+      : {}),
   };
   const miniflare = new Miniflare({
     ...common,
@@ -104,6 +107,14 @@ export async function startD1Worker(bindingOverrides = {}, runtimeOptions = {}) 
           ...init,
           headers,
         });
+      },
+      dispatchScheduled(cron = "*/5 * * * *") {
+        return miniflare.dispatchFetch(
+          new URL(
+            `/cdn-cgi/local/scheduled?cron=${encodeURIComponent(cron)}`,
+            testOrigin,
+          ),
+        );
       },
       database() {
         return miniflare.getD1Database("DB");

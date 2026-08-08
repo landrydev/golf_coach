@@ -11,6 +11,7 @@ type AbuseLimit = {
     | "share_revoke_account"
     | "billing_checkout_account"
     | "billing_portal_account"
+    | "billing_reconcile_account"
     | "data_export_account"
     | "data_request_account";
   maximum: number;
@@ -29,6 +30,7 @@ export const ABUSE_LIMITS = {
   shareRevokeAccount: limit("share_revoke_account", 30, 60 * 60),
   billingCheckoutAccount: limit("billing_checkout_account", 5, 15 * 60),
   billingPortalAccount: limit("billing_portal_account", 10, 15 * 60),
+  billingReconcileAccount: limit("billing_reconcile_account", 6, 15 * 60),
   dataExportAccount: limit("data_export_account", 3, 60 * 60),
   dataRequestAccount: limit("data_request_account", 10, 60 * 60),
 } as const satisfies Record<string, AbuseLimit>;

@@ -31,6 +31,11 @@ const localBindingConfig = {
         },
       ]
     : [],
+  triggers: {
+    // Signed webhooks remain primary. This bounded GET-only sweep recovers
+    // existing provider-backed work after a crash or exhausted webhook retry.
+    crons: ["*/5 * * * *"],
+  },
 };
 
 export default defineConfig(async () => {

@@ -51,15 +51,30 @@ export type ValidatedCheckoutSession = {
   id: string;
   status: "open" | "complete" | "expired";
   url: string | null;
+  providerCustomerId: string | null;
+  providerSubscriptionId: string | null;
   createdAt: Date;
   expiresAt: Date;
 };
 
+export type ValidatedCustomerSubscription = Readonly<{
+  id: string;
+  status:
+    | "incomplete"
+    | "incomplete_expired"
+    | "trialing"
+    | "active"
+    | "past_due"
+    | "canceled"
+    | "unpaid"
+    | "paused";
+}>;
+
 export function billingConfigured(): boolean {
   return Boolean(
-    process.env.STRIPE_SECRET_KEY?.trim() &&
+      process.env.STRIPE_SECRET_KEY?.trim() &&
       process.env.STRIPE_WEBHOOK_SECRET?.trim() &&
-      billingPolicyFromProcessEnvironment(),
+      configuredBillingPolicy(),
   );
 }
 
@@ -72,7 +87,7 @@ export function checkoutEnabled(): boolean {
 }
 
 export function checkoutConfiguration(): CheckoutConfiguration | null {
-  const policy = billingPolicyFromProcessEnvironment();
+  const policy = configuredBillingPolicy();
   const normalizedLifetime =
     process.env.STRIPE_CHECKOUT_SESSION_LIFETIME_SECONDS?.trim() ?? "";
   if (!policy || !/^[1-9][0-9]*$/.test(normalizedLifetime)) return null;
@@ -168,6 +183,7 @@ export function validateCheckoutSessionForAttempt(
 ): ValidatedCheckoutSession {
   const metadata = objectValue(session.metadata);
   const sessionCustomerId = objectId(session.customer);
+  const sessionSubscriptionId = objectId(session.subscription);
   const created = session.created;
   const expiresAt = session.expires_at;
   const expectedExpirySeconds = Math.floor(
@@ -183,6 +199,10 @@ export function validateCheckoutSessionForAttempt(
     metadata?.price_id !== attempt.providerPriceId ||
     (attempt.providerCustomerId !== null &&
       sessionCustomerId !== attempt.providerCustomerId) ||
+    (sessionCustomerId !== null &&
+      !/^cus_[A-Za-z0-9_]+$/.test(sessionCustomerId)) ||
+    (sessionSubscriptionId !== null &&
+      !/^sub_[A-Za-z0-9_]+$/.test(sessionSubscriptionId)) ||
     typeof created !== "number" ||
     !Number.isSafeInteger(created) ||
     typeof expiresAt !== "number" ||
@@ -206,6 +226,8 @@ export function validateCheckoutSessionForAttempt(
     id: session.id,
     status: session.status as ValidatedCheckoutSession["status"],
     url: session.url ?? null,
+    providerCustomerId: sessionCustomerId,
+    providerSubscriptionId: sessionSubscriptionId,
     createdAt: new Date(created * 1_000),
     expiresAt: new Date(expiresAt * 1_000),
   };
@@ -232,6 +254,82 @@ export async function retrieveSubscription(subscriptionId: string) {
     undefined,
     "GET",
   );
+}
+
+/**
+ * Enumerate all subscriptions for a server-owned customer before Checkout.
+ * A truncated or tenant-conflicting response fails closed; callers must never
+ * infer eligibility from an incomplete provider page.
+ */
+export async function retrieveCustomerSubscriptionsForCheckout(input: {
+  accountId: string;
+  customerId: string;
+}): Promise<readonly ValidatedCustomerSubscription[]> {
+  if (
+    !safeOpaqueIdentifier(input.accountId) ||
+    !/^cus_[A-Za-z0-9_]+$/.test(input.customerId)
+  ) {
+    throw providerResponseInvalid();
+  }
+  const query = new URLSearchParams({
+    customer: input.customerId,
+    status: "all",
+    limit: "100",
+  });
+  const payload = await stripeRequest<unknown>(
+    `/subscriptions?${query.toString()}`,
+    undefined,
+    "GET",
+  );
+  const list = objectValue(payload);
+  if (
+    list?.object !== "list" ||
+    list.has_more !== false ||
+    !Array.isArray(list.data) ||
+    list.data.length > 100
+  ) {
+    throw providerResponseInvalid();
+  }
+
+  const supportedStatuses = new Set<ValidatedCustomerSubscription["status"]>([
+    "incomplete",
+    "incomplete_expired",
+    "trialing",
+    "active",
+    "past_due",
+    "canceled",
+    "unpaid",
+    "paused",
+  ]);
+  const seen = new Set<string>();
+  const subscriptions: ValidatedCustomerSubscription[] = [];
+  for (const item of list.data) {
+    const subscription = objectValue(item);
+    const id = subscription?.id;
+    const customerId = objectId(subscription?.customer);
+    const status = subscription?.status;
+    const metadataAccountId = objectValue(subscription?.metadata)?.account_id;
+    if (
+      typeof id !== "string" ||
+      !/^sub_[A-Za-z0-9_]+$/.test(id) ||
+      seen.has(id) ||
+      customerId !== input.customerId ||
+      typeof status !== "string" ||
+      !supportedStatuses.has(
+        status as ValidatedCustomerSubscription["status"],
+      ) ||
+      (metadataAccountId !== undefined &&
+        metadataAccountId !== input.accountId)
+    ) {
+      throw providerResponseInvalid();
+    }
+    seen.add(id);
+    subscriptions.push({
+      id,
+      status: status as ValidatedCustomerSubscription["status"],
+    });
+  }
+  return subscriptions;
 }
 
 export async function verifyStripeEvent(
@@ -382,7 +480,15 @@ function requiredEnv(name: string): string {
   return value;
 }
 
-function billingPolicyFromProcessEnvironment(): BillingPolicy | null {
+function providerResponseInvalid(): RequestError {
+  return new RequestError(
+    502,
+    "billing_provider_response_invalid",
+    "Billing is temporarily unavailable. No charge was made.",
+  );
+}
+
+export function configuredBillingPolicy(): BillingPolicy | null {
   return readBillingPolicy({
     STRIPE_CHECKOUT_PRICE_ID: process.env.STRIPE_CHECKOUT_PRICE_ID,
     STRIPE_RECOGNIZED_PRICE_IDS: process.env.STRIPE_RECOGNIZED_PRICE_IDS,
@@ -394,7 +500,7 @@ function billingPolicyFromProcessEnvironment(): BillingPolicy | null {
 }
 
 function requiredBillingPolicy(): BillingPolicy {
-  const policy = billingPolicyFromProcessEnvironment();
+  const policy = configuredBillingPolicy();
   if (!policy) {
     throw new RequestError(
       503,

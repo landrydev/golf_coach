@@ -9,6 +9,14 @@ export type ShareSessionToken = {
   hash: string;
 };
 
+const MINIMUM_SHARE_TOKEN_PEPPER_LENGTH = 32;
+
+export function shareTokenPepperConfigurationReady(
+  value: string | undefined,
+): boolean {
+  return (value?.trim().length ?? 0) >= MINIMUM_SHARE_TOKEN_PEPPER_LENGTH;
+}
+
 export async function createShareToken(): Promise<ShareToken> {
   const raw = createOpaqueToken();
   return {
@@ -68,9 +76,14 @@ function createOpaqueToken(): string {
 
 function shareTokenPepper(): string {
   const configured = process.env.SHARE_TOKEN_PEPPER?.trim();
-  if (configured) return configured;
-  if (process.env.NODE_ENV !== "production") {
+  if (configured && shareTokenPepperConfigurationReady(configured)) {
+    return configured;
+  }
+  if (!configured && process.env.NODE_ENV !== "production") {
     return "roadmap-local-development-pepper-not-for-production";
   }
-  throw new Error("SHARE_TOKEN_PEPPER is required in production.");
+  if (!configured) {
+    throw new Error("SHARE_TOKEN_PEPPER is required in production.");
+  }
+  throw new Error("SHARE_TOKEN_PEPPER must be at least 32 characters.");
 }

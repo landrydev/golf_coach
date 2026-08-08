@@ -13,6 +13,9 @@ export type BillingPolicy = {
 };
 
 const MAX_PRICE_IDS = 64;
+export const BILLING_RECONCILIATION_CRON_INTERVAL_SECONDS = 5 * 60;
+export const MIN_SUBSCRIPTION_PROJECTION_AGE_SECONDS =
+  BILLING_RECONCILIATION_CRON_INTERVAL_SECONDS * 3;
 const MAX_PROJECTION_AGE_SECONDS = 31_536_000;
 
 /**
@@ -86,7 +89,30 @@ function parseProjectionAgeSeconds(value: string | undefined): number | null {
   const normalized = value?.trim() ?? "";
   if (!/^[1-9][0-9]*$/.test(normalized)) return null;
   const seconds = Number(normalized);
-  return Number.isSafeInteger(seconds) && seconds <= MAX_PROJECTION_AGE_SECONDS
+  return Number.isSafeInteger(seconds) &&
+    seconds >= MIN_SUBSCRIPTION_PROJECTION_AGE_SECONDS &&
+    seconds <= MAX_PROJECTION_AGE_SECONDS
     ? seconds
     : null;
+}
+
+/**
+ * Refresh provider projections before entitlement freshness expires. The
+ * minimum policy age leaves at least one full cron interval after a due item
+ * first becomes eligible, even when it misses the immediately following run.
+ */
+export function subscriptionProjectionRefreshIntervalSeconds(
+  maxProjectionAgeSeconds: number,
+): number {
+  if (
+    !Number.isSafeInteger(maxProjectionAgeSeconds) ||
+    maxProjectionAgeSeconds < MIN_SUBSCRIPTION_PROJECTION_AGE_SECONDS ||
+    maxProjectionAgeSeconds > MAX_PROJECTION_AGE_SECONDS
+  ) {
+    throw new TypeError("Subscription projection age is outside the safe range.");
+  }
+  return Math.max(
+    BILLING_RECONCILIATION_CRON_INTERVAL_SECONDS,
+    Math.floor(maxProjectionAgeSeconds / 2),
+  );
 }

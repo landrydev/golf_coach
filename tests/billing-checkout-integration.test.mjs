@@ -148,7 +148,13 @@ test(
       "https://checkout.stripe.com/c/pay/cs_checkout_integration",
     );
     assert.equal(posts.length, postCountBeforeResume);
-    assert.deepEqual(gets, ["cs_checkout_integration"]);
+    // The account-wide operation lease serializes the overlapping second
+    // request behind the creator. It then revalidates the persisted session
+    // provider-authoritatively, as does this explicit later resume.
+    assert.deepEqual(gets, [
+      "cs_checkout_integration",
+      "cs_checkout_integration",
+    ]);
   },
 );
 

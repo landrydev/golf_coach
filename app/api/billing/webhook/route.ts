@@ -10,9 +10,8 @@ import {
   type BillingEventRecord,
   type StripeSubscriptionProjection,
   type StripeSubscriptionProjectionGeneration,
-  type SubscriptionStatus,
 } from "@/lib/billing-repository";
-import { isStripePriceId, readBillingPolicy } from "@/lib/billing-policy";
+import { isStripePriceId } from "@/lib/billing-policy";
 import {
   CheckoutRepositoryError,
   requireCheckoutAttemptForCompletion,
@@ -24,6 +23,10 @@ import {
   verifyStripeEvent,
   type StripeEvent,
 } from "@/lib/stripe";
+import {
+  parseStripeSubscriptionProjection,
+  StripeSubscriptionProjectionError,
+} from "@/lib/stripe-subscription";
 import { requestId } from "../_shared";
 
 const MAX_WEBHOOK_BYTES = 256 * 1024;
@@ -286,7 +289,7 @@ async function resolveEvent(event: StripeEvent): Promise<ResolvedEvent> {
       checkoutPriceId,
       metadataPriceId(subscription),
     ]);
-    const projection = parseSubscriptionProjection(subscription, accountId);
+    const projection = parseStripeSubscriptionProjection(subscription, accountId);
     if (
       !subscriptionAttemptId ||
       !subscriptionPriceId ||
@@ -341,7 +344,7 @@ async function resolveEvent(event: StripeEvent): Promise<ResolvedEvent> {
       );
     }
     return processed(
-      parseSubscriptionProjection(subscription, accountId),
+      parseStripeSubscriptionProjection(subscription, accountId),
       emptyInvoiceSummary(),
       projectionGeneration,
     );
@@ -382,105 +385,10 @@ async function resolveEvent(event: StripeEvent): Promise<ResolvedEvent> {
     );
   }
   return processed(
-    parseSubscriptionProjection(subscription, accountId),
+    parseStripeSubscriptionProjection(subscription, accountId),
     summary,
     projectionGeneration,
   );
-}
-
-function parseSubscriptionProjection(
-  subscription: JsonObject,
-  accountId: string,
-): StripeSubscriptionProjection {
-  const billingPolicy = readBillingPolicy({
-    STRIPE_CHECKOUT_PRICE_ID: process.env.STRIPE_CHECKOUT_PRICE_ID,
-    STRIPE_RECOGNIZED_PRICE_IDS: process.env.STRIPE_RECOGNIZED_PRICE_IDS,
-    SUBSCRIPTION_ENTITLEMENT_PRICE_IDS:
-      process.env.SUBSCRIPTION_ENTITLEMENT_PRICE_IDS,
-    SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS:
-      process.env.SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS,
-  });
-  if (!billingPolicy) {
-    throw new WebhookProcessingError(
-      "billing_price_not_configured",
-      "The billing Price policy is not configured.",
-    );
-  }
-
-  const itemsContainer = objectValue(subscription.items);
-  const items = Array.isArray(itemsContainer?.data)
-    ? itemsContainer.data.map(objectValue).filter(isPresent)
-    : [];
-  if (items.length !== 1) {
-    throw new WebhookProcessingError(
-      "subscription_price_mismatch",
-      "The subscription does not contain exactly one recognized SaaS Price.",
-    );
-  }
-
-  const item = items[0];
-  const price = objectValue(item.price);
-  const providerPriceId = objectId(price);
-  if (
-    !price ||
-    !providerPriceId ||
-    !billingPolicy.recognizedPriceIds.has(providerPriceId)
-  ) {
-    throw new WebhookProcessingError(
-      "subscription_price_mismatch",
-      "The subscription Price is not recognized for provider synchronization.",
-    );
-  }
-  const recurring = objectValue(price.recurring);
-  const interval = stringValue(recurring?.interval);
-  if (interval !== "month" && interval !== "year") {
-    throw new WebhookProcessingError(
-      "subscription_interval_unsupported",
-      "The configured subscription interval is unsupported.",
-    );
-  }
-
-  const customerId = objectId(subscription.customer);
-  if (!customerId) {
-    throw new WebhookProcessingError(
-      "subscription_customer_missing",
-      "The subscription customer reference is unavailable.",
-    );
-  }
-  const subscriptionId = safeIdentifier(subscription.id);
-  if (!subscriptionId) {
-    throw new WebhookProcessingError(
-      "subscription_id_missing",
-      "The subscription reference is unavailable.",
-    );
-  }
-
-  const status = mapSubscriptionStatus(subscription.status);
-  const currency = currencyValue(price.currency) ?? currencyValue(subscription.currency);
-  const currentPeriodStartsAt = optionalSecondsToDate(
-    item.current_period_start ?? subscription.current_period_start,
-  );
-  const currentPeriodEndsAt = optionalSecondsToDate(
-    item.current_period_end ?? subscription.current_period_end,
-  );
-
-  return {
-    accountId,
-    providerCustomerId: customerId,
-    providerSubscriptionId: subscriptionId,
-    providerPriceId,
-    status,
-    billingInterval: interval,
-    currency,
-    unitAmountMinor: minorAmount(price.unit_amount),
-    trialStartsAt: optionalSecondsToDate(subscription.trial_start),
-    trialEndsAt: optionalSecondsToDate(subscription.trial_end),
-    currentPeriodStartsAt,
-    currentPeriodEndsAt,
-    cancelAtPeriodEnd: subscription.cancel_at_period_end === true,
-    canceledAt: optionalSecondsToDate(subscription.canceled_at),
-    endedAt: optionalSecondsToDate(subscription.ended_at),
-  };
 }
 
 async function readRawWebhook(
@@ -578,26 +486,6 @@ function validateEventEnvelope(event: StripeEvent): void {
     );
   }
   secondsToDate(event.created, "event_created_invalid");
-}
-
-function mapSubscriptionStatus(value: unknown): SubscriptionStatus {
-  switch (value) {
-    case "incomplete":
-    case "trialing":
-    case "active":
-    case "past_due":
-    case "paused":
-    case "canceled":
-    case "unpaid":
-      return value;
-    case "incomplete_expired":
-      return "ended";
-    default:
-      throw new WebhookProcessingError(
-        "subscription_status_unsupported",
-        "The provider returned an unsupported subscription status.",
-      );
-  }
 }
 
 function requireAccountOwnership(
@@ -924,6 +812,9 @@ function safeFailure(error: unknown): { code: string; message: string } {
     return { code: error.code, message: error.safeMessage };
   }
   if (error instanceof WebhookProcessingError) {
+    return { code: error.code, message: error.safeMessage };
+  }
+  if (error instanceof StripeSubscriptionProjectionError) {
     return { code: error.code, message: error.safeMessage };
   }
   if (error instanceof RequestError) {

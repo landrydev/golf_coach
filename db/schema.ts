@@ -137,6 +137,20 @@ export const billingCheckoutAttemptStatuses = [
   "expired",
   "quarantined",
 ] as const;
+export const billingReconciliationTargetTypes = [
+  "subscription",
+  "checkout_attempt",
+] as const;
+export const billingReconciliationTargetStates = [
+  "processing",
+  "succeeded",
+  "failed",
+] as const;
+export const billingAccountOperationLeaseStates = ["idle", "held"] as const;
+export const billingAccountOperationTypes = [
+  "checkout",
+  "reconciliation",
+] as const;
 export const dataRequestStatuses = [
   "submitted",
   "identity_verification_required",
@@ -157,6 +171,7 @@ export const abuseLimitScopes = [
   "share_revoke_account",
   "billing_checkout_account",
   "billing_portal_account",
+  "billing_reconcile_account",
   "data_export_account",
   "data_request_account",
 ] as const;
@@ -401,6 +416,10 @@ export const billingCheckoutAttempts = sqliteTable(
       table.provider,
       table.idempotencyKey,
     ),
+    uniqueIndex("billing_checkout_attempts_account_id_unique").on(
+      table.accountId,
+      table.id,
+    ),
     uniqueIndex("billing_checkout_attempts_provider_session_unique")
       .on(table.provider, table.providerSessionId)
       .where(sql`${table.providerSessionId} is not null`),
@@ -500,6 +519,11 @@ export const subscriptions = sqliteTable(
       .where(
         sql`${table.status} in ('incomplete', 'trialing', 'active', 'past_due', 'paused', 'unpaid')`,
       ),
+    index("subscriptions_provider_status_sync_idx").on(
+      table.provider,
+      table.status,
+      table.lastProviderSyncAt,
+    ),
     index("subscriptions_account_status_idx").on(table.accountId, table.status),
     index("subscriptions_period_end_idx").on(table.currentPeriodEndsAt),
     check(
@@ -577,6 +601,167 @@ export const billingEvents = sqliteTable(
     check(
       "billing_events_attempts_check",
       sql`${table.processingAttempts} >= 0`,
+    ),
+  ],
+);
+
+export const billingReconciliationTargets = sqliteTable(
+  "billing_reconciliation_targets",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull().default("stripe"),
+    subscriptionId: text("subscription_id"),
+    checkoutAttemptId: text("checkout_attempt_id"),
+    state: text("state", {
+      enum: billingReconciliationTargetStates,
+    }).notNull(),
+    leaseToken: text("lease_token"),
+    leaseExpiresAt: timestamp("lease_expires_at"),
+    lastAttemptAt: timestamp("last_attempt_at").notNull(),
+    processingAttempts: integer("processing_attempts").notNull(),
+    automaticFailureCount: integer("automatic_failure_count")
+      .notNull()
+      .default(0),
+    nextAutomaticAttemptAt: timestamp("next_automatic_attempt_at"),
+    automaticDeadLetteredAt: timestamp("automatic_dead_lettered_at"),
+    lastErrorCode: text("last_error_code"),
+    lastErrorMessage: text("last_error_message"),
+    lastCompletedAt: timestamp("last_completed_at"),
+    lastSucceededAt: timestamp("last_succeeded_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    foreignKey({
+      name: "billing_reconciliation_targets_subscription_tenant_fk",
+      columns: [table.accountId, table.subscriptionId],
+      foreignColumns: [subscriptions.accountId, subscriptions.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "billing_reconciliation_targets_checkout_tenant_fk",
+      columns: [table.accountId, table.checkoutAttemptId],
+      foreignColumns: [
+        billingCheckoutAttempts.accountId,
+        billingCheckoutAttempts.id,
+      ],
+    }).onDelete("cascade"),
+    uniqueIndex("billing_reconciliation_targets_subscription_unique")
+      .on(table.provider, table.accountId, table.subscriptionId)
+      .where(sql`${table.subscriptionId} is not null`),
+    uniqueIndex("billing_reconciliation_targets_checkout_unique")
+      .on(table.provider, table.accountId, table.checkoutAttemptId)
+      .where(sql`${table.checkoutAttemptId} is not null`),
+    index("billing_reconciliation_targets_state_lease_idx").on(
+      table.state,
+      table.leaseExpiresAt,
+    ),
+    index("billing_reconciliation_targets_account_state_idx").on(
+      table.accountId,
+      table.state,
+    ),
+    index("billing_reconciliation_targets_automatic_due_idx").on(
+      table.provider,
+      table.state,
+      table.automaticDeadLetteredAt,
+      table.nextAutomaticAttemptAt,
+    ),
+    check(
+      "billing_reconciliation_targets_provider_check",
+      sql`${table.provider} = 'stripe'`,
+    ),
+    check(
+      "billing_reconciliation_targets_exact_target_check",
+      sql`(${table.subscriptionId} is not null and ${table.checkoutAttemptId} is null) or (${table.subscriptionId} is null and ${table.checkoutAttemptId} is not null)`,
+    ),
+    check(
+      "billing_reconciliation_targets_state_check",
+      sql`${table.state} in ('processing', 'succeeded', 'failed')`,
+    ),
+    check(
+      "billing_reconciliation_targets_attempts_check",
+      sql`${table.processingAttempts} >= 1`,
+    ),
+    check(
+      "billing_reconciliation_targets_automatic_failures_check",
+      sql`${table.automaticFailureCount} >= 0`,
+    ),
+    check(
+      "billing_reconciliation_targets_lease_check",
+      sql`(${table.state} = 'processing' and ${table.leaseToken} is not null and ${table.leaseExpiresAt} is not null) or (${table.state} <> 'processing' and ${table.leaseToken} is null and ${table.leaseExpiresAt} is null)`,
+    ),
+    check(
+      "billing_reconciliation_targets_completion_check",
+      sql`(${table.state} = 'processing' and ${table.lastCompletedAt} is null) or (${table.state} <> 'processing' and ${table.lastCompletedAt} is not null)`,
+    ),
+    check(
+      "billing_reconciliation_targets_error_check",
+      sql`(${table.state} = 'failed' and ${table.lastErrorCode} is not null and ${table.lastErrorMessage} is not null) or (${table.state} <> 'failed' and ${table.lastErrorCode} is null and ${table.lastErrorMessage} is null)`,
+    ),
+    check(
+      "billing_reconciliation_targets_automatic_retry_check",
+      sql`(${table.state} = 'failed' and ((${table.automaticDeadLetteredAt} is null and (${table.nextAutomaticAttemptAt} is not null or ${table.automaticFailureCount} = 0)) or (${table.automaticDeadLetteredAt} is not null and ${table.automaticFailureCount} >= 8 and ${table.nextAutomaticAttemptAt} is null))) or (${table.state} <> 'failed' and ${table.nextAutomaticAttemptAt} is null and ${table.automaticDeadLetteredAt} is null)`,
+    ),
+    check(
+      "billing_reconciliation_targets_success_failure_reset_check",
+      sql`${table.state} <> 'succeeded' or ${table.automaticFailureCount} = 0`,
+    ),
+  ],
+);
+
+/**
+ * One durable billing-operation mutex per tenant. Checkout and provider
+ * reconciliation both acquire this row before consulting or mutating billing
+ * state, so an account cannot create a Checkout Session from a projection
+ * that another worker is actively refreshing. Released rows remain in place:
+ * terminal D1 batches can then turn a stale claim into a NOT NULL violation
+ * instead of silently updating zero rows.
+ */
+export const billingAccountOperationLeases = sqliteTable(
+  "billing_account_operation_leases",
+  {
+    accountId: text("account_id")
+      .primaryKey()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull().default("stripe"),
+    state: text("state", { enum: billingAccountOperationLeaseStates })
+      .notNull()
+      .default("idle"),
+    operation: text("operation", { enum: billingAccountOperationTypes }),
+    leaseToken: text("lease_token"),
+    leaseGeneration: integer("lease_generation").notNull().default(1),
+    leaseExpiresAt: timestamp("lease_expires_at"),
+    lastAcquiredAt: timestamp("last_acquired_at"),
+    lastReleasedAt: timestamp("last_released_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    index("billing_account_operation_leases_expiry_idx").on(
+      table.state,
+      table.leaseExpiresAt,
+    ),
+    check(
+      "billing_account_operation_leases_provider_check",
+      sql`${table.provider} = 'stripe'`,
+    ),
+    check(
+      "billing_account_operation_leases_state_check",
+      sql`${table.state} in ('idle', 'held')`,
+    ),
+    check(
+      "billing_account_operation_leases_operation_check",
+      sql`${table.operation} is null or ${table.operation} in ('checkout', 'reconciliation')`,
+    ),
+    check(
+      "billing_account_operation_leases_generation_check",
+      sql`${table.leaseGeneration} >= 1`,
+    ),
+    check(
+      "billing_account_operation_leases_shape_check",
+      sql`(${table.state} = 'held' and ${table.operation} is not null and ${table.leaseToken} is not null and ${table.leaseExpiresAt} is not null and ${table.lastAcquiredAt} is not null) or (${table.state} = 'idle' and ${table.operation} is null and ${table.leaseToken} is null and ${table.leaseExpiresAt} is null)`,
     ),
   ],
 );
@@ -1840,7 +2025,7 @@ export const abuseRateLimits = sqliteTable(
     index("abuse_rate_limits_expires_idx").on(table.windowExpiresAt),
     check(
       "abuse_rate_limits_scope_check",
-      sql`${table.scope} in ('share_exchange_network', 'share_exchange_capability', 'share_response_network', 'share_response_capability', 'plan_publish_account', 'share_revoke_account', 'billing_checkout_account', 'billing_portal_account', 'data_export_account', 'data_request_account')`,
+      sql`${table.scope} in ('share_exchange_network', 'share_exchange_capability', 'share_response_network', 'share_response_capability', 'plan_publish_account', 'share_revoke_account', 'billing_checkout_account', 'billing_portal_account', 'billing_reconcile_account', 'data_export_account', 'data_request_account')`,
     ),
     check(
       "abuse_rate_limits_hash_check",

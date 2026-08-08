@@ -56,6 +56,7 @@ const ACCOUNT_API_PATHS = new Set([
   "/api/data-requests",
   "/api/billing/checkout",
   "/api/billing/portal",
+  "/api/billing/reconcile",
 ]);
 
 /**

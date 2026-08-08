@@ -18,6 +18,7 @@ test(
     const customerId = "cus_webhook_integration";
     const subscriptionId = "sub_webhook_integration";
     const eventId = "evt_webhook_integration";
+    const reconciliationId = "reconciliation_webhook_integration";
     const nowSeconds = Math.floor(Date.now() / 1_000);
     let providerCalls = 0;
 
@@ -92,6 +93,24 @@ test(
           createdAt,
         ],
       },
+      {
+        sql: `insert into billing_reconciliation_targets (
+          id, account_id, provider, subscription_id, checkout_attempt_id,
+          state, lease_token, lease_expires_at, last_attempt_at,
+          processing_attempts, last_error_code, last_error_message,
+          last_completed_at, last_succeeded_at, created_at, updated_at
+        ) values (?, ?, 'stripe', null, ?, 'failed', null, null, ?, 8,
+          'billing_provider_error', 'Provider retrieval failed.', ?, null, ?, ?)`,
+        params: [
+          reconciliationId,
+          accountId,
+          attemptId,
+          createdAt,
+          createdAt,
+          createdAt,
+          createdAt,
+        ],
+      },
     ]);
 
     const event = {
@@ -155,6 +174,12 @@ test(
             and actor_reference = ?`,
         params: [eventId],
       },
+      {
+        sql: `select state, lease_token, lease_expires_at, last_error_code,
+          last_error_message, last_completed_at, last_succeeded_at
+          from billing_reconciliation_targets where id = ?`,
+        params: [reconciliationId],
+      },
     ]);
     assert.deepEqual(inspection[0].results, [
       { provider_customer_id: customerId, account_id: accountId },
@@ -196,6 +221,22 @@ test(
     assert.equal(eventRow.account_id, accountId);
     assert.ok(eventRow.subscription_id);
     assert.equal(inspection[4].results[0].count, 1);
+    assert.deepEqual(
+      {
+        ...inspection[5].results[0],
+        last_completed_at: Boolean(inspection[5].results[0].last_completed_at),
+        last_succeeded_at: Boolean(inspection[5].results[0].last_succeeded_at),
+      },
+      {
+        state: "succeeded",
+        lease_token: null,
+        lease_expires_at: null,
+        last_error_code: null,
+        last_error_message: null,
+        last_completed_at: true,
+        last_succeeded_at: true,
+      },
+    );
 
     const duplicate = await signedWebhook(worker, rawBody, nowSeconds);
     assert.equal(duplicate.status, 200);
@@ -377,6 +418,7 @@ function stripeSubscription(input) {
     items: {
       data: [
         {
+          quantity: 1,
           current_period_start: input.nowSeconds,
           current_period_end: input.nowSeconds + 30 * 24 * 60 * 60,
           price: {

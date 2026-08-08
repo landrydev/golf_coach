@@ -1,14 +1,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
+import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
 import styles from "../../workspace.module.css";
 
 type ApiError = { error?: { message?: string } };
 type PackageOption = { id: string; name: string; fitDescription: string };
+const ERROR_SUMMARY_ID = "new-golfer-form-error-summary";
 
 export function NewGolferForm({ packages }: { packages: PackageOption[] }) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
   const [message, setMessage] = useState("");
 
@@ -64,7 +67,12 @@ export function NewGolferForm({ packages }: { packages: PackageOption[] }) {
   }
 
   return (
-    <form className={styles.form} onSubmit={handleSubmit}>
+    <form
+      ref={formRef}
+      className={styles.form}
+      aria-describedby={ERROR_SUMMARY_ID}
+      onSubmit={handleSubmit}
+    >
       <section className={styles.formCard}>
         <fieldset className={styles.formSection}>
           <legend>Golfer and goal</legend>
@@ -213,11 +221,12 @@ export function NewGolferForm({ packages }: { packages: PackageOption[] }) {
         </fieldset>
       </section>
 
-      {status === "error" ? (
-        <div className={styles.errorStatus} role="alert">
-          {message}
-        </div>
-      ) : null}
+      <FormErrorSummary
+        id={ERROR_SUMMARY_ID}
+        message={status === "error" ? message : ""}
+        formRef={formRef}
+        className={styles.errorStatus}
+      />
       <div className={styles.actions}>
         <button className={styles.primaryButton} type="submit" disabled={status === "saving"}>
           {status === "saving" ? "Saving…" : "Save draft and review"}

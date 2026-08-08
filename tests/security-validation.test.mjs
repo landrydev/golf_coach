@@ -228,18 +228,62 @@ test("share tokens are high-entropy bearer values with deterministic peppered ha
   }
 });
 
-test("production token hashing fails closed when the pepper is absent", async () => {
+test("production token hashing rejects absent or short share-token peppers", async () => {
   const previousEnvironment = process.env.NODE_ENV;
   const previousPepper = process.env.SHARE_TOKEN_PEPPER;
   process.env.NODE_ENV = "production";
-  delete process.env.SHARE_TOKEN_PEPPER;
   try {
+    delete process.env.SHARE_TOKEN_PEPPER;
     await assert.rejects(hashToken("a".repeat(43)), /SHARE_TOKEN_PEPPER is required/);
+
+    for (const shortPepper of ["x", "x".repeat(31), ` ${"x".repeat(31)} `]) {
+      process.env.SHARE_TOKEN_PEPPER = shortPepper;
+      await assert.rejects(
+        hashToken("a".repeat(43)),
+        /SHARE_TOKEN_PEPPER must be at least 32 characters/,
+      );
+    }
+
+    process.env.SHARE_TOKEN_PEPPER = "x".repeat(32);
+    assert.match(await hashToken("a".repeat(43)), /^[0-9a-f]{64}$/);
   } finally {
     restoreEnvironment("NODE_ENV", previousEnvironment);
     restoreEnvironment("SHARE_TOKEN_PEPPER", previousPepper);
   }
 });
+
+test(
+  "health requires a share-token pepper of at least 32 characters",
+  { timeout: 60_000 },
+  async () => {
+    for (const testCase of [
+      { name: "31 characters", pepper: "x".repeat(31), expectedReady: false },
+      { name: "32 characters", pepper: "x".repeat(32), expectedReady: true },
+    ]) {
+      const worker = await startD1Worker({
+        BILLING_CHECKOUT_ENABLED: "false",
+        SHARE_TOKEN_PEPPER: testCase.pepper,
+      });
+      try {
+        const response = await worker.dispatch("/api/health");
+        assert.equal(
+          response.status,
+          testCase.expectedReady ? 200 : 503,
+          testCase.name,
+        );
+        const body = await response.json();
+        assert.equal(
+          body.checks.shareTokenPepper,
+          testCase.expectedReady,
+          testCase.name,
+        );
+        assert.equal(JSON.stringify(body).includes(testCase.pepper), false);
+      } finally {
+        await worker.dispose();
+      }
+    }
+  },
+);
 
 test("network abuse subjects trust only a canonical Cloudflare address", async () => {
   const { clientNetworkSubject } = await import("../lib/rate-limit.ts");

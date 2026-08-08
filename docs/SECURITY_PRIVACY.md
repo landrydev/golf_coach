@@ -2,7 +2,7 @@
 
 **Document status:** Implementation control plan under `AUTH-005`; not a security assessment, privacy opinion, legal-compliance claim, or production-readiness claim
 **Applies to:** [Production SaaS Architecture](ARCHITECTURE.md)
-**Last updated:** 2026-08-07
+**Last updated:** 2026-08-08
 
 ## Purpose and authority
 
@@ -173,6 +173,7 @@ entitlements, package quotas, sales policy, or a substitute for edge controls.
 | Link revocation, per instructor account digest | 30 | 1 hour |
 | Stripe Checkout creation, per instructor account digest | 5 | 15 minutes |
 | Stripe Portal creation, per instructor account digest | 10 | 15 minutes |
+| Stripe billing reconciliation, per instructor account digest | 6 | 15 minutes |
 | Immediate data export, per instructor account digest | 3 | 1 hour |
 | Privacy/data request submission, per instructor account digest | 10 | 1 hour |
 
@@ -218,6 +219,17 @@ R2 uploads remain disabled or feature-limited until the approved media policy is
 - Validate the Stripe webhook signature against the unmodified request body before any acknowledgement or state change.
 - Enforce an allowlist of handled event types and persist event ID, processing state, attempt count, and minimal result.
 - Acknowledge only after durable receipt; make processing safe to retry and reconcile against Stripe.
+- Permit an authenticated instructor to reconcile only locally owned, existing Checkout/subscription references through provider `GET` requests. The browser supplies no provider identifiers, and the operation cannot create a Checkout Session, customer, subscription, charge, refund, cancellation, or Portal Session.
+- Persist reconciliation targets with tenant-scoped foreign keys, an expiring lease, bounded safe error history, retry count, and terminal state. Couple the current lease, latest provider-read generation, subscription projection, Checkout completion, customer ownership, and success audit in one D1 batch.
+- Serialize Checkout creation and reconciliation with a durable account-scoped operation lease. A stale operation owner must fail its terminal D1 guard rather than create or commit from an obsolete account view.
+- Run a bounded five-minute recovery sweep for existing provider-backed
+  Checkout work, failed reconciliation leases, and stale open-subscription
+  projections. Apply backoff, stop after eight consecutive automatic failures,
+  reset that budget on success, and emit only opaque dead-letter
+  counts/identifiers for operational response.
+- When a newer signed webhook commits the exact provider object and current
+  projection generation, resolve its matching failed or in-flight reconciliation
+  target in the same D1 batch so a stale worker cannot orphan or overwrite it.
 - Never grant entitlement from a success redirect, browser-supplied status, amount, email, or customer ID.
 - Protect against one Stripe customer or subscription being attached to two instructor accounts.
 - Audit entitlement changes without storing invoice detail, card data, webhook bodies, or secrets in the audit record.

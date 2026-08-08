@@ -235,7 +235,7 @@ test(
       INSTRUCTOR_ACCESS_MODE: "subscription_required",
       SUBSCRIPTION_ACCESS_STATUSES: "active",
       ...subscriptionPolicyBindings,
-      SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS: "60",
+      SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS: "900",
       OWNER_PRIVATE_ACCESS_PEPPER: "",
       OWNER_PRIVATE_EMAIL_DIGESTS: "",
     });
@@ -272,7 +272,7 @@ test(
     await setSubscriptionProjection(
       worker,
       "price_access_matrix",
-      Date.now() - 61_000,
+      Date.now() - 901_000,
     );
     await assertCoreDecision(worker, headers, 503, "product_access_unavailable");
 

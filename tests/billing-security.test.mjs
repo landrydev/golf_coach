@@ -18,6 +18,7 @@ const {
 const {
   billingPolicyConfigurationReady,
   readBillingPolicy,
+  subscriptionProjectionRefreshIntervalSeconds,
 } = await import("../lib/billing-policy.ts");
 
 const projectFile = (path) => new URL(`../${path}`, import.meta.url);
@@ -44,6 +45,8 @@ test("shared billing policy has no defaults and rejects inconsistent Price sets"
     "price_server_configured",
   ]);
   assert.equal(policy.maxProjectionAgeSeconds, 3600);
+  assert.equal(subscriptionProjectionRefreshIntervalSeconds(3600), 1800);
+  assert.equal(subscriptionProjectionRefreshIntervalSeconds(900), 450);
   assert.equal(
     billingPolicyConfigurationReady(validBillingPolicyEnvironment),
     true,
@@ -77,6 +80,10 @@ test("shared billing policy has no defaults and rejects inconsistent Price sets"
     {
       ...validBillingPolicyEnvironment,
       SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS: "0",
+    },
+    {
+      ...validBillingPolicyEnvironment,
+      SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS: "899",
     },
     {
       ...validBillingPolicyEnvironment,
@@ -140,24 +147,69 @@ test("Checkout lifetime preserves Stripe's documented creation-time bounds", () 
 });
 
 test(
-  "health and checkout require the same canonical enable flag",
-  { timeout: 60_000 },
-  async (context) => {
-    const worker = await startD1Worker({
+  "health requires an explicit disabled flag or a fully configured enabled billing policy",
+  { timeout: 120_000 },
+  async () => {
+    const configuredBilling = {
       STRIPE_SECRET_KEY: "sk_test_health_not_a_real_credential",
       STRIPE_WEBHOOK_SECRET: "whsec_health_not_a_real_credential",
       ...validBillingPolicyEnvironment,
       STRIPE_CHECKOUT_SESSION_LIFETIME_SECONDS: "3600",
-      BILLING_CHECKOUT_ENABLED: " true ",
-    });
-    context.after(() => worker.dispose());
+    };
+    const cases = [
+      {
+        name: "missing flag",
+        bindings: {},
+        expectedReady: false,
+      },
+      {
+        name: "non-canonical flag",
+        bindings: {
+          ...configuredBilling,
+          BILLING_CHECKOUT_ENABLED: " true ",
+        },
+        expectedReady: false,
+      },
+      {
+        name: "explicitly disabled",
+        bindings: { BILLING_CHECKOUT_ENABLED: "false" },
+        expectedReady: true,
+      },
+      {
+        name: "fully configured and enabled",
+        bindings: {
+          ...configuredBilling,
+          BILLING_CHECKOUT_ENABLED: "true",
+        },
+        expectedReady: true,
+      },
+    ];
 
-    const response = await worker.dispatch("/api/health");
-    assert.equal(response.status, 503);
-    const body = await response.json();
-    assert.equal(body.status, "degraded");
-    assert.equal(body.checks.billingCheckoutPolicy, false);
-    assert.equal(JSON.stringify(body).includes(" true "), false);
+    for (const testCase of cases) {
+      const worker = await startD1Worker(testCase.bindings);
+      try {
+        const response = await worker.dispatch("/api/health");
+        assert.equal(
+          response.status,
+          testCase.expectedReady ? 200 : 503,
+          testCase.name,
+        );
+        const body = await response.json();
+        assert.equal(
+          body.status,
+          testCase.expectedReady ? "ready" : "degraded",
+          testCase.name,
+        );
+        assert.equal(
+          body.checks.billingCheckoutPolicy,
+          testCase.expectedReady,
+          testCase.name,
+        );
+        assert.equal(JSON.stringify(body).includes(" true "), false);
+      } finally {
+        await worker.dispose();
+      }
+    }
   },
 );
 
@@ -363,14 +415,15 @@ test("Stripe transport failures are bounded and return a safe provider error", a
   }
 });
 
-test("Checkout and Portal route sources keep identity, price, account, and return URLs server-controlled", async () => {
-  const [checkout, portal, shared] = await Promise.all([
+test("Checkout, Portal, and reconciliation routes keep billing identity and provider references server-controlled", async () => {
+  const [checkout, portal, reconciliation, shared] = await Promise.all([
     readFile(projectFile("app/api/billing/checkout/route.ts"), "utf8"),
     readFile(projectFile("app/api/billing/portal/route.ts"), "utf8"),
+    readFile(projectFile("app/api/billing/reconcile/route.ts"), "utf8"),
     readFile(projectFile("app/api/billing/_shared.ts"), "utf8"),
   ]);
 
-  for (const route of [checkout, portal]) {
+  for (const route of [checkout, portal, reconciliation]) {
     assert.match(route, /assertSameOrigin\(request\)/);
     assert.match(route, /requireApiIdentity\(\)/);
     assert.match(route, /getOrCreateAccountForIdentity\(authentication\.identity\)/);
@@ -402,6 +455,14 @@ test("Checkout and Portal route sources keep identity, price, account, and retur
   assert.match(portal, /getCanonicalBillingCustomer\(account\.id\)/);
   assert.match(portal, /customerId:\s*customer\.providerCustomerId/);
   assert.ok(portal.includes("returnUrl: `${origin}/app/billing`"));
+  assert.match(reconciliation, /reconcileBillingAccount\(\{/);
+  assert.match(reconciliation, /accountId:\s*account\.id/);
+  assert.match(reconciliation, /reconcile=refresh_review/);
+  assert.match(reconciliation, /browserRecoveryRedirect\(request, error\)/);
+  assert.doesNotMatch(
+    reconciliation,
+    /providerSubscriptionId|providerCustomerId|providerSessionId|priceId/,
+  );
   assert.match(shared, /process\.env\.APP_URL/);
   assert.match(shared, /status:\s*303/);
 });
@@ -460,7 +521,7 @@ test("billing-event receipt and replay handling preserve durable idempotency inv
     "export async function applyStripeSubscriptionEvent",
     "function billingEventLeaseGuard",
   );
-  for (const terminalMutation of [ignore, failure, apply]) {
+  for (const terminalMutation of [ignore, failure]) {
     assert.match(terminalMutation, /claim:\s*BillingEventClaim/);
     assert.match(terminalMutation, /db\.batch\(\[\s*billingEventLeaseGuard\(db, input\.claim, now\)/);
     assert.match(terminalMutation, /leaseToken:\s*null/);
@@ -470,6 +531,15 @@ test("billing-event receipt and replay handling preserve durable idempotency inv
       /eq\(billingEvents\.leaseToken, input\.claim\.leaseToken\)/,
     );
   }
+  assert.match(apply, /kind:\s*"event"/);
+  assert.match(apply, /generationFencedBillingEventLeaseGuard\(/);
+  assert.match(apply, /db\.batch\(\[\s*terminalGuard/);
+  assert.match(apply, /leaseToken:\s*null/);
+  assert.match(apply, /leaseExpiresAt:\s*null/);
+  assert.match(
+    apply,
+    /eq\(billingEvents\.leaseToken, terminalContext\.claim\.leaseToken\)/,
+  );
   assert.match(
     repository,
     /function billingEventLeaseGuard[\s\S]*?status\} = 'processing'[\s\S]*?leaseToken\} = \$\{claim\.leaseToken\}[\s\S]*?leaseExpiresAt\} > \$\{now\.getTime\(\)\}[\s\S]*?else null/,
@@ -632,15 +702,15 @@ test("built webhook rejects declared and streamed bodies beyond 256 KiB before p
   assert.equal((await streamed.json()).error.code, "payload_too_large");
 });
 
-test("webhook status mapping is an explicit allowlist with a fail-closed default", async () => {
-  const [webhook, schema] = await Promise.all([
-    readFile(projectFile("app/api/billing/webhook/route.ts"), "utf8"),
+test("shared Stripe status mapping is an explicit allowlist with a fail-closed default", async () => {
+  const [projection, schema] = await Promise.all([
+    readFile(projectFile("lib/stripe-subscription.ts"), "utf8"),
     readFile(projectFile("db/schema.ts"), "utf8"),
   ]);
   const mapping = sourceBlock(
-    webhook,
+    projection,
     "function mapSubscriptionStatus",
-    "function requireAccountOwnership",
+    "function objectValue",
   );
 
   for (const status of [
@@ -656,7 +726,7 @@ test("webhook status mapping is an explicit allowlist with a fail-closed default
   }
   assert.match(mapping, /case "incomplete_expired":[\s\S]*?return "ended"/);
   assert.match(mapping, /default:[\s\S]*?subscription_status_unsupported/);
-  assert.match(mapping, /throw new WebhookProcessingError/);
+  assert.match(mapping, /throw invalid/);
   assert.doesNotMatch(mapping, /as SubscriptionStatus/);
   assert.match(
     schema,
@@ -670,13 +740,22 @@ test("billing page treats Checkout returns as context, never payment proof", asy
   assert.match(page, /value === "complete"/);
   assert.match(page, /value === "canceled"/);
   assert.match(page, /This redirect does not confirm payment or an active subscription\./);
-  assert.match(page, /only after a signed Stripe webhook is processed/);
+  assert.match(page, /signed webhook or an explicit read-only Stripe refresh/);
   assert.match(page, /This return does not change billing state\./);
   assert.match(page, /getSubscriptionForAccount\(account\.id\)/);
-  assert.match(page, /Latest state accepted from a signed Stripe webhook/);
+  assert.match(page, /Latest provider-authoritative state synchronized from Stripe/);
   assert.match(page, /Price is not yet approved for a live charge\./);
   assert.match(page, /Planning amounts remain pricing hypotheses/);
   assert.match(page, /disabled=\{!canOpenPortal\}/);
+  assert.match(page, /action="\/api\/billing\/reconcile"/);
+  assert.match(page, /cannot start a charge, create a subscription, cancel service/);
+  assert.match(page, /subscription\?\.lastProviderSyncAt/);
+  assert.match(page, /This page notice is not proof of payment or a new subscription/);
+  assert.doesNotMatch(page, /Billing status refreshed from Stripe\./);
+  assert.doesNotMatch(
+    page,
+    /The account now shows the latest provider-authoritative subscription state\./,
+  );
   assert.doesNotMatch(page, /(?:payment|purchase) (?:was |is )?(?:successful|confirmed)/i);
 });
 

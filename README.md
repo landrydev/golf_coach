@@ -25,7 +25,9 @@ operating dependencies are recorded in
 - private Cloudflare R2 binding for approved future media/export objects
 - dispatch-owned Sign in with ChatGPT for instructor identity
 - 256-bit, HMAC-fingerprinted, revision-scoped golfer capability links
-- Stripe-hosted Checkout and Customer Portal for the Roadmap SaaS subscription
+- Stripe-hosted Checkout and Customer Portal for the Roadmap SaaS subscription,
+  with signed-webhook projection, authenticated read-only account refresh, and
+  bounded scheduled recovery of existing provider-backed work
 
 No application password, card number, raw Stripe webhook payload, or raw share
 token is stored in D1. Media upload remains disabled until its exact consent,
@@ -63,15 +65,17 @@ Public, non-secret variables:
   events may update the local projection
 - `SUBSCRIPTION_ENTITLEMENT_PRICE_IDS`: explicit recognized-Price subset that
   may grant core product access
-- `SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS`: required maximum signed-provider
-  projection age in subscription mode; the application selects no default
+- `SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS`: required maximum provider
+  projection age in subscription mode, from 900 through 31536000 seconds; the
+  application selects no default and schedules refresh before that boundary
 - `STRIPE_CHECKOUT_SESSION_LIFETIME_SECONDS`: explicit Checkout lifetime from
   1860 through 86400 seconds; the application selects no default
 - `BILLING_CHECKOUT_ENABLED`: fail-closed `true` only after exact price/policy approval
 
 Hosted secrets:
 
-- `SHARE_TOKEN_PEPPER`: random, independent secret used for share-token HMACs
+- `SHARE_TOKEN_PEPPER`: random, independent secret of at least 32 characters
+  used for share-token HMACs
 - `ABUSE_LIMIT_PEPPER`: separate random secret used for non-reversible abuse-counter subject HMACs
 - `OWNER_PRIVATE_ACCESS_PEPPER`: third independent random secret, at least 32
   characters, used only for the owner-private email allowlist
@@ -86,16 +90,21 @@ Bindings declared in `.openai/hosting.json`:
 Checkout stays unavailable when Stripe configuration is absent. Production
 share-token hashing fails closed when its pepper is absent. `/api/health`
 returns `503 degraded` until D1, R2, origin, share-token-pepper,
-abuse-limit-pepper, and the selected instructor-access policy are ready. Health
-exposes only access-policy readiness, never its mode, status list, digests,
-pepper, or email.
+abuse-limit-pepper, the explicit Checkout enable/disable policy, and the selected
+instructor-access policy are ready. Health exposes only access-policy readiness,
+never its mode, status list, digests, pepper, or email.
 
 The Worker applies this policy to instructor HTML, Vinext `.rsc` navigation,
 and APIs. `owner_private` covers every `/app` route and every non-public API.
 In `subscription_required`, billing, settings/profile, export, and privacy-data
 request controls remain reachable; other instructor surfaces require a fresh
-signed-webhook subscription status and Price to be explicitly allowed. Health, Stripe's
-signed webhook, and golfer capability endpoints remain separate.
+provider-authoritative subscription status and Price to be explicitly allowed.
+That projection can be applied from a signed webhook or an explicit, read-only
+refresh of the authenticated account's existing Stripe references. A five-minute
+scheduled handler retries failed or abandoned provider-backed reconciliation with
+bounded backoff and no Stripe object creation. It safely performs no provider work
+when Stripe credentials or the complete billing policy are absent. Health, Stripe's signed webhook,
+and golfer capability endpoints remain separate.
 
 ## Verification
 
@@ -111,7 +120,7 @@ requires the production-like journey, accessibility, billing test-mode,
 backup/restore, alert, and live smoke evidence described in
 [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
 
-The current immutable candidate passes 81/81 automated tests. Exact-release
+The current candidate passes 112/112 automated tests. Exact-release
 automated, hosted, and still-missing manual/operational evidence is recorded in
 [`docs/RELEASE_EVIDENCE.md`](docs/RELEASE_EVIDENCE.md).
 

@@ -11,7 +11,10 @@ import styles from "../workspace.module.css";
 export const dynamic = "force-dynamic";
 
 type BillingPageProps = {
-  searchParams: Promise<{ checkout?: string | string[] }>;
+  searchParams: Promise<{
+    checkout?: string | string[];
+    reconcile?: string | string[];
+  }>;
 };
 
 export default async function BillingPage({ searchParams }: BillingPageProps) {
@@ -30,6 +33,11 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   const canOpenPortal = isConfigured && Boolean(subscription?.providerCustomerId);
   const checkoutReturn = firstValue(query.checkout);
   const returnNotice = checkoutReturnNotice(checkoutReturn);
+  const reconciliationNotice = billingReconciliationNotice(
+    firstValue(query.reconcile),
+    subscription?.lastProviderSyncAt ?? null,
+    account.timezone,
+  );
 
   return (
     <div className={styles.page}>
@@ -51,6 +59,13 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
         </div>
       ) : null}
 
+      {reconciliationNotice ? (
+        <div className={styles.notice} role="status">
+          <strong>{reconciliationNotice.title}</strong>
+          <span>{reconciliationNotice.message}</span>
+        </div>
+      ) : null}
+
       {!isCheckoutEnabled ? (
         <div className={styles.notice} role="note">
           <strong>Price is not yet approved for a live charge.</strong>
@@ -64,7 +79,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
           <strong>Review the exact recurring amount before paying.</strong>
           <span>
             Stripe Checkout shows the configured price, cadence, tax treatment, and payment
-            step. Returning from Checkout is not proof of payment; signed webhook state remains
+            step. Returning from Checkout is not proof of payment; Stripe-confirmed state remains
             authoritative.
           </span>
         </div>
@@ -90,7 +105,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
               <div>
                 <strong>Subscription status</strong>
                 <span>
-                  Latest state accepted from a signed Stripe webhook: {subscription.status.replace("_", " ")}.
+                  Latest provider-authoritative state synchronized from Stripe: {subscription.status.replace("_", " ")}.
                 </span>
               </div>
             </li>
@@ -137,7 +152,23 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
               Manage an existing subscription
             </button>
           </form>
+          <form action="/api/billing/reconcile" method="post">
+            <button
+              className={styles.secondaryButton}
+              type="submit"
+              disabled={!isConfigured}
+            >
+              Refresh billing status
+            </button>
+          </form>
         </div>
+        {isConfigured ? (
+          <p className={styles.muted}>
+            Refreshing reads only this account&apos;s existing Stripe references. It
+            cannot start a charge, create a subscription, cancel service, or change a
+            payment method.
+          </p>
+        ) : null}
         {!isConfigured ? (
           <p className={styles.muted}>No charge can be initiated from this environment.</p>
         ) : !isCheckoutEnabled && !hasOpenSubscription ? (
@@ -154,6 +185,45 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   );
 }
 
+function billingReconciliationNotice(
+  value: string | null,
+  lastProviderSyncAt: Date | null,
+  timezone: string,
+): {
+  title: string;
+  message: string;
+} | null {
+  switch (value) {
+    case "refresh_review":
+      return {
+        title: "Review the saved billing status below.",
+        message: lastProviderSyncAt
+          ? `This account was last synchronized with Stripe ${formatBillingTimestamp(lastProviderSyncAt, timezone)}. This page notice is not proof of payment or a new subscription.`
+          : "No synchronized subscription is saved for this account. This page notice is not proof of payment or a new subscription.",
+      };
+    case "refresh_in_progress":
+      return {
+        title: "A billing refresh is already in progress.",
+        message:
+          "Wait a few minutes, then refresh again. The saved billing status below remains available while the current check finishes.",
+      };
+    case "refresh_rate_limited":
+      return {
+        title: "Billing refresh is temporarily paused.",
+        message:
+          "Too many refreshes were requested. Wait before trying again; the saved billing status below has not been hidden.",
+      };
+    case "refresh_unavailable":
+      return {
+        title: "The billing refresh could not be confirmed.",
+        message:
+          "Review the saved billing status below and try again later. This message does not mean a payment or subscription change occurred.",
+      };
+    default:
+      return null;
+  }
+}
+
 function firstValue(value: string | string[] | undefined): string | null {
   if (Array.isArray(value)) return value[0] ?? null;
   return value ?? null;
@@ -167,14 +237,14 @@ function checkoutReturnNotice(value: string | null): {
     return {
       title: "Checkout returned to this page.",
       message:
-        "This redirect does not confirm payment or an active subscription. The status below changes only after a signed Stripe webhook is processed.",
+        "This redirect does not confirm payment or an active subscription. The status below changes only after a signed webhook or an explicit read-only Stripe refresh is safely applied.",
     };
   }
   if (value === "canceled") {
     return {
       title: "Checkout was canceled or closed.",
       message:
-        "This return does not change billing state. The latest signed Stripe webhook state is shown below.",
+        "This return does not change billing state. The latest provider-authoritative Stripe state is shown below.",
     };
   }
   return null;
@@ -214,6 +284,22 @@ function billingPeriodLabel(
 function formatBillingDate(value: Date, timezone: string): string {
   const options: Intl.DateTimeFormatOptions = {
     dateStyle: "medium",
+    timeZone: timezone,
+  };
+  try {
+    return new Intl.DateTimeFormat("en-CA", options).format(value);
+  } catch {
+    return new Intl.DateTimeFormat("en-CA", {
+      ...options,
+      timeZone: "UTC",
+    }).format(value);
+  }
+}
+
+function formatBillingTimestamp(value: Date, timezone: string): string {
+  const options: Intl.DateTimeFormatOptions = {
+    dateStyle: "medium",
+    timeStyle: "short",
     timeZone: timezone,
   };
   try {

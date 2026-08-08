@@ -1,5 +1,6 @@
 import {
   CheckoutRepositoryError,
+  expireStrandedCheckoutReservation,
   expireCheckoutAttemptAfterProviderConfirmation,
   finalizeCheckoutAttemptOpen,
   getCanonicalBillingCustomer,
@@ -8,6 +9,14 @@ import {
   reserveOrLoadCheckoutAttempt,
   type CheckoutAttemptRecord,
 } from "@/lib/checkout-repository";
+import {
+  acquireBillingAccountOperationLease,
+  assertBillingAccountOperationLease,
+  BillingAccountOperationLeaseError,
+  releaseBillingAccountOperationLeaseBestEffort,
+  renewBillingAccountOperationLease,
+  type BillingAccountOperationLeaseClaim,
+} from "@/lib/billing-account-operation-lease";
 import {
   getSubscriptionForAccount,
   isOpenSubscription,
@@ -20,6 +29,7 @@ import {
   checkoutConfiguration,
   checkoutEnabled,
   createCheckoutSession,
+  retrieveCustomerSubscriptionsForCheckout,
   retrieveCheckoutSession,
   validateCheckoutSessionForAttempt,
 } from "@/lib/stripe";
@@ -31,6 +41,7 @@ import {
 } from "../_shared";
 
 export async function POST(request: Request) {
+  let operationLease: BillingAccountOperationLeaseClaim | null = null;
   try {
     assertSameOrigin(request);
     const authentication = await requireApiIdentity();
@@ -47,11 +58,45 @@ export async function POST(request: Request) {
       );
     }
 
+    operationLease = await acquireCheckoutOperationLease(account.id);
+    await expireStrandedCheckoutReservation({
+      accountId: account.id,
+      operationLease,
+      requestId: requestId(request),
+    });
     await assertNoOpenSubscription(account.id);
 
     const origin = applicationOrigin(request);
     const customer = await getCanonicalBillingCustomer(account.id);
+    if (customer) {
+      operationLease = await renewBillingAccountOperationLease(operationLease);
+      const providerSubscriptions =
+        await retrieveCustomerSubscriptionsForCheckout({
+          accountId: account.id,
+          customerId: customer.providerCustomerId,
+        });
+      await assertBillingAccountOperationLease(operationLease);
+      if (
+        providerSubscriptions.some(
+          ({ status }) =>
+            status !== "canceled" && status !== "incomplete_expired",
+        )
+      ) {
+        throw new RequestError(
+          409,
+          "subscription_already_open",
+          "This billing customer already has an open provider subscription. No new charge was started.",
+        );
+      }
+    }
     const reserve = () => {
+      const currentOperationLease = operationLease;
+      if (!currentOperationLease) {
+        throw new BillingAccountOperationLeaseError(
+          "billing_operation_lease_lost",
+          "The billing operation lease is no longer owned by this worker.",
+        );
+      }
       const now = new Date();
       const expiresAtSeconds =
         Math.floor(now.getTime() / 1_000) +
@@ -63,6 +108,7 @@ export async function POST(request: Request) {
         providerCustomerId: customer?.providerCustomerId ?? null,
         customerEmail: account.primaryEmail,
         providerExpiresAt: new Date(expiresAtSeconds * 1_000),
+        operationLease: currentOperationLease,
         now,
       });
     };
@@ -97,6 +143,7 @@ export async function POST(request: Request) {
       await assertNoOpenSubscription(account.id);
 
       try {
+        operationLease = await renewBillingAccountOperationLease(operationLease);
         const providerSession =
           attempt.state === "open" && attempt.providerSessionId
             ? await retrieveCheckoutSession(attempt.providerSessionId)
@@ -113,6 +160,7 @@ export async function POST(request: Request) {
                   attempt.providerExpiresAt.getTime() / 1_000,
                 ),
               });
+        await assertBillingAccountOperationLease(operationLease);
         const validated = validateCheckoutSessionForAttempt(
           providerSession,
           attempt,
@@ -125,6 +173,7 @@ export async function POST(request: Request) {
               attemptId: attempt.id,
               providerSessionId: validated.id,
               providerCreatedAt: validated.createdAt,
+              operationLease,
               now: new Date(),
             });
           if (
@@ -155,6 +204,7 @@ export async function POST(request: Request) {
             attemptId: attempt.id,
             providerSessionId: validated.id,
             providerCreatedAt: validated.createdAt,
+            operationLease,
             now: new Date(),
           });
           throw new RequestError(
@@ -181,6 +231,7 @@ export async function POST(request: Request) {
             attemptId: attempt.id,
             providerSessionId: validated.id,
             providerCreatedAt: validated.createdAt,
+            operationLease,
             requestId: requestId(request),
           });
           if (
@@ -204,6 +255,7 @@ export async function POST(request: Request) {
           );
         }
         await assertNoOpenSubscription(account.id);
+        await assertBillingAccountOperationLease(operationLease);
         return billingRedirect(hostedBillingUrl(validated.url));
       } catch (error) {
         await recordAttemptErrorBestEffort(
@@ -221,7 +273,38 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     return errorResponse(asRequestError(error));
+  } finally {
+    if (operationLease) {
+      await releaseBillingAccountOperationLeaseBestEffort(operationLease);
+    }
   }
+}
+
+async function acquireCheckoutOperationLease(
+  accountId: string,
+): Promise<BillingAccountOperationLeaseClaim> {
+  // Preserve idempotent double-submit behavior when the first Checkout call
+  // completes quickly, while keeping contention bounded and retryable. A
+  // reconciliation that is waiting on Stripe continues to fail Checkout
+  // closed after this short budget rather than allowing a stale projection to
+  // create another provider session.
+  const retryDelaysMs = [0, 20, 40, 80, 120] as const;
+  for (const delayMs of retryDelaysMs) {
+    if (delayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+    const claim = await acquireBillingAccountOperationLease({
+      accountId,
+      operation: "checkout",
+    });
+    if (claim) return claim;
+  }
+  throw new RequestError(
+    409,
+    "billing_operation_in_progress",
+    "Billing synchronization or Checkout is already in progress. No new charge was started.",
+    { "Retry-After": "1" },
+  );
 }
 
 async function assertNoOpenSubscription(accountId: string): Promise<void> {
@@ -263,10 +346,22 @@ function safeAttemptErrorCode(error: unknown): string {
   ) {
     return error.code;
   }
+  if (
+    error instanceof BillingAccountOperationLeaseError &&
+    /^[a-z][a-z0-9_]{0,63}$/.test(error.code)
+  ) {
+    return error.code;
+  }
   return "checkout_attempt_failed";
 }
 
 function asRequestError(error: unknown): unknown {
+  if (error instanceof BillingAccountOperationLeaseError) {
+    const status = error.code === "billing_operation_lease_lost" ? 409 : 503;
+    return new RequestError(status, error.code, error.safeMessage, {
+      "Retry-After": "1",
+    });
+  }
   if (!(error instanceof CheckoutRepositoryError)) return error;
   const status = error.code === "subscription_already_open" ? 409 : 503;
   return new RequestError(status, error.code, error.safeMessage);

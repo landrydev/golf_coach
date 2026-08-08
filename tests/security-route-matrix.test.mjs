@@ -14,6 +14,20 @@ register(new URL("./support/cloudflare-loader.mjs", import.meta.url));
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const appRoot = resolve(projectRoot, "app");
 
+test("the unused image optimization proxy is absent from the Worker boundary", async () => {
+  const source = await readFile(resolve(projectRoot, "worker/index.ts"), "utf8");
+  assert.doesNotMatch(source, /handleImageOptimization|\/_vinext\/image|env\.IMAGES/);
+
+  const response = await fetchBuiltApp(
+    "/_vinext/image?url=https%3A%2F%2Fattacker.example%2Fimage.png&w=640&q=75",
+    {},
+    {
+      ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) },
+    },
+  );
+  assert.notEqual(response.status, 200);
+});
+
 test(
   "every browser mutation except the signed Stripe webhook rejects missing and foreign origins first",
   { timeout: 60_000 },
@@ -118,6 +132,7 @@ test("Worker access classification covers every instructor page, RSC request, an
     "/api/data-requests",
     "/api/billing/checkout",
     "/api/billing/portal",
+    "/api/billing/reconcile",
   ]);
   const apiRoutes = routes.filter(
     ({ filename, routePath }) =>

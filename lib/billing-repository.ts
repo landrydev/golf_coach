@@ -9,6 +9,13 @@ import {
   billingSubscriptionProjectionGenerations,
   subscriptions,
 } from "@/db/schema";
+import {
+  billingReconciliationSuccessEffects,
+  billingReconciliationWebhookRecoveryEffects,
+  type BillingReconciliationClaim,
+  type BillingReconciliationTarget,
+} from "@/lib/billing-reconciliation-repository";
+import type { BillingAccountOperationLeaseClaim } from "@/lib/billing-account-operation-lease";
 import { newId } from "@/lib/tokens";
 
 const PROVIDER = "stripe";
@@ -178,6 +185,37 @@ export async function recordHostedBillingSession(input: {
     outcome: "success",
     requestId: input.requestId ?? null,
     metadata: { provider: PROVIDER },
+  });
+}
+
+export async function recordBillingReconciliationCheck(input: {
+  accountId: string;
+  result:
+    | "no_local_billing_state"
+    | "checkout_reserved"
+    | "checkout_open"
+    | "checkout_expired"
+    | "subscription_reconciled"
+    | "failed";
+  outcome: "success" | "failure";
+  errorCode?: string | null;
+  requestId?: string | null;
+}): Promise<void> {
+  await getDb().insert(auditEvents).values({
+    id: newId(),
+    accountId: input.accountId,
+    actorType: "account",
+    actorAccountId: input.accountId,
+    action: "billing.reconciliation_checked",
+    targetType: "account",
+    targetId: input.accountId,
+    outcome: input.outcome,
+    requestId: input.requestId ?? null,
+    metadata: {
+      provider: PROVIDER,
+      result: input.result,
+      ...(input.errorCode ? { errorCode: input.errorCode } : {}),
+    },
   });
 }
 
@@ -401,6 +439,87 @@ export async function applyStripeSubscriptionEvent(input: {
   currency?: string | null;
   requestId?: string | null;
 }): Promise<void> {
+  return applyStripeSubscriptionProjection({
+    ...input,
+    terminalContext: {
+      kind: "event",
+      claim: input.claim,
+      providerEventId: input.providerEventId,
+      providerEventType: input.providerEventType,
+    },
+  });
+}
+
+/**
+ * Apply a provider-authoritative projection fetched by an authenticated,
+ * tenant-scoped reconciliation request. The same ownership, checkout,
+ * optimistic-concurrency, and pre-retrieval generation fences used by signed
+ * webhooks remain mandatory.
+ */
+export async function applyStripeSubscriptionReconciliation(input: {
+  claim: BillingReconciliationClaim;
+  operationLease: BillingAccountOperationLeaseClaim;
+  projection: StripeSubscriptionProjection;
+  projectionGeneration: StripeSubscriptionProjectionGeneration;
+  reconciledAt: Date;
+  checkoutAttempt?: CheckoutAttemptCompletion | null;
+  requestId?: string | null;
+}): Promise<void> {
+  if (input.claim.accountId !== input.projection.accountId) {
+    throw new BillingRepositoryError(
+      "billing_reconciliation_account_mismatch",
+      "The billing reconciliation does not match this account.",
+    );
+  }
+  if (
+    !input.operationLease ||
+    input.operationLease.operation !== "reconciliation" ||
+    input.operationLease.accountId !== input.claim.accountId
+  ) {
+    throw new BillingRepositoryError(
+      "billing_operation_lease_mismatch",
+      "The billing operation lease does not match this reconciliation.",
+    );
+  }
+  assertCheckoutReconciliationTarget(input.claim, input.checkoutAttempt);
+  return applyStripeSubscriptionProjection({
+    projection: input.projection,
+    projectionGeneration: input.projectionGeneration,
+    eventOccurredAt: input.reconciledAt,
+    checkoutAttempt: input.checkoutAttempt,
+    requestId: input.requestId,
+    terminalContext: {
+      kind: "reconciliation",
+      claim: input.claim,
+      operationLease: input.operationLease,
+    },
+  });
+}
+
+type StripeProjectionTerminalContext =
+  | Readonly<{
+      kind: "event";
+      claim: BillingEventClaim;
+      providerEventId: string;
+      providerEventType: string;
+    }>
+  | Readonly<{
+      kind: "reconciliation";
+      claim: BillingReconciliationClaim;
+      operationLease: BillingAccountOperationLeaseClaim;
+    }>;
+
+async function applyStripeSubscriptionProjection(input: {
+  projection: StripeSubscriptionProjection;
+  projectionGeneration: StripeSubscriptionProjectionGeneration;
+  eventOccurredAt: Date;
+  checkoutAttempt?: CheckoutAttemptCompletion | null;
+  providerInvoiceId?: string | null;
+  amountMinor?: number | null;
+  currency?: string | null;
+  requestId?: string | null;
+  terminalContext: StripeProjectionTerminalContext;
+}): Promise<void> {
   const db = getDb();
   const projection = input.projection;
   const projectionGeneration = input.projectionGeneration;
@@ -503,6 +622,14 @@ export async function applyStripeSubscriptionEvent(input: {
 
   const now = new Date();
   const subscriptionId = existing?.id ?? newId();
+  const reconciliationTarget =
+    input.terminalContext.kind === "reconciliation"
+      ? reconciliationTargetForMutation(
+          input.terminalContext.claim,
+          subscriptionId,
+          input.checkoutAttempt,
+        )
+      : null;
   const wasPaused = existing?.status === "paused";
   const isPaused = projection.status === "paused";
   const isTerminal = ["canceled", "ended"].includes(projection.status);
@@ -592,68 +719,170 @@ export async function applyStripeSubscriptionEvent(input: {
       )
     : [];
 
-  // Keep the terminal mutation shape uniform with ignore/fail while binding
-  // this apply invocation's pre-retrieval generation into its lease fence.
-  const billingEventLeaseGuard = (
-    terminalDb: ReturnType<typeof getDb>,
-    terminalClaim: BillingEventClaim,
-    terminalNow: Date,
-  ) =>
-    generationFencedBillingEventLeaseGuard(
-      terminalDb,
-      terminalClaim,
-      terminalNow,
-      projectionGeneration,
-    );
+  const terminalContext = input.terminalContext;
+  const reconciliationEffects =
+    terminalContext.kind === "reconciliation"
+      ? billingReconciliationSuccessEffects(db, {
+          claim: terminalContext.claim,
+          operationLease: terminalContext.operationLease,
+          terminalTarget: reconciliationTarget!,
+          projectionGeneration,
+          now,
+        })
+      : null;
+  const terminalGuard =
+    terminalContext.kind === "event"
+      ? generationFencedBillingEventLeaseGuard(
+          db,
+          terminalContext.claim,
+          now,
+          projectionGeneration,
+        )
+      : reconciliationEffects![0];
+  const additionalTerminalGuards =
+    terminalContext.kind === "reconciliation"
+      ? [reconciliationEffects![1]]
+      : [];
+  const eventCompletionEffects =
+    terminalContext.kind === "event"
+      ? [
+          db
+            .update(billingEvents)
+            .set({
+              accountId: projection.accountId,
+              subscriptionId,
+              status: "processed",
+              providerInvoiceId: input.providerInvoiceId ?? null,
+              amountMinor: input.amountMinor ?? null,
+              currency: input.currency ?? null,
+              processedAt: now,
+              leaseToken: null,
+              leaseExpiresAt: null,
+              lastErrorCode: null,
+              lastErrorMessage: null,
+              updatedAt: now,
+            })
+            .where(
+              and(
+                eq(billingEvents.id, terminalContext.claim.eventId),
+                eq(billingEvents.status, "processing"),
+                eq(billingEvents.leaseToken, terminalContext.claim.leaseToken),
+              ),
+            ),
+        ]
+      : [];
+  const webhookRecoveryEffects =
+    terminalContext.kind === "event"
+      ? billingReconciliationWebhookRecoveryEffects(db, {
+          accountId: projection.accountId,
+          subscriptionId,
+          checkoutAttemptId: input.checkoutAttempt?.attemptId,
+          projectionGeneration,
+          now,
+        })
+      : [];
+  const reconciliationCompletionEffects = reconciliationEffects
+    ? [reconciliationEffects[2]]
+    : [];
+  const auditMutation =
+    terminalContext.kind === "event"
+      ? db.insert(auditEvents).values({
+          id: newId(),
+          accountId: projection.accountId,
+          actorType: "billing_provider",
+          actorReference: terminalContext.providerEventId,
+          action: "billing.subscription_synced",
+          targetType: "subscription",
+          targetId: subscriptionId,
+          outcome: "success",
+          requestId: input.requestId ?? null,
+          metadata: {
+            provider: PROVIDER,
+            eventType: terminalContext.providerEventType,
+            status: projection.status,
+            invoiceRecorded: Boolean(input.providerInvoiceId),
+            checkoutAttemptCompleted: Boolean(input.checkoutAttempt),
+          },
+        })
+      : db.insert(auditEvents).values({
+          id: newId(),
+          accountId: projection.accountId,
+          actorType: "account",
+          actorAccountId: terminalContext.claim.accountId,
+          action: "billing.subscription_reconciled",
+          targetType: "subscription",
+          targetId: subscriptionId,
+          outcome: "success",
+          requestId: input.requestId ?? null,
+          metadata: {
+            provider: PROVIDER,
+            status: projection.status,
+            checkoutAttemptCompleted: Boolean(input.checkoutAttempt),
+          },
+        });
 
   await db.batch([
-    billingEventLeaseGuard(db, input.claim, now),
+    terminalGuard,
+    ...additionalTerminalGuards,
     customerOwnershipMutation,
     ...checkoutAttemptEffects,
     ...subscriptionConcurrencyEffects,
     subscriptionMutation,
-    db
-      .update(billingEvents)
-      .set({
-        accountId: projection.accountId,
-        subscriptionId,
-        status: "processed",
-        providerInvoiceId: input.providerInvoiceId ?? null,
-        amountMinor: input.amountMinor ?? null,
-        currency: input.currency ?? null,
-        processedAt: now,
-        leaseToken: null,
-        leaseExpiresAt: null,
-        lastErrorCode: null,
-        lastErrorMessage: null,
-        updatedAt: now,
-      })
-      .where(
-        and(
-          eq(billingEvents.id, input.claim.eventId),
-          eq(billingEvents.status, "processing"),
-          eq(billingEvents.leaseToken, input.claim.leaseToken),
-        ),
-      ),
-    db.insert(auditEvents).values({
-      id: newId(),
-      accountId: projection.accountId,
-      actorType: "billing_provider",
-      actorReference: input.providerEventId,
-      action: "billing.subscription_synced",
-      targetType: "subscription",
-      targetId: subscriptionId,
-      outcome: "success",
-      requestId: input.requestId ?? null,
-      metadata: {
-        provider: PROVIDER,
-        eventType: input.providerEventType,
-        status: projection.status,
-        invoiceRecorded: Boolean(input.providerInvoiceId),
-        checkoutAttemptCompleted: Boolean(input.checkoutAttempt),
-      },
-    }),
+    ...eventCompletionEffects,
+    ...webhookRecoveryEffects,
+    ...reconciliationCompletionEffects,
+    auditMutation,
   ]);
+}
+
+function assertCheckoutReconciliationTarget(
+  claim: BillingReconciliationClaim,
+  checkoutAttempt: CheckoutAttemptCompletion | null | undefined,
+): void {
+  if (claim.target.kind === "checkout_attempt") {
+    if (
+      !checkoutAttempt ||
+      claim.target.checkoutAttemptId !== checkoutAttempt.attemptId
+    ) {
+      throw reconciliationTargetMismatch();
+    }
+    return;
+  }
+  if (checkoutAttempt) {
+    throw reconciliationTargetMismatch();
+  }
+}
+
+function reconciliationTargetForMutation(
+  claim: BillingReconciliationClaim,
+  subscriptionId: string,
+  checkoutAttempt: CheckoutAttemptCompletion | null | undefined,
+): BillingReconciliationTarget {
+  const terminalTarget: BillingReconciliationTarget = checkoutAttempt
+    ? {
+        kind: "checkout_attempt",
+        checkoutAttemptId: checkoutAttempt.attemptId,
+      }
+    : { kind: "subscription", subscriptionId };
+  const matches =
+    claim.target.kind === "subscription" &&
+    terminalTarget.kind === "subscription"
+      ? claim.target.subscriptionId === terminalTarget.subscriptionId
+      : claim.target.kind === "checkout_attempt" &&
+          terminalTarget.kind === "checkout_attempt"
+        ? claim.target.checkoutAttemptId === terminalTarget.checkoutAttemptId
+        : false;
+  if (!matches) {
+    throw reconciliationTargetMismatch();
+  }
+  return terminalTarget;
+}
+
+function reconciliationTargetMismatch(): BillingRepositoryError {
+  return new BillingRepositoryError(
+    "billing_reconciliation_target_mismatch",
+    "The billing reconciliation claim does not match the local billing object.",
+  );
 }
 
 function subscriptionProjectionRevisionGuard(

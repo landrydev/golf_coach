@@ -129,6 +129,7 @@ test("every selected high-risk route invokes its dedicated abuse-control scope",
     "api/shares/[shareId]": "shareRevokeAccount",
     "api/billing/checkout": "billingCheckoutAccount",
     "api/billing/portal": "billingPortalAccount",
+    "api/billing/reconcile": "billingReconcileAccount",
     "api/data-export": "dataExportAccount",
     "api/data-requests": "dataRequestAccount",
   };

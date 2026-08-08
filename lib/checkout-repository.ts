@@ -6,6 +6,12 @@ import {
   billingCustomers,
   subscriptions,
 } from "../db/schema";
+import {
+  billingAccountOperationLeaseD1Guard,
+  billingAccountOperationLeaseGuard,
+  type BillingAccountOperation,
+  type BillingAccountOperationLeaseClaim,
+} from "./billing-account-operation-lease";
 import { newId } from "./tokens";
 
 const PROVIDER = "stripe";
@@ -56,6 +62,7 @@ export type ReserveCheckoutAttemptInput = Readonly<{
   providerCustomerId: string | null;
   customerEmail: string;
   providerExpiresAt: Date;
+  operationLease?: BillingAccountOperationLeaseClaim;
   now?: Date;
 }>;
 
@@ -67,6 +74,11 @@ export type CheckoutAttemptReservation = Readonly<{
 export type CheckoutAttemptMutation = Readonly<{
   attempt: CheckoutAttemptRecord;
   changed: boolean;
+}>;
+
+export type StrandedCheckoutReservationExpiration = Readonly<{
+  expired: boolean;
+  attemptId: string | null;
 }>;
 
 /**
@@ -177,6 +189,9 @@ export async function reserveOrLoadCheckoutAttempt(
 ): Promise<CheckoutAttemptReservation> {
   validateReservationInput(input);
   const now = checkedDate(input.now ?? new Date(), "now");
+  assertOperationLeaseForAccount(input.operationLease, input.accountId, [
+    "checkout",
+  ]);
   if (input.providerExpiresAt.getTime() <= now.getTime()) {
     throw invalid("providerExpiresAt must be later than the reservation time.");
   }
@@ -186,7 +201,7 @@ export async function reserveOrLoadCheckoutAttempt(
   let insertedId: string | null = null;
 
   try {
-    const result = await d1()
+    const insert = d1()
       .prepare(
         `INSERT INTO billing_checkout_attempts (
           id,
@@ -234,8 +249,16 @@ export async function reserveOrLoadCheckoutAttempt(
         input.accountId,
         input.providerCustomerId,
         input.accountId,
-      )
-      .first<{ id: string }>();
+      );
+    const inserted = input.operationLease
+      ? (
+          await d1().batch<{ id: string }>([
+            billingAccountOperationLeaseD1Guard(input.operationLease, now),
+            insert,
+          ])
+        )[1]?.results[0]
+      : await insert.first<{ id: string }>();
+    const result = inserted as { id: string } | null | undefined;
     insertedId = result?.id ?? null;
   } catch (cause) {
     throw new CheckoutRepositoryError(
@@ -288,6 +311,106 @@ export async function reserveOrLoadCheckoutAttempt(
 }
 
 /**
+ * Expire the account's stranded, unissued reservation after its frozen
+ * provider lifetime. This path is intentionally narrower than provider-
+ * confirmed expiry for open sessions: only `reserved` rows with no provider
+ * session or provider-created timestamp qualify. The conditional audit and
+ * transition commit in one D1 batch, so a concurrent signed completion cannot
+ * leave a false expiration audit behind.
+ */
+export async function expireStrandedCheckoutReservation(input: {
+  accountId: string;
+  operationLease?: BillingAccountOperationLeaseClaim;
+  requestId?: string | null;
+  now?: Date;
+}): Promise<StrandedCheckoutReservationExpiration> {
+  assertOpaqueIdentifier(input.accountId, "accountId");
+  assertOperationLeaseForAccount(input.operationLease, input.accountId, [
+    "checkout",
+  ]);
+  const requestId = optionalSafeString(input.requestId, "requestId", 128);
+  const now = checkedDate(input.now ?? new Date(), "now");
+  const auditMetadata = JSON.stringify({
+    provider: PROVIDER,
+    requestVersion: 1,
+    reason: "unissued_reservation_expired",
+  });
+
+  try {
+    const leaseGuards = input.operationLease
+      ? [billingAccountOperationLeaseD1Guard(input.operationLease, now)]
+      : [];
+    const results = await d1().batch<{ id: string }>([
+      ...leaseGuards,
+      d1()
+        .prepare(
+          `INSERT INTO audit_events (
+            id,
+            account_id,
+            actor_type,
+            actor_account_id,
+            action,
+            target_type,
+            target_id,
+            outcome,
+            request_id,
+            metadata,
+            occurred_at
+          )
+          SELECT ?, account_id, 'account', account_id,
+            'billing.checkout_reservation_expired',
+            'billing_checkout_attempt', id, 'success', ?, ?, ?
+          FROM billing_checkout_attempts
+          WHERE account_id = ?
+            AND provider = 'stripe'
+            AND state = 'reserved'
+            AND provider_session_id IS NULL
+            AND provider_created_at IS NULL
+            AND provider_expires_at <= ?`,
+        )
+        .bind(
+          newId(),
+          requestId,
+          auditMetadata,
+          now.getTime(),
+          input.accountId,
+          now.getTime(),
+        ),
+      d1()
+        .prepare(
+          `UPDATE billing_checkout_attempts
+          SET state = 'expired',
+            expired_at = ?,
+            last_error_code = NULL,
+            updated_at = ?
+          WHERE account_id = ?
+            AND provider = 'stripe'
+            AND state = 'reserved'
+            AND provider_session_id IS NULL
+            AND provider_created_at IS NULL
+            AND provider_expires_at <= ?
+          RETURNING id`,
+        )
+        .bind(
+          now.getTime(),
+          now.getTime(),
+          input.accountId,
+          now.getTime(),
+        ),
+    ]);
+    const transition = results[leaseGuards.length + 1];
+    const attemptId = transition.results[0]?.id ?? null;
+    return { expired: attemptId !== null, attemptId };
+  } catch (cause) {
+    throw new CheckoutRepositoryError(
+      "checkout_attempt_persistence_failed",
+      "The stranded checkout reservation could not be expired.",
+      { cause },
+    );
+  }
+}
+
+/**
  * Record a provider-confirmed expired Checkout Session. Local time is never
  * sufficient to unlock a blocking attempt: callers must first retrieve and
  * validate the provider session, then pass its immutable identity here.
@@ -297,6 +420,7 @@ export async function expireCheckoutAttemptAfterProviderConfirmation(input: {
   attemptId: string;
   providerSessionId: string;
   providerCreatedAt: Date;
+  operationLease?: BillingAccountOperationLeaseClaim;
   now?: Date;
 }): Promise<CheckoutAttemptMutation> {
   assertOpaqueIdentifier(input.accountId, "accountId");
@@ -307,9 +431,14 @@ export async function expireCheckoutAttemptAfterProviderConfirmation(input: {
     "providerCreatedAt",
   );
   const now = checkedDate(input.now ?? new Date(), "now");
+  assertOperationLeaseForAccount(input.operationLease, input.accountId, [
+    "checkout",
+    "reconciliation",
+  ]);
   let expired: CheckoutAttemptRecord | undefined;
   try {
-    [expired] = await getDb()
+    const db = getDb();
+    const mutation = db
       .update(billingCheckoutAttempts)
       .set({
         state: "expired",
@@ -340,6 +469,15 @@ export async function expireCheckoutAttemptAfterProviderConfirmation(input: {
         ),
       )
       .returning();
+    if (input.operationLease) {
+      const [, rows] = await db.batch([
+        billingAccountOperationLeaseGuard(db, input.operationLease, now),
+        mutation,
+      ]);
+      [expired] = rows;
+    } else {
+      [expired] = await mutation;
+    }
   } catch (cause) {
     throw providerTransitionError(
       cause,
@@ -372,6 +510,7 @@ export async function markCheckoutAttemptCompletedPendingSync(input: {
   attemptId: string;
   providerSessionId: string;
   providerCreatedAt: Date;
+  operationLease?: BillingAccountOperationLeaseClaim;
   now?: Date;
 }): Promise<CheckoutAttemptMutation> {
   assertOpaqueIdentifier(input.accountId, "accountId");
@@ -382,9 +521,14 @@ export async function markCheckoutAttemptCompletedPendingSync(input: {
     "providerCreatedAt",
   );
   const now = checkedDate(input.now ?? new Date(), "now");
+  assertOperationLeaseForAccount(input.operationLease, input.accountId, [
+    "checkout",
+    "reconciliation",
+  ]);
   let pending: CheckoutAttemptRecord | undefined;
   try {
-    [pending] = await getDb()
+    const db = getDb();
+    const mutation = db
       .update(billingCheckoutAttempts)
       .set({
         state: "completed_pending_sync",
@@ -415,6 +559,15 @@ export async function markCheckoutAttemptCompletedPendingSync(input: {
         ),
       )
       .returning();
+    if (input.operationLease) {
+      const [, rows] = await db.batch([
+        billingAccountOperationLeaseGuard(db, input.operationLease, now),
+        mutation,
+      ]);
+      [pending] = rows;
+    } else {
+      [pending] = await mutation;
+    }
   } catch (cause) {
     throw providerTransitionError(
       cause,
@@ -448,6 +601,7 @@ export async function finalizeCheckoutAttemptOpen(input: {
   attemptId: string;
   providerSessionId: string;
   providerCreatedAt: Date;
+  operationLease?: BillingAccountOperationLeaseClaim;
   requestId?: string | null;
   now?: Date;
 }): Promise<CheckoutAttemptMutation> {
@@ -459,12 +613,19 @@ export async function finalizeCheckoutAttemptOpen(input: {
     "providerCreatedAt",
   );
   const now = checkedDate(input.now ?? new Date(), "now");
+  assertOperationLeaseForAccount(input.operationLease, input.accountId, [
+    "checkout",
+  ]);
   const requestId = optionalSafeString(input.requestId, "requestId", 128);
   const auditMetadata = JSON.stringify({ provider: PROVIDER, requestVersion: 1 });
   let transitioned = false;
 
   try {
-    const [, transitionResult] = await d1().batch<{ id: string }>([
+    const leaseGuards = input.operationLease
+      ? [billingAccountOperationLeaseD1Guard(input.operationLease, now)]
+      : [];
+    const results = await d1().batch<{ id: string }>([
+      ...leaseGuards,
       d1()
         .prepare(
           `INSERT INTO audit_events (
@@ -534,6 +695,7 @@ export async function finalizeCheckoutAttemptOpen(input: {
           providerCreatedAt.getTime(),
         ),
     ]);
+    const transitionResult = results[leaseGuards.length + 1];
     transitioned = transitionResult.results.length === 1;
   } catch (cause) {
     const uniqueSessionConflict = /unique constraint failed/i.test(
@@ -666,9 +828,10 @@ export async function requireCheckoutAttemptForCompletion(input: {
   return attempt;
 }
 
-async function getBlockingAttempt(
+export async function getBlockingCheckoutAttemptForAccount(
   accountId: string,
 ): Promise<CheckoutAttemptRecord | null> {
+  assertOpaqueIdentifier(accountId, "accountId");
   const [attempt] = await getDb()
     .select()
     .from(billingCheckoutAttempts)
@@ -682,6 +845,8 @@ async function getBlockingAttempt(
     .limit(1);
   return attempt ?? null;
 }
+
+const getBlockingAttempt = getBlockingCheckoutAttemptForAccount;
 
 async function hasOpenSubscription(accountId: string): Promise<boolean> {
   const [subscription] = await getDb()
@@ -734,6 +899,23 @@ function validateReservationInput(input: ReserveCheckoutAttemptInput): void {
     throw invalid("applicationOrigin must be a canonical HTTPS origin.");
   }
   checkedDate(input.providerExpiresAt, "providerExpiresAt");
+}
+
+function assertOperationLeaseForAccount(
+  claim: BillingAccountOperationLeaseClaim | undefined,
+  accountId: string,
+  allowedOperations: readonly BillingAccountOperation[],
+): void {
+  if (!claim) return;
+  if (
+    claim.accountId !== accountId ||
+    !allowedOperations.includes(claim.operation)
+  ) {
+    throw new CheckoutRepositoryError(
+      "checkout_attempt_invalid",
+      "The billing operation lease does not own this checkout mutation.",
+    );
+  }
 }
 
 function assertOpaqueIdentifier(value: string, field: string): void {
