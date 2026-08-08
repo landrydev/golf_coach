@@ -285,7 +285,11 @@ async function seedAccountSubscriptionTarget(database, label) {
 async function seedProcessingEvent(database, label) {
   const eventId = `billing_event_webhook_recovery_${label}`;
   const leaseToken = `lease_webhook_recovery_${label}`;
-  const leaseExpiresAt = BASE_TIME + 10 * 60 * 1_000;
+  const claimedAt = Date.now();
+  // The projection code validates the lease against the real runtime clock.
+  // Keep this fixture lease live independently of the fixed business timestamps
+  // used by the rest of the reconciliation scenario.
+  const leaseExpiresAt = claimedAt + 5 * 60 * 1_000;
   await database
     .prepare(
       `insert into billing_events (
@@ -302,9 +306,13 @@ async function seedProcessingEvent(database, label) {
       BASE_TIME,
       leaseToken,
       leaseExpiresAt,
-      BASE_TIME,
+      claimedAt,
     )
     .run();
+  assert.ok(
+    leaseExpiresAt > Date.now(),
+    "fixture must hold an active webhook lease",
+  );
   return {
     eventId,
     leaseToken,
