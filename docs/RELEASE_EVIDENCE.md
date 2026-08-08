@@ -3,7 +3,7 @@
 **Candidate:** `roadmap-production-saas` 1.0.0
 **Evidence opened:** 2026-08-07
 **Authority:** `AUTH-005`
-**Status:** hardened owner-only Sites version 7 succeeded; not accepted for public launch or real-user operation
+**Status:** hardened owner-only Sites version 8 succeeded; not accepted for public launch or real-user operation
 
 This file records evidence for one exact candidate. A command result supports only
 the scope it actually exercised. A successful private deployment is not Aaron's
@@ -22,6 +22,9 @@ acceptance and is not evidence that unresolved policy or live operations work.
   publication invalidation, and minimized replacement-retirement audit events;
 - HMAC-fingerprinted, expiring, revision-scoped golfer access with fragment exchange,
   HTTP-only session, one-active-link rotation, access status, and revocation;
+- immutable, versioned purpose-consent grants and withdrawals with exact text evidence,
+  account/golfer scope, D1-clock validity, fail-closed publication/share enforcement,
+  and atomic capability/session revocation on roadmap-sharing withdrawal;
 - separate Stripe Checkout/Portal/webhook boundary for the Roadmap SaaS subscription,
   with tenant-scoped read-only refresh and bounded scheduled recovery;
 - tenant-scoped bounded JSON export with count preflight and durable manual-request
@@ -43,28 +46,30 @@ marketplace, AI, CRM/messaging, and unapproved analytics are excluded or disable
 
 | Check | Current result | Scope and limitation |
 |---|---|---|
-| `npm run verify` | Passed: lint, strict TypeScript, production Worker build, and 163/163 tests; zero failures, cancellations, skips, or todos | Exact version-7 release source commit; covers source/build/automated behavior, not hosted identity, provider operation, manual accessibility, policy, or real users |
-| `npm run verify:release-integrity` | Passed: 204 source-tree text files scanned with zero pattern findings; historical Business Plan V1 digest preserved; package-lock SHA-256 `a29e63ce73d1de9f40d54ebc615982686af6c53084c107f84e35d1316ba425d1` | Exact version-7 source only; the check intentionally excludes generated `dist`, `outputs`, dependencies, coverage, and work directories and is not an independent security assessment |
-| Retrospective exact-v7 archive and artifact audit | Passed: 57 safe tar entries/45 files; 19 source-mapped hosting, migration, and icon controls matched; all eight migrations were present; exactly two matching generated prerender-credential copies were confined to the expected server manifests; no client/Worker copy or production prerender binding was found | The retained submitted archive was inspected without printing credential material. A byte-for-byte comparison to the original submitted local `dist` is unavailable because that build directory was subsequently rebuilt; this is not a reproducible-build claim |
-| Isolated clean install | Passed: exact Git source archive, `npm ci`, lint, strict TypeScript, production build, 163/163 tests, source integrity, dependency-tree validation, schema generation, and synthetic recovery | Exact-v7 evidence is retained in [`ROADMAP-SITES-V7-2026-08-08-clean-install-evidence.json`](release-evidence/ROADMAP-SITES-V7-2026-08-08-clean-install-evidence.json); the run was isolated from the working tree but not from the network and does not establish package provenance or hosted operation |
+| `npm run verify` | Passed: lint, strict TypeScript, production Worker build, and 226/226 tests; zero failures, cancellations, skips, or todos | Exact version-8 release source commit; covers source/build/automated behavior, not hosted identity, provider operation, manual accessibility, policy, or real users |
+| `npm run verify:release-integrity` | Release-time/pre-SBOM pass: 248 runtime-source text files scanned with zero pattern findings; historical Business Plan V1 digest preserved; the recorded Windows working-checkout/extracted Git source-archive byte representation of `package-lock.json` had SHA-256 `a29e63ce73d1de9f40d54ebc615982686af6c53084c107f84e35d1316ba425d1` | Exact version-8 source only; the canonical Git-blob/SBOM lock digest is `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d`. After the three SBOM JSON artifacts were retained, the reconciliation rerun scanned 251 files with zero findings. The check intentionally excludes generated `dist`, `outputs`, dependencies, coverage, and work directories and is not an independent security assessment |
+| Exact-v8 artifact and submitted-archive audit | Passed: 61 safe tar entries/49 files; 23 source-mapped controls matched; all ten migrations were present; the archive matched the fresh local `dist`; exactly two matching generated prerender-credential files were confined to expected server locations; zero unexpected credential copies were found | The verifier reported `localBuildCompared: true`. Credential material was never printed. This proves the checked local build/archive relationship, not deterministic rebuilds on another machine or provider-side byte identity |
+| Full-lock SBOM generation | Passed: lockfile digest matched exact source; CycloneDX 1.5 contains 676 components and SPDX 2.3 contains 677 packages | Exact-v8 artifacts and hashes are recorded in [Software Supply Chain](SOFTWARE_SUPPLY_CHAIN.md); this is inventory, not provenance, license advice, or vulnerability certification |
 | `npm run audit:production` | Fresh 2026-08-08 result: zero known production vulnerabilities | Exact lock; advisory snapshot is time-bounded and not an independent assessment |
-| `npm run db:generate` | Passed: `No schema changes, nothing to migrate` | Drizzle schema, journal, snapshots, and eight packaged migrations agree across 31 tables |
-| `npm run exercise:recovery:local` | Passed: eight migrations per isolated D1 database, two synthetic tenants, three private synthetic objects/199 bytes, child-process secret isolation, and snapshot SHA-256 `ebbba2d865090457ef567a1d15658cad0457e4e7d89c2c1975ec45ce944887c5` | Deterministic D1/R2-compatible logical-copy exercise only; not hosted/provider-native recovery, production data, RPO, RTO, or operator evidence |
-| D1 integration journeys | Passed | Production Worker plus real local D1 exercised tenant isolation; staged-save replay/races; three- and four-phase lifecycles; profile-wide publication/session invalidation; share expiry/revocation/response; six data-request types; scheduler heartbeat/dead-letter states; Checkout/reconciliation leases and races; webhook healing; migration rollback; and stale provider-read fencing; not hosted SIWC or live-provider evidence |
+| `npm run db:generate` | Passed: `No schema changes, nothing to migrate` | Drizzle schema, journal, snapshots, and ten packaged migrations agree across 31 tables |
+| `npm run exercise:recovery:local` | Passed: ten migrations per isolated D1 database, two synthetic tenants, three private synthetic objects, child-process secret isolation, and snapshot SHA-256 `34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54` | Deterministic D1/R2-compatible logical-copy exercise only; not hosted/provider-native recovery, production data, RPO, RTO, or operator evidence |
+| D1 integration journeys | Passed | Production Worker plus real local D1 exercised tenant isolation; consent grant/withdrawal and final-statement share/session race fencing; staged-save replay/races; three- and four-phase lifecycles; publication/session invalidation; share expiry/revocation/response; data-request operator boundaries; scheduler/dead-letter states; Checkout/reconciliation races; webhook healing; migration upgrades; and stale provider-read fencing; not hosted SIWC or live-provider evidence |
 | `git diff --check` | Passed; no whitespace errors, with only line-ending warnings reported | Source-tree consistency check only; not behavioral evidence |
 
-Version-7 focused regressions additionally cover full-authoring and package-creation
+Version-8 focused regressions additionally cover full-authoring and package-creation
 idempotency; client handoff/share retry; living-content withdrawal and practice
 replacement audits; bounded golfer/package pagination and plan snapshots; export
 preflight/manual fallback; shallow liveness versus owner-only operational health;
 allowlisted request telemetry and runtime log privacy; CSP/input/overposting cases;
-and the complete declared mutation-route audit-event matrix. These remain automated
+consent policy/lifecycle/enforcement/migration and concurrent withdrawal fences;
+data-request operator access/pagination/abuse boundaries; and the complete declared
+mutation-route audit-event matrix. These remain automated
 local/production-bundle results, not mounted-browser or hosted operational evidence.
 
 The clean build's `dist/server/wrangler.json` pointed to `index.js`; the server entry
 passed `node --check`, client assets and observability configuration were present,
   the D1/R2 bindings were `DB`/`MEDIA`, the `*/5 * * * *` scheduled trigger and
-  Worker scheduled export were present, and all eight journaled migrations were packaged.
+  Worker scheduled export were present, and all ten journaled migrations were packaged.
 
 ## Predecessor local rendered and reflow evidence
 
@@ -87,9 +92,9 @@ exchange. No customer data is used.
   broken `aria-labelledby` references. Focused semantic/contrast tests passed 16/16;
   sampled text and focus-ring contrasts met their applicable AA thresholds.
 
-Versions 6 and 7 change roadmap, authoring, recovery, and bounded-data surfaces, so
+Versions 6, 7, and 8 change roadmap, authoring, recovery, consent, and bounded-data surfaces, so
 this visual evidence is retained only for predecessor scope and is not exact
-version-7 runtime evidence. It does not
+version-8 runtime evidence. It does not
 substitute for a real screen reader, supported-device matrix,
 or human keyboard/accessibility acceptance review. The in-app browser backend was not
 available, so actual Tab order, screen-reader announcements, forced-colour behavior,
@@ -99,53 +104,65 @@ and real browser zoom remain explicitly unverified.
 
 | Field | Exact recorded value |
 |---|---|
-| Candidate | `ROADMAP-SITES-V7-2026-08-08` |
-| Release commit / runtime `RELEASE_ID` | `7ed01ec822fdb5c2bfbe6db7e3c99bcba126ac17` |
-| Local submitted archive | `D:\Projects\golf-coaching-design-blueprint\10_production_saas\outputs\roadmap-sites-v7-7ed01ec.tar.gz`; 2,916,309 bytes; 57 tar entries; gzip SHA-256 `a07f06989d3ba6cf05b924b149fc9f955be512223c6f90d5dd8d7628d175e526` |
+| Candidate | `ROADMAP-SITES-V8-2026-08-08` |
+| Release commit / runtime `RELEASE_ID` | `cf117fef8ea42272d0b7e2358fe4197c024f86a7` |
+| Local submitted archive | `D:\Projects\golf-coaching-design-blueprint\10_production_saas\outputs\roadmap-sites-v8-cf117fe.tar.gz`; 2,963,266 bytes; 61 tar entries; gzip SHA-256 `99d615410c2e145e77938f0c5df4449ab8aeb4a544a5c5949fcdafa56a8e1378` |
 | Sites project | `appgprj_6a76957326fc819196ebf3a0c95f1ec3` (`roadmap-golf-coaching`) |
-| Saved version | Version 7, `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_55fe270d85f081919dcd346c8476130d` |
-| Sites archive record | Content hash `sha256:4a00694b9798f4f84487e8e7ea224703ccbbfc61a32dd132d417dc65b7f153bc`; 45 files; 6,236,160 unpacked bytes |
-| Final deployment | `appgdep_6a772e0616b88191972b4e2e0603da52`, `succeeded` at `2026-08-08T13:24:35.466957+00:00`, no failure message |
+| Saved version | Version 8, `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_01ba2d860b508191b4d104339921606d` |
+| Sites archive record | Content hash `sha256:9a4119ea60dd64d2a0bf14a55c7e2d27fb3e8ea250f0d064e8bc5a79fb34a87c`; 49 files; 6,737,920 unpacked bytes |
+| Final deployment | `appgdep_6a775b172534819196391fd626e95aa3`, `succeeded` at `2026-08-08T16:36:50.529785+00:00`, no failure message |
 | Owner-only production URL | `https://roadmap-golf-coaching.aar-landry.chatgpt.site` |
-| Applied environment revision | 9 |
+| Applied environment revision | 10 |
 | Access policy | Owner-only; not a public release or real-user acceptance |
 
-The version-7 source branch was pushed using a short-lived authorization header
+The version-8 source branch was pushed using a short-lived authorization header
 scoped to the command; the credential was not persisted in the remote URL, Git
-configuration, environment files, or source. Environment revision 9 binds
-`RELEASE_ID` to the exact version-7 commit while retaining the owner-private,
+configuration, environment files, or source. Environment revision 10 binds
+`RELEASE_ID` to the exact version-8 commit while retaining the owner-private,
 billing-disabled configuration. The archive includes the built Worker, client
-assets, hosting metadata, all eight journaled migrations, and the production icon.
+assets, hosting metadata, all ten journaled migrations, and the production icon.
 The local gzip digest and Sites content hash describe different representations and
 are recorded separately rather than treated as interchangeable.
 
-### Version 7 hosted smoke evidence and limits
+The exact archive verifier counted 61 safe entries/49 files, matched 23 source-mapped
+files, confirmed all ten migrations, compared the archive to the fresh local build,
+and found the two expected generated credential files with zero unexpected copies.
+That bounded credential check does not authorize reading, copying, or reusing any
+generated credential material.
+
+### Version 8 hosted smoke evidence and limits
 
 - Fresh signed-out GETs to `/`, `/app`, `/api/health`, and
   `/api/operations/health` each returned `401` from the outer owner-only Sites
   policy. This demonstrates anonymous denial on those paths, not authenticated
   application health or journey behavior.
-- Sites generated one version-7 renderer screenshot, retained outside the release
-  commit at `outputs/roadmap-sites-v7-renderer.png`: 1200×750, 77,485 bytes,
-  SHA-256 `b40bdedf6b9307ff1750e6b518b1be619e43ca269ac0451a034b0cbd5e30d609`.
-  Visual inspection found the complete desktop landing hero, navigation, and sample
-  card without obvious clipping or overlap. This is one visual sanity check, not an
-  authenticated session, mounted-browser interaction, responsive matrix, or manual
-  accessibility result.
 - An immediate error-only Worker-log query after the successful deployment returned
-  zero events. This is a bounded observation window, not proof of error-free
+  one expected `/app.rsc` event with status `403` and outcome `ok`. This is a
+  bounded non-owner renderer observation, not proof of error-free
   operation, log completeness, redaction, retention, alert delivery, or scheduled
   invocation.
-- A separate non-error 20-minute version-7 Worker sample returned three untruncated
-  renderer fetch events: `GET /` → `200`, `GET /.rsc` → `200`, and the expected
-  non-owner `GET /app.rsc` → `403`; each recorded outcome `ok`. These are
-  provider-renderer/runtime observations and do not supersede the outer signed-out
-  `401` probes or prove owner authentication.
-- The in-app browser backend was unavailable. No exact version-7 authenticated
+- Deep operational readiness is intentionally degraded because exact owner-approved
+  consent-policy content/version and privacy-operator access configuration are absent.
+  No authenticated deep-readiness response is claimed.
+- The in-app browser backend was unavailable. No exact version-8 authenticated
   mounted-browser journey, manual accessibility review, owner operational-health
   response, private golfer-link exercise, or hosted scheduler observation is
-  claimed. Version-5 screenshots and version-6 renderer/log observations below are
+  claimed. Version-5 screenshots and version-7/version-6 renderer/log observations are
   historical evidence only.
+
+### Predecessor version 7 exact record
+
+Sites version 7 used source/runtime release
+`7ed01ec822fdb5c2bfbe6db7e3c99bcba126ac17`, local gzip SHA-256
+`a07f06989d3ba6cf05b924b149fc9f955be512223c6f90d5dd8d7628d175e526`,
+Sites content hash
+`sha256:4a00694b9798f4f84487e8e7ea224703ccbbfc61a32dd132d417dc65b7f153bc`,
+saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_55fe270d85f081919dcd346c8476130d`,
+deployment `appgdep_6a772e0616b88191972b4e2e0603da52`, and environment
+revision 9. Its 1200×750 renderer image and Worker-log samples remain historical
+predecessor observations and do not supply exact-version-8 browser, accessibility,
+health, or operational evidence. Version 8 supersedes version 7 at the same URL.
 
 ### Predecessor version 6 exact record
 
@@ -211,7 +228,7 @@ an explicit operation, not routine redeployment behavior.
 #### Version 6 hosted smoke evidence and limits
 
 - Version 6 deployed successfully with environment revision 8 and was current when
-  this predecessor evidence was recorded; version 7 now supersedes it at the same URL.
+  this predecessor evidence was recorded; version 8 now supersedes it at the same URL.
 - A fresh signed-out GET to `/` after version-6 deployment received `401 Unauthorized`
   from the outer Sites access policy with `Cache-Control: no-store` and
   `Referrer-Policy: no-referrer`; separate signed-out GETs to `/app` and
@@ -259,8 +276,9 @@ from reaching the application by design.
 - actual D1/R2 binding, migration, backup, restore, rollback, hosted cron invocation,
   alert, log-redaction, webhook reconciliation, cost, and incident exercises;
 - qualified Canadian privacy/legal review and behavior-to-copy comparison;
-- configured operator, privacy/support channel, public domain, exact commercial policy,
-  approved Stripe Price, tax/refund/failure/cancel consequences, and retention schedule;
+- exact owner-approved consent policy/content versions, configured privacy operator,
+  privacy/support channel, public domain, exact commercial policy, approved Stripe
+  Price, tax/refund/failure/cancel consequences, and retention schedule;
 - authorized real-user validation and Aaron's acceptance of the exact release.
 
 ## Release blockers and residual risks
@@ -268,7 +286,8 @@ from reaching the application by design.
 | Item | Current disposition |
 |---|---|
 | General public access | Blocked; working legal/support copy explicitly limits this to controlled private release |
-| Owner-only production release | Deployed successfully as Sites version 7; final authenticated owner acceptance and controlled real journeys remain unrecorded |
+| Owner-only production release | Deployed successfully as Sites version 8; final authenticated owner acceptance and controlled real journeys remain unrecorded |
+| Deep operational readiness | Intentionally degraded because exact owner-approved consent-policy content/version and privacy-operator access configuration are absent; no authenticated deep-readiness pass is claimed |
 | SIWC bypass credential exposure | A connector-returned active bearer appeared in the private tool transcript and was not used or persisted; explicit owner-directed rotation/revocation is required before access expands |
 | New SaaS charges | Fail-closed through `BILLING_CHECKOUT_ENABLED=false` until exact price/policy approval and configuration |
 | Paid entitlement enforcement | A fail-closed, explicit-status guard exists but production remains in `owner_private`; no owner-approved failed/cancelled/unpaid consequence is selected or claimed |

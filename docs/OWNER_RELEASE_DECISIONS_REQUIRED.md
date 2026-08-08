@@ -14,7 +14,7 @@ copy does not claim a staffed public service.
 | Decision | Current state | Why |
 |---|---|---|
 | `OWNER-SEC-001` credential containment | **READY FOR DECISION** | Exact contained operation is known; Aaron's explicit authority is required before rotating/revoking the exposed credential |
-| `OWNER-SCOPE-001` product/design/content baseline | **READY FOR REVIEW** | Exact version 7 owner-only candidate and residual-risk records exist; Aaron may approve, modify, or reject the bounded baseline |
+| `OWNER-SCOPE-001` product/design/content baseline | **READY FOR REVIEW** | Exact version 8 owner-only candidate and evidence records exist; Aaron may approve, modify, or reject the bounded baseline |
 | `OWNER-OPS-001` operators and contacts | **PREREQUISITE MISSING** | Names, entity, routes, and public contacts must be supplied |
 | `OWNER-COMM-001` offer and consequences | **PREREQUISITE MISSING** | Exact policy and Stripe Product/Price are not supplied or validated |
 | `OWNER-PRIV-001` privacy and retention | **PREREQUISITE MISSING** | Versioned policy and qualified Canadian review do not exist |
@@ -46,7 +46,7 @@ Owner approval cannot substitute for missing qualified review, hosted authentica
 
 `[REAL-WORLD VALIDATION REQUIRED]` Selecting the bounded release baseline does not validate demand, usability, pricing, accessibility, coaching outcomes, or real-user comprehension.
 
-**Evidence:** exact owner-only candidate `ROADMAP-SITES-V7-2026-08-08` is pinned to source/runtime release commit `7ed01ec822fdb5c2bfbe6db7e3c99bcba126ac17`, local archive gzip SHA-256 `a07f06989d3ba6cf05b924b149fc9f955be512223c6f90d5dd8d7628d175e526`, Sites archive content hash `sha256:4a00694b9798f4f84487e8e7ea224703ccbbfc61a32dd132d417dc65b7f153bc`, saved Sites version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_55fe270d85f081919dcd346c8476130d`, deployment `appgdep_6a772e0616b88191972b4e2e0603da52`, environment revision 9, and the evidence/limitation records linked below. Requirements traceability still identifies external, hosted, manual, and owner-decision gaps, so approval may be conditional or deferred.
+**Evidence:** exact owner-only candidate `ROADMAP-SITES-V8-2026-08-08` is pinned to source/runtime release commit `cf117fef8ea42272d0b7e2358fe4197c024f86a7`, local archive gzip SHA-256 `99d615410c2e145e77938f0c5df4449ab8aeb4a544a5c5949fcdafa56a8e1378`, Sites archive content hash `sha256:9a4119ea60dd64d2a0bf14a55c7e2d27fb3e8ea250f0d064e8bc5a79fb34a87c`, saved Sites version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_01ba2d860b508191b4d104339921606d`, deployment `appgdep_6a775b172534819196391fd626e95aa3`, environment revision 10, and the evidence/limitation records linked below. Signed-out boundary probes passed, but deep readiness is intentionally degraded because exact owner-approved consent-policy content/version and privacy-operator access configuration are absent. Requirements traceability still identifies external, hosted, manual, and owner-decision gaps, so approval may be conditional or deferred.
 
 **Viable choices:** approve the exact bounded baseline with recorded conditions, require specified modifications and a new candidate, or defer approval while owner-only engineering continues.
 
@@ -118,9 +118,13 @@ charge or paid-self-serve claim is allowed.
 ## Decision 3 — privacy, retention, deletion, and golfer authority
 
 **Evidence:** tenant isolation, private capabilities, correction, export, revocation,
-archival, and auditable deletion requests are implemented. Exact notices, privacy
-roles, retention periods, deletion exceptions, backup expiry, and the instructor's
-required basis for adult golfer records still need qualified review.
+archival, auditable deletion requests, immutable consent transitions, and the
+bounded non-attesting privacy-operator queue/marker are implemented. Exact
+`golfer_record` and `roadmap_sharing` purpose text/version, privacy-operator identity
+and access configuration, notices, roles, retention periods, deletion exceptions,
+backup expiry, and the instructor's required basis for adult golfer records still
+need Aaron's decision and qualified review. Their absence intentionally degrades
+deep readiness.
 
 **Viable choices:**
 
@@ -136,13 +140,18 @@ Stripe references, D1 recovery points, and R2 objects; do not use one blanket pe
 
 > `OWNER-PRIV-001`: I approve privacy notice **[version]**, terms **[version]**, and
 > the data schedule in **[artifact/version]** after review by **[qualified reviewer]**.
-> Instructors must attest **[exact authority/notice requirement]** before entering an
-> adult golfer record and **[exact sharing requirement]** before publishing. Access,
-> correction, withdrawal, export, deletion, exceptions, backup expiry, and incident
-> notification follow **[versioned procedure]**. Review on **[date]**.
+> I approve exact purpose text/version **[golfer_record values]** for the account grant
+> and **[roadmap_sharing values]** for each golfer grant. Instructors must attest
+> **[exact authority/notice requirement]** before entering an adult golfer record and
+> **[exact sharing requirement]** before publishing. Privacy-operator access is limited
+> to **[named role/identity configuration]**. Access, correction, withdrawal, export,
+> deletion, exceptions, backup expiry, and incident notification follow **[versioned
+> procedure]**. Review on **[date]**.
 
-**Consequence of deferral:** only controlled private operation is supportable;
-destructive deletion cannot be represented as immediate or automatic.
+**Consequence of deferral:** only controlled private operation is supportable; deep
+readiness remains degraded, consent-gated journeys remain fail-closed, privacy-
+operator access remains unconfigured, and destructive deletion cannot be represented
+as immediate or automatic.
 
 ## Decision 4 — media
 
@@ -206,7 +215,7 @@ evidence record.
 
 > `OWNER-ACCEPT-001`: I reviewed Roadmap release **[exact candidate/version and source commit]** at **[exact URL]** on **[date]**. I accept it for **[owner-only / controlled users / public]** operation under configuration **[revision]**, policies **[versions]**, and residual-risk record **[version]**. Approved operators are **[names]**. Stop/revisit triggers are **[exact triggers]**.
 
-The currently evidenced candidate fields are: `ROADMAP-SITES-V7-2026-08-08`, source/runtime release commit `7ed01ec822fdb5c2bfbe6db7e3c99bcba126ac17`, local archive `D:\Projects\golf-coaching-design-blueprint\10_production_saas\outputs\roadmap-sites-v7-7ed01ec.tar.gz` (2,916,309 bytes, 57 entries, gzip SHA-256 `a07f06989d3ba6cf05b924b149fc9f955be512223c6f90d5dd8d7628d175e526`), Sites archive content hash `sha256:4a00694b9798f4f84487e8e7ea224703ccbbfc61a32dd132d417dc65b7f153bc` (45 files, 6,236,160 unpacked bytes), saved Sites version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_55fe270d85f081919dcd346c8476130d`, deployment `appgdep_6a772e0616b88191972b4e2e0603da52` succeeded at `2026-08-08T13:24:35.466957+00:00`, environment revision 9, signed-out `401` results for `/`, `/app`, `/api/health`, and `/api/operations/health`, zero events in the immediate error-only Worker-log query, and `https://roadmap-golf-coaching.aar-landry.chatgpt.site`. A separate non-error sample contained only three successful renderer/runtime invocations (`/` and `/.rsc` returned `200`; the expected non-owner `/app.rsc` returned `403`; all outcome `ok`), and one 1200×750 Sites renderer image passed a limited desktop landing visual sanity inspection. The browser backend was unavailable, so no authenticated mounted-browser, manual accessibility, hosted scheduler, or owner operational-health evidence exists. These fields describe an owner-only candidate, not a pre-approved or full-live release; any later source, configuration, or deployment needs a new exact record.
+The currently evidenced candidate fields are: `ROADMAP-SITES-V8-2026-08-08`, source/runtime release commit `cf117fef8ea42272d0b7e2358fe4197c024f86a7`, local archive `D:\Projects\golf-coaching-design-blueprint\10_production_saas\outputs\roadmap-sites-v8-cf117fe.tar.gz` (2,963,266 bytes, 61 entries/49 files, gzip SHA-256 `99d615410c2e145e77938f0c5df4449ab8aeb4a544a5c5949fcdafa56a8e1378`), Sites archive content hash `sha256:9a4119ea60dd64d2a0bf14a55c7e2d27fb3e8ea250f0d064e8bc5a79fb34a87c` (49 files, 6,737,920 unpacked bytes), saved Sites version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_01ba2d860b508191b4d104339921606d`, deployment `appgdep_6a775b172534819196391fd626e95aa3` succeeded at `2026-08-08T16:36:50.529785+00:00`, environment revision 10, signed-out `401` results for `/`, `/app`, `/api/health`, and `/api/operations/health`, one expected non-owner `/app.rsc` `403`/outcome-`ok` event in the immediate error-only Worker-log query, and `https://roadmap-golf-coaching.aar-landry.chatgpt.site`. The browser backend was unavailable, so no authenticated mounted-browser, manual accessibility, hosted scheduler, or owner operational-health evidence exists. Exact owner-approved consent-policy content/version and privacy-operator access configuration are absent, so deep readiness is intentionally degraded. These fields describe an owner-only candidate, not a pre-approved or full-live release; any later source, configuration, or deployment needs a new exact record.
 
 **Consequence of deferral:** deployment and technical verification remain useful
 evidence, but the production-completion goal remains active and no accepted-live-V1

@@ -15,28 +15,29 @@ or proven by Roadmap.
 
 ## Current candidate boundary
 
-The current recorded candidate is owner-private Sites version 7 at source/runtime
-release `7ed01ec822fdb5c2bfbe6db7e3c99bcba126ac17`, saved version
-`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_55fe270d85f081919dcd346c8476130d`,
-deployment `appgdep_6a772e0616b88191972b4e2e0603da52`, and environment
-revision `9`. Its local package has SHA-256
-`a07f06989d3ba6cf05b924b149fc9f955be512223c6f90d5dd8d7628d175e526`;
+The current recorded candidate is owner-private Sites version 8 at source/runtime
+release `cf117fef8ea42272d0b7e2358fe4197c024f86a7`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_01ba2d860b508191b4d104339921606d`,
+deployment `appgdep_6a775b172534819196391fd626e95aa3`, and environment
+revision `10`. Its local release archive is 2,963,266 bytes with gzip SHA-256
+`99d615410c2e145e77938f0c5df4449ab8aeb4a544a5c5949fcdafa56a8e1378`;
 the Sites content hash is
-`sha256:4a00694b9798f4f84487e8e7ea224703ccbbfc61a32dd132d417dc65b7f153bc`.
-Sites version 6 remains historical predecessor evidence.
+`sha256:9a4119ea60dd64d2a0bf14a55c7e2d27fb3e8ea250f0d064e8bc5a79fb34a87c`.
+Sites version 7 remains historical predecessor evidence and is not an ordinary
+rollback target after consent-governed use.
 
-The exact-v7 automated suite passed 163/163 tests, but no authenticated browser
+The exact-v8 automated suite passed 226/226 tests, but no authenticated browser
 journey, manual accessibility review, authorized real instructor/golfer protocol,
 or real-world measurement exists. Signed-out requests to `/`, `/app`,
 `/api/health`, and `/api/operations/health` all returned the outer owner-policy
-`401`; a separate safe 20-minute worker sample showed three expected fetch outcomes
-and no immediate errors. A single 1200x750 provider renderer image (SHA-256
-`b40bdedf6b9307ff1750e6b518b1be619e43ca269ac0451a034b0cbd5e30d609`)
-showed no obvious desktop landing-page clipping or overlap. None of these
-observations measures activation, usability, reliability over time, support burden,
-accessibility, or participant outcomes. The browser backend was unavailable. This
-packet records no owner acceptance and authorizes no participant, analytics,
-public-access, or commercial activity.
+`401`; the bounded error-filtered Worker sample contained one expected non-owner
+`/app.rsc` `403` with outcome `ok`, not a crash. No exact-v8 mounted-browser or
+renderer inspection exists because the browser backend was unavailable. Deep
+readiness remains intentionally degraded because approved consent-policy and
+data-request-operator configuration is absent. None of these observations measures
+activation, usability, reliability over time, support burden, accessibility, or
+participant outcomes. This packet records no owner acceptance and authorizes no
+participant, analytics, public-access, or commercial activity.
 
 ## Recommended measurement dictionary
 

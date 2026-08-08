@@ -1,7 +1,7 @@
 # Provider responsibility, cost, portability, and exit record
 
 **Status:** Production implementation record under `AUTH-005`, reconciled to the
-owner-private Sites version-7 candidate; selected architecture and limited provider
+owner-private Sites version-8 candidate; selected architecture and limited provider
 observations, not provider-account approval, budget approval, SLA evidence, public
 operation, or live acceptance
 **Related decisions:** `TECH-001` through `TECH-004` in
@@ -17,16 +17,16 @@ facility administration, native coach-package payment, AI, or hidden concierge w
 
 | Field | Exact recorded observation |
 |---|---|
-| Source/runtime and package | Commit `7ed01ec822fdb5c2bfbe6db7e3c99bcba126ac17`; local gzip SHA-256 `a07f06989d3ba6cf05b924b149fc9f955be512223c6f90d5dd8d7628d175e526` (2,916,309 bytes; 57 entries); Sites content `sha256:4a00694b9798f4f84487e8e7ea224703ccbbfc61a32dd132d417dc65b7f153bc` (45 files; 6,236,160 bytes) |
-| Sites identity | Project `appgprj_6a76957326fc819196ebf3a0c95f1ec3`; version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_55fe270d85f081919dcd346c8476130d`; deployment `appgdep_6a772e0616b88191972b4e2e0603da52`; environment revision `9`; succeeded `2026-08-08T13:24:35.466957+00:00` |
-| Access and safe probes | Owner-only at `https://roadmap-golf-coaching.aar-landry.chatgpt.site`. External signed-out probes of `/`, `/app`, `/api/health`, and `/api/operations/health` each returned outer-policy `401`. A separate safe 20-minute provider-worker sample contained three non-truncated fetches: `GET /` 200/ok, `GET /.rsc` 200/ok, and `GET /app.rsc` 403/ok at the expected non-owner application boundary; the immediate error-only sample had zero entries. |
-| Renderer sanity | Provider-generated `roadmap-sites-v7-renderer.png`, 1200x750, 77,485 bytes, SHA-256 `b40bdedf6b9307ff1750e6b518b1be619e43ca269ac0451a034b0cbd5e30d609`; visual inspection found no obvious clipping/overlap in the desktop landing hero/nav/sample card. |
-| Automated/local | 163/163 tests; 204-file integrity scan with zero secret findings and Business Plan V1 preserved; production dependency audit zero vulnerabilities; no generated schema changes; local recovery exercised 8 migrations and 2 synthetic tenants. |
-| Not demonstrated | Exact-v7 authenticated browser/manual accessibility journeys, hosted scheduler, authenticated deep health, alert delivery, staffed monitoring, rollback, D1/R2 restore, or measured RPO/RTO. The browser backend was unavailable. |
+| Source/runtime and package | Commit `cf117fef8ea42272d0b7e2358fe4197c024f86a7`; local gzip SHA-256 `99d615410c2e145e77938f0c5df4449ab8aeb4a544a5c5949fcdafa56a8e1378` (2,963,266 bytes; 61 entries/49 files); Sites content `sha256:9a4119ea60dd64d2a0bf14a55c7e2d27fb3e8ea250f0d064e8bc5a79fb34a87c` (49 files; 6,737,920 bytes) |
+| Sites identity | Project `appgprj_6a76957326fc819196ebf3a0c95f1ec3`; version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_01ba2d860b508191b4d104339921606d`; deployment `appgdep_6a775b172534819196391fd626e95aa3`; environment revision `10`; succeeded |
+| Access and safe probes | Owner-only at `https://roadmap-golf-coaching.aar-landry.chatgpt.site`. External signed-out probes of `/`, `/app`, `/api/health`, and `/api/operations/health` each returned outer-policy `401`. The immediate error-only provider-worker sample contained one expected non-owner `/app.rsc` `403` event with outcome `ok`. |
+| Artifact boundary | Fresh local archive verification passed with `localBuildCompared: true`: 61 safe entries/49 files, 23 source-mapped files, all 10 migrations, exactly 2 expected generated credential files, and 0 unexpected copies. |
+| Automated/local | 226/226 tests; 248-file integrity scan with zero secret findings and Business Plan V1 preserved; production dependency audit zero vulnerabilities; no generated schema changes; local recovery exercised 10 migrations and 2 synthetic tenants. |
+| Not demonstrated | Exact-v8 authenticated browser/manual accessibility journeys, hosted scheduler, alert delivery, staffed monitoring, rollback, D1/R2 restore, or measured RPO/RTO. Deep readiness is intentionally degraded because exact owner-approved consent-policy content/version and privacy-operator access configuration are absent. The browser backend was unavailable. |
 
 These are bounded release observations, not provider SLA, durability, recovery,
 regional-processing, account-support, cost, or public-suitability evidence. Sites
-version 6 remains historical predecessor evidence. `SEC-001` remains contained and
+versions 6 and 7 remain historical predecessor evidence. `SEC-001` remains contained and
 open pending authorized rotation/revocation and retest; no credential is reproduced
 or accepted here.
 

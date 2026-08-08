@@ -1,6 +1,6 @@
 # Software supply-chain, SBOM, and license inventory
 
-**Status:** Reproducible inventory procedure plus exact Sites-version-7 lockfile,
+**Status:** Reproducible inventory procedure plus exact Sites-version-8 lockfile,
 package, integrity-scan, and production-audit observations; not a legal opinion,
 vulnerability certification, or exact deployed-archive SBOM
 **Observed:** 2026-08-08 with Node `24.18.0`, npm `12.0.1`
@@ -11,37 +11,35 @@ declares direct intent
 
 ## Current inventory observation
 
-**Implemented exact-v7 evidence:** the committed lockfile is lockfile version 3 and has
-SHA-256 `a29e63ce73d1de9f40d54ebc615982686af6c53084c107f84e35d1316ba425d1`.
-It is unchanged across the recorded Sites version-6 source and immutable
-version-7 source commit `7ed01ec822fdb5c2bfbe6db7e3c99bcba126ac17`. Its 712
+**Implemented exact-v8 evidence:** the committed lockfile is lockfile version 3 and has
+SHA-256 `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d` at
+version-8 source commit `cf117fef8ea42272d0b7e2358fe4197c024f86a7`. Its 712
 `node_modules/*` locations normalize to 676 unique `name@version` components.
 The built-in npm generator produced a CycloneDX 1.5 document with 676 components
 and an SPDX 2.3 document with 677 packages, including the application package.
-The exact-v7 full-lock artifacts are retained under `docs/release-evidence`:
+The exact-v8 full-lock artifacts are retained under `docs/release-evidence`:
 
 | Retained artifact | Bytes | SHA-256 |
 |---|---:|---|
-| `ROADMAP-SITES-V7-2026-08-08-sbom.cdx.json` | 680,652 | `a14d705a3426ff8dfe90187e032eeffa94b8599387ee7756c13bed8188a1744c` |
-| `ROADMAP-SITES-V7-2026-08-08-sbom.spdx.json` | 827,711 | `1b2eb584b929dce25c33fe08dcbca2d1448bb0eb1c7436f5e86971f2c03b431d` |
-| `ROADMAP-SITES-V7-2026-08-08-sbom-manifest.json` | 1,370 | `331fd5926d082776d7d75aafb4ec78a18f9d3c0e75f099ed8eee0e378b981d56` |
+| `ROADMAP-SITES-V8-2026-08-08-sbom.cdx.json` | 680,652 | `ba870097b023f2069fb9d25611f6cb314e2b99399aeeaad848503bca3d213d6d` |
+| `ROADMAP-SITES-V8-2026-08-08-sbom.spdx.json` | 827,711 | `19cbf7be9b650049f2a00227e9a716d8b57b881588f642d8addd53a98566bf36` |
+| `ROADMAP-SITES-V8-2026-08-08-sbom-manifest.json` | 1,758 | `97a17d0583574c317361c0dcc016e32f36dfb4e87ba2c2bbc0ce55b685935d0e` |
 
 Those counts describe the complete locked graph, including development and
 platform-optional packages. They do not prove which components Sites placed in
 the deployed archive. Exact-release evidence must retain both the full-lock SBOM
 and a shipped-artifact inventory.
 
-### Exact Sites version 7 package and scan observation
+### Exact Sites version 8 package and scan observation
 
 | Field | Recorded result |
 |---|---|
-| Source/runtime release ID | `7ed01ec822fdb5c2bfbe6db7e3c99bcba126ac17` |
-| Local package | Gzip SHA-256 `a07f06989d3ba6cf05b924b149fc9f955be512223c6f90d5dd8d7628d175e526`; 2,916,309 bytes; 57 tar entries |
-| Sites package | Content hash `sha256:4a00694b9798f4f84487e8e7ea224703ccbbfc61a32dd132d417dc65b7f153bc`; 45 files; 6,236,160 bytes |
-| Saved/deployed version | `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_55fe270d85f081919dcd346c8476130d`; deployment `appgdep_6a772e0616b88191972b4e2e0603da52`; environment revision `9` |
-| Source release-integrity scan | 204 source-tree text files inspected; zero pattern findings; historical Business Plan V1 preserved; package-lock digest matched; generated output and dependencies intentionally excluded |
-| Retrospective submitted-archive audit | 57 safe entries/45 files; eight migrations and 19 source-mapped controls matched; generated prerender credential confined to two expected server manifests; no client/Worker copy or production build flag; exact original-local-`dist` byte comparison unavailable |
-| Isolated clean install | Exact Git archive SHA-256 `d859a471c040106c9e034d460bad53de56e4e1eea224d6fd22455ac84a6eadf6` (6,860,800 bytes); `npm ci`, full verification, dependency tree, schema generation, and synthetic recovery passed; see retained JSON evidence |
+| Source/runtime release ID | `cf117fef8ea42272d0b7e2358fe4197c024f86a7` |
+| Local package | Gzip SHA-256 `99d615410c2e145e77938f0c5df4449ab8aeb4a544a5c5949fcdafa56a8e1378`; 2,963,266 bytes; 61 tar entries/49 files |
+| Sites package | Content hash `sha256:9a4119ea60dd64d2a0bf14a55c7e2d27fb3e8ea250f0d064e8bc5a79fb34a87c`; 49 files; 6,737,920 bytes |
+| Saved/deployed version | `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_01ba2d860b508191b4d104339921606d`; deployment `appgdep_6a775b172534819196391fd626e95aa3`; environment revision `10` |
+| Source release-integrity scan | Release-time/pre-SBOM: 248 runtime-source text files inspected; post-SBOM evidence reconciliation: 251 files inspected. Both produced zero pattern findings and preserved historical Business Plan V1; generated output and dependencies were intentionally excluded |
+| Submitted-archive audit | 61 safe entries/49 files; ten migrations and 23 source-mapped files matched; archive matched the fresh local build; generated credential material was confined to two expected files with zero unexpected copies |
 | Production dependency audit | `npm audit --omit=dev` reported zero vulnerabilities |
 
 The differing tar-entry and Sites-file counts are provider/package-format
@@ -49,8 +47,8 @@ observations, not a dependency-to-runtime reconciliation. The zero audit and sec
 findings apply only to the tools, inputs, and advisory data used at verification
 time; they do not certify package provenance, absence of malicious behavior, legal
 compliance, provider configuration, or runtime safety. An exact shipped-artifact
-SBOM and qualified license-obligation review remain open. Sites version 6 evidence
-is retained as historical predecessor evidence in the release record.
+SBOM and qualified license-obligation review remain open. Sites versions 6 and 7
+are retained as historical predecessor evidence in the release record.
 
 ### Direct production dependencies
 

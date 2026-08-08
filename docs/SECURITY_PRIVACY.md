@@ -12,6 +12,40 @@
 
 `[REAL-WORLD VALIDATION REQUIRED]` Qualified Canadian privacy/legal review, actual user comprehension, technical verification, and operational exercises are still required. No wording in this document determines a legal role, lawful basis, statutory retention period, breach-notification deadline, or jurisdictional obligation.
 
+## Current exact private-candidate security observation
+
+Owner-only Sites version 8 is bound to source/runtime release
+`cf117fef8ea42272d0b7e2358fe4197c024f86a7`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_01ba2d860b508191b4d104339921606d`,
+private deployment `appgdep_6a775b172534819196391fd626e95aa3`, and
+environment revision `10`. The deployment succeeded at
+`2026-08-08T16:36:50.529785+00:00`. This is an implementation evidence point,
+not public-release, legal-compliance, or owner-acceptance evidence.
+
+The exact source was freshly built after commit. The value-safe artifact verifier
+passed across 49 files with exactly two expected server-manifest copies of the
+build-generated prerender credential, zero unexpected copies or paths, and the
+production prerender binding absent. The exact submitted archive passed independent
+verification with gzip SHA-256
+`99d615410c2e145e77938f0c5df4449ab8aeb4a544a5c5949fcdafa56a8e1378`
+and 10 migrations. Four signed-out probes returned the outer-policy `401` for `/`,
+`/app`, `/api/health`, and `/api/operations/health`; those probes demonstrate
+signed-out containment only.
+
+This exact rebuild/archive/deployment retest closes `SEC-003` for the
+build-generated prerender credential boundary and supersedes version 7. It does
+not close `SEC-001`: the SIWC bypass credential incident remains contained/open,
+the prior credential is treated as compromised, and `OWNER-SEC-001` rotation,
+prior-value denial, normal-owner-authentication proof, and safe log review remain
+pending. No credential value is recorded here.
+
+`[OWNER INPUT REQUIRED]` Exact consent-policy-registry entries and the independent
+privacy-operator authority/configuration remain unresolved and absent from the
+private environment. Those boundaries fail closed; application deep readiness is
+therefore intentionally degraded. Real-user operation still requires the exact
+owner decisions, qualified review, deployed policy/behavior conformance, and
+authenticated/manual evidence described below.
+
 ## Security and privacy objectives
 
 1. Authenticate instructors through the selected dispatch-owned SIWC boundary and authorize every tenant operation server-side.
@@ -439,6 +473,8 @@ Findings need severity, affected release, owner, mitigation, retest evidence, an
 | Dependency | Why it remains unresolved | What closes the evidence gap |
 |---|---|---|
 | SIWC for public instructors | The starter guidance describes dispatch-owned SIWC, but the exact public SaaS suitability and support contract are not evidenced | Hosted end-to-end and abuse tests plus a documented provider/support path |
+| Consent-policy registry | Technical enforcement exists, but exact owner-approved entries are absent and grants fail closed | Owner decision, qualified review, exact versioned text/configuration, deployed path mapping, withdrawal/export verification, and comprehension evidence |
+| Privacy-operator authority | The least-privilege boundary exists, but the named role and independent access configuration are absent, so the API fails closed | Named accountable operator, approved method/policy/evidence, exact secret/digest configuration without values in evidence, authenticated hosted verification, and audited workflow exercise |
 | Legal/privacy copy and policy | No qualified review or exact owner-approved lifecycle terms are recorded | Versioned approved policy/copy mapped to actual code and operator workflows |
 | Stripe production configuration | No production secret, approved Price, final billing terms, or live transaction evidence is recorded | Authorized configuration, signed webhook evidence, reconciliation, and controlled transaction/refund/failure checks |
 | Public domain | Final origin affects cookies, redirects, CSP, CORS, referrers, and public disclosures | Authorized domain plus final-origin security and privacy verification |

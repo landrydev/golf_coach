@@ -16,6 +16,25 @@ not a public launch or Aaron's acceptance. No successful backup/restore or rollb
 exercise, staffed operating assignment, alert-delivery exercise, live Stripe flow,
 qualified legal/privacy review, or controlled real-user validation is claimed.
 
+The current exact private candidate is Sites version 8 at source/runtime release
+`cf117fef8ea42272d0b7e2358fe4197c024f86a7`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_01ba2d860b508191b4d104339921606d`,
+deployment `appgdep_6a775b172534819196391fd626e95aa3`, and environment
+revision `10`. Deployment succeeded at `2026-08-08T16:36:50.529785+00:00`.
+Four signed-out probes to `/`, `/app`, `/api/health`, and
+`/api/operations/health` each returned the owner-only outer-policy `401`; they are
+containment evidence, not authenticated application or deep-health evidence.
+
+The exact post-commit artifact and submitted archive checks passed: 49 build files,
+exactly two expected server-manifest credential copies, zero unexpected copies or
+paths, no production prerender binding, 10 packaged migrations, and gzip SHA-256
+`99d615410c2e145e77938f0c5df4449ab8aeb4a544a5c5949fcdafa56a8e1378`.
+This closes `SEC-003` for the version-8 build-generated prerender credential
+boundary. `SEC-001` remains contained/open, and `OWNER-SEC-001` rotation/retest is
+still required. Consent-policy-registry and privacy-operator owner decisions and
+configuration also remain absent; those controls fail closed and deep readiness is
+intentionally degraded.
+
 `[SUPPORTED BY BUSINESS PLAN V2]` Normal operation must remain self-serve for an individual instructor. It must not rely on scheduled onboarding, custom setup, concierge roadmap creation, or facility administration. Support activity is logged so hidden founder labor is not mistaken for product performance.
 
 ## Operational responsibilities
@@ -73,6 +92,12 @@ The inventory records a name, purpose, environment, provider owner, last rotatio
 | Release identifier | Build configuration | Immutable commit/artifact identifier exposed to health/diagnostic output without secrets |
 
 Logical D1/R2 declarations live in `.openai/hosting.json`; Sites owns real Cloudflare resource provisioning and deployment wiring. Hosted runtime values are managed through the Sites control plane. No `.env` file, dashboard export, credential screenshot, or copied webhook payload belongs in version control.
+
+For the current private version-8 environment, do not invent consent or
+privacy-operator values to make deep health green. `CONSENT_POLICY_REGISTRY_JSON`
+and the independent operator access configuration remain owner/qualified-review
+dependencies. Their absence must continue to fail the affected controls closed and
+report degraded readiness until the exact decisions and configuration are recorded.
 
 ### Instructor product-access configuration
 
@@ -166,6 +191,14 @@ Application rollback and data recovery are distinct:
 - If data integrity is at risk, stop affected writes, preserve evidence, and use the tested D1 recovery procedure. Do not improvise destructive reverse SQL.
 - If capability or secret exposure is involved, revoke/rotate separately; code rollback does not remove exposed secrets.
 - If a Stripe event processor caused a bad entitlement projection, preserve accepted webhook events and rebuild/reconcile state rather than deleting billing history.
+
+For Sites version 8, migrations `0008` and `0009` are structurally
+backward-readable, but the predecessor version 7 lacks version-8 consent enforcement
+for ordinary instructor reads/writes and golfer sharing. After any
+consent-governed real data or disclosure under version 8, rollback to version 7 is
+class `B` behaviorally and forbidden as an ordinary code rollback. Freeze affected
+writes and use a tested forward fix or controlled recovery. Do not treat SQL shape
+compatibility as authorization/privacy compatibility.
 
 Every rollback records trigger, decision maker, affected release/migration, customer impact, data-integrity result, verification, and follow-up action.
 
