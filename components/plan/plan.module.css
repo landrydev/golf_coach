@@ -1,0 +1,702 @@
+.plan {
+  --coach-accent: #1f5a48;
+  min-height: 100vh;
+  background: #f6f2e8;
+  color: #1f352e;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.plan :focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px #8a5b00;
+}
+
+.skipLink {
+  position: fixed;
+  left: 1rem;
+  top: -5rem;
+  z-index: 100;
+  background: #193b30;
+  color: white;
+  padding: 0.75rem 1rem;
+}
+
+.skipLink:focus {
+  top: 1rem;
+}
+
+.previewBanner {
+  background: #f0c768;
+  color: #3f3215;
+  padding: 0.65rem 1rem;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.header {
+  min-height: 5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid #d9d3c5;
+  padding: 0 4vw;
+  background: #fffdf6;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #1d3e34;
+  text-decoration: none;
+}
+
+.brand > span {
+  width: 2.6rem;
+  height: 2.6rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--coach-accent);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.brand strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+
+.identity {
+  text-align: right;
+}
+
+.identity span,
+.identity strong {
+  display: block;
+}
+
+.identity span {
+  color: #596f66;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.identity strong {
+  margin-top: 0.25rem;
+}
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  justify-content: center;
+  gap: 0.2rem;
+  overflow-x: auto;
+  border-bottom: 1px solid #ddd8cc;
+  background: rgba(255, 253, 246, 0.96);
+  padding: 0.45rem 1rem;
+  backdrop-filter: blur(1rem);
+}
+
+.nav a {
+  flex: 0 0 auto;
+  border-radius: 99px;
+  color: #39574d;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.nav a:hover,
+.nav a:focus-visible {
+  background: #e7eee9;
+}
+
+.section {
+  width: min(100% - 2rem, 74rem);
+  margin: 0 auto;
+  padding: clamp(4.5rem, 8vw, 7rem) 0;
+  scroll-margin-top: 4.5rem;
+}
+
+.section + .section {
+  border-top: 1px solid #d9d3c5;
+}
+
+.now {
+  padding-top: clamp(3.5rem, 7vw, 6rem);
+}
+
+.sectionHeading > span,
+.focusCard > span,
+.nextCard > span,
+.storyGrid article > span,
+.assessmentCard span,
+.reviewCard span,
+.packageCard > div > span {
+  color: var(--coach-accent);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sectionHeading h1,
+.sectionHeading h2 {
+  max-width: 18ch;
+  margin: 0.65rem 0 0;
+  color: #18382e;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.2rem, 5vw, 4.6rem);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.sectionHeading h2 {
+  font-size: clamp(2rem, 4vw, 3.7rem);
+}
+
+.sectionHeading > p {
+  max-width: 47rem;
+  margin: 1rem 0 0;
+  color: #526c62;
+  font-size: clamp(1rem, 2vw, 1.18rem);
+  line-height: 1.65;
+}
+
+.nowGrid,
+.storyGrid,
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 2.5rem;
+}
+
+.focusCard,
+.nextCard,
+.storyGrid article,
+.lessonCard,
+.evidenceCard,
+.choiceCard,
+.emptyState {
+  border: 1px solid #d7d2c6;
+  border-radius: 0.6rem;
+  background: #fffdf8;
+  padding: 1.4rem;
+}
+
+.focusCard {
+  border-top: 4px solid var(--coach-accent);
+}
+
+.focusCard strong,
+.nextCard strong {
+  display: block;
+  margin-top: 0.8rem;
+  color: #1d4035;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.focusCard p,
+.nextCard p,
+.storyGrid p,
+.assessmentCard p,
+.lessonCard p,
+.evidenceCard p,
+.choiceCard p,
+.emptyState p {
+  color: #5c7068;
+  line-height: 1.6;
+}
+
+.coachNote {
+  max-width: 52rem;
+  margin: 2rem 0 0;
+  border-left: 4px solid var(--coach-accent);
+  padding: 0.6rem 0 0.6rem 1.2rem;
+  color: #21473a;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.2rem, 2.5vw, 1.65rem);
+  line-height: 1.45;
+}
+
+.coachNote span {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #596f66;
+  font-family: Arial, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.assessmentCard {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+  margin-top: 2.5rem;
+  border: 1px solid #ccd5cf;
+  background: #ecf2ee;
+  padding: clamp(1.3rem, 3vw, 2rem);
+}
+
+.assessmentCard .limits {
+  grid-column: 1 / -1;
+  border-top: 1px solid #c4d0c9;
+  padding-top: 1.2rem;
+}
+
+.phases {
+  display: grid;
+  gap: 0;
+  margin: 2rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.phases li {
+  display: grid;
+  grid-template-columns: 4rem 1fr;
+  gap: 1rem;
+  border-top: 1px solid #d9d3c5;
+  padding: 1.5rem 0;
+}
+
+.phases li > span {
+  color: #596f66;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.5rem;
+}
+
+.phases li[data-status="active"] > span {
+  color: var(--coach-accent);
+}
+
+.phases small,
+.phases strong,
+.phases p {
+  display: block;
+}
+
+.phases small {
+  color: var(--coach-accent);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.phases strong {
+  margin-top: 0.3rem;
+  color: #1c3e33;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.4rem;
+  font-weight: 500;
+}
+
+.phases p {
+  max-width: 52rem;
+  margin: 0.5rem 0 0;
+  color: #5c7068;
+  line-height: 1.55;
+}
+
+.lessonCard > div,
+.evidenceCard > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: #596f66;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.lessonCard h3,
+.evidenceCard h3,
+.practiceList h3,
+.packageCard h3 {
+  margin: 0.75rem 0 0;
+  color: #1c3e33;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.35rem;
+  font-weight: 500;
+}
+
+.lessonCard dl {
+  border-top: 1px solid #e2ded4;
+  margin: 1rem 0 0;
+  padding-top: 1rem;
+}
+
+.lessonCard dt {
+  color: #596f66;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.lessonCard dd {
+  margin: 0.4rem 0 0;
+  color: #3f5b51;
+  line-height: 1.55;
+}
+
+.practiceList {
+  display: grid;
+  gap: 1rem;
+  margin: 2.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.practiceList li {
+  display: grid;
+  grid-template-columns: 3rem 1fr;
+  gap: 1rem;
+  border: 1px solid #d5d1c6;
+  background: #fffdf8;
+  padding: 1.35rem;
+}
+
+.practiceList li > span {
+  width: 2.6rem;
+  height: 2.6rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--coach-accent);
+  color: #fff;
+  font-weight: 800;
+}
+
+.practiceList small {
+  color: var(--coach-accent);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.practiceList p {
+  color: #536b61;
+  line-height: 1.6;
+}
+
+.practiceList strong,
+.practiceList em {
+  display: block;
+  margin-top: 0.5rem;
+  color: #2a5143;
+}
+
+.practiceList em {
+  font-style: normal;
+  font-size: 0.82rem;
+}
+
+.evidenceCard small {
+  display: block;
+  border-top: 1px solid #e2ded4;
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+  color: #596f66;
+  line-height: 1.5;
+}
+
+.reviewCard {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.3rem;
+  margin-top: 2.5rem;
+  border: 1px solid #cbd5cf;
+  background: #eaf1ed;
+  padding: clamp(1.4rem, 3vw, 2rem);
+}
+
+.reviewCard > strong {
+  grid-column: 1 / -1;
+  color: #1b4034;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.55rem;
+  font-weight: 500;
+}
+
+.reviewCard p {
+  color: #4d685e;
+  line-height: 1.55;
+}
+
+.packageCard {
+  display: grid;
+  grid-template-columns: minmax(16rem, 0.75fr) 1.25fr;
+  gap: 2rem;
+  margin-top: 1.2rem;
+  border: 1px solid #244c3e;
+  background: #17392f;
+  color: #edf4f0;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+.packageCard > div > span {
+  color: #b7d0c4;
+}
+
+.packageCard h3 {
+  color: #fff;
+  font-size: 1.8rem;
+}
+
+.packageCard > div > strong {
+  display: block;
+  margin-top: 1rem;
+  font-size: 1.2rem;
+}
+
+.packageCard p,
+.packageCard small {
+  display: block;
+  color: #d2e0d9;
+  line-height: 1.55;
+}
+
+.packageCard a {
+  min-height: 3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1.2rem;
+  border-radius: 0.4rem;
+  background: #f2c766;
+  color: #26372f;
+  padding: 0.75rem 1rem;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+}
+
+.packageCard .externalNote {
+  font-size: 0.72rem;
+}
+
+.choiceCard,
+.emptyState {
+  margin-top: 2rem;
+}
+
+.choiceLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  margin-top: 1.2rem;
+  color: #4f6c61;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.choiceLinks a {
+  color: var(--coach-accent);
+}
+
+.choicePanel {
+  display: grid;
+  gap: 1.2rem;
+  margin-top: 1.2rem;
+  border: 1px solid #cfc8ba;
+  border-radius: 0.65rem;
+  background: #fffdf8;
+  padding: clamp(1.25rem, 4vw, 2rem);
+}
+
+.choicePanel span {
+  color: var(--coach-accent);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.choicePanel h3 {
+  margin: 0.4rem 0 0;
+  color: #1c3e33;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+}
+
+.choicePanel p {
+  max-width: 58rem;
+  color: #4d685e;
+  line-height: 1.55;
+}
+
+.choiceButtons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 0.65rem;
+}
+
+.choiceButtons button {
+  min-height: 3rem;
+  border: 1px solid #8ea299;
+  border-radius: 0.4rem;
+  background: #fff;
+  color: #17392f;
+  padding: 0.7rem 0.9rem;
+  font: inherit;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+
+.choiceButtons .primaryChoice {
+  border-color: #17392f;
+  background: #17392f;
+  color: #fff;
+}
+
+.choiceButtons button:hover:not(:disabled) {
+  border-color: #17392f;
+  background: #e7eee9;
+}
+
+.choiceButtons .primaryChoice:hover:not(:disabled) {
+  background: #285345;
+}
+
+.choiceButtons button:focus-visible {
+  outline: 3px solid #c58b1b;
+  outline-offset: 2px;
+}
+
+.choiceButtons button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.choicePanel .choiceStatus,
+.choicePanel .choiceError {
+  margin: 0;
+  border-left: 0.25rem solid #2f6e58;
+  background: #e8f2ed;
+  color: #17392f;
+  padding: 0.8rem 1rem;
+}
+
+.choicePanel .choiceError {
+  border-left-color: #9d3d32;
+  background: #fff0ed;
+  color: #722c25;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid #d8d3c7;
+  background: #fffdf7;
+  padding: 2rem 4vw;
+}
+
+.footer strong,
+.footer span {
+  display: block;
+}
+
+.footer span {
+  margin-top: 0.25rem;
+  color: #596f66;
+  font-size: 0.72rem;
+}
+
+@media (max-width: 760px) {
+  .header {
+    min-height: 4.2rem;
+    padding-inline: 1rem;
+  }
+
+  .brand strong {
+    max-width: 10rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .identity span {
+    display: none;
+  }
+
+  .nav {
+    justify-content: flex-start;
+  }
+
+  .nowGrid,
+  .storyGrid,
+  .cardGrid,
+  .assessmentCard,
+  .reviewCard,
+  .packageCard {
+    grid-template-columns: 1fr;
+  }
+
+  .assessmentCard .limits,
+  .reviewCard > strong {
+    grid-column: auto;
+  }
+
+  .footer {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .identity {
+    display: none;
+  }
+
+  .section {
+    width: min(100% - 1.3rem, 74rem);
+  }
+
+  .phases li {
+    grid-template-columns: 2.7rem 1fr;
+  }
+
+  .practiceList li {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  .previewBanner,
+  .nav,
+  .skipLink {
+    display: none;
+  }
+
+  .section {
+    break-inside: avoid;
+    padding-block: 2rem;
+  }
+
+  .plan {
+    background: #fff;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan {
+    scroll-behavior: auto;
+  }
+}

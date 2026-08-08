@@ -1,0 +1,50 @@
+.shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  gap: 1.5rem;
+  align-content: center;
+  background: #f5f1e7;
+  color: #1d3b32;
+  padding: 1.25rem;
+}
+
+.wordmark {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.6rem;
+}
+
+.card {
+  width: min(100%, 42rem);
+  border: 1px solid #d2cdc0;
+  border-top: 4px solid #235744;
+  background: #fffdf7;
+  padding: clamp(1.5rem, 5vw, 3rem);
+}
+
+.card span {
+  color: #487265;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.card h1 {
+  margin: 0.75rem 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+}
+
+.card p {
+  color: #5b7068;
+  line-height: 1.65;
+}
+
+.card a {
+  color: #1f5a48;
+  font-weight: 800;
+}
