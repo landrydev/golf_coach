@@ -8,6 +8,16 @@ the instructor's external lesson-package booking or payment service.
 This directory is the production application authorized by `AUTH-005`. Product,
 security, privacy, and operational decisions are documented in [`docs/`](docs/).
 
+## Current private release
+
+Sites version 2 is deployed owner-only at
+<https://roadmap-golf-coaching.aar-landry.chatgpt.site> from release commit
+`240c9ed9d70ced5f3ed51691f1dc0339224f24bd`. The outer Sites policy allows only
+the owner; Stripe Checkout remains disabled. This is a production deployment, not
+a public launch or accepted real-user release. Exact evidence and unresolved
+operating dependencies are recorded in
+[`docs/RELEASE_EVIDENCE.md`](docs/RELEASE_EVIDENCE.md).
+
 ## Runtime
 
 - Vinext/React on OpenAI Sites and Cloudflare Workers

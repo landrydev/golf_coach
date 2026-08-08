@@ -9,7 +9,12 @@
 
 `AUTH-005` authorizes deployment preparation, release, and operation of the bounded Canada-wide self-serve V1. The retired design gate does not block implementation. The checks in this handbook are operational safety controls and evidence requirements; they are not a renamed product phase gate.
 
-At the time of this document, no production URL, production provider configuration, backup/restore result, live acceptance record, or production-readiness claim is established here. The exact deployed environment and release evidence must remain the authority for live status.
+An owner-only Sites production release now exists. Its exact URL, source commit,
+version, deployment, access policy, environment revision, hashes, and bounded smoke
+results are recorded in [Release Evidence](RELEASE_EVIDENCE.md). That deployment is
+not a public launch or Aaron's acceptance. No successful backup/restore or rollback
+exercise, staffed operating assignment, alert-delivery exercise, live Stripe flow,
+qualified legal/privacy review, or controlled real-user validation is claimed.
 
 `[SUPPORTED BY BUSINESS PLAN V2]` Normal operation must remain self-serve for an individual instructor. It must not rely on scheduled onboarding, custom setup, concierge roadmap creation, or facility administration. Support activity is logged so hidden founder labor is not mistaken for product performance.
 
