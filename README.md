@@ -10,9 +10,9 @@ security, privacy, and operational decisions are documented in [`docs/`](docs/).
 
 ## Current private release
 
-Sites version 3 is deployed owner-only at
+Sites version 4 is deployed owner-only at
 <https://roadmap-golf-coaching.aar-landry.chatgpt.site> from release commit
-`8eed9e1395e18fee8e1e61f4344abcd5a35f93b5`. The outer Sites policy allows only
+`7305c4231d39e92ff11ff43e1c1f796d0e148b21`. The outer Sites policy allows only
 the owner; Stripe Checkout remains disabled. This is a production deployment, not
 a public launch or accepted real-user release. Exact evidence and unresolved
 operating dependencies are recorded in
@@ -111,7 +111,7 @@ requires the production-like journey, accessibility, billing test-mode,
 backup/restore, alert, and live smoke evidence described in
 [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
 
-The current immutable candidate passes 47/47 automated tests. Exact-release
+The current immutable candidate passes 81/81 automated tests. Exact-release
 automated, hosted, and still-missing manual/operational evidence is recorded in
 [`docs/RELEASE_EVIDENCE.md`](docs/RELEASE_EVIDENCE.md).
 

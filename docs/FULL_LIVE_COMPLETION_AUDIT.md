@@ -9,8 +9,8 @@
 
 The retired repository gates do not restrict implementation. The bounded V1 is
 implemented as a production Worker and exact commit
-`8eed9e1395e18fee8e1e61f4344abcd5a35f93b5` is deployed privately as owner-only
-Sites version 3 with environment revision 5. The full-live goal is **not complete**
+`7305c4231d39e92ff11ff43e1c1f796d0e148b21` is deployed privately as owner-only
+Sites version 4 with environment revision 6. The full-live goal is **not complete**
 because authenticated hosted acceptance is still absent, the public
 commercial/policy inputs are unresolved, controlled real operations and recovery
 exercises are absent, and Aaron has not accepted an exact release.
@@ -27,29 +27,28 @@ reinstated design gate and they do not invalidate completed engineering evidence
 | Instructor and golfer journeys | Profile, packages, adult golfer, coach-authored roadmap, preview/publish, scoped share session, living-plan updates, responses, export, and deletion-review intake | Automated production-bundle evidence passed |
 | Tenant and capability security | Server-derived tenant, D1 ownership constraints, canonical route guard, missing-identity denial, HMAC-only verifier/session storage, expiry/revocation, rate limits, CSRF, private headers | Automated evidence passed; hosted SIWC spoof/recovery tests remain |
 | Concurrency and lifecycle integrity | Revision CAS, single publish winner, idempotent revoke/session close, current-publication response guard, atomic deletion-request deduplication | Automated evidence passed; formal external concurrency/load assessment remains |
-| SaaS billing | Server-controlled Checkout/Portal, signed webhook, local projection, bounded provider timeout, event processing lease | Checkout disabled; public billing blocked by policy/config and unresolved duplicate-session/recovery/customer-ownership findings |
+| SaaS billing | Server-controlled Checkout/Portal, durable single-attempt idempotency, provider-authoritative expiry, pending-sync blocking, signed-webhook leases/replay, immutable customer ownership, explicit Price/entitlement/freshness policy, and stale-provider-read fencing | Automated local D1 evidence passed; Checkout remains disabled because exact commercial configuration, public Stripe webhook ingress, and controlled live reconciliation are absent |
 | Privacy lifecycle | Tenant export, correction through product edits, share revocation, truthful deletion-review status and retry deduplication | Destructive fulfillment, retention schedule, qualified review, and backup expiry remain unresolved |
 | Accessibility and responsive behavior | Semantic/rendered checks and recorded 1440/390/320 CSS-pixel local visual evidence | Manual keyboard, screen reader, forced-colour, zoom, reduced-motion, and supported-browser acceptance remain |
-| Deployment and observability | Exact version 3 deployed owner-only; the immediate error-only and wider log samples were empty | Deployment passed; authenticated hosted smoke and meaningful invocation logs remain pending |
+| Deployment and observability | Exact version 4 deployed owner-only; signed-out access is `401`/`no-store`/`no-referrer`, and the immediate error-only sample contained one expected identity-less `403` with no Worker exception or 5xx | Deployment passed; authenticated hosted smoke and meaningful invocation/alert evidence remain pending |
 | Recoverability and operations | Runbooks document release, incident, D1 Time Travel, R2 limitations, rollback, support, and billing reconciliation | Named owners, alert/cost exercises, D1/R2 restore, rollback, and incident drills remain |
 | Commercial and public operation | `[PRICING HYPOTHESIS — REQUIRES VALIDATION]` and `[REAL-WORLD VALIDATION REQUIRED]` remain attached accurately | Exact offer, Stripe Price, tax/refund/failure/cancel/pause rules, domain, contacts, and policies require Aaron/external input |
 | Acceptance | No exact-release acceptance decision is recorded | `[OWNER INPUT REQUIRED]` |
 
 ## Current automated candidate evidence
 
-- `npm run verify`: lint, strict TypeScript, production build, and 47/47 tests
+- `npm run verify`: lint, strict TypeScript, production build, and 81/81 tests
   passed with zero failures, skips, or todos.
-- `npx drizzle-kit check`: schema, journal, snapshots, and migration configuration
-  passed.
+- `npm run db:generate`: schema, journal, all six migrations, and snapshots agree
+  across 28 tables with no migration drift.
 - The production Worker test matrix covers 19 declared mutation handlers, every
   discovered instructor HTML/RSC/API path, percent-encoded path aliases, missing
   identity, tenant substitution, current share/session expiry, revocation, and
   private response headers.
-- The package lock SHA-256 remains
+- Fresh `npm audit` and `npm audit --omit=dev` queries both report zero known
+  vulnerabilities for the exact lock. The package lock SHA-256 remains
   `73E540DD099306121351E884E195C86203D61BFB9775C5A4D002CBD6CCAC2757`,
-  identical to the previously recorded zero-advisory audit snapshot. A fresh live
-  npm advisory query was attempted on 2026-08-08 but could not run because external
-  command approval capacity was unavailable; no newer zero-advisory claim is made.
+  identical to the prior releases.
 
 Automated checks do not prove legal compliance, public demand, public-auth
 suitability, accessibility conformance, operational recoverability, or live-user
@@ -79,9 +78,11 @@ Until the linked owner decisions and exercises are complete:
 2. Record exact owner decisions for scope/design/copy, operator and contacts,
    commercial consequences, privacy/retention/deletion, media exclusion, providers,
    public origin, and residual risks.
-3. Remediate and test the public-billing lifecycle before enabling Checkout, including
-   pending-session duplication, webhook crash recovery/reprocessing, durable Stripe
-   customer ownership, accepted entitlement Price IDs, and freshness/reconciliation.
+3. Approve and provision a Stripe-reachable signed-webhook ingress that does not expose
+   instructor routes; record the exact Price/status/entitlement/freshness/tax/refund/
+   cancel policy; then exercise the implemented durable Checkout, replay, ordering,
+   rotation, and reconciliation paths in controlled Stripe test and authorized live
+   transactions before enabling Checkout.
 4. Complete manual accessibility/browser review, controlled D1/R2 restore and
    rollback, monitoring/alert/cost/support/incident exercises, qualified policy
    review, and authorized real instructor/golfer journeys.
