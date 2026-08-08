@@ -9,6 +9,7 @@ const EXPECTED_BUSINESS_PLAN_V1_SHA256 =
 const SKIPPED_DIRECTORIES = new Set([
   ".git",
   ".next",
+  ".work",
   ".wrangler",
   "coverage",
   "dist",
