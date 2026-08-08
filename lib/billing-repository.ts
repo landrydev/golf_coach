@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, lt, or, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import {
   accounts,
@@ -172,17 +172,35 @@ export async function receiveBillingEvent(input: {
   };
 }
 
-export async function markBillingEventProcessing(eventId: string): Promise<void> {
+export async function markBillingEventProcessing(eventId: string): Promise<boolean> {
   const db = getDb();
-  await db
+  const now = new Date();
+  const staleBefore = new Date(now.getTime() - 5 * 60 * 1_000);
+  const claimed = await db
     .update(billingEvents)
     .set({
       status: "processing",
+      // While status is processing, processedAt is the lease start. Terminal
+      // mutations replace it with their completion time.
+      processedAt: now,
       processingAttempts: sql`${billingEvents.processingAttempts} + 1`,
       lastErrorCode: null,
       lastErrorMessage: null,
     })
-    .where(eq(billingEvents.id, eventId));
+    .where(
+      and(
+        eq(billingEvents.id, eventId),
+        or(
+          inArray(billingEvents.status, ["received", "failed"]),
+          and(
+            eq(billingEvents.status, "processing"),
+            lt(billingEvents.processedAt, staleBefore),
+          ),
+        ),
+      ),
+    )
+    .returning({ id: billingEvents.id });
+  return claimed.length === 1;
 }
 
 export async function ignoreBillingEvent(input: {

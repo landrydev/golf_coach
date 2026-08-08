@@ -95,12 +95,22 @@ both journaled migrations, client assets, and the production favicon. Sites repo
 short-lived per-command authorization header; no repository credential is stored in
 the remote URL, Git configuration, environment files, or source.
 
-Credential-handling incident: the initial `create_site` result was accidentally
+Credential-handling incident 1: the initial `create_site` result was accidentally
 surfaced unredacted in the private tool transcript while its response shape was being
 parsed. That credential was never written to disk or Git and was not used for a push;
 it expired at `2026-08-08T02:43:30.052Z`. Every actual push used a newly issued
 per-command credential, and the source/built secret scan found no persisted Sites
 credential. No active credential from that result remains.
+
+Credential-handling incident 2: at `2026-08-08T03:07:47.953Z`, a read-only Sites
+project lookup unexpectedly returned a non-null SIWC bypass bearer credential. A
+response sanitizer did not account for the connector's nested result envelope, so
+the credential appeared in the private tool transcript. It was not invoked, copied
+to a file, placed in Git, or used for any request. Current tooling does not expose a
+revoke-only operation, and the token-generation/rotation action requires Aaron's
+explicit instruction. Treat this credential as exposed: rotate or revoke it before
+adding any visitor, changing the site to public, or accepting the release. Do not
+copy its value into an incident record, support channel, command, or repository file.
 
 Environment revision 4 contains the exact canonical `APP_URL`, the release commit,
 `BILLING_CHECKOUT_ENABLED=false`, and two independent masked secrets for share-token
@@ -123,14 +133,19 @@ an explicit operation, not routine redeployment behavior.
   rendered regression test; its full local production suite remains 36/36.
 - The initial renderer exposed a missing `/favicon.ico` request. Version 2 adds an
   explicit SVG icon, asserts its rendered metadata, and packages `dist/client/favicon.svg`.
-- An `errors_only` log query immediately after final deployment returned zero events.
-  No 5xx, Worker exception, or failed deployment is recorded.
+- `errors_only` log queries immediately after final deployment and during the later
+  completion audit returned zero events. No 5xx, Worker exception, or failed
+  deployment is recorded. A wider read-only sample contains three successful
+  provider-renderer requests (`/`, `/.rsc`, and `/app.rsc`). Provider redaction hides
+  cookies and SIWC name/email values, but provider logs still expose network and
+  client metadata; retention, access, export, and alert routing remain unverified.
 
-The in-app browser backend was unavailable and the bypass-token tool was not invoked,
-because no bypass token was requested. Consequently, an exact final authenticated
-owner session, `/api/health` response, private golfer link in an unaffiliated browser,
-and live R2 check are not claimed. The owner-only outer policy also prevents a real
-Stripe webhook or unaffiliated golfer from reaching the application by design.
+The in-app browser backend was unavailable and the token-generation tool was not
+invoked. The unexpectedly disclosed existing bypass credential was not used.
+Consequently, an exact final authenticated owner session, `/api/health` response,
+private golfer link in an unaffiliated browser, and live R2 check are not claimed.
+The owner-only outer policy also prevents a real Stripe webhook or unaffiliated golfer
+from reaching the application by design.
 
 ## Manual and operational evidence still required
 
@@ -152,6 +167,7 @@ Stripe webhook or unaffiliated golfer from reaching the application by design.
 |---|---|
 | General public access | Blocked; working legal/support copy explicitly limits this to controlled private release |
 | Owner-only production release | Deployed successfully as Sites version 2; final authenticated owner acceptance and controlled real journeys remain unrecorded |
+| SIWC bypass credential exposure | A connector-returned active bearer appeared in the private tool transcript and was not used or persisted; explicit owner-directed rotation/revocation is required before access expands |
 | New SaaS charges | Fail-closed through `BILLING_CHECKOUT_ENABLED=false` until exact price/policy approval and configuration |
 | Paid entitlement enforcement | Billing projection exists, but no owner-approved failed/cancelled/unpaid access consequence is implemented or claimed |
 | Media upload | Disabled until consent, formats, scanning, accessibility, storage, and retention are approved and exercised |

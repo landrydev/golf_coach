@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import styles from "./share.module.css";
 
 export function ShareAccess() {
-  const [state, setState] = useState<"loading" | "missing" | "error">("loading");
+  const [state, setState] = useState<"loading" | "missing" | "closed" | "error">("loading");
 
   useEffect(() => {
     let active = true;
@@ -17,12 +17,21 @@ export function ShareAccess() {
         `${window.location.pathname}${window.location.search}`,
       );
       if (!token) {
-        if (active) setState("missing");
+        try {
+          const response = await fetch("/r/session", { method: "DELETE" });
+          if (!response.ok) throw new Error("session_cleanup_failed");
+          if (active) {
+            const closed = new URLSearchParams(window.location.search).get("closed") === "1";
+            setState(closed ? "closed" : "missing");
+          }
+        } catch {
+          if (active) setState("error");
+        }
         return;
       }
 
       try {
-        const response = await fetch("/api/share/session", {
+        const response = await fetch("/r/session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token }),
@@ -58,6 +67,13 @@ export function ShareAccess() {
             <span>Access link needed</span>
             <h1>Open the complete private link from your coach.</h1>
             <p>The access code was not present. Ask the coach to resend or create a new link.</p>
+          </>
+        ) : null}
+        {state === "closed" ? (
+          <>
+            <span>Roadmap closed</span>
+            <h1>This private roadmap is no longer open on this browser.</h1>
+            <p>Its local session has ended. The coach&apos;s original share link was not revoked.</p>
           </>
         ) : null}
         {state === "error" ? (

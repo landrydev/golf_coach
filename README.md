@@ -53,6 +53,11 @@ Public, non-secret variables:
 
 - `APP_URL`: exact HTTPS origin, without a path or trailing slash
 - `RELEASE_ID`: immutable release label used by health and release evidence
+- `INSTRUCTOR_ACCESS_MODE`: exactly `owner_private` or `subscription_required`
+- `OWNER_PRIVATE_EMAIL_DIGESTS`: comma-separated HMAC-SHA-256 digests of
+  trimmed, lowercased owner SIWC emails; never plaintext emails
+- `SUBSCRIPTION_ACCESS_STATUSES`: explicit comma-separated Stripe statuses that
+  may use core product routes in `subscription_required` mode
 - `STRIPE_SOLO_PRICE_ID`: the exact approved Stripe recurring Price
 - `BILLING_CHECKOUT_ENABLED`: fail-closed `true` only after exact price/policy approval
 
@@ -60,6 +65,8 @@ Hosted secrets:
 
 - `SHARE_TOKEN_PEPPER`: random, independent secret used for share-token HMACs
 - `ABUSE_LIMIT_PEPPER`: separate random secret used for non-reversible abuse-counter subject HMACs
+- `OWNER_PRIVATE_ACCESS_PEPPER`: third independent random secret, at least 32
+  characters, used only for the owner-private email allowlist
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 
@@ -70,8 +77,17 @@ Bindings declared in `.openai/hosting.json`:
 
 Checkout stays unavailable when Stripe configuration is absent. Production
 share-token hashing fails closed when its pepper is absent. `/api/health`
-returns `503 degraded` until D1, R2, origin, share-token-pepper, and
-abuse-limit-pepper checks pass.
+returns `503 degraded` until D1, R2, origin, share-token-pepper,
+abuse-limit-pepper, and the selected instructor-access policy are ready. Health
+exposes only access-policy readiness, never its mode, status list, digests,
+pepper, or email.
+
+The Worker applies this policy to instructor HTML, Vinext `.rsc` navigation,
+and APIs. `owner_private` covers every `/app` route and every non-public API.
+In `subscription_required`, billing, settings/profile, export, and privacy-data
+request controls remain reachable; other instructor surfaces require the latest
+signed-webhook subscription status to be explicitly allowed. Health, Stripe's
+signed webhook, and golfer capability endpoints remain separate.
 
 ## Verification
 

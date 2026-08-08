@@ -1,12 +1,18 @@
 import Link from "next/link";
 import { requirePageIdentity } from "@/lib/identity";
+import {
+  getOrCreateAccountForIdentity,
+  listAccountDataRequests,
+} from "@/lib/repository";
 import styles from "../../workspace.module.css";
 import { DataRequestControls } from "./DataRequestControls";
 
 export const dynamic = "force-dynamic";
 
 export default async function DataSettingsPage() {
-  await requirePageIdentity("/app/settings/data");
+  const identity = await requirePageIdentity("/app/settings/data");
+  const account = await getOrCreateAccountForIdentity(identity);
+  const requests = await listAccountDataRequests(account.id);
 
   return (
     <div className={styles.page}>
@@ -24,7 +30,7 @@ export default async function DataSettingsPage() {
           Back to settings
         </Link>
       </header>
-      <DataRequestControls />
+      <DataRequestControls initialRequests={requests} />
     </div>
   );
 }

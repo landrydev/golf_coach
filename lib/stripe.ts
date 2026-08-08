@@ -2,6 +2,7 @@ import { RequestError } from "./http";
 
 const STRIPE_API = "https://api.stripe.com/v1";
 const WEBHOOK_TOLERANCE_SECONDS = 300;
+const STRIPE_REQUEST_TIMEOUT_MS = 10_000;
 
 type StripeObject = Record<string, unknown> & { id: string };
 
@@ -50,7 +51,12 @@ export async function createCheckoutSession(input: CheckoutInput) {
   if (input.customerId) body.set("customer", input.customerId);
   else body.set("customer_email", input.email);
 
-  return stripeRequest<{ id: string; url: string }>("/checkout/sessions", body);
+  return stripeRequest<{ id: string; url: string }>(
+    "/checkout/sessions",
+    body,
+    "POST",
+    operationKey("checkout", input.accountId, 10 * 60 * 1_000),
+  );
 }
 
 export async function createBillingPortalSession(input: {
@@ -63,6 +69,8 @@ export async function createBillingPortalSession(input: {
       customer: input.customerId,
       return_url: input.returnUrl,
     }),
+    "POST",
+    operationKey("portal", input.customerId, 60 * 1_000),
   );
 }
 
@@ -125,19 +133,44 @@ async function stripeRequest<T>(
   path: string,
   body?: URLSearchParams,
   method: "GET" | "POST" = "POST",
+  idempotencyKey?: string,
 ): Promise<T> {
   const secretKey = requiredEnv("STRIPE_SECRET_KEY");
-  const response = await fetch(`${STRIPE_API}${path}`, {
-    method,
-    headers: {
-      Authorization: `Bearer ${secretKey}`,
-      ...(body ? { "Content-Type": "application/x-www-form-urlencoded" } : {}),
-    },
-    body,
-  });
-  const payload = (await response.json()) as {
+  let response: Response;
+  try {
+    response = await fetch(`${STRIPE_API}${path}`, {
+      method,
+      headers: {
+        Authorization: `Bearer ${secretKey}`,
+        ...(body ? { "Content-Type": "application/x-www-form-urlencoded" } : {}),
+        ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
+      },
+      body,
+      signal: AbortSignal.timeout(STRIPE_REQUEST_TIMEOUT_MS),
+    });
+  } catch (error) {
+    console.error("Stripe API request did not complete", {
+      errorType: error instanceof Error ? error.name : typeof error,
+    });
+    throw new RequestError(
+      502,
+      "billing_provider_error",
+      "Billing is temporarily unavailable. No charge was made.",
+    );
+  }
+
+  let payload: {
     error?: { message?: string; code?: string };
   } & T;
+  try {
+    payload = (await response.json()) as typeof payload;
+  } catch {
+    throw new RequestError(
+      502,
+      "billing_provider_response_invalid",
+      "Billing is temporarily unavailable. No charge was made.",
+    );
+  }
   if (!response.ok) {
     console.error("Stripe API request failed", {
       status: response.status,
@@ -150,6 +183,15 @@ async function stripeRequest<T>(
     );
   }
   return payload;
+}
+
+function operationKey(
+  kind: "checkout" | "portal",
+  subject: string,
+  bucketMilliseconds: number,
+): string {
+  const bucket = Math.floor(Date.now() / bucketMilliseconds);
+  return `roadmap-${kind}-${subject.slice(0, 96)}-${bucket}`;
 }
 
 function requiredEnv(name: string): string {

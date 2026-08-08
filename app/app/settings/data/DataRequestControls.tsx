@@ -1,12 +1,29 @@
 "use client";
 
 import { useState } from "react";
+import type { AccountDataRequestView } from "@/lib/repository";
 import styles from "../../workspace.module.css";
 
-export function DataRequestControls() {
+const openDeletionStatuses = new Set<AccountDataRequestView["status"]>([
+  "submitted",
+  "identity_verification_required",
+  "verified",
+  "in_progress",
+]);
+
+export function DataRequestControls({
+  initialRequests,
+}: {
+  initialRequests: AccountDataRequestView[];
+}) {
   const [message, setMessage] = useState("");
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState<"export" | "deletion" | null>(null);
+  const [requests, setRequests] = useState(initialRequests);
+  const openDeletionRequest = requests.find(
+    (request) =>
+      request.type === "deletion" && openDeletionStatuses.has(request.status),
+  );
 
   async function downloadExport() {
     setBusy("export");
@@ -46,8 +63,12 @@ export function DataRequestControls() {
       link.click();
       link.remove();
       window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1_000);
+      const historyRefreshed = await refreshRequestHistory();
+      setError(!historyRefreshed);
       setMessage(
-        "Your tenant-scoped JSON export was prepared and downloaded. It does not include media file bytes or security secrets.",
+        historyRefreshed
+          ? "Your tenant-scoped JSON export was prepared and downloaded. It does not include media file bytes or security secrets. The status history was refreshed."
+          : "Your tenant-scoped JSON export was downloaded, but the on-page status history could not be refreshed. Reload this page to see the latest record.",
       );
     } catch (requestError) {
       setError(true);
@@ -58,6 +79,24 @@ export function DataRequestControls() {
       );
     } finally {
       setBusy(null);
+    }
+  }
+
+  async function refreshRequestHistory(): Promise<boolean> {
+    try {
+      const response = await fetch("/api/data-requests", {
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+      });
+      const result = (await response.json()) as {
+        error?: { message?: string };
+        requests?: AccountDataRequestView[];
+      };
+      if (!response.ok || !Array.isArray(result.requests)) return false;
+      setRequests(result.requests);
+      return true;
+    } catch {
+      return false;
     }
   }
 
@@ -81,12 +120,21 @@ export function DataRequestControls() {
       });
       const result = (await response.json()) as {
         error?: { message?: string };
-        request?: { status?: string };
+        existing?: boolean;
+        request?: AccountDataRequestView;
       };
       if (!response.ok) {
         throw new Error(result.error?.message || "The request could not be queued.");
       }
-      setMessage("Deletion review requested. No data has been irreversibly removed.");
+      if (!result.request) {
+        throw new Error("The request was accepted without a readable status record.");
+      }
+      setRequests((current) => mergeRequest(current, result.request!));
+      setMessage(
+        result.existing
+          ? "A deletion review is already open. No duplicate request was created, and no data has been irreversibly removed."
+          : "Deletion review requested. Identity is not yet verified, and no data has been irreversibly removed.",
+      );
     } catch (requestError) {
       setError(true);
       setMessage(
@@ -139,12 +187,50 @@ export function DataRequestControls() {
           <button
             className={styles.dangerButton}
             type="button"
-            disabled={busy !== null}
+            disabled={busy !== null || Boolean(openDeletionRequest)}
             onClick={requestDeletionReview}
           >
-            {busy === "deletion" ? "Submitting…" : "Submit deletion review request"}
+            {busy === "deletion"
+              ? "Submitting…"
+              : openDeletionRequest
+                ? "Deletion review already open"
+                : "Submit deletion review request"}
           </button>
         </div>
+        {openDeletionRequest ? (
+          <p className={styles.muted} style={{ marginTop: "0.8rem" }}>
+            Current status: {statusLabel(openDeletionRequest.status)}. {" "}
+            {statusExplanation(openDeletionRequest)}
+          </p>
+        ) : null}
+      </section>
+
+      <section className={styles.formCard} aria-labelledby="data-request-history-heading">
+        <div className={styles.cardHeader}>
+          <h2 id="data-request-history-heading">Recent data-request status</h2>
+        </div>
+        <p className={styles.muted}>
+          These tenant-scoped records report workflow state only. They do not promise a
+          deadline or imply that identity verification, disabling, or deletion occurred.
+        </p>
+        {requests.length > 0 ? (
+          <ul className={styles.list}>
+            {requests.map((request) => (
+              <li key={request.id}>
+                <div>
+                  <strong>{requestTypeLabel(request.type)}</strong>
+                  <small>Submitted {formatDate(request.createdAt)}</small>
+                  <small>{statusExplanation(request)}</small>
+                </div>
+                <span className={styles.status}>{statusLabel(request.status)}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className={styles.muted} style={{ marginTop: "1rem" }}>
+            No export or deletion-review records have been created for this account.
+          </p>
+        )}
       </section>
 
       {message ? (
@@ -157,6 +243,61 @@ export function DataRequestControls() {
       ) : null}
     </div>
   );
+}
+
+function mergeRequest(
+  requests: AccountDataRequestView[],
+  incoming: AccountDataRequestView,
+): AccountDataRequestView[] {
+  return [incoming, ...requests.filter((request) => request.id !== incoming.id)].sort(
+    (left, right) => right.createdAt - left.createdAt,
+  );
+}
+
+function requestTypeLabel(type: AccountDataRequestView["type"]): string {
+  const labels: Record<AccountDataRequestView["type"], string> = {
+    access: "Access request",
+    export: "Workspace export",
+    correction: "Correction request",
+    deletion: "Account deletion review",
+    restriction: "Restriction request",
+    consent_withdrawal: "Consent-withdrawal request",
+  };
+  return labels[type];
+}
+
+function statusLabel(status: AccountDataRequestView["status"]): string {
+  const labels: Record<AccountDataRequestView["status"], string> = {
+    submitted: "Submitted",
+    identity_verification_required: "Identity review required",
+    verified: "Identity verified",
+    in_progress: "Review in progress",
+    fulfilled: "Fulfilled",
+    denied: "Denied",
+    canceled: "Canceled",
+    failed: "Failed",
+  };
+  return labels[status];
+}
+
+function statusExplanation(request: AccountDataRequestView): string {
+  if (
+    request.type === "deletion" &&
+    request.status === "identity_verification_required"
+  ) {
+    return "Identity has not yet been verified; nothing is scheduled or deleted.";
+  }
+  if (request.type === "deletion" && openDeletionStatuses.has(request.status)) {
+    return "The review remains open; this status does not claim deletion.";
+  }
+  return `Last status update recorded ${formatDate(request.updatedAt)}.`;
+}
+
+function formatDate(epoch: number): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    dateStyle: "medium",
+    timeZone: "UTC",
+  }).format(new Date(epoch));
 }
 
 function safeFilename(contentDisposition: string | null): string {

@@ -1,4 +1,5 @@
 import { env } from "cloudflare:workers";
+import { productAccessConfigurationReady } from "@/lib/product-access";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,13 @@ export async function GET() {
     applicationOrigin: validProductionOrigin(process.env.APP_URL),
     shareTokenPepper: Boolean(process.env.SHARE_TOKEN_PEPPER?.trim()),
     abuseLimitPepper: (process.env.ABUSE_LIMIT_PEPPER?.trim().length ?? 0) >= 32,
+    instructorAccessPolicy: productAccessConfigurationReady({
+      INSTRUCTOR_ACCESS_MODE: process.env.INSTRUCTOR_ACCESS_MODE,
+      OWNER_PRIVATE_ACCESS_PEPPER: process.env.OWNER_PRIVATE_ACCESS_PEPPER,
+      OWNER_PRIVATE_EMAIL_DIGESTS: process.env.OWNER_PRIVATE_EMAIL_DIGESTS,
+      SUBSCRIPTION_ACCESS_STATUSES:
+        process.env.SUBSCRIPTION_ACCESS_STATUSES,
+    }),
   };
 
   try {

@@ -94,7 +94,13 @@ export async function POST(request: Request) {
       return acknowledge(received.event.status, true);
     }
 
-    await markBillingEventProcessing(receipt.id);
+    const claimed = await markBillingEventProcessing(receipt.id);
+    if (!claimed) {
+      // A concurrent delivery already owns the short processing lease. Stripe
+      // receives a successful acknowledgement while the owning invocation
+      // completes; a failed/abandoned lease can be reclaimed after five minutes.
+      return acknowledge("processing", true);
+    }
 
     if (!SUPPORTED_EVENT_TYPES.has(event.type)) {
       await ignoreBillingEvent({

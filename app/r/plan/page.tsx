@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { PlanView } from "@/components/plan/PlanView";
-import { resolveShareToken } from "@/lib/plans";
+import { resolveShareSession } from "@/lib/plans";
 import styles from "../share.module.css";
 
 export const dynamic = "force-dynamic";
@@ -13,14 +13,8 @@ export const metadata: Metadata = {
 
 export default async function SharedPlanPage() {
   const cookieStore = await cookies();
-  const requestHeaders = await headers();
   const token = cookieStore.get("roadmap_share")?.value;
-  const resolved = token
-    ? await resolveShareToken(token, {
-        recordAccess: true,
-        requestId: requestHeaders.get("cf-ray") ?? crypto.randomUUID(),
-      })
-    : null;
+  const resolved = token ? await resolveShareSession(token) : null;
 
   if (!resolved) {
     return (

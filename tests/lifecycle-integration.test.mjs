@@ -431,7 +431,7 @@ async function createProfile(worker, identity) {
     philosophy: "Synthetic lifecycle verification only.",
     contactEmail: identity.email,
     contactPhone: null,
-    websiteUrl: "https://lifecycle.example.test",
+    websiteUrl: "https://lifecycle.example.ca",
     city: "Calgary",
     provinceOrTerritory: "Alberta",
     accentColor: "#176b55",
@@ -497,7 +497,7 @@ function packagePayload(title, isDefault = true) {
     currency: "CAD",
     terms: "Synthetic local verification; no purchase or communication occurs.",
     inclusions: ["Four private lessons", "Practice review"],
-    externalActionUrl: "https://booking.example.test/lifecycle",
+    externalActionUrl: "https://booking.example.ca/lifecycle",
     status: "active",
     isDefault,
   };
@@ -571,7 +571,7 @@ function publishResponse(worker, identity, planId, revision, recipient) {
 }
 
 async function assertShareAvailable(worker, token) {
-  const response = await jsonWrite(worker, "/api/share/session", "POST", null, {
+  const response = await jsonWrite(worker, "/r/session", "POST", null, {
     token,
   });
   assert.equal(response.status, 200);
@@ -582,7 +582,7 @@ async function assertShareAvailable(worker, token) {
 }
 
 async function assertShareUnavailable(worker, token) {
-  const response = await jsonWrite(worker, "/api/share/session", "POST", null, {
+  const response = await jsonWrite(worker, "/r/session", "POST", null, {
     token,
   });
   assert.equal(response.status, 404);

@@ -90,7 +90,10 @@ test("production responses apply the selected baseline security headers", async 
   assert.match(policy, /default-src 'self'/);
   assert.match(policy, /frame-ancestors 'none'/);
   assert.match(policy, /object-src 'none'/);
-  assert.match(policy, /form-action 'self' https:\/\/checkout\.stripe\.com/);
+  assert.match(policy, /form-action 'self'/);
+  assert.match(policy, /connect-src 'self'/);
+  assert.match(policy, /frame-src 'none'/);
+  assert.doesNotMatch(policy, /api\.stripe\.com|checkout\.stripe\.com|billing\.stripe\.com/);
   assert.match(policy, /upgrade-insecure-requests/);
 });
 

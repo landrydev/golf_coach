@@ -1332,6 +1332,63 @@ export const shareLinks = sqliteTable(
   ],
 );
 
+export const shareSessions = sqliteTable(
+  "share_sessions",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    shareLinkId: text("share_link_id").notNull(),
+    // Browser cookies contain a session-only random value. D1 stores only its
+    // domain-separated, peppered HMAC-SHA-256 fingerprint.
+    tokenHash: text("token_hash").notNull(),
+    tokenHashAlgorithm: text("token_hash_algorithm")
+      .notNull()
+      .default("hmac-sha256-session-v1"),
+    expiresAt: timestamp("expires_at").notNull(),
+    lastAccessedAt: timestamp("last_accessed_at"),
+    accessCount: integer("access_count").notNull().default(0),
+    revokedAt: timestamp("revoked_at"),
+    revokeReason: text("revoke_reason"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    foreignKey({
+      name: "share_sessions_share_tenant_fk",
+      columns: [table.accountId, table.shareLinkId],
+      foreignColumns: [shareLinks.accountId, shareLinks.id],
+    }).onDelete("cascade"),
+    uniqueIndex("share_sessions_token_hash_unique").on(table.tokenHash),
+    uniqueIndex("share_sessions_account_id_unique").on(table.accountId, table.id),
+    index("share_sessions_share_created_idx").on(
+      table.accountId,
+      table.shareLinkId,
+      table.createdAt,
+    ),
+    index("share_sessions_expiry_revocation_idx").on(
+      table.expiresAt,
+      table.revokedAt,
+    ),
+    check(
+      "share_sessions_token_hash_algorithm_check",
+      sql`${table.tokenHashAlgorithm} = 'hmac-sha256-session-v1'`,
+    ),
+    check(
+      "share_sessions_token_hash_check",
+      sql`length(${table.tokenHash}) = 64 and ${table.tokenHash} not glob '*[^0-9a-f]*'`,
+    ),
+    check(
+      "share_sessions_expiry_check",
+      sql`${table.expiresAt} > ${table.createdAt}`,
+    ),
+    check("share_sessions_access_count_check", sql`${table.accessCount} >= 0`),
+    check(
+      "share_sessions_revocation_check",
+      sql`(${table.revokedAt} is null and ${table.revokeReason} is null) or (${table.revokedAt} is not null and length(trim(coalesce(${table.revokeReason}, ''))) > 0)`,
+    ),
+  ],
+);
+
 export const golferPlanResponses = sqliteTable(
   "golfer_plan_responses",
   {

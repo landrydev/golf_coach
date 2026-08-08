@@ -9,9 +9,23 @@ import { requireApiIdentity } from "@/lib/identity";
 import {
   createAccountDataRequest,
   getOrCreateAccountForIdentity,
+  listAccountDataRequests,
 } from "@/lib/repository";
 import { ABUSE_LIMITS, enforceAbuseLimit } from "@/lib/rate-limit";
 import { newId } from "@/lib/tokens";
+
+export async function GET(): Promise<Response> {
+  const requestId = newId();
+  try {
+    const auth = await requireApiIdentity();
+    if (auth.response) return noStore(auth.response, requestId);
+    const account = await getOrCreateAccountForIdentity(auth.identity);
+    const requests = await listAccountDataRequests(account.id);
+    return json({ requests }, { requestId });
+  } catch (error) {
+    return noStore(errorResponse(error), requestId);
+  }
+}
 
 export async function POST(request: Request): Promise<Response> {
   const requestId = newId();
@@ -32,13 +46,19 @@ export async function POST(request: Request): Promise<Response> {
       );
     }
     const details = optionalText(payload, "details", 1_000);
-    const dataRequest = await createAccountDataRequest(
+    const submission = await createAccountDataRequest(
       account.id,
       { type: payload.type, details: details || null },
       requestId,
     );
 
-    return json({ request: dataRequest }, { status: 201, requestId });
+    return json(
+      {
+        request: submission.request,
+        existing: !submission.created,
+      },
+      { status: submission.created ? 201 : 200, requestId },
+    );
   } catch (error) {
     return noStore(errorResponse(error), requestId);
   }

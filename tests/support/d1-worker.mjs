@@ -8,7 +8,19 @@ const serverRoot = resolve(projectRoot, "dist/server");
 
 export const testOrigin = "https://roadmap.test";
 
-export async function startD1Worker() {
+const TEST_OWNER_ACCESS_PEPPER =
+  "synthetic-owner-access-pepper-for-tests-only-2026-08-07";
+const TEST_OWNER_EMAIL_DIGESTS = [
+  "f39ac1742ba2cd9a074d8b9e1749a0f27d68867b012a4c412f1d74392ca0ddee",
+  "64b324c39c650e97d7ae285e733f72de0c663e85dcda9eb073ccbfebeb546ed0",
+  "47590e495c47269d2f0974139289fe0cf88b1c2a808d821ee971cc156908ddff",
+  "272f4b94a240649612ff0c31e7f1d96475fe9cdc376a4472ef2a89ef251268bd",
+  "407db0a81b1552eb43f7726f2608d79d82b83681106bf13a20bea6ec36e1e301",
+  "cd30b063aee679470878e7c1b550c4eefb6a27d2ecec097c4e51fe343ff0f6ef",
+  "0b7bb0ebde3cf931a8c2c76cbce9b1ab5f66415d13dae9531b7c7114862abd75",
+];
+
+export async function startD1Worker(bindingOverrides = {}) {
   const common = {
     compatibilityDate: "2026-08-07",
     compatibilityFlags: ["nodejs_compat"],
@@ -18,6 +30,10 @@ export async function startD1Worker() {
         "synthetic-local-critical-journey-pepper-2026-08-07",
       ABUSE_LIMIT_PEPPER:
         "synthetic-local-abuse-limit-pepper-2026-08-07",
+      INSTRUCTOR_ACCESS_MODE: "owner_private",
+      OWNER_PRIVATE_ACCESS_PEPPER: TEST_OWNER_ACCESS_PEPPER,
+      OWNER_PRIVATE_EMAIL_DIGESTS: TEST_OWNER_EMAIL_DIGESTS.join(","),
+      ...bindingOverrides,
     },
     d1Databases: { DB: "roadmap-critical-journey" },
     r2Buckets: { MEDIA: "roadmap-critical-journey-media" },
@@ -87,18 +103,22 @@ export async function startD1Worker() {
           modules: true,
           script: INSPECT_WORKER,
         });
-        const response = await miniflare.dispatchFetch(
-          new URL("/__inspect", testOrigin),
-          {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify(queries),
-          },
-        );
-        if (!response.ok) {
-          throw new Error(`D1 inspection failed: ${await response.text()}`);
+        try {
+          const response = await miniflare.dispatchFetch(
+            new URL("/__inspect", testOrigin),
+            {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify(queries),
+            },
+          );
+          if (!response.ok) {
+            throw new Error(`D1 inspection failed: ${await response.text()}`);
+          }
+          return await response.json();
+        } finally {
+          await miniflare.setOptions(appOptions);
         }
-        return response.json();
       },
       dispose() {
         return miniflare.dispose();

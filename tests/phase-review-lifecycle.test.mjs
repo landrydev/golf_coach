@@ -484,7 +484,7 @@ async function createWorkspace(worker, golferName) {
     philosophy: "Synthetic phase-transition verification only.",
     contactEmail: coach.email,
     contactPhone: null,
-    websiteUrl: "https://phase-review.example.test",
+    websiteUrl: "https://phase-review.example.ca",
     city: "Calgary",
     provinceOrTerritory: "Alberta",
     accentColor: "#176b55",
@@ -565,7 +565,7 @@ async function publish(worker, planId, revision, recipient) {
 }
 
 async function assertShareAvailable(worker, token) {
-  const response = await jsonWrite(worker, "/api/share/session", "POST", { token });
+  const response = await jsonWrite(worker, "/r/session", "POST", { token });
   assert.equal(response.status, 200);
   const cookie = response.headers.get("set-cookie")?.split(";", 1)[0];
   assert.match(cookie ?? "", /^roadmap_share=/);
@@ -573,7 +573,7 @@ async function assertShareAvailable(worker, token) {
 }
 
 async function assertShareUnavailable(worker, token) {
-  const response = await jsonWrite(worker, "/api/share/session", "POST", { token });
+  const response = await jsonWrite(worker, "/r/session", "POST", { token });
   assert.equal(response.status, 404);
   assert.equal((await response.json()).error.code, "plan_unavailable");
 }

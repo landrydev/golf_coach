@@ -115,6 +115,11 @@ test("Stripe API requests use only server-provided billing configuration and rou
       checkout.init.headers.Authorization,
       "Bearer sk_test_request_capture_not_a_real_credential",
     );
+    assert.match(
+      checkout.init.headers["Idempotency-Key"],
+      /^roadmap-checkout-account_server_owned-\d+$/,
+    );
+    assert.ok(checkout.init.signal instanceof AbortSignal);
     const checkoutBody = new URLSearchParams(checkout.init.body);
     assert.equal(checkoutBody.get("mode"), "subscription");
     assert.equal(checkoutBody.get("client_reference_id"), "account_server_owned");
@@ -138,11 +143,48 @@ test("Stripe API requests use only server-provided billing configuration and rou
 
     const portal = calls[1];
     assert.equal(portal.input, "https://api.stripe.com/v1/billing_portal/sessions");
+    assert.match(
+      portal.init.headers["Idempotency-Key"],
+      /^roadmap-portal-cus_server_owned-\d+$/,
+    );
+    assert.ok(portal.init.signal instanceof AbortSignal);
     const portalBody = new URLSearchParams(portal.init.body);
     assert.deepEqual([...portalBody.keys()].sort(), ["customer", "return_url"]);
     assert.equal(portalBody.get("customer"), "cus_server_owned");
     assert.equal(portalBody.get("return_url"), "https://roadmap.example/app/billing");
     assert.doesNotMatch(portal.init.body.toString(), /attacker/i);
+  } finally {
+    globalThis.fetch = previousFetch;
+    restoreEnvironment("STRIPE_SECRET_KEY", previousSecret);
+    restoreEnvironment("STRIPE_SOLO_PRICE_ID", previousPrice);
+  }
+});
+
+test("Stripe transport failures are bounded and return a safe provider error", async () => {
+  const previousFetch = globalThis.fetch;
+  const previousSecret = process.env.STRIPE_SECRET_KEY;
+  const previousPrice = process.env.STRIPE_SOLO_PRICE_ID;
+  process.env.STRIPE_SECRET_KEY = "sk_test_transport_not_a_real_credential";
+  process.env.STRIPE_SOLO_PRICE_ID = "price_transport_test";
+  globalThis.fetch = async () => {
+    throw new DOMException("request timed out", "TimeoutError");
+  };
+
+  try {
+    await assert.rejects(
+      createCheckoutSession({
+        accountId: "account_transport",
+        email: "coach@example.ca",
+        customerId: null,
+        successUrl: "https://roadmap.example/app/billing?checkout=complete",
+        cancelUrl: "https://roadmap.example/app/billing?checkout=canceled",
+      }),
+      (error) =>
+        error instanceof RequestError &&
+        error.status === 502 &&
+        error.code === "billing_provider_error" &&
+        !/secret|timeout/i.test(error.message),
+    );
   } finally {
     globalThis.fetch = previousFetch;
     restoreEnvironment("STRIPE_SECRET_KEY", previousSecret);
@@ -207,6 +249,12 @@ test("billing-event receipt and replay handling preserve durable idempotency inv
   assert.match(repository, /status:\s*"ignored"/);
   assert.match(repository, /status:\s*"failed"/);
   assert.match(repository, /processingAttempts:\s*sql`\$\{billingEvents\.processingAttempts\} \+ 1`/);
+  assert.match(repository, /inArray\(billingEvents\.status, \["received", "failed"\]\)/);
+  assert.match(repository, /eq\(billingEvents\.status, "processing"\)/);
+  assert.match(repository, /lt\(billingEvents\.processedAt, staleBefore\)/);
+  assert.match(repository, /\.returning\(\{ id: billingEvents\.id \}\)/);
+  assert.match(webhook, /const claimed = await markBillingEventProcessing\(receipt\.id\)/);
+  assert.match(webhook, /if \(!claimed\)[\s\S]*?acknowledge\("processing", true\)/);
   assert.doesNotMatch(repository, /(?:rawBody|rawPayload|payloadBody)\s*:/);
 
   const receiptIndex = webhook.indexOf("await receiveBillingEvent(");

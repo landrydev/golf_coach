@@ -617,7 +617,6 @@ export async function createInstructorDataExport(input: {
       requestType: "export",
       requestedByType: "account",
       status: "fulfilled",
-      identityVerifiedAt: generatedAt,
       fulfilledAt: generatedAt,
     }),
     db.insert(auditEvents).values({

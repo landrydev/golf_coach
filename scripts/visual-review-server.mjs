@@ -90,7 +90,7 @@ async function createSyntheticFixture(reviewWorker) {
     philosophy: "Clear priorities, honest evidence, and practical next steps.",
     contactEmail: identity.email,
     contactPhone: null,
-    websiteUrl: "https://coach.example.test",
+    websiteUrl: "https://coach.example.ca",
     city: "Calgary",
     provinceOrTerritory: "Alberta",
     accentColor: "#176b55",
@@ -104,7 +104,7 @@ async function createSyntheticFixture(reviewWorker) {
     currency: "CAD",
     terms: "Synthetic visual-review package. Confirm current terms with the coach.",
     inclusions: ["Four private lessons", "Coach-authored practice direction"],
-    externalActionUrl: "https://booking.example.test/visual-review",
+    externalActionUrl: "https://booking.example.ca/visual-review",
     status: "active",
     isDefault: true,
   });

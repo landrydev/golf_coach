@@ -236,11 +236,20 @@ export async function editCorePlan(input: {
       ),
   );
 
-  await db.batch([
-    db
-      .update(developmentPlans)
-      .set({
-        title: input.changes.title,
+  try {
+    await db.batch([
+      db
+        .update(developmentPlans)
+        .set({
+        // A zero-row UPDATE does not fail a D1 batch. Put the compare-and-swap
+        // guard in a NOT NULL column instead so a lost race aborts and rolls
+        // back the entire batch before any related plan content can persist.
+        title: sql<string>`case
+          when ${developmentPlans.revision} = ${input.expectedRevision}
+            and ${developmentPlans.status} not in ('completed', 'archived')
+          then ${input.changes.title}
+          else null
+        end`,
         status: "draft",
         revision: sql`${developmentPlans.revision} + 1`,
         approvedRevision: null,
@@ -252,12 +261,12 @@ export async function editCorePlan(input: {
         pausedAt: null,
         updatedAt: now,
       })
-      .where(
-        and(
-          eq(developmentPlans.accountId, input.accountId),
-          eq(developmentPlans.id, input.planId),
+        .where(
+          and(
+            eq(developmentPlans.accountId, input.accountId),
+            eq(developmentPlans.id, input.planId),
+          ),
         ),
-      ),
     db
       .update(golferGoals)
       .set({
@@ -329,7 +338,7 @@ export async function editCorePlan(input: {
           eq(shareLinks.status, "active"),
         ),
       ),
-    db.insert(auditEvents).values({
+      db.insert(auditEvents).values({
       id: newId(),
       accountId: input.accountId,
       actorType: "account",
@@ -353,8 +362,11 @@ export async function editCorePlan(input: {
           "phases",
         ],
       },
-    }),
-  ]);
+      }),
+    ]);
+  } catch (error) {
+    await rethrowCorePlanConflict(input, error);
+  }
 
   const [updatedPlan] = await db
     .select({
@@ -385,4 +397,39 @@ export async function editCorePlan(input: {
     },
     revokedShareLinks: activeShareRows.length,
   };
+}
+
+async function rethrowCorePlanConflict(
+  input: { accountId: string; planId: string; expectedRevision: number },
+  error: unknown,
+): Promise<never> {
+  const [plan] = await getDb()
+    .select({ revision: developmentPlans.revision, status: developmentPlans.status })
+    .from(developmentPlans)
+    .where(
+      and(
+        eq(developmentPlans.accountId, input.accountId),
+        eq(developmentPlans.id, input.planId),
+      ),
+    )
+    .limit(1);
+
+  if (!plan) {
+    throw new RequestError(404, "plan_not_found", "Plan not found.");
+  }
+  if (plan.revision !== input.expectedRevision) {
+    throw new RequestError(
+      409,
+      "stale_plan_revision",
+      "This plan changed while the edit was being saved. Reload the latest version before saving.",
+    );
+  }
+  if (["completed", "archived"].includes(plan.status)) {
+    throw new RequestError(
+      409,
+      "plan_not_editable",
+      "Completed or archived plans cannot be edited.",
+    );
+  }
+  throw error;
 }

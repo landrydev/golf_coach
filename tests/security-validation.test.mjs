@@ -15,7 +15,13 @@ import {
   isAccessibleCoachAccent,
   safeCoachAccent,
 } from "../lib/colors.ts";
-import { createShareToken, hashToken, newId } from "../lib/tokens.ts";
+import {
+  createShareSessionToken,
+  createShareToken,
+  hashShareSessionToken,
+  hashToken,
+  newId,
+} from "../lib/tokens.ts";
 import { startD1Worker, testOrigin } from "./support/d1-worker.mjs";
 
 register(new URL("./support/cloudflare-loader.mjs", import.meta.url));
@@ -51,7 +57,36 @@ test("same-origin validation rejects cross-origin and cross-site writes", () => 
       assertSameOrigin(
         new Request("https://roadmap.example/api/profile", {
           method: "PUT",
-          headers: { "sec-fetch-site": "cross-site" },
+          headers: {
+            origin: "https://roadmap.example",
+            "sec-fetch-site": "cross-site",
+          },
+        }),
+      ),
+    (error) =>
+      error instanceof RequestError &&
+      error.status === 403 &&
+      error.code === "cross_site_request",
+  );
+  assert.throws(
+    () =>
+      assertSameOrigin(
+        new Request("https://roadmap.example/api/profile", { method: "PUT" }),
+      ),
+    (error) =>
+      error instanceof RequestError &&
+      error.status === 403 &&
+      error.code === "cross_origin_request",
+  );
+  assert.throws(
+    () =>
+      assertSameOrigin(
+        new Request("https://roadmap.example/api/profile", {
+          method: "PUT",
+          headers: {
+            origin: "https://roadmap.example",
+            "sec-fetch-site": "same-site",
+          },
         }),
       ),
     (error) =>
@@ -65,8 +100,8 @@ test("text, email, and external-link helpers enforce canonical bounded input", (
   assert.equal(cleanText("  line one\r\nline two  ", "note"), "line one\nline two");
   assert.equal(cleanEmail("  Coach@Example.CA  "), "coach@example.ca");
   assert.equal(
-    cleanExternalUrl("https://coach.example/book?q=one", "url"),
-    "https://coach.example/book?q=one",
+    cleanExternalUrl("https://coach.example.ca/book?q=one", "url"),
+    "https://coach.example.ca/book?q=one",
   );
 
   assert.throws(
@@ -85,6 +120,14 @@ test("text, email, and external-link helpers enforce canonical bounded input", (
     "http://coach.example/book",
     "javascript:alert(1)",
     "/relative-path",
+    "https://localhost/book",
+    "https://coach.local/book",
+    "https://127.0.0.1/book",
+    "https://0x7f000001/book",
+    "https://10.0.0.1/book",
+    "https://[::1]/book",
+    "https://[fc00::1]/book",
+    "https://single-label/book",
   ]) {
     assert.throws(
       () => cleanExternalUrl(unsafeUrl, "url"),
@@ -168,8 +211,17 @@ test("share tokens are high-entropy bearer values with deterministic peppered ha
     assert.notEqual(first.hash, second.hash);
     assert.equal(await hashToken(first.raw), first.hash);
 
+    const session = await createShareSessionToken();
+    assert.match(session.raw, /^[A-Za-z0-9_-]{43}$/);
+    assert.match(session.hash, /^[0-9a-f]{64}$/);
+    assert.notEqual(session.raw, first.raw);
+    assert.notEqual(session.hash, first.hash);
+    assert.equal(await hashShareSessionToken(session.raw), session.hash);
+    assert.notEqual(await hashToken(session.raw), session.hash);
+
     process.env.SHARE_TOKEN_PEPPER = "test-pepper-two-with-sufficient-separation";
     assert.notEqual(await hashToken(first.raw), first.hash);
+    assert.notEqual(await hashShareSessionToken(session.raw), session.hash);
     assert.match(newId(), /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
   } finally {
     restoreEnvironment("SHARE_TOKEN_PEPPER", previousPepper);
@@ -196,7 +248,7 @@ test("network abuse subjects trust only a canonical Cloudflare address", async (
   try {
     assert.equal(
       clientNetworkSubject(
-        new Request("https://roadmap.example/api/share/session", {
+        new Request("https://roadmap.example/r/session", {
           headers: { "cf-connecting-ip": "2001:DB8::42" },
         }),
       ),
@@ -209,7 +261,7 @@ test("network abuse subjects trust only a canonical Cloudflare address", async (
       assert.throws(
         () =>
           clientNetworkSubject(
-            new Request("https://roadmap.example/api/share/session", { headers }),
+            new Request("https://roadmap.example/r/session", { headers }),
           ),
         (error) =>
           error instanceof RequestError &&
@@ -222,9 +274,12 @@ test("network abuse subjects trust only a canonical Cloudflare address", async (
   }
 });
 
-test("share-session source keeps bearer values out of URLs and applies scoped cookies", async () => {
-  const [sessionRoute, publishRoute] = await Promise.all([
-    readFile(new URL("../app/api/share/session/route.ts", import.meta.url), "utf8"),
+test("share-session source keeps verifiers out of cookies and scopes session consumers beneath /r", async () => {
+  const [sessionRoute, responseRoute, choices, closeControl, publishRoute] = await Promise.all([
+    readFile(new URL("../app/r/session/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/r/response/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../components/plan/GolferChoices.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/plan/CloseRoadmap.tsx", import.meta.url), "utf8"),
     readFile(
       new URL("../app/api/plans/[planId]/publish/route.ts", import.meta.url),
       "utf8",
@@ -235,14 +290,20 @@ test("share-session source keeps bearer values out of URLs and applies scoped co
   assert.match(sessionRoute, /Path=\/r/);
   assert.match(sessionRoute, /HttpOnly/);
   assert.match(sessionRoute, /SameSite=Lax/);
-  assert.match(sessionRoute, /MAX_SESSION_SECONDS = 12 \* 60 \* 60/);
-  assert.match(sessionRoute, /"Cache-Control": "no-store"/);
+  assert.match(sessionRoute, /SHARE_SESSION_MAX_SECONDS/);
+  assert.match(sessionRoute, /createShareSession\(/);
+  assert.match(sessionRoute, /endShareSession\(/);
+  assert.doesNotMatch(sessionRoute, /\$\{SHARE_COOKIE\}=\$\{shareVerifier\}/);
+  assert.match(sessionRoute, /"Cache-Control": "private, no-store, max-age=0"/);
+  assert.match(responseRoute, /rawSessionToken/);
+  assert.match(choices, /fetch\("\/r\/response"/);
+  assert.match(closeControl, /fetch\("\/r\/session", \{ method: "DELETE" \}\)/);
   assert.match(publishRoute, /\/r#token=/);
   assert.doesNotMatch(publishRoute, /\/r\?token=/);
 });
 
 test("built share-session endpoint clears only its scoped secure cookie", async () => {
-  const response = await fetchBuiltApp("/api/share/session", {
+  const response = await fetchBuiltApp("/r/session", {
     method: "DELETE",
     headers: {
       origin: "https://roadmap.example",
@@ -264,7 +325,7 @@ test("built share-session endpoint clears only its scoped secure cookie", async 
 });
 
 test("built share-session endpoint rejects cross-origin and malformed exchanges neutrally", async (context) => {
-  const crossOrigin = await fetchBuiltApp("/api/share/session", {
+  const crossOrigin = await fetchBuiltApp("/r/session", {
     method: "DELETE",
     headers: {
       origin: "https://attacker.example",
@@ -282,7 +343,7 @@ test("built share-session endpoint rejects cross-origin and malformed exchanges 
 
   const worker = await startD1Worker();
   context.after(() => worker.dispose());
-  const malformed = await worker.dispatch("/api/share/session", {
+  const malformed = await worker.dispatch("/r/session", {
     method: "POST",
     headers: {
       "cf-connecting-ip": "192.0.2.11",
@@ -299,7 +360,13 @@ test("built share-session endpoint rejects cross-origin and malformed exchanges 
       message: "This private plan is unavailable.",
     },
   });
-  assert.equal(malformed.headers.get("set-cookie"), null);
+  const clearedCookie = malformed.headers.get("set-cookie") ?? "";
+  assert.match(clearedCookie, /^roadmap_share=;/);
+  assert.match(clearedCookie, /Path=\/r/i);
+  assert.match(clearedCookie, /Max-Age=0/i);
+  assert.match(clearedCookie, /HttpOnly/i);
+  assert.match(clearedCookie, /SameSite=Lax/i);
+  assert.match(clearedCookie, /Secure/i);
 });
 
 function restoreEnvironment(name, previousValue) {

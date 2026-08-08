@@ -39,7 +39,7 @@ export function GolferChoices({
     setIsError(false);
 
     try {
-      const response = await fetch("/api/share/response", {
+      const response = await fetch("/r/response", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ responseType }),

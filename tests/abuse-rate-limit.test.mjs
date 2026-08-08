@@ -19,7 +19,7 @@ test(
 
     const responses = await Promise.all(
       Array.from({ length: 20 }, () =>
-        worker.dispatch("/api/share/session", {
+        worker.dispatch("/r/session", {
           method: "POST",
           headers: {
             "cf-connecting-ip": testAddress,
@@ -106,6 +106,9 @@ test(
       {
         sql: "select scope, subject_key_hash, request_count from abuse_rate_limits where scope = 'data_export_account'",
       },
+      {
+        sql: "select count(*) as count from data_requests where request_type = 'export' and identity_verified_at is not null",
+      },
     ]);
     assert.equal(inspection[0].results.length, 1);
     assert.match(inspection[0].results[0].subject_key_hash, /^[0-9a-f]{64}$/);
@@ -114,24 +117,25 @@ test(
       JSON.stringify(inspection[0].results),
       /limit\.test@example\.test/i,
     );
+    assert.equal(inspection[1].results[0].count, 0);
   },
 );
 
 test("every selected high-risk route invokes its dedicated abuse-control scope", async () => {
   const routes = {
-    "share/session": "shareExchangeNetwork|shareExchangeCapability",
-    "share/response": "shareResponseNetwork|shareResponseCapability",
-    "plans/[planId]/publish": "planPublishAccount",
-    "shares/[shareId]": "shareRevokeAccount",
-    "billing/checkout": "billingCheckoutAccount",
-    "billing/portal": "billingPortalAccount",
-    "data-export": "dataExportAccount",
-    "data-requests": "dataRequestAccount",
+    "r/session": "shareExchangeNetwork|shareExchangeCapability",
+    "r/response": "shareResponseNetwork|shareResponseCapability",
+    "api/plans/[planId]/publish": "planPublishAccount",
+    "api/shares/[shareId]": "shareRevokeAccount",
+    "api/billing/checkout": "billingCheckoutAccount",
+    "api/billing/portal": "billingPortalAccount",
+    "api/data-export": "dataExportAccount",
+    "api/data-requests": "dataRequestAccount",
   };
 
   for (const [route, expectedScopes] of Object.entries(routes)) {
     const source = await readFile(
-      new URL(`../app/api/${route}/route.ts`, import.meta.url),
+      new URL(`../app/${route}/route.ts`, import.meta.url),
       "utf8",
     );
     assert.match(source, /enforceAbuseLimit\(/);

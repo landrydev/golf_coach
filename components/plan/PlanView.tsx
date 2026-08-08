@@ -1,6 +1,7 @@
 import styles from "./plan.module.css";
 import type { PlanViewModel } from "./types";
 import { GolferChoices } from "./GolferChoices";
+import { CloseRoadmap } from "./CloseRoadmap";
 import { safeCoachAccent } from "@/lib/colors";
 
 export function PlanView({ model, preview = false }: { model: PlanViewModel; preview?: boolean }) {
@@ -33,9 +34,12 @@ export function PlanView({ model, preview = false }: { model: PlanViewModel; pre
           <span aria-hidden="true">{initials(model.coach.displayName)}</span>
           <strong>{model.coach.businessName || model.coach.displayName}</strong>
         </a>
-        <div className={styles.identity}>
-          <span>Private coaching plan</span>
-          <strong>{model.golfer.displayName}</strong>
+        <div className={styles.headerTools}>
+          <div className={styles.identity}>
+            <span>Private coaching plan</span>
+            <strong>{model.golfer.displayName}</strong>
+          </div>
+          {!preview && model.access ? <CloseRoadmap /> : null}
         </div>
       </header>
       <nav className={styles.nav} aria-label="Coaching plan sections">

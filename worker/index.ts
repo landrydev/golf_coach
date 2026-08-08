@@ -1,11 +1,20 @@
 /** Cloudflare Worker entry point for the vinext-starter template. */
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
+import {
+  evaluateInstructorRequestAccess,
+  normalizeApplicationPath,
+  productAccessDeniedResponse,
+} from "../lib/product-access";
 
 interface Env {
   ASSETS: Fetcher;
   DB: D1Database;
   MEDIA: R2Bucket;
+  INSTRUCTOR_ACCESS_MODE?: string;
+  OWNER_PRIVATE_ACCESS_PEPPER?: string;
+  OWNER_PRIVATE_EMAIL_DIGESTS?: string;
+  SUBSCRIPTION_ACCESS_STATUSES?: string;
   IMAGES: {
     input(stream: ReadableStream): {
       transform(options: Record<string, unknown>): {
@@ -42,6 +51,21 @@ const worker = {
       return withSecurityHeaders(imageResponse, request);
     }
 
+    const accessDecision = await evaluateInstructorRequestAccess({
+      pathname: url.pathname,
+      authenticatedEmail: request.headers.get("oai-authenticated-user-email"),
+      environment: env,
+    });
+    if (
+      accessDecision !== "not_applicable" &&
+      accessDecision !== "granted"
+    ) {
+      return withSecurityHeaders(
+        productAccessDeniedResponse(accessDecision, request),
+        request,
+      );
+    }
+
     const response = await handler.fetch(request, env, ctx);
     return withSecurityHeaders(response, request);
   },
@@ -50,11 +74,13 @@ const worker = {
 function withSecurityHeaders(response: Response, request: Request): Response {
   const headers = new Headers(response.headers);
   const requestUrl = new URL(request.url);
+  const applicationPath = normalizeApplicationPath(requestUrl.pathname);
   const isLocal = requestUrl.hostname === "localhost" || requestUrl.hostname === "127.0.0.1";
   const isInstructorPath =
-    requestUrl.pathname === "/app" || requestUrl.pathname.startsWith("/app/");
+    applicationPath === "/app" || applicationPath.startsWith("/app/");
   const isGolferPath =
-    requestUrl.pathname === "/r" || requestUrl.pathname.startsWith("/r/");
+    applicationPath === "/r" || applicationPath.startsWith("/r/");
+  const isBillingPage = applicationPath === "/app/billing";
 
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -87,13 +113,15 @@ function withSecurityHeaders(response: Response, request: Request): Response {
         "default-src 'self'",
         "base-uri 'self'",
         "frame-ancestors 'none'",
-        "form-action 'self' https://checkout.stripe.com https://billing.stripe.com",
+        isBillingPage
+          ? "form-action 'self' https://checkout.stripe.com https://billing.stripe.com"
+          : "form-action 'self'",
         "img-src 'self' data: blob:",
         "font-src 'self' data:",
         "style-src 'self' 'unsafe-inline'",
         "script-src 'self' 'unsafe-inline'",
-        "connect-src 'self' https://api.stripe.com",
-        "frame-src https://checkout.stripe.com https://billing.stripe.com",
+        "connect-src 'self'",
+        "frame-src 'none'",
         "object-src 'none'",
         "upgrade-insecure-requests",
       ].join("; "),

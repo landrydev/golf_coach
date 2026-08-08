@@ -79,6 +79,24 @@ The product must not collect junior-golfer data in V1. It must not infer sensiti
 
 `[REAL-WORLD VALIDATION REQUIRED]` Dispatch-owned SIWC's suitability for a public Canada-wide SaaS, identity continuity, recovery, session duration, sign-out, and incident support must be proven with the exact Sites configuration. Until then, the implementation choice is selected but the live public-auth claim is unresolved.
 
+### Instructor product-access policy
+
+One Worker-boundary policy covers HTML, Vinext RSC navigation, and API requests
+before the instructor application runs. `owner_private` compares only an
+HMAC-SHA-256 digest of the trimmed, lowercased SIWC email against an explicit
+digest allowlist. Its pepper is independent from the share-token and abuse
+peppers. Plaintext allowlist emails are neither configured nor logged.
+
+`subscription_required` permits core product routes only when the account's
+latest Stripe subscription projection has a status in the explicitly configured
+allowlist. No status is selected in code as a commercial default. Billing,
+profile, export, and privacy-request controls remain reachable so an instructor
+can subscribe, manage billing, or exercise account/data rights. Public health,
+signed Stripe webhook, and golfer capability endpoints keep their separate
+boundaries. Missing or invalid policy configuration fails closed. Denials are
+non-cacheable, bounded `403`, `402`, or configuration-failure responses without
+identity, status-list, digest, or secret detail.
+
 ### Instructor authorization
 
 - All tenant repositories require the authenticated `instructor_id` as a server-created context value.
@@ -93,11 +111,12 @@ The product must not collect junior-golfer data in V1. It must not infer sensiti
 - Generate at least 256 bits of entropy with a cryptographically secure generator.
 - Store only an HMAC-SHA-256 fingerprint under a dedicated runtime pepper; never store or log the raw verifier.
 - Carry the raw verifier in a fragment and exchange it through a same-origin POST body for a scoped `Secure`, `HttpOnly`, `SameSite=Lax` session cookie.
+- Record link-open access, create the browser session, and increment the capability counter in that same atomic POST transaction. Token-free `GET /r/plan` is read-only, so cross-site navigation or prefetch cannot create audit/counter state.
 - Clear the fragment before further navigation and set `Referrer-Policy: no-referrer` on capability bootstrap and golfer pages.
 - Return no personal detail before validation; use equivalent neutral invalid, expired, revoked, and not-found states.
 - Rate-limit capability exchanges by a privacy-safe combination of share ID and network signals; do not expose whether a share ID exists.
 - Scope each capability to one instructor, one golfer roadmap/publication, read-only actions, and its approved lifetime.
-- Support explicit revoke and rotate. Rotation invalidates prior capability sessions as soon as practical and is recorded in the audit ledger.
+- Support explicit revoke and rotate. Revocation atomically marks the capability and every still-open child session revoked and records the instructor action in the audit ledger.
 - Keep capability pages free of third-party scripts, pixels, fonts, embeds, and asset origins that could receive URL or behavior data.
 - Prevent indexing and caching of private pages with appropriate response headers.
 - Never put raw capabilities in Sites logs, first-party events, error reports, support tickets, or screenshots.

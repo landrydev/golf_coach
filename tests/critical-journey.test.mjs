@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHmac } from "node:crypto";
 import { test } from "node:test";
 import {
   identityHeaders,
@@ -48,7 +49,7 @@ test(
         philosophy: "Clear decisions, measured progress, and sustainable practice.",
         contactEmail: coachA.email,
         contactPhone: "+1 403 555 0101",
-        websiteUrl: "https://coach.example.test",
+        websiteUrl: "https://coach.example.ca",
         city: "Calgary",
         provinceOrTerritory: "Alberta",
         accentColor: "#176b55",
@@ -72,7 +73,7 @@ test(
         currency: "CAD",
         terms: "Synthetic test package; no purchase or external communication occurs.",
         inclusions: ["Four private lessons", "Practice feedback"],
-        externalActionUrl: "https://booking.example.test/momentum",
+        externalActionUrl: "https://booking.example.ca/momentum",
         status: "active",
         isDefault: true,
       },
@@ -268,7 +269,7 @@ test(
 
     const exchangeResponse = await jsonWrite(
       worker,
-      "/api/share/session",
+      "/r/session",
       "POST",
       null,
       { token },
@@ -282,10 +283,17 @@ test(
     assert.match(setCookie, /HttpOnly/);
     assert.match(setCookie, /SameSite=Lax/);
     assert.match(setCookie, /Secure/);
-    const shareCookie = setCookie.split(";", 1)[0];
+    const cookieMaxAge = Number(/Max-Age=(\d+)/i.exec(setCookie)?.[1]);
+    assert.ok(cookieMaxAge > 43_100 && cookieMaxAge <= 43_200);
+    const firstSessionCookie = browserCookieForPath(setCookie, "/r/plan");
+    assert.match(firstSessionCookie, /^roadmap_share=[A-Za-z0-9_-]{40,64}$/);
+    assert.equal(browserCookieForPath(setCookie, "/api/share/response"), null);
+    assert.equal(browserCookieForPath(setCookie, "/r/response"), firstSessionCookie);
+    const firstSessionToken = firstSessionCookie.split("=", 2)[1];
+    assert.notEqual(firstSessionToken, token);
 
     const privatePlanResponse = await worker.dispatch("/r/plan", {
-      headers: { accept: "text/html", cookie: shareCookie },
+      headers: { accept: "text/html", cookie: firstSessionCookie },
     });
     assert.equal(privatePlanResponse.status, 200);
     assertPrivateShareResponse(privatePlanResponse);
@@ -294,22 +302,142 @@ test(
     assert.match(privatePlanHtml, /Jordan Predictable Contact Roadmap/);
     assert.match(privatePlanHtml, /Centered contact at playing tempo/);
     assert.match(privatePlanHtml, /Momentum Coaching Series/);
+    assert.match(privatePlanHtml, /Close roadmap/);
     assert.equal(privatePlanHtml.includes(token), false);
+    assert.equal(privatePlanHtml.includes(firstSessionToken), false);
     assert.doesNotMatch(privatePlanHtml, /coach\.b@example\.test/i);
 
-    const golferChoice = await worker.dispatch("/api/share/response", {
+    const golferChoice = await worker.dispatch("/r/response", {
       method: "POST",
       headers: {
         "content-type": "application/json",
         origin: testOrigin,
         "sec-fetch-site": "same-origin",
-        cookie: shareCookie,
+        cookie: browserCookieForPath(setCookie, "/r/response"),
       },
       body: JSON.stringify({ responseType: "wait" }),
     });
     assert.equal(golferChoice.status, 201);
     assertPrivateApiResponse(golferChoice);
     assert.equal((await golferChoice.json()).response.responseType, "wait");
+
+    const [closeResponse, closeRetry] = await Promise.all(
+      Array.from({ length: 2 }, () =>
+        worker.dispatch("/r/session", {
+          method: "DELETE",
+          headers: {
+            origin: testOrigin,
+            "sec-fetch-site": "same-origin",
+            cookie: browserCookieForPath(setCookie, "/r/session"),
+          },
+        }),
+      ),
+    );
+    assert.deepEqual([closeResponse.status, closeRetry.status], [204, 204]);
+    assertPrivateApiResponse(closeResponse);
+    assert.match(closeResponse.headers.get("set-cookie") ?? "", /^roadmap_share=;/);
+    assert.match(closeResponse.headers.get("set-cookie") ?? "", /Max-Age=0/i);
+
+    const closedSession = await worker.dispatch("/r/plan", {
+      headers: { accept: "text/html", cookie: firstSessionCookie },
+    });
+    assert.equal(closedSession.status, 200);
+    const closedSessionHtml = await closedSession.text();
+    assert.match(closedSessionHtml, /Plan unavailable/);
+    assert.doesNotMatch(closedSessionHtml, /Jordan Synthetic/);
+
+    const reopenedExchange = await jsonWrite(
+      worker,
+      "/r/session",
+      "POST",
+      null,
+      { token },
+    );
+    assert.equal(reopenedExchange.status, 200);
+    const reopenedSetCookie = reopenedExchange.headers.get("set-cookie");
+    const replacedSessionCookie = browserCookieForPath(reopenedSetCookie, "/r/plan");
+    assert.match(replacedSessionCookie, /^roadmap_share=[A-Za-z0-9_-]{40,64}$/);
+    const replacedSessionToken = replacedSessionCookie.split("=", 2)[1];
+    assert.notEqual(replacedSessionToken, token);
+    assert.notEqual(replacedSessionToken, firstSessionToken);
+
+    const replacementExchange = await worker.dispatch("/r/session", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        origin: testOrigin,
+        "sec-fetch-site": "same-origin",
+        cookie: browserCookieForPath(reopenedSetCookie, "/r/session"),
+      },
+      body: JSON.stringify({ token }),
+    });
+    assert.equal(replacementExchange.status, 200);
+    const replacementSetCookie = replacementExchange.headers.get("set-cookie");
+    const activeSessionCookie = browserCookieForPath(replacementSetCookie, "/r/plan");
+    assert.match(activeSessionCookie, /^roadmap_share=[A-Za-z0-9_-]{40,64}$/);
+    const activeSessionToken = activeSessionCookie.split("=", 2)[1];
+    assert.notEqual(activeSessionToken, token);
+    assert.notEqual(activeSessionToken, firstSessionToken);
+    assert.notEqual(activeSessionToken, replacedSessionToken);
+
+    await worker.inspect([
+      {
+        sql: "update share_sessions set expires_at = ? where token_hash = ?",
+        params: [
+          Date.now() - 1,
+          shareSessionHash(activeSessionToken),
+        ],
+      },
+    ]);
+    const expiredSessionPlan = await worker.dispatch("/r/plan", {
+      headers: { accept: "text/html", cookie: activeSessionCookie },
+    });
+    assert.match(await expiredSessionPlan.text(), /Plan unavailable/);
+    const expiredSessionChoice = await worker.dispatch("/r/response", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        origin: testOrigin,
+        "sec-fetch-site": "same-origin",
+        cookie: activeSessionCookie,
+      },
+      body: JSON.stringify({ responseType: "decline" }),
+    });
+    assert.equal(expiredSessionChoice.status, 404);
+
+    const expiryRecoveryExchange = await jsonWrite(
+      worker,
+      "/r/session",
+      "POST",
+      null,
+      { token },
+    );
+    assert.equal(expiryRecoveryExchange.status, 200);
+    const expiryRecoverySetCookie = expiryRecoveryExchange.headers.get("set-cookie");
+    const linkExpirySessionCookie = browserCookieForPath(
+      expiryRecoverySetCookie,
+      "/r/plan",
+    );
+    assert.match(linkExpirySessionCookie, /^roadmap_share=[A-Za-z0-9_-]{40,64}$/);
+
+    await worker.inspect([
+      {
+        sql: "update share_links set expires_at = ? where id = ?",
+        params: [Date.now() - 1, share.id],
+      },
+    ]);
+    const linkExpiredPlan = await worker.dispatch("/r/plan", {
+      headers: { accept: "text/html", cookie: linkExpirySessionCookie },
+    });
+    assert.match(await linkExpiredPlan.text(), /Plan unavailable/);
+    const linkExpiredExchange = await jsonWrite(
+      worker,
+      "/r/session",
+      "POST",
+      null,
+      { token },
+    );
+    assert.equal(linkExpiredExchange.status, 404);
 
     const tenantBRevoke = await jsonWrite(
       worker,
@@ -333,7 +461,7 @@ test(
 
     const revokedExchange = await jsonWrite(
       worker,
-      "/api/share/session",
+      "/r/session",
       "POST",
       null,
       { token },
@@ -342,7 +470,7 @@ test(
     assert.equal((await revokedExchange.json()).error.code, "plan_unavailable");
 
     const revokedSession = await worker.dispatch("/r/plan", {
-      headers: { accept: "text/html", cookie: shareCookie },
+      headers: { accept: "text/html", cookie: linkExpirySessionCookie },
     });
     assert.equal(revokedSession.status, 200);
     assertPrivateShareResponse(revokedSession);
@@ -350,18 +478,28 @@ test(
     assert.match(revokedHtml, /Plan unavailable/);
     assert.doesNotMatch(revokedHtml, /Jordan Synthetic/);
 
-    const revokedChoice = await worker.dispatch("/api/share/response", {
+    const revokedChoice = await worker.dispatch("/r/response", {
       method: "POST",
       headers: {
         "content-type": "application/json",
         origin: testOrigin,
         "sec-fetch-site": "same-origin",
-        cookie: shareCookie,
+        cookie: linkExpirySessionCookie,
       },
       body: JSON.stringify({ responseType: "decline" }),
     });
     assert.equal(revokedChoice.status, 404);
     assert.equal((await revokedChoice.json()).error.code, "plan_unavailable");
+
+    const endRevokedSession = await worker.dispatch("/r/session", {
+      method: "DELETE",
+      headers: {
+        origin: testOrigin,
+        "sec-fetch-site": "same-origin",
+        cookie: linkExpirySessionCookie,
+      },
+    });
+    assert.equal(endRevokedSession.status, 204);
 
     const inspection = await worker.inspect([
       {
@@ -380,12 +518,20 @@ test(
         params: [share.id],
       },
       {
+        sql: "select token_hash, token_hash_algorithm, expires_at, access_count, revoked_at, revoke_reason from share_sessions where share_link_id = ? order by created_at",
+        params: [share.id],
+      },
+      {
         sql: "select count(*) as count from audit_events where target_id in (?, ?) and outcome = 'success'",
         params: [workspace.golfer.id, workspace.plan.id],
       },
       {
         sql: "select response_type, external_outcome_observed from golfer_plan_responses where plan_id = ? order by occurred_at",
         params: [workspace.plan.id],
+      },
+      {
+        sql: "select count(*) as count from audit_events where action = 'share.session_ended' and target_id in (select id from share_sessions where share_link_id = ?)",
+        params: [share.id],
       },
     ]);
     assert.deepEqual(
@@ -407,13 +553,38 @@ test(
     assert.equal(storedShare.token_hash_algorithm, "hmac-sha256-v1");
     assert.equal(storedShare.status, "revoked");
     assert.equal(storedShare.plan_revision, 2);
-    assert.equal(storedShare.access_count, 1);
+    assert.equal(storedShare.access_count, 4);
     assert.ok(storedShare.revoked_at);
     assert.equal(storedShare.revoke_reason, "Synthetic journey completed");
-    assert.ok(inspection[4].results[0].count >= 3);
-    assert.deepEqual(inspection[5].results, [
+    assert.equal(inspection[4].results.length, 4);
+    for (const storedSession of inspection[4].results) {
+      assert.match(storedSession.token_hash, /^[0-9a-f]{64}$/);
+      assert.notEqual(storedSession.token_hash, token);
+      assert.notEqual(storedSession.token_hash, firstSessionToken);
+      assert.notEqual(storedSession.token_hash, replacedSessionToken);
+      assert.notEqual(storedSession.token_hash, activeSessionToken);
+      assert.equal(storedSession.token_hash_algorithm, "hmac-sha256-session-v1");
+      assert.ok(storedSession.expires_at > 0);
+      assert.ok(storedSession.revoked_at);
+    }
+    assert.deepEqual(
+      inspection[4].results.map((row) => row.revoke_reason).sort(),
+      [
+        "closed by golfer",
+        "replaced by a new share exchange",
+        "share link revoked",
+        "share link revoked",
+      ],
+    );
+    assert.deepEqual(
+      inspection[4].results.map((row) => row.access_count).sort(),
+      [0, 0, 0, 0],
+    );
+    assert.ok(inspection[5].results[0].count >= 3);
+    assert.deepEqual(inspection[6].results, [
       { response_type: "wait", external_outcome_observed: 0 },
     ]);
+    assert.equal(inspection[7].results[0].count, 2);
   },
 );
 
@@ -432,6 +603,15 @@ async function jsonWrite(worker, path, method, identity, body) {
   });
 }
 
+function shareSessionHash(rawSessionToken) {
+  return createHmac(
+    "sha256",
+    "synthetic-local-critical-journey-pepper-2026-08-07",
+  )
+    .update(`share-session-v1:${rawSessionToken}`)
+    .digest("hex");
+}
+
 function assertPrivateApiResponse(response) {
   const cacheControl = response.headers.get("cache-control") ?? "";
   assert.match(cacheControl, /private/i);
@@ -447,4 +627,16 @@ function assertPrivateShareResponse(response) {
     response.headers.get("x-robots-tag"),
     "noindex, nofollow, noarchive",
   );
+}
+
+function browserCookieForPath(setCookie, requestPath) {
+  if (!setCookie) return null;
+  const parts = setCookie.split(";").map((part) => part.trim());
+  const cookiePath =
+    parts.find((part) => part.toLowerCase().startsWith("path="))?.slice(5) ?? "/";
+  const pathMatches =
+    requestPath === cookiePath ||
+    (requestPath.startsWith(cookiePath) &&
+      (cookiePath.endsWith("/") || requestPath.charAt(cookiePath.length) === "/"));
+  return pathMatches ? parts[0] : null;
 }

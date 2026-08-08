@@ -55,6 +55,9 @@ The inventory records a name, purpose, environment, provider owner, last rotatio
 | R2 binding | Sites-managed resource binding | Private; separate per environment; object lifecycle and inventory monitored |
 | Share-token pepper | Runtime secret | Unique per environment; rotation plan accounts for active capabilities rather than silently breaking them |
 | Abuse-limit pepper | Runtime secret | Unique and independent per environment; rotation resets non-reversible short-lived counters and must be correlated with the release |
+| Owner-private access pepper | Runtime secret | At least 32 characters, unique and independent; rotate atomically with every owner-email HMAC digest |
+| Owner-private email digests | Runtime configuration | Comma-separated HMAC-SHA-256 hex digests only; never plaintext email |
+| Subscription access statuses | Runtime configuration | Explicit owner-approved status list; there is no code default |
 | Stripe secret key | Runtime secret | Test/live modes separated; least privilege where provider permits; rotate on suspected exposure |
 | Stripe webhook secret | Runtime secret | Endpoint- and environment-specific; verify against raw body; rotate with overlap/replay plan |
 | Stripe Price ID | Runtime configuration, not a secret | Must identify the exact approved product/price; browser values never override it |
@@ -62,6 +65,24 @@ The inventory records a name, purpose, environment, provider owner, last rotatio
 | Release identifier | Build configuration | Immutable commit/artifact identifier exposed to health/diagnostic output without secrets |
 
 Logical D1/R2 declarations live in `.openai/hosting.json`; Sites owns real Cloudflare resource provisioning and deployment wiring. Hosted runtime values are managed through the Sites control plane. No `.env` file, dashboard export, credential screenshot, or copied webhook payload belongs in version control.
+
+### Instructor product-access configuration
+
+Set exactly one `INSTRUCTOR_ACCESS_MODE` and verify the boolean
+`instructorAccessPolicy` health check before smoke testing. For
+`owner_private`, normalize each authorized SIWC email by trimming and
+lowercasing it, compute HMAC-SHA-256 with the dedicated pepper, and configure
+only the lowercase 64-character digests. Never paste plaintext allowlist emails
+into variables, tickets, logs, or release evidence.
+
+For `subscription_required`, explicitly configure one or more of `incomplete`,
+`trialing`, `active`, `past_due`, `paused`, `canceled`, `unpaid`, or `ended`.
+This is owner-approved commercial/operations policy, not a code default.
+Missing, empty, duplicate, or unknown values fail closed. Verify that account,
+billing, and data controls remain reachable without an eligible subscription;
+core pages/APIs return the generic subscription-required response; approved
+signed-webhook states grant core access; and public health, webhook, and golfer
+routes remain separate.
 
 ## Release procedure
 
@@ -192,8 +213,20 @@ No availability objective, alert threshold, response-time promise, RPO, or RTO i
 
 ### Backup requirements
 
-- Verify the current provider-supported D1 backup/point-in-time recovery capabilities before selecting the procedure.
+- Provider capability checked against current first-party documentation on
+  2026-08-08: production-backend D1 databases have always-on Time Travel, with
+  point-in-time restoration to any minute in the plan's retention window (currently
+  documented as 7 days on Workers Free and 30 days on Workers Paid). A restore
+  overwrites the database in place and cancels in-flight queries, so the operator must
+  first verify the actual database backend/plan and record the pre-restore bookmark.
+  See Cloudflare's [D1 Time Travel and backups](https://developers.cloudflare.com/d1/reference/time-travel/).
 - If provider-native recovery cannot meet the approved need, use an authorized scheduled logical export to a separately controlled location; do not assume an R2 bucket in the same failure domain is sufficient without analysis.
+- R2 redundancy/durability does not recover an intentional or accidental object
+  deletion. Bucket locks can reduce accidental deletion risk and lifecycle rules can
+  enforce approved expiry, but neither is a substitute for an independently recoverable
+  copy. See Cloudflare's [R2 durability](https://developers.cloudflare.com/r2/reference/durability/),
+  [bucket locks](https://developers.cloudflare.com/r2/buckets/bucket-locks/), and
+  [object lifecycle](https://developers.cloudflare.com/r2/buckets/object-lifecycles/).
 - Protect backup access with least privilege and environment separation.
 - Define retention and deletion for D1, R2, exports, audit events, cancelled accounts, and backup copies through approved policy.
 - Monitor backup creation and object/inventory completeness; a scheduled job is not proof of a usable backup.

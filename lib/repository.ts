@@ -959,7 +959,13 @@ export async function createGolferWorkspace(
 
 export type AccountDataRequestView = {
   id: string;
-  type: "export" | "deletion";
+  type:
+    | "access"
+    | "export"
+    | "correction"
+    | "deletion"
+    | "restriction"
+    | "consent_withdrawal";
   status:
     | "submitted"
     | "identity_verification_required"
@@ -970,43 +976,123 @@ export type AccountDataRequestView = {
     | "canceled"
     | "failed";
   createdAt: number;
+  updatedAt: number;
 };
+
+export type AccountDataRequestSubmission = {
+  request: AccountDataRequestView;
+  created: boolean;
+};
+
+const openAccountDeletionStatuses = [
+  "submitted",
+  "identity_verification_required",
+  "verified",
+  "in_progress",
+] as const;
+
+export async function listAccountDataRequests(
+  accountId: string,
+): Promise<AccountDataRequestView[]> {
+  const db = getDb();
+  const [rows, openDeletion] = await Promise.all([
+    db
+      .select({
+        id: dataRequests.id,
+        requestType: dataRequests.requestType,
+        status: dataRequests.status,
+        createdAt: dataRequests.createdAt,
+        updatedAt: dataRequests.updatedAt,
+      })
+      .from(dataRequests)
+      .where(eq(dataRequests.accountId, accountId))
+      .orderBy(desc(dataRequests.createdAt))
+      .limit(25),
+    getOpenAccountDeletionRequest(accountId),
+  ]);
+
+  const mapped = rows.map(mapAccountDataRequest);
+  return openDeletion && !mapped.some((request) => request.id === openDeletion.id)
+    ? [openDeletion, ...mapped]
+    : mapped;
+}
 
 export async function createAccountDataRequest(
   accountId: string,
   input: { type: "export" | "deletion"; details: string | null },
   requestId?: string,
-): Promise<AccountDataRequestView> {
+): Promise<AccountDataRequestSubmission> {
   const db = getDb();
+
+  if (input.type === "deletion") {
+    const existing = await getOpenAccountDeletionRequest(accountId);
+    if (existing) return { request: existing, created: false };
+  }
+
   const id = newId();
   const status =
     input.type === "deletion"
       ? ("identity_verification_required" as const)
       : ("submitted" as const);
 
-  await db.batch([
-    db.insert(dataRequests).values({
-      id,
-      accountId,
-      golferId: null,
-      requestType: input.type,
-      requestedByType: "account",
-      status,
-      details: input.details,
-    }),
-    db.insert(auditEvents).values({
-      id: newId(),
-      accountId,
-      actorType: "account",
-      actorAccountId: accountId,
-      action: "data_request.submitted",
-      targetType: "data_request",
-      targetId: id,
-      outcome: "success",
-      requestId,
-      metadata: { requestType: input.type, status },
-    }),
-  ]);
+  const requestInsert = db.insert(dataRequests).values({
+    id,
+    accountId,
+    golferId: null,
+    requestType: input.type,
+    requestedByType: "account",
+    status,
+    details: input.details,
+  });
+  const auditInsert = db.insert(auditEvents).values({
+    id: newId(),
+    accountId,
+    actorType: "account",
+    actorAccountId: accountId,
+    action: "data_request.submitted",
+    targetType: "data_request",
+    targetId: id,
+    outcome: "success",
+    requestId,
+    metadata: { requestType: input.type, status },
+  });
+
+  try {
+    if (input.type === "deletion") {
+      await db.batch([
+        db
+          .update(accounts)
+          .set({
+            // Use the account's non-null normalized email as a transactional
+            // sentinel. Concurrent D1 batches serialize: the first inserts the
+            // open request; a loser then observes it, violates NOT NULL, and
+            // rolls back its request and audit without requiring a migration
+            // that could fail on historical duplicate rows.
+            normalizedEmail: sql<string>`case when not exists (
+              select 1 from ${dataRequests}
+              where ${dataRequests.accountId} = ${accountId}
+                and ${dataRequests.requestType} = 'deletion'
+                and ${dataRequests.requestedByType} = 'account'
+                and ${dataRequests.status} in ('submitted', 'identity_verification_required', 'verified', 'in_progress')
+            ) then ${accounts.normalizedEmail} else null end`,
+          })
+          .where(eq(accounts.id, accountId)),
+        requestInsert,
+        auditInsert,
+      ]);
+    } else {
+      await db.batch([requestInsert, auditInsert]);
+    }
+  } catch (error) {
+    // The account-row sentinel is the concurrency boundary. If two retries
+    // race, return the canonical open request created by the winner. D1 batch
+    // atomicity ensures the losing request did not leave a duplicate audit.
+    if (input.type === "deletion") {
+      const existing = await getOpenAccountDeletionRequest(accountId);
+      if (existing) return { request: existing, created: false };
+    }
+    throw error;
+  }
 
   const [created] = await db
     .select({
@@ -1014,20 +1100,43 @@ export async function createAccountDataRequest(
       requestType: dataRequests.requestType,
       status: dataRequests.status,
       createdAt: dataRequests.createdAt,
+      updatedAt: dataRequests.updatedAt,
     })
     .from(dataRequests)
     .where(and(eq(dataRequests.accountId, accountId), eq(dataRequests.id, id)))
     .limit(1);
-  if (!created || !["export", "deletion"].includes(created.requestType)) {
+  if (!created) {
     throw new Error("The submitted data request could not be loaded.");
   }
 
-  return {
-    id: created.id,
-    type: created.requestType as "export" | "deletion",
-    status: created.status,
-    createdAt: toRequiredEpoch(created.createdAt),
-  };
+  return { request: mapAccountDataRequest(created), created: true };
+}
+
+async function getOpenAccountDeletionRequest(
+  accountId: string,
+): Promise<AccountDataRequestView | null> {
+  const db = getDb();
+  const [row] = await db
+    .select({
+      id: dataRequests.id,
+      requestType: dataRequests.requestType,
+      status: dataRequests.status,
+      createdAt: dataRequests.createdAt,
+      updatedAt: dataRequests.updatedAt,
+    })
+    .from(dataRequests)
+    .where(
+      and(
+        eq(dataRequests.accountId, accountId),
+        eq(dataRequests.requestType, "deletion"),
+        eq(dataRequests.requestedByType, "account"),
+        inArray(dataRequests.status, openAccountDeletionStatuses),
+      ),
+    )
+    .orderBy(desc(dataRequests.createdAt))
+    .limit(1);
+
+  return row ? mapAccountDataRequest(row) : null;
 }
 
 async function reconcileExistingAccount(
@@ -1130,6 +1239,22 @@ function mapPackage(row: typeof coachingPackages.$inferSelect): PackageView {
     externalActionLabel: row.externalActionLabel,
     externalActionUrl: row.externalActionUrl,
     isDefault: row.isDefault,
+    createdAt: toRequiredEpoch(row.createdAt),
+    updatedAt: toRequiredEpoch(row.updatedAt),
+  };
+}
+
+function mapAccountDataRequest(row: {
+  id: string;
+  requestType: AccountDataRequestView["type"];
+  status: AccountDataRequestView["status"];
+  createdAt: Date;
+  updatedAt: Date;
+}): AccountDataRequestView {
+  return {
+    id: row.id,
+    type: row.requestType,
+    status: row.status,
     createdAt: toRequiredEpoch(row.createdAt),
     updatedAt: toRequiredEpoch(row.updatedAt),
   };

@@ -17,10 +17,15 @@ export function assertSameOrigin(request: Request): void {
   const origin = request.headers.get("origin");
   const fetchSite = request.headers.get("sec-fetch-site");
 
-  if (origin && origin !== url.origin) {
+  // Every browser mutation in this application is initiated by a same-origin
+  // form submission or fetch. Failing closed when Origin is absent prevents
+  // non-browser clients and legacy form paths from bypassing the CSRF boundary
+  // merely by omitting both Fetch Metadata and Origin. Stripe's signed webhook
+  // is intentionally the only mutating route that does not call this helper.
+  if (!origin || origin !== url.origin) {
     throw new RequestError(403, "cross_origin_request", "Request origin is not allowed.");
   }
-  if (fetchSite && !["same-origin", "same-site", "none"].includes(fetchSite)) {
+  if (fetchSite && fetchSite !== "same-origin") {
     throw new RequestError(403, "cross_site_request", "Cross-site request is not allowed.");
   }
 }
@@ -140,7 +145,50 @@ export function cleanExternalUrl(value: unknown, field: string): string {
       `${field} must not include embedded credentials.`,
     );
   }
+  if (!isPublicHostname(parsed.hostname)) {
+    throw new RequestError(
+      400,
+      "invalid_field",
+      `${field} must use a public internet hostname.`,
+    );
+  }
   return parsed.toString();
+}
+
+function isPublicHostname(value: string): boolean {
+  const hostname = value.toLowerCase().replace(/^\[|\]$/g, "");
+  if (!hostname || hostname.length > 253 || !hostname.includes(".")) return false;
+
+  // Coach actions are browser destinations, not infrastructure endpoints. A
+  // domain requirement avoids ambiguous IPv4/IPv6 parsing and blocks literal
+  // loopback, private, link-local, and documentation addresses by construction.
+  if (hostname.includes(":") || /^\d+(?:\.\d+){3}$/.test(hostname)) return false;
+
+  const blockedSuffixes = [
+    "localhost",
+    "local",
+    "internal",
+    "home.arpa",
+    "test",
+    "invalid",
+    "example",
+  ];
+  if (
+    blockedSuffixes.some(
+      (suffix) => hostname === suffix || hostname.endsWith(`.${suffix}`),
+    )
+  ) {
+    return false;
+  }
+
+  return hostname
+    .split(".")
+    .every(
+      (label) =>
+        label.length > 0 &&
+        label.length <= 63 &&
+        /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label),
+    );
 }
 
 export function errorResponse(error: unknown): Response {

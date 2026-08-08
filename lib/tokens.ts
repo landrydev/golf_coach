@@ -4,14 +4,33 @@ export type ShareToken = {
   prefix: string;
 };
 
+export type ShareSessionToken = {
+  raw: string;
+  hash: string;
+};
+
 export async function createShareToken(): Promise<ShareToken> {
-  const bytes = crypto.getRandomValues(new Uint8Array(32));
-  const raw = toBase64Url(bytes);
+  const raw = createOpaqueToken();
   return {
     raw,
     hash: await hashToken(raw),
     prefix: raw.slice(0, 8),
   };
+}
+
+export async function createShareSessionToken(): Promise<ShareSessionToken> {
+  const raw = createOpaqueToken();
+  return {
+    raw,
+    // Domain separation prevents a session fingerprint from matching a share
+    // verifier fingerprint even in the effectively impossible event that the
+    // two independent random values are equal.
+    hash: await hashShareSessionToken(raw),
+  };
+}
+
+export function hashShareSessionToken(raw: string): Promise<string> {
+  return hashToken(`share-session-v1:${raw}`);
 }
 
 export async function hashToken(raw: string): Promise<string> {
@@ -41,6 +60,10 @@ function toBase64Url(bytes: Uint8Array): string {
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function createOpaqueToken(): string {
+  return toBase64Url(crypto.getRandomValues(new Uint8Array(32)));
 }
 
 function shareTokenPepper(): string {

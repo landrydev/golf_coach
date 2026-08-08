@@ -16,12 +16,20 @@ import {
   planPriorities,
   practiceItems,
   shareLinks,
+  shareSessions,
 } from "@/db/schema";
 import type { PlanViewModel } from "@/components/plan/types";
 import { RequestError } from "./http";
-import { createShareToken, hashToken, newId } from "./tokens";
+import {
+  createShareSessionToken,
+  createShareToken,
+  hashShareSessionToken,
+  hashToken,
+  newId,
+} from "./tokens";
 
 const DEFAULT_SHARE_DAYS = 30;
+export const SHARE_SESSION_MAX_SECONDS = 12 * 60 * 60;
 
 export type PlanShareSummary = {
   id: string;
@@ -177,36 +185,64 @@ export async function publishPlanAndCreateShare(input: {
   if (plan.status === "archived") {
     throw new RequestError(409, "plan_not_publishable", "This plan cannot be published in its current state.");
   }
+  if (plan.publishedRevision !== null) {
+    throw new RequestError(
+      409,
+      "publish_conflict",
+      "This exact revision already has a sharing record. Create a new plan revision before publishing again.",
+    );
+  }
 
   const days = input.expiresInDays ?? DEFAULT_SHARE_DAYS;
   if (![1, 7, 30, 90].includes(days)) {
     throw new RequestError(400, "invalid_expiry", "Share expiry must be 1, 7, 30, or 90 days.");
   }
-  const now = new Date();
+  const previousLastSharedAt = toMillis(plan.lastSharedAt);
+  const now = new Date(Math.max(Date.now(), (previousLastSharedAt ?? -1) + 1));
   const expiresAt = new Date(now.getTime() + days * 86_400_000);
   const share = await createShareToken();
   const shareId = newId();
   const revision = Math.max(plan.revision, 1);
+  const publishGuard = and(
+    eq(developmentPlans.revision, input.expectedRevision),
+    isNull(developmentPlans.publishedRevision),
+    plan.lastSharedAt === null
+      ? isNull(developmentPlans.lastSharedAt)
+      : eq(developmentPlans.lastSharedAt, plan.lastSharedAt),
+    inArray(developmentPlans.status, [
+      "draft",
+      "preview_ready",
+      "published",
+      "paused",
+      "completed",
+    ]),
+  );
 
-  await db.batch([
-    db
-      .update(shareLinks)
-      .set({
-        status: "revoked",
-        revokedAt: now,
-        revokeReason: "replaced by a newly published link",
-        updatedAt: now,
-      })
-      .where(
-        and(
-          eq(shareLinks.accountId, input.accountId),
-          eq(shareLinks.planId, input.planId),
-          eq(shareLinks.status, "active"),
+  try {
+    await db.batch([
+      db
+        .update(shareLinks)
+        .set({
+          status: "revoked",
+          revokedAt: now,
+          revokeReason: "replaced by a newly published link",
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(shareLinks.accountId, input.accountId),
+            eq(shareLinks.planId, input.planId),
+            eq(shareLinks.status, "active"),
+          ),
         ),
-      ),
-    db
-      .update(developmentPlans)
-      .set({
+      db
+        .update(developmentPlans)
+        .set({
+        // published_revision is the one-time CAS marker for this exact content
+        // revision; last_shared_at also protects the observed publish state.
+        // The NOT NULL title sentinel makes a lost race abort the D1 batch,
+        // including the earlier link revocation.
+        title: sql<string>`case when ${publishGuard} then ${developmentPlans.title} else null end`,
         status:
           plan.status === "paused" || plan.status === "completed"
             ? plan.status
@@ -219,13 +255,13 @@ export async function publishPlanAndCreateShare(input: {
         lastSharedAt: now,
         updatedAt: now,
       })
-      .where(
-        and(
-          eq(developmentPlans.accountId, input.accountId),
-          eq(developmentPlans.id, input.planId),
+        .where(
+          and(
+            eq(developmentPlans.accountId, input.accountId),
+            eq(developmentPlans.id, input.planId),
+          ),
         ),
-      ),
-    db.insert(shareLinks).values({
+      db.insert(shareLinks).values({
       id: shareId,
       accountId: input.accountId,
       planId: input.planId,
@@ -237,7 +273,7 @@ export async function publishPlanAndCreateShare(input: {
       intendedRecipientContext: input.intendedRecipientContext,
       expiresAt,
     }),
-    db.insert(auditEvents).values({
+      db.insert(auditEvents).values({
       id: newId(),
       accountId: input.accountId,
       actorType: "account",
@@ -248,8 +284,11 @@ export async function publishPlanAndCreateShare(input: {
       outcome: "success",
       requestId: input.requestId ?? null,
       metadata: { shareId, expiresAt: expiresAt.toISOString(), planRevision: revision },
-    }),
-  ]);
+      }),
+    ]);
+  } catch (error) {
+    await rethrowPublishConflict(input, previousLastSharedAt, error);
+  }
 
   return { shareId, rawToken: share.raw, expiresAt };
 }
@@ -262,36 +301,128 @@ export async function revokeShareLink(input: {
 }): Promise<void> {
   const db = getDb();
   const [link] = await db
-    .select({ id: shareLinks.id, planId: shareLinks.planId })
+    .select({ id: shareLinks.id, planId: shareLinks.planId, status: shareLinks.status })
     .from(shareLinks)
     .where(and(eq(shareLinks.accountId, input.accountId), eq(shareLinks.id, input.shareId)))
     .limit(1);
   if (!link) throw new RequestError(404, "share_not_found", "Share link not found.");
+  if (link.status !== "active") return;
 
   const now = new Date();
-  await db.batch([
-    db
-      .update(shareLinks)
-      .set({ status: "revoked", revokedAt: now, revokeReason: input.reason, updatedAt: now })
-      .where(and(eq(shareLinks.accountId, input.accountId), eq(shareLinks.id, input.shareId))),
-    db.insert(auditEvents).values({
-      id: newId(),
-      accountId: input.accountId,
-      actorType: "account",
-      actorAccountId: input.accountId,
-      action: "share.revoke",
-      targetType: "share_link",
-      targetId: input.shareId,
-      outcome: "success",
-      requestId: input.requestId ?? null,
-      metadata: { planId: link.planId, reasonRecorded: true },
-    }),
-  ]);
+  try {
+    await db.batch([
+      db
+        .update(shareLinks)
+        .set({
+          // A zero-row conditional update would not abort the audit insert.
+          // Use the non-null token hash as a rollback sentinel so exactly one
+          // concurrent revocation can commit its terminal reason and audit.
+          tokenHash: sql<string>`case when ${shareLinks.status} = 'active' then ${shareLinks.tokenHash} else null end`,
+          status: "revoked",
+          revokedAt: now,
+          revokeReason: input.reason,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(shareLinks.accountId, input.accountId),
+            eq(shareLinks.id, input.shareId),
+          ),
+        ),
+      db
+        .update(shareSessions)
+        .set({
+          revokedAt: now,
+          revokeReason: "share link revoked",
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(shareSessions.accountId, input.accountId),
+            eq(shareSessions.shareLinkId, input.shareId),
+            isNull(shareSessions.revokedAt),
+          ),
+        ),
+      db.insert(auditEvents).values({
+        id: newId(),
+        accountId: input.accountId,
+        actorType: "account",
+        actorAccountId: input.accountId,
+        action: "share.revoke",
+        targetType: "share_link",
+        targetId: input.shareId,
+        outcome: "success",
+        requestId: input.requestId ?? null,
+        metadata: { planId: link.planId, reasonRecorded: true },
+      }),
+    ]);
+  } catch (error) {
+    const [current] = await db
+      .select({ status: shareLinks.status })
+      .from(shareLinks)
+      .where(
+        and(
+          eq(shareLinks.accountId, input.accountId),
+          eq(shareLinks.id, input.shareId),
+        ),
+      )
+      .limit(1);
+    if (current && current.status !== "active") return;
+    throw error;
+  }
+}
+
+async function rethrowPublishConflict(
+  input: { accountId: string; planId: string; expectedRevision: number },
+  previousLastSharedAt: number | null,
+  error: unknown,
+): Promise<never> {
+  const [plan] = await getDb()
+    .select({
+      revision: developmentPlans.revision,
+      status: developmentPlans.status,
+      publishedRevision: developmentPlans.publishedRevision,
+      lastSharedAt: developmentPlans.lastSharedAt,
+    })
+    .from(developmentPlans)
+    .where(
+      and(
+        eq(developmentPlans.accountId, input.accountId),
+        eq(developmentPlans.id, input.planId),
+      ),
+    )
+    .limit(1);
+
+  if (!plan) throw new RequestError(404, "plan_not_found", "Plan not found.");
+  if (plan.revision !== input.expectedRevision) {
+    throw new RequestError(
+      409,
+      "stale_plan_revision",
+      "This plan changed while it was being published. Refresh and review the latest version.",
+    );
+  }
+  if (plan.status === "archived") {
+    throw new RequestError(409, "plan_not_publishable", "This plan cannot be published in its current state.");
+  }
+  if (plan.publishedRevision !== null) {
+    throw new RequestError(
+      409,
+      "publish_conflict",
+      "Another publish completed first. Refresh the sharing record before creating another link.",
+    );
+  }
+  if (toMillis(plan.lastSharedAt) !== previousLastSharedAt) {
+    throw new RequestError(
+      409,
+      "publish_conflict",
+      "Another publish completed first. Refresh the sharing record before creating another link.",
+    );
+  }
+  throw error;
 }
 
 export async function resolveShareToken(
   rawToken: string,
-  options: { recordAccess?: boolean; requestId?: string | null } = {},
 ): Promise<{
   model: PlanViewModel;
   accountId: string;
@@ -335,31 +466,6 @@ export async function resolveShareToken(
   });
   if (!model) return null;
 
-  if (options.recordAccess) {
-    await db.batch([
-      db
-        .update(shareLinks)
-        .set({
-          lastAccessedAt: now,
-          accessCount: sql`${shareLinks.accessCount} + 1`,
-          updatedAt: now,
-        })
-        .where(eq(shareLinks.id, link.id)),
-      db.insert(auditEvents).values({
-        id: newId(),
-        accountId: link.accountId,
-        actorType: "golfer_share",
-        actorReference: link.id,
-        action: "share.access",
-        targetType: "development_plan",
-        targetId: link.planId,
-        outcome: "success",
-        requestId: options.requestId ?? null,
-        metadata: { shareId: link.id, planRevision: link.planRevision },
-      }),
-    ]);
-  }
-
   return {
     model,
     accountId: link.accountId,
@@ -368,12 +474,251 @@ export async function resolveShareToken(
   };
 }
 
+export async function createShareSession(
+  rawShareToken: string,
+  requestId?: string | null,
+): Promise<{ rawToken: string; expiresAt: Date } | null> {
+  const resolved = await resolveShareToken(rawShareToken);
+  if (!resolved) return null;
+
+  const now = new Date();
+  const shareExpiry = toMillis(resolved.expiresAt);
+  const expiresAt = new Date(
+    Math.min(
+      now.getTime() + SHARE_SESSION_MAX_SECONDS * 1_000,
+      shareExpiry ?? Number.POSITIVE_INFINITY,
+    ),
+  );
+  if (expiresAt.getTime() <= now.getTime()) return null;
+
+  const db = getDb();
+  const session = await createShareSessionToken();
+  const sessionId = newId();
+  try {
+    await db.batch([
+      db
+      .update(shareLinks)
+      .set({
+        // Revalidate the capability inside the same D1 transaction that
+        // creates the browser session. If revocation, expiry, or a newer plan
+        // revision won the race, the NOT NULL token hash sentinel aborts the
+        // entire batch instead of leaving a usable orphan session.
+        tokenHash: sql<string>`case when
+          ${shareLinks.status} = 'active'
+          and (${shareLinks.expiresAt} is null or ${shareLinks.expiresAt} > ${now.getTime()})
+          and exists (
+            select 1 from ${developmentPlans}
+            where ${developmentPlans.accountId} = ${shareLinks.accountId}
+              and ${developmentPlans.id} = ${shareLinks.planId}
+              and ${developmentPlans.status} in ('published', 'paused', 'completed')
+              and ${developmentPlans.publishedRevision} = ${shareLinks.planRevision}
+          )
+          then ${shareLinks.tokenHash} else null end`,
+        // A successful exchange is the authoritative link-open event. Keeping
+        // this write on the same-origin POST avoids state-changing GET reads.
+        lastAccessedAt: now,
+        accessCount: sql`${shareLinks.accessCount} + 1`,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(shareLinks.accountId, resolved.accountId),
+          eq(shareLinks.id, resolved.shareId),
+        ),
+      ),
+      db.insert(shareSessions).values({
+      id: sessionId,
+      accountId: resolved.accountId,
+      shareLinkId: resolved.shareId,
+      tokenHash: session.hash,
+      tokenHashAlgorithm: "hmac-sha256-session-v1",
+      expiresAt,
+    }),
+      db.insert(auditEvents).values({
+      id: newId(),
+      accountId: resolved.accountId,
+      actorType: "golfer_share",
+      actorReference: resolved.shareId,
+      action: "share.session_created",
+      targetType: "share_session",
+      targetId: sessionId,
+      outcome: "success",
+      requestId: requestId ?? null,
+      metadata: { shareId: resolved.shareId, expiresAt: expiresAt.toISOString() },
+      }),
+      db.insert(auditEvents).values({
+        id: newId(),
+        accountId: resolved.accountId,
+        actorType: "golfer_share",
+        actorReference: resolved.shareId,
+        action: "share.access",
+        targetType: "share_link",
+        targetId: resolved.shareId,
+        outcome: "success",
+        requestId: requestId ?? null,
+        metadata: { sessionId, accessRecordedAtExchange: true },
+      }),
+    ]);
+  } catch (error) {
+    if (!(await resolveShareToken(rawShareToken))) return null;
+    throw error;
+  }
+
+  return { rawToken: session.raw, expiresAt };
+}
+
+export async function resolveShareSession(
+  rawSessionToken: string,
+): Promise<{
+  model: PlanViewModel;
+  accountId: string;
+  shareId: string;
+  sessionId: string;
+  expiresAt: Date;
+} | null> {
+  if (!/^[A-Za-z0-9_-]{40,64}$/.test(rawSessionToken)) return null;
+
+  const db = getDb();
+  const tokenHash = await hashShareSessionToken(rawSessionToken);
+  const now = new Date();
+  const [session] = await db
+    .select()
+    .from(shareSessions)
+    .where(
+      and(
+        eq(shareSessions.tokenHash, tokenHash),
+        eq(shareSessions.tokenHashAlgorithm, "hmac-sha256-session-v1"),
+        isNull(shareSessions.revokedAt),
+        gt(shareSessions.expiresAt, now),
+      ),
+    )
+    .limit(1);
+  if (!session) return null;
+
+  const [link] = await db
+    .select()
+    .from(shareLinks)
+    .where(
+      and(
+        eq(shareLinks.accountId, session.accountId),
+        eq(shareLinks.id, session.shareLinkId),
+        eq(shareLinks.status, "active"),
+        or(isNull(shareLinks.expiresAt), gt(shareLinks.expiresAt, now)),
+      ),
+    )
+    .limit(1);
+  if (!link) return null;
+
+  const [plan] = await db
+    .select()
+    .from(developmentPlans)
+    .where(
+      and(
+        eq(developmentPlans.accountId, link.accountId),
+        eq(developmentPlans.id, link.planId),
+        inArray(developmentPlans.status, ["published", "paused", "completed"]),
+      ),
+    )
+    .limit(1);
+  if (!plan || plan.publishedRevision !== link.planRevision) return null;
+
+  const effectiveExpiry = Math.min(
+    toMillis(session.expiresAt) ?? now.getTime(),
+    toMillis(link.expiresAt) ?? Number.POSITIVE_INFINITY,
+  );
+  const model = await assemblePlanView(link.accountId, plan, {
+    expiresAt: effectiveExpiry,
+    sharedAt: toMillis(link.createdAt),
+  });
+  if (!model) return null;
+
+  return {
+    model,
+    accountId: link.accountId,
+    shareId: link.id,
+    sessionId: session.id,
+    expiresAt: session.expiresAt,
+  };
+}
+
+export async function endShareSession(
+  rawSessionToken: string,
+  reason: "closed by golfer" | "replaced by a new share exchange",
+  requestId?: string | null,
+): Promise<void> {
+  if (!/^[A-Za-z0-9_-]{40,64}$/.test(rawSessionToken)) return;
+
+  const db = getDb();
+  const tokenHash = await hashShareSessionToken(rawSessionToken);
+  const [session] = await db
+    .select({
+      id: shareSessions.id,
+      accountId: shareSessions.accountId,
+      shareLinkId: shareSessions.shareLinkId,
+      revokedAt: shareSessions.revokedAt,
+    })
+    .from(shareSessions)
+    .where(
+      and(
+        eq(shareSessions.tokenHash, tokenHash),
+        eq(shareSessions.tokenHashAlgorithm, "hmac-sha256-session-v1"),
+      ),
+    )
+    .limit(1);
+  if (!session || session.revokedAt) return;
+
+  const now = new Date();
+  try {
+    await db.batch([
+      db
+        .update(shareSessions)
+        .set({
+          tokenHash: sql<string>`case when ${shareSessions.revokedAt} is null then ${shareSessions.tokenHash} else null end`,
+          revokedAt: now,
+          revokeReason: reason,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(shareSessions.accountId, session.accountId),
+            eq(shareSessions.id, session.id),
+          ),
+        ),
+      db.insert(auditEvents).values({
+        id: newId(),
+        accountId: session.accountId,
+        actorType: "golfer_share",
+        actorReference: session.shareLinkId,
+        action: "share.session_ended",
+        targetType: "share_session",
+        targetId: session.id,
+        outcome: "success",
+        requestId: requestId ?? null,
+        metadata: { shareId: session.shareLinkId, reason },
+      }),
+    ]);
+  } catch (error) {
+    const [current] = await db
+      .select({ revokedAt: shareSessions.revokedAt })
+      .from(shareSessions)
+      .where(
+        and(
+          eq(shareSessions.accountId, session.accountId),
+          eq(shareSessions.id, session.id),
+        ),
+      )
+      .limit(1);
+    if (current?.revokedAt) return;
+    throw error;
+  }
+}
+
 export async function recordGolferResponse(input: {
-  rawToken: string;
+  rawSessionToken: string;
   responseType: GolferResponseType;
   requestId?: string | null;
 }): Promise<PlanResponseSummary> {
-  const resolved = await resolveShareToken(input.rawToken);
+  const resolved = await resolveShareSession(input.rawSessionToken);
   if (!resolved) {
     throw new RequestError(404, "plan_unavailable", "This private plan is unavailable.");
   }
@@ -401,8 +746,41 @@ export async function recordGolferResponse(input: {
   const db = getDb();
   const id = newId();
   const occurredAt = new Date();
-  await db.batch([
-    db.insert(golferPlanResponses).values({
+  try {
+    await db.batch([
+      db
+      .update(shareSessions)
+      .set({
+        // The response and its audit record may commit only while this exact
+        // session still resolves to an active, current publication. The
+        // token_hash constraint turns a lost revoke/expiry race into a full
+        // transaction rollback.
+        tokenHash: sql<string>`case when
+          ${shareSessions.revokedAt} is null
+          and ${shareSessions.expiresAt} > ${occurredAt.getTime()}
+          and exists (
+            select 1
+            from ${shareLinks}
+            join ${developmentPlans}
+              on ${developmentPlans.accountId} = ${shareLinks.accountId}
+             and ${developmentPlans.id} = ${shareLinks.planId}
+            where ${shareLinks.accountId} = ${shareSessions.accountId}
+              and ${shareLinks.id} = ${shareSessions.shareLinkId}
+              and ${shareLinks.status} = 'active'
+              and (${shareLinks.expiresAt} is null or ${shareLinks.expiresAt} > ${occurredAt.getTime()})
+              and ${developmentPlans.status} in ('published', 'paused', 'completed')
+              and ${developmentPlans.publishedRevision} = ${shareLinks.planRevision}
+          )
+          then ${shareSessions.tokenHash} else null end`,
+        updatedAt: occurredAt,
+      })
+      .where(
+        and(
+          eq(shareSessions.accountId, resolved.accountId),
+          eq(shareSessions.id, resolved.sessionId),
+        ),
+      ),
+      db.insert(golferPlanResponses).values({
       id,
       accountId: resolved.accountId,
       planId: resolved.model.plan.id,
@@ -412,7 +790,7 @@ export async function recordGolferResponse(input: {
       externalOutcomeObserved: false,
       occurredAt,
     }),
-    db.insert(auditEvents).values({
+      db.insert(auditEvents).values({
       id: newId(),
       accountId: resolved.accountId,
       actorType: "golfer_share",
@@ -426,8 +804,14 @@ export async function recordGolferResponse(input: {
         responseType: input.responseType,
         externalOutcomeObserved: false,
       },
-    }),
-  ]);
+      }),
+    ]);
+  } catch (error) {
+    if (!(await resolveShareSession(input.rawSessionToken))) {
+      throw new RequestError(404, "plan_unavailable", "This private plan is unavailable.");
+    }
+    throw error;
+  }
 
   return {
     id,

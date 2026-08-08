@@ -15,6 +15,13 @@
       "when": 1786154927285,
       "tag": "0001_sour_pete_wisdom",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1786159091884,
+      "tag": "0002_nifty_lord_tyger",
+      "breakpoints": true
     }
   ]
 }

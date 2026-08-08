@@ -1,10 +1,11 @@
 # Production V1 Requirements Traceability
 
 **Document status:** Bounded V1 implementation and evidence map under `AUTH-005`; not a completion certificate
-**Last updated:** 2026-08-07
+**Last updated:** 2026-08-08
 **Architecture:** [Production SaaS Architecture](ARCHITECTURE.md)
 **Controls:** [Security and Privacy](SECURITY_PRIVACY.md)
 **Operations:** [Operations Handbook](OPERATIONS.md)
+**Current audit:** [Full live V1 completion audit](FULL_LIVE_COMPLETION_AUDIT.md)
 
 ## How to use this record
 

@@ -117,6 +117,27 @@ test("share verifiers are hashed at rest and constrained to the selected algorit
   assert.match(schema, /The URL bearer token is returned once and never persisted/);
 });
 
+test("share sessions are tenant-scoped, short-lived records with only peppered token fingerprints", async () => {
+  const { schema, migration } = await loadDatabaseSources();
+  const combined = `${schema}\n${migration}`;
+
+  assert.match(migration, /CREATE TABLE `share_sessions`/);
+  assert.match(
+    migration,
+    /FOREIGN KEY \(`account_id`,`share_link_id`\) REFERENCES `share_links`\(`account_id`,`id`\)/,
+  );
+  assert.match(migration, /CREATE UNIQUE INDEX `share_sessions_token_hash_unique`/);
+  assert.match(migration, /token_hash_algorithm[^\n]+DEFAULT 'hmac-sha256-session-v1'/);
+  assert.match(migration, /share_sessions_expiry_check/);
+  assert.match(migration, /share_sessions_revocation_check/);
+  assert.match(
+    migration,
+    /length\("share_sessions"\."token_hash"\) = 64[^\n]+not glob '\*\[\^0-9a-f\]\*'/,
+  );
+  assert.doesNotMatch(combined, /share_sessions[^;]+(?:raw_token|session_token|share_verifier)/i);
+  assert.match(schema, /domain-separated, peppered HMAC-SHA-256 fingerprint/);
+});
+
 test("abuse counters contain only constrained digests and expiring fixed windows", async () => {
   const { schema, migration } = await loadDatabaseSources();
   const combined = `${schema}\n${migration}`;

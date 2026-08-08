@@ -49,14 +49,17 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     const cookieStore = await cookies();
-    const rawToken = cookieStore.get(SHARE_COOKIE)?.value;
-    if (!rawToken) {
+    const rawSessionToken = cookieStore.get(SHARE_COOKIE)?.value;
+    if (!rawSessionToken) {
       throw new RequestError(404, "plan_unavailable", "This private plan is unavailable.");
     }
-    await enforceAbuseLimit(ABUSE_LIMITS.shareResponseCapability, rawToken);
+    await enforceAbuseLimit(
+      ABUSE_LIMITS.shareResponseCapability,
+      rawSessionToken,
+    );
 
     const response = await recordGolferResponse({
-      rawToken,
+      rawSessionToken,
       responseType: payload.responseType as GolferResponseType,
       requestId: request.headers.get("cf-ray") ?? crypto.randomUUID(),
     });
@@ -65,7 +68,7 @@ export async function POST(request: Request): Promise<Response> {
       { response },
       {
         status: 201,
-        headers: { "Cache-Control": "private, no-store" },
+        headers: { "Cache-Control": "private, no-store, max-age=0" },
       },
     );
   } catch (error) {
