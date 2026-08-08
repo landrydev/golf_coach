@@ -34,6 +34,7 @@ test("server-renders the Roadmap acquisition page and synthetic example", async 
     html,
     /<title>Roadmap \| Coach-branded golf development roadmaps<\/title>/i,
   );
+  assert.match(html, /rel="icon" href="[^"]*\/favicon\.svg"/i);
   assert.match(html, /For independent golf instructors across Canada/i);
   assert.match(html, /Sell the plan, not another hour\./i);
   assert.match(html, /Start your first roadmap/i);

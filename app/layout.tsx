@@ -56,6 +56,10 @@ export async function generateMetadata(): Promise<Metadata> {
     description,
     applicationName: "Roadmap",
     category: "business",
+    icons: {
+      icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+      shortcut: "/favicon.svg",
+    },
     openGraph: {
       title,
       description,
