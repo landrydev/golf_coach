@@ -1,15 +1,32 @@
 import { requirePageIdentity } from "@/lib/identity";
-import { getOrCreateAccountForIdentity, listPackages } from "@/lib/repository";
+import {
+  getOrCreateAccountForIdentity,
+  listPackagesPage,
+} from "@/lib/repository";
+import Link from "next/link";
 import styles from "../workspace.module.css";
 import { PackageForm } from "./PackageForm";
 import { PackageLifecycleControls } from "./PackageLifecycleControls";
+import { canAdvanceOffsetPage, MAX_PAGE_OFFSET } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
 
-export default async function PackagesPage() {
+const PAGE_SIZE = 25;
+
+export default async function PackagesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const identity = await requirePageIdentity("/app/packages");
   const account = await getOrCreateAccountForIdentity(identity);
-  const packages = await listPackages(account.id);
+  const pageNumber = safePageNumber((await searchParams).page);
+  const page = await listPackagesPage(account.id, {
+    limit: PAGE_SIZE,
+    offset: pageNumber * PAGE_SIZE,
+  });
+  const canAdvance = canAdvanceOffsetPage(page);
+  const packages = page.items;
 
   return (
     <div className={styles.page}>
@@ -60,7 +77,46 @@ export default async function PackagesPage() {
           </ul>
         </section>
       ) : null}
+      {page.hasMore && !canAdvance ? (
+        <div className={styles.notice} role="note">
+          <strong>Package navigation reached its safe bound.</strong>
+          <span>
+            More package records exist, but this workspace does not generate an unusable
+            next-page link. Archive or update older packages before continuing this list.
+          </span>
+        </div>
+      ) : null}
+      {pageNumber > 0 || canAdvance ? (
+        <nav className={styles.actions} aria-label="Coaching package pages">
+          {pageNumber > 0 ? (
+            <Link
+              className={styles.secondaryButton}
+              href={pageNumber === 1 ? "/app/packages" : `/app/packages?page=${pageNumber - 1}`}
+            >
+              Previous packages
+            </Link>
+          ) : null}
+          {canAdvance ? (
+            <Link
+              className={styles.secondaryButton}
+              href={`/app/packages?page=${pageNumber + 1}`}
+            >
+              Next packages
+            </Link>
+          ) : null}
+        </nav>
+      ) : null}
       <PackageForm />
     </div>
   );
+}
+
+function safePageNumber(value: string | undefined): number {
+  if (!value || !/^\d+$/.test(value)) return 0;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) &&
+    parsed >= 0 &&
+    parsed <= Math.floor(MAX_PAGE_OFFSET / PAGE_SIZE)
+    ? parsed
+    : 0;
 }

@@ -130,6 +130,7 @@ export async function reconcileBillingAccount(input: {
           providerSessionId: session.id,
           providerCreatedAt: session.createdAt,
           operationLease,
+          requestId: input.requestId,
         });
         if (expiration.attempt.state === "expired") {
           await completeBillingReconciliationCheck({
@@ -174,6 +175,7 @@ export async function reconcileBillingAccount(input: {
           providerSessionId: session.id,
           providerCreatedAt: session.createdAt,
           operationLease,
+          requestId: input.requestId,
         });
         attempt = pending.attempt;
         providerSubscriptionId = session.providerSubscriptionId;
@@ -314,7 +316,6 @@ async function failReconciliationBestEffort(
     });
   } catch {
     console.error("Billing reconciliation target failure could not be recorded", {
-      reconciliationId: claim.reconciliationId,
       errorCode: safeErrorCode(error),
     });
   }
@@ -336,7 +337,6 @@ async function checked(
     // reconciliation target transition or turn a truthful result into a
     // failure audit.
     console.error("Billing reconciliation success could not be audited", {
-      accountId: input.accountId,
       result: result.result,
     });
   }
@@ -357,7 +357,6 @@ async function recordFailureBestEffort(
     });
   } catch {
     console.error("Billing reconciliation failure could not be audited", {
-      accountId: input.accountId,
       errorCode: safeErrorCode(error),
     });
   }
@@ -376,7 +375,6 @@ async function recordAttemptErrorBestEffort(
     });
   } catch {
     console.error("Checkout reconciliation error could not be recorded", {
-      attemptId,
       errorCode: safeErrorCode(error),
     });
   }

@@ -4,7 +4,10 @@ import { readFile } from "node:fs/promises";
 import { register } from "node:module";
 import test from "node:test";
 import { RequestError } from "../lib/http.ts";
-import { startD1Worker } from "./support/d1-worker.mjs";
+import {
+  identityHeaders,
+  startD1Worker,
+} from "./support/d1-worker.mjs";
 
 register(new URL("./support/cloudflare-loader.mjs", import.meta.url));
 
@@ -188,20 +191,20 @@ test(
     for (const testCase of cases) {
       const worker = await startD1Worker(testCase.bindings);
       try {
-        const response = await worker.dispatch("/api/health");
-        assert.equal(
-          response.status,
-          testCase.expectedReady ? 200 : 503,
-          testCase.name,
-        );
+        const response = await worker.dispatch("/api/operations/health", {
+          headers: identityHeaders("coach.a@example.test", "Coach Avery"),
+        });
+        // Scheduler readiness remains degraded until its first hosted run;
+        // this assertion targets the independently reported app readiness.
+        assert.equal(response.status, 503, testCase.name);
         const body = await response.json();
         assert.equal(
-          body.status,
+          body.application.status,
           testCase.expectedReady ? "ready" : "degraded",
           testCase.name,
         );
         assert.equal(
-          body.checks.billingCheckoutPolicy,
+          body.application.checks.billingCheckoutPolicy,
           testCase.expectedReady,
           testCase.name,
         );
@@ -209,6 +212,27 @@ test(
       } finally {
         await worker.dispose();
       }
+    }
+  },
+);
+
+test(
+  "public liveness is cacheable and does not touch or disclose readiness dependencies",
+  { timeout: 60_000 },
+  async () => {
+    const worker = await startD1Worker({
+      BILLING_CHECKOUT_ENABLED: "malformed",
+    });
+    try {
+      const response = await worker.dispatch("/api/health");
+      assert.equal(response.status, 200);
+      assert.match(response.headers.get("cache-control") ?? "", /max-age=30/);
+      assert.deepEqual(await response.json(), {
+        status: "live",
+        releaseId: "unversioned",
+      });
+    } finally {
+      await worker.dispose();
     }
   },
 );

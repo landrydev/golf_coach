@@ -7,16 +7,24 @@ import styles from "../../workspace.module.css";
 
 type PhaseOption = { id: string; number: number; title: string; purpose: string; status: string };
 type ReviewTransition = "continue" | "pause" | "advance" | "complete_plan";
+type ContentItem = { id: string; title: string };
+type WithdrawableContentKind = "lesson" | "practice" | "evidence";
 const ERROR_SUMMARY_ID = "living-plan-forms-error-summary";
 
 export function LivingPlanForms({
   planId,
   planRevision,
   phases,
+  lessons,
+  practiceItems,
+  evidenceItems,
 }: {
   planId: string;
   planRevision: number;
   phases: PhaseOption[];
+  lessons: ContentItem[];
+  practiceItems: ContentItem[];
+  evidenceItems: ContentItem[];
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -30,6 +38,22 @@ export function LivingPlanForms({
   const nextPhase = currentPhase
     ? phases.find((phase) => phase.number === currentPhase.number + 1 && phase.status === "planned")
     : undefined;
+  const contentGroups: Array<{
+    kind: WithdrawableContentKind;
+    heading: string;
+    action: string;
+    items: ContentItem[];
+  }> = [
+    { kind: "lesson", heading: "Lesson chapters", action: "Archive", items: lessons },
+    {
+      kind: "practice",
+      heading: "Current practice direction",
+      action: "Retire",
+      items: practiceItems,
+    },
+    { kind: "evidence", heading: "Published evidence", action: "Withdraw", items: evidenceItems },
+  ];
+  const hasPublishedContent = contentGroups.some((group) => group.items.length > 0);
 
   async function submit(event: FormEvent<HTMLFormElement>, kind: string) {
     event.preventDefault();
@@ -59,6 +83,53 @@ export function LivingPlanForms({
     } catch (submitError) {
       setError(true);
       setMessage(submitError instanceof Error ? submitError.message : "The plan update could not be saved.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function withdraw(
+    event: FormEvent<HTMLFormElement>,
+    kind: WithdrawableContentKind,
+    itemId: string,
+  ) {
+    event.preventDefault();
+    formRef.current = event.currentTarget;
+    const operation = `withdraw:${kind}:${itemId}`;
+    setBusy(operation);
+    setMessage("");
+    setError(false);
+    try {
+      const response = await fetch(
+        `/api/plans/${encodeURIComponent(planId)}/content`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            kind,
+            itemId,
+            expectedRevision: planRevision,
+            confirmation: "withdraw_plan_content",
+          }),
+        },
+      );
+      const result = (await response.json()) as { error?: { message?: string } };
+      if (!response.ok) {
+        throw new Error(
+          result.error?.message || "The plan content could not be withdrawn.",
+        );
+      }
+      setMessage(
+        "Content withdrawn from the golfer view. Previous access was revoked; add a corrected replacement if needed, then review before republishing.",
+      );
+      router.refresh();
+    } catch (withdrawError) {
+      setError(true);
+      setMessage(
+        withdrawError instanceof Error
+          ? withdrawError.message
+          : "The plan content could not be withdrawn.",
+      );
     } finally {
       setBusy(null);
     }
@@ -288,6 +359,51 @@ export function LivingPlanForms({
             </p>
           )}
         </details>
+
+        {hasPublishedContent ? (
+          <details>
+            <summary>Correct or withdraw existing golfer-view content</summary>
+            <p className={styles.muted}>
+              Roadmap retains the historical record and removes the selected item from the
+              golfer view. This control lists only the bounded current snapshot shown below;
+              earlier retained history stays outside that share snapshot. To correct an included
+              item, withdraw it and add a truthful replacement.
+            </p>
+            {contentGroups.map((group) =>
+              group.items.length ? (
+                <div key={group.kind}>
+                  <h3>{group.heading}</h3>
+                  <ul className={styles.list}>
+                    {group.items.map((item) => {
+                      const operation = `withdraw:${group.kind}:${item.id}`;
+                      return (
+                        <li key={item.id}>
+                          <div>
+                            <strong>{item.title}</strong>
+                            <span>Currently included in the golfer view</span>
+                          </div>
+                          <form
+                            ref={busy === operation ? formRef : undefined}
+                            aria-describedby={ERROR_SUMMARY_ID}
+                            onSubmit={(event) => withdraw(event, group.kind, item.id)}
+                          >
+                            <button
+                              className={styles.secondaryButton}
+                              type="submit"
+                              disabled={busy !== null}
+                            >
+                              {busy === operation ? "Saving..." : `${group.action} item`}
+                            </button>
+                          </form>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ) : null,
+            )}
+          </details>
+        ) : null}
       </div>
 
       <FormErrorSummary

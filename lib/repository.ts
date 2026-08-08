@@ -550,15 +550,81 @@ async function getProfilePublicationImpact(accountId: string) {
   };
 }
 
-export async function listPackages(accountId: string): Promise<PackageView[]> {
+export type OffsetPage<T> = {
+  items: T[];
+  offset: number;
+  limit: number;
+  hasMore: boolean;
+};
+
+type OffsetPageOptions = {
+  offset?: number;
+  limit?: number;
+  includeArchived?: boolean;
+};
+const DEFAULT_LIST_PAGE_SIZE = 50;
+const MAX_LIST_PAGE_SIZE = 100;
+
+export async function listPackages(
+  accountId: string,
+  options: OffsetPageOptions = {},
+): Promise<PackageView[]> {
+  return (await listPackagesPage(accountId, options)).items;
+}
+
+export async function listPackagesPage(
+  accountId: string,
+  options: OffsetPageOptions = {},
+): Promise<OffsetPage<PackageView>> {
+  const { limit, offset } = boundedPageOptions(options);
   const db = getDb();
   const rows = await db
     .select()
     .from(coachingPackages)
     .where(eq(coachingPackages.accountId, accountId))
-    .orderBy(desc(coachingPackages.isDefault), desc(coachingPackages.updatedAt));
+    .orderBy(
+      desc(coachingPackages.isDefault),
+      desc(coachingPackages.updatedAt),
+      desc(coachingPackages.id),
+    )
+    .limit(limit + 1)
+    .offset(offset);
 
-  return rows.map(mapPackage);
+  return {
+    items: rows.slice(0, limit).map(mapPackage),
+    limit,
+    offset,
+    hasMore: rows.length > limit,
+  };
+}
+
+export async function listActivePackagesPage(
+  accountId: string,
+  options: OffsetPageOptions = {},
+): Promise<OffsetPage<PackageView>> {
+  const { limit, offset } = boundedPageOptions(options);
+  const rows = await getDb()
+    .select()
+    .from(coachingPackages)
+    .where(
+      and(
+        eq(coachingPackages.accountId, accountId),
+        eq(coachingPackages.status, "active"),
+      ),
+    )
+    .orderBy(
+      desc(coachingPackages.isDefault),
+      desc(coachingPackages.updatedAt),
+      desc(coachingPackages.id),
+    )
+    .limit(limit + 1)
+    .offset(offset);
+  return {
+    items: rows.slice(0, limit).map(mapPackage),
+    limit,
+    offset,
+    hasMore: rows.length > limit,
+  };
 }
 
 export async function getPackageById(
@@ -604,14 +670,55 @@ export type PackageLifecycleResult = {
   revokedShareLinks: number;
 };
 
+export type CoachingPackageCreationSubmission = {
+  package: PackageView;
+  created: boolean;
+};
+
+type CoachingPackageCreationReceipt = {
+  packageId: string;
+  inputFingerprint: string;
+};
+
 export async function createCoachingPackage(
   accountId: string,
   input: CreatePackageInput,
+  idempotencyKey: string,
   requestId?: string,
-): Promise<PackageView> {
+): Promise<CoachingPackageCreationSubmission> {
   const db = getDb();
+  const receiptKey = await coachingPackageReceiptKey(accountId, idempotencyKey);
+  const inputFingerprint = await coachingPackageInputFingerprint(input);
+  const existing = await getCoachingPackageCreationReceipt(
+    accountId,
+    receiptKey,
+  );
+  if (existing) {
+    return replayCoachingPackageCreation(
+      accountId,
+      existing,
+      inputFingerprint,
+    );
+  }
+
   const id = newId();
   const now = new Date();
+  const creationGuard = db
+    .update(accounts)
+    .set({
+      // Serialize package creation on the tenant row. If a concurrent request
+      // has already committed this receipt, the NOT NULL constraint aborts the
+      // complete batch before another package or audit event can be inserted.
+      normalizedEmail: sql<string>`case when not exists (
+        select 1 from ${auditEvents}
+        where ${auditEvents.accountId} = ${accountId}
+          and ${auditEvents.action} = 'coaching_package.created'
+          and ${auditEvents.outcome} = 'success'
+          and ${auditEvents.requestId} = ${receiptKey}
+          and ${auditEvents.targetType} = 'coaching_package'
+      ) then ${accounts.normalizedEmail} else null end`,
+    })
+    .where(eq(accounts.id, accountId));
   const insert = db.insert(coachingPackages).values({
     id,
     accountId,
@@ -629,30 +736,159 @@ export async function createCoachingPackage(
     targetType: "coaching_package",
     targetId: id,
     outcome: "success",
-    requestId,
+    requestId: receiptKey,
     metadata: {
+      inputFingerprint,
       status: input.status,
       hasPrice: input.priceAmountMinor !== null,
       externalActionType: input.externalActionType,
+      ...(requestId ? { requestCorrelationId: requestId } : {}),
     },
   });
 
-  if (input.isDefault && input.status === "active") {
-    await db.batch([
-      db
-        .update(coachingPackages)
-        .set({ isDefault: false, updatedAt: now })
-        .where(eq(coachingPackages.accountId, accountId)),
-      insert,
-      audit,
-    ]);
-  } else {
-    await db.batch([insert, audit]);
+  try {
+    if (input.isDefault && input.status === "active") {
+      await db.batch([
+        creationGuard,
+        db
+          .update(coachingPackages)
+          .set({ isDefault: false, updatedAt: now })
+          .where(eq(coachingPackages.accountId, accountId)),
+        insert,
+        audit,
+      ]);
+    } else {
+      await db.batch([creationGuard, insert, audit]);
+    }
+  } catch (error) {
+    const raced = await getCoachingPackageCreationReceipt(
+      accountId,
+      receiptKey,
+    );
+    if (raced) {
+      return replayCoachingPackageCreation(
+        accountId,
+        raced,
+        inputFingerprint,
+      );
+    }
+    throw error;
   }
 
   const created = await getPackageById(accountId, id);
   if (!created) throw new Error("The saved coaching package could not be loaded.");
-  return created;
+  return { package: created, created: true };
+}
+
+async function getCoachingPackageCreationReceipt(
+  accountId: string,
+  receiptKey: string,
+): Promise<CoachingPackageCreationReceipt | null> {
+  const db = getDb();
+  const [event] = await db
+    .select({ targetId: auditEvents.targetId, metadata: auditEvents.metadata })
+    .from(auditEvents)
+    .where(
+      and(
+        eq(auditEvents.accountId, accountId),
+        eq(auditEvents.action, "coaching_package.created"),
+        eq(auditEvents.outcome, "success"),
+        eq(auditEvents.requestId, receiptKey),
+        eq(auditEvents.targetType, "coaching_package"),
+      ),
+    )
+    .orderBy(asc(auditEvents.occurredAt))
+    .limit(1);
+  if (!event) return null;
+
+  if (
+    typeof event.targetId !== "string" ||
+    typeof event.metadata?.inputFingerprint !== "string"
+  ) {
+    throw new RequestError(
+      409,
+      "idempotency_record_incomplete",
+      "This creation key has already been used, but its original result cannot be replayed safely.",
+    );
+  }
+
+  return {
+    packageId: event.targetId,
+    inputFingerprint: event.metadata.inputFingerprint,
+  };
+}
+
+async function replayCoachingPackageCreation(
+  accountId: string,
+  receipt: CoachingPackageCreationReceipt,
+  inputFingerprint: string,
+): Promise<CoachingPackageCreationSubmission> {
+  if (receipt.inputFingerprint !== inputFingerprint) {
+    throw new RequestError(
+      409,
+      "idempotency_key_reused",
+      "This save key was already used for different package details. Reload and try again.",
+    );
+  }
+
+  const coachingPackage = await getPackageById(accountId, receipt.packageId);
+  if (!coachingPackage) {
+    throw new RequestError(
+      409,
+      "idempotency_record_incomplete",
+      "This creation key has already been used, but its original result cannot be replayed safely.",
+    );
+  }
+  return { package: coachingPackage, created: false };
+}
+
+async function coachingPackageReceiptKey(
+  accountId: string,
+  idempotencyKey: string,
+): Promise<string> {
+  return sha256Hex(
+    JSON.stringify([
+      "coaching_package.create.receipt.v1",
+      accountId,
+      idempotencyKey,
+    ]),
+  );
+}
+
+async function coachingPackageInputFingerprint(
+  input: CreatePackageInput,
+): Promise<string> {
+  return sha256Hex(
+    JSON.stringify([
+      "coaching_package.create.payload.v1",
+      input.name,
+      input.purpose,
+      input.fitDescription,
+      input.status,
+      input.currency,
+      input.priceAmountMinor,
+      input.currentDetailsText,
+      input.inclusions,
+      input.cadence,
+      input.practiceExpectation,
+      input.evaluationDescription,
+      input.termsSummary,
+      input.externalActionType,
+      input.externalActionLabel,
+      input.externalActionUrl,
+      input.isDefault,
+    ]),
+  );
+}
+
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(value),
+  );
+  return [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 export async function updateCoachingPackage(
@@ -951,8 +1187,43 @@ function linkedNonArchivedPlanPredicate(accountId: string, packageId: string) {
   );
 }
 
-export async function listGolfers(accountId: string): Promise<GolferListItem[]> {
+export async function listGolfers(
+  accountId: string,
+  options: OffsetPageOptions = {},
+): Promise<GolferListItem[]> {
+  return (await listGolfersPage(accountId, options)).items;
+}
+
+export async function listGolfersPage(
+  accountId: string,
+  options: OffsetPageOptions = {},
+): Promise<OffsetPage<GolferListItem>> {
+  const { limit, offset } = boundedPageOptions(options);
+  const visibleStatus = options.includeArchived === false
+    ? inArray(golfers.status, ["active", "inactive", "deletion_pending"])
+    : ne(golfers.status, "deleted");
   const db = getDb();
+  const activityAt = sql<number>`max(
+    ${golfers.updatedAt},
+    coalesce((
+      select max(candidate.updated_at)
+      from development_plans candidate
+      where candidate.account_id = ${accountId}
+        and candidate.golfer_id = ${golfers.id}
+    ), 0)
+  )`;
+  const idRows = await db
+    .select({ id: golfers.id })
+    .from(golfers)
+    .where(and(eq(golfers.accountId, accountId), visibleStatus))
+    .orderBy(desc(activityAt), desc(golfers.id))
+    .limit(limit + 1)
+    .offset(offset);
+  const selectedIds = idRows.slice(0, limit).map((row) => row.id);
+  if (selectedIds.length === 0) {
+    return { items: [], limit, offset, hasMore: false };
+  }
+
   const [
     golferRows,
     planRows,
@@ -966,10 +1237,10 @@ export async function listGolfers(accountId: string): Promise<GolferListItem[]> 
       .where(
         and(
           eq(golfers.accountId, accountId),
-          ne(golfers.status, "deleted"),
+          visibleStatus,
+          inArray(golfers.id, selectedIds),
         ),
-      )
-      .orderBy(desc(golfers.updatedAt)),
+      ),
     db
       .select({
         id: developmentPlans.id,
@@ -979,21 +1250,66 @@ export async function listGolfers(accountId: string): Promise<GolferListItem[]> 
         updatedAt: developmentPlans.updatedAt,
       })
       .from(developmentPlans)
-      .where(eq(developmentPlans.accountId, accountId))
-      .orderBy(desc(developmentPlans.updatedAt)),
-    db
-      .select({ planId: assessments.planId })
-      .from(assessments)
-      .where(eq(assessments.accountId, accountId)),
-    db
-      .select({ planId: planPriorities.planId })
-      .from(planPriorities)
-      .where(eq(planPriorities.accountId, accountId)),
-    db
-      .select({ planId: planPhases.planId })
-      .from(planPhases)
-      .where(eq(planPhases.accountId, accountId)),
+      .where(
+        and(
+          eq(developmentPlans.accountId, accountId),
+          inArray(developmentPlans.golferId, selectedIds),
+          eq(
+            developmentPlans.id,
+            sql<string>`(
+              select candidate.id
+              from development_plans candidate
+              where candidate.account_id = ${accountId}
+                and candidate.golfer_id = ${developmentPlans.golferId}
+              order by candidate.updated_at desc, candidate.id desc
+              limit 1
+            )`,
+          ),
+        ),
+      ),
+    Promise.resolve([] as Array<{ planId: string; value: number }>),
+    Promise.resolve([] as Array<{ planId: string; value: number }>),
+    Promise.resolve([] as Array<{ planId: string; value: number }>),
   ]);
+
+  const planIds = planRows.map((plan) => plan.id);
+  if (planIds.length > 0) {
+    const [assessmentCounts, priorityCounts, phaseCounts] = await Promise.all([
+      db
+        .select({ planId: assessments.planId, value: count() })
+        .from(assessments)
+        .where(
+          and(
+            eq(assessments.accountId, accountId),
+            inArray(assessments.planId, planIds),
+          ),
+        )
+        .groupBy(assessments.planId),
+      db
+        .select({ planId: planPriorities.planId, value: count() })
+        .from(planPriorities)
+        .where(
+          and(
+            eq(planPriorities.accountId, accountId),
+            inArray(planPriorities.planId, planIds),
+          ),
+        )
+        .groupBy(planPriorities.planId),
+      db
+        .select({ planId: planPhases.planId, value: count() })
+        .from(planPhases)
+        .where(
+          and(
+            eq(planPhases.accountId, accountId),
+            inArray(planPhases.planId, planIds),
+          ),
+        )
+        .groupBy(planPhases.planId),
+    ]);
+    assessmentPlanRows.push(...assessmentCounts);
+    priorityPlanRows.push(...priorityCounts);
+    phasePlanRows.push(...phaseCounts);
+  }
 
   const latestPlanByGolfer = new Map<string, (typeof planRows)[number]>();
   for (const plan of planRows) {
@@ -1001,17 +1317,18 @@ export async function listGolfers(accountId: string): Promise<GolferListItem[]> 
       latestPlanByGolfer.set(plan.golferId, plan);
     }
   }
-  const plansWithAssessment = new Set(assessmentPlanRows.map((row) => row.planId));
-  const plansWithPriority = new Set(priorityPlanRows.map((row) => row.planId));
-  const phaseCountByPlan = new Map<string, number>();
-  for (const phase of phasePlanRows) {
-    phaseCountByPlan.set(
-      phase.planId,
-      (phaseCountByPlan.get(phase.planId) ?? 0) + 1,
-    );
-  }
+  const plansWithAssessment = new Set(
+    assessmentPlanRows.filter((row) => row.value > 0).map((row) => row.planId),
+  );
+  const plansWithPriority = new Set(
+    priorityPlanRows.filter((row) => row.value > 0).map((row) => row.planId),
+  );
+  const phaseCountByPlan = new Map(
+    phasePlanRows.map((row) => [row.planId, row.value]),
+  );
+  const orderById = new Map(selectedIds.map((id, index) => [id, index]));
 
-  return golferRows
+  const items = golferRows
     .map((golfer) => {
       const plan = latestPlanByGolfer.get(golfer.id);
       const planUpdatedAt = plan ? toRequiredEpoch(plan.updatedAt) : null;
@@ -1041,7 +1358,26 @@ export async function listGolfers(accountId: string): Promise<GolferListItem[]> 
           : null,
       };
     })
-    .sort((left, right) => right.updatedAt - left.updatedAt);
+    .sort(
+      (left, right) =>
+        (orderById.get(left.id) ?? Number.MAX_SAFE_INTEGER) -
+        (orderById.get(right.id) ?? Number.MAX_SAFE_INTEGER),
+    );
+  return { items, limit, offset, hasMore: idRows.length > limit };
+}
+
+function boundedPageOptions(options: OffsetPageOptions): {
+  limit: number;
+  offset: number;
+} {
+  const limit = Number.isSafeInteger(options.limit)
+    ? Math.min(Math.max(options.limit ?? DEFAULT_LIST_PAGE_SIZE, 1), MAX_LIST_PAGE_SIZE)
+    : DEFAULT_LIST_PAGE_SIZE;
+  const offset =
+    Number.isSafeInteger(options.offset) && (options.offset ?? 0) >= 0
+      ? options.offset ?? 0
+      : 0;
+  return { limit, offset };
 }
 
 export async function getWorkspaceSummary(
@@ -1701,12 +2037,47 @@ export type CreatedGolferWorkspace = {
   }>;
 };
 
+export type CreatedGolferWorkspaceSubmission = {
+  workspace: CreatedGolferWorkspace;
+  created: boolean;
+};
+
+type CreatedGolferWorkspaceIds = {
+  golferId: string;
+  planId: string;
+  goalId: string;
+  assessmentId: string;
+  priorityId: string;
+  phaseIds: string[];
+};
+
+type GolferWorkspaceCreationReceipt = {
+  inputFingerprint: string;
+  ids: CreatedGolferWorkspaceIds;
+};
+
 export async function createGolferWorkspace(
   accountId: string,
   input: CreateGolferWorkspaceInput,
-  requestId?: string,
-): Promise<CreatedGolferWorkspace> {
+  idempotencyKey: string,
+): Promise<CreatedGolferWorkspaceSubmission> {
   const db = getDb();
+  const receiptKey = await golferWorkspaceReceiptKey(accountId, idempotencyKey);
+  const inputFingerprint = await golferWorkspaceInputFingerprint(accountId, input);
+  const existing = await getGolferWorkspaceCreationReceipt(
+    accountId,
+    receiptKey,
+  );
+  if (existing) {
+    assertMatchingGolferWorkspaceRetry(existing, inputFingerprint);
+    return {
+      workspace: buildCreatedGolferWorkspace(input, existing.ids),
+      created: false,
+    };
+  }
+
+  await assertCreationPackageAvailable(accountId, input.firstPhasePackageId);
+
   const now = new Date();
   const golferId = newId();
   const planId = newId();
@@ -1729,9 +2100,33 @@ export async function createGolferWorkspace(
     status: index === 0 ? ("active" as const) : ("planned" as const),
     isRecommended: index === 0,
   }));
+  const packageGuard = input.firstPhasePackageId
+    ? sql`exists (
+        select 1 from ${coachingPackages}
+        where ${coachingPackages.accountId} = ${accountId}
+          and ${coachingPackages.id} = ${input.firstPhasePackageId}
+          and ${coachingPackages.status} = 'active'
+      )`
+    : sql`1 = 1`;
 
-  await db.batch([
-    db.insert(golfers).values({
+  try {
+    await db.batch([
+      db
+        .update(accounts)
+        .set({
+          // Serialize creation intent on the tenant row. A concurrent retry
+          // or a package that became unavailable makes this non-null sentinel
+          // fail, atomically rolling back every following insert.
+          normalizedEmail: sql<string>`case when not exists (
+            select 1 from ${auditEvents}
+            where ${auditEvents.accountId} = ${accountId}
+              and ${auditEvents.action} = 'golfer_workspace.created'
+              and ${auditEvents.outcome} = 'success'
+              and ${auditEvents.requestId} = ${receiptKey}
+          ) and ${packageGuard} then ${accounts.normalizedEmail} else null end`,
+        })
+        .where(eq(accounts.id, accountId)),
+      db.insert(golfers).values({
       id: golferId,
       accountId,
       displayName: input.displayName,
@@ -1743,7 +2138,7 @@ export async function createGolferWorkspace(
       eligibilityConfirmedAt: now,
       lastActivityAt: now,
     }),
-    db.insert(developmentPlans).values({
+      db.insert(developmentPlans).values({
       id: planId,
       accountId,
       golferId,
@@ -1751,7 +2146,7 @@ export async function createGolferWorkspace(
       status: "draft",
       revision: 1,
     }),
-    db.insert(golferGoals).values({
+      db.insert(golferGoals).values({
       id: goalId,
       accountId,
       golferId,
@@ -1764,7 +2159,7 @@ export async function createGolferWorkspace(
       status: "active",
       isPrimary: true,
     }),
-    db.insert(assessments).values({
+      db.insert(assessments).values({
       id: assessmentId,
       accountId,
       planId,
@@ -1777,7 +2172,7 @@ export async function createGolferWorkspace(
       primaryPattern: input.assessment.primaryPattern,
       limitations: input.assessment.limitations,
     }),
-    db.insert(planPriorities).values({
+      db.insert(planPriorities).values({
       id: priorityId,
       accountId,
       planId,
@@ -1789,14 +2184,14 @@ export async function createGolferWorkspace(
       sortOrder: 0,
       isCurrent: true,
     }),
-    db.insert(planPhases).values(phaseRows),
-    db.insert(phasePriorities).values({
+      db.insert(planPhases).values(phaseRows),
+      db.insert(phasePriorities).values({
       accountId,
       phaseId: phaseIds[0],
       priorityId,
       sortOrder: 0,
     }),
-    db.insert(auditEvents).values({
+      db.insert(auditEvents).values({
       id: newId(),
       accountId,
       actorType: "account",
@@ -1805,30 +2200,190 @@ export async function createGolferWorkspace(
       targetType: "golfer",
       targetId: golferId,
       outcome: "success",
-      requestId,
+      requestId: receiptKey,
       metadata: {
         planId,
+        goalId,
+        assessmentId,
+        priorityId,
+        phaseIds,
+        inputFingerprint,
         phaseCount: phaseRows.length,
         packageAttached: input.firstPhasePackageId !== null,
         eligibilityStatus: "adult_confirmed",
       },
-    }),
-  ]);
+      }),
+    ]);
+  } catch (error) {
+    const raced = await getGolferWorkspaceCreationReceipt(
+      accountId,
+      receiptKey,
+    );
+    if (raced) {
+      assertMatchingGolferWorkspaceRetry(raced, inputFingerprint);
+      return {
+        workspace: buildCreatedGolferWorkspace(input, raced.ids),
+        created: false,
+      };
+    }
+    await assertCreationPackageAvailable(accountId, input.firstPhasePackageId);
+    throw error;
+  }
 
   return {
-    golfer: { id: golferId, displayName: input.displayName, status: "active" },
-    plan: { id: planId, title: input.planTitle, status: "draft", revision: 1 },
-    goal: { id: goalId },
-    assessment: { id: assessmentId },
-    priority: { id: priorityId },
-    phases: phaseRows.map((phase) => ({
-      id: phase.id,
+    workspace: buildCreatedGolferWorkspace(input, {
+      golferId,
+      planId,
+      goalId,
+      assessmentId,
+      priorityId,
+      phaseIds,
+    }),
+    created: true,
+  };
+}
+
+async function getGolferWorkspaceCreationReceipt(
+  accountId: string,
+  receiptKey: string,
+): Promise<GolferWorkspaceCreationReceipt | null> {
+  const db = getDb();
+  const [event] = await db
+    .select({ targetId: auditEvents.targetId, metadata: auditEvents.metadata })
+    .from(auditEvents)
+    .where(
+      and(
+        eq(auditEvents.accountId, accountId),
+        eq(auditEvents.action, "golfer_workspace.created"),
+        eq(auditEvents.outcome, "success"),
+        eq(auditEvents.requestId, receiptKey),
+        eq(auditEvents.targetType, "golfer"),
+      ),
+    )
+    .orderBy(asc(auditEvents.occurredAt))
+    .limit(1);
+  if (!event) return null;
+
+  const metadata = event.metadata;
+  const phaseIds = metadata?.phaseIds;
+  if (
+    typeof event.targetId !== "string" ||
+    typeof metadata?.planId !== "string" ||
+    typeof metadata.goalId !== "string" ||
+    typeof metadata.assessmentId !== "string" ||
+    typeof metadata.priorityId !== "string" ||
+    typeof metadata.inputFingerprint !== "string" ||
+    !Array.isArray(phaseIds) ||
+    !phaseIds.every((phaseId): phaseId is string => typeof phaseId === "string")
+  ) {
+    throw new RequestError(
+      409,
+      "idempotency_record_incomplete",
+      "This creation key has already been used, but its original result cannot be replayed safely.",
+    );
+  }
+
+  return {
+    inputFingerprint: metadata.inputFingerprint,
+    ids: {
+      golferId: event.targetId,
+      planId: metadata.planId,
+      goalId: metadata.goalId,
+      assessmentId: metadata.assessmentId,
+      priorityId: metadata.priorityId,
+      phaseIds,
+    },
+  };
+}
+
+function assertMatchingGolferWorkspaceRetry(
+  receipt: GolferWorkspaceCreationReceipt,
+  inputFingerprint: string,
+): void {
+  if (receipt.inputFingerprint !== inputFingerprint) {
+    throw new RequestError(
+      409,
+      "idempotency_key_reused",
+      "This save key was already used for different golfer details. Reload and try again.",
+    );
+  }
+}
+
+async function assertCreationPackageAvailable(
+  accountId: string,
+  packageId: string | null,
+): Promise<void> {
+  if (!packageId) return;
+  const coachingPackage = await getPackageById(accountId, packageId);
+  if (!coachingPackage || coachingPackage.status !== "active") {
+    throw new RequestError(
+      400,
+      "invalid_package",
+      "The selected coaching package is unavailable.",
+    );
+  }
+}
+
+function buildCreatedGolferWorkspace(
+  input: CreateGolferWorkspaceInput,
+  ids: CreatedGolferWorkspaceIds,
+): CreatedGolferWorkspace {
+  if (ids.phaseIds.length !== input.phases.length) {
+    throw new RequestError(
+      409,
+      "idempotency_record_incomplete",
+      "This creation key has already been used, but its original result cannot be replayed safely.",
+    );
+  }
+  return {
+    golfer: {
+      id: ids.golferId,
+      displayName: input.displayName,
+      status: "active",
+    },
+    plan: {
+      id: ids.planId,
+      title: input.planTitle,
+      status: "draft",
+      revision: 1,
+    },
+    goal: { id: ids.goalId },
+    assessment: { id: ids.assessmentId },
+    priority: { id: ids.priorityId },
+    phases: input.phases.map((phase, index) => ({
+      id: ids.phaseIds[index],
       number: phase.sequence,
       title: phase.title,
       purpose: phase.purpose,
-      status: phase.status,
+      status: index === 0 ? "active" : "planned",
     })),
   };
+}
+
+async function golferWorkspaceReceiptKey(
+  accountId: string,
+  idempotencyKey: string,
+): Promise<string> {
+  return sha256Hex(
+    JSON.stringify([
+      "golfer_workspace.create.receipt.v1",
+      accountId,
+      idempotencyKey,
+    ]),
+  );
+}
+
+async function golferWorkspaceInputFingerprint(
+  accountId: string,
+  input: CreateGolferWorkspaceInput,
+): Promise<string> {
+  return sha256Hex(
+    JSON.stringify([
+      "golfer_workspace.create.payload.v1",
+      accountId,
+      input,
+    ]),
+  );
 }
 
 export type AccountDataRequestType =

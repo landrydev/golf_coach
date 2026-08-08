@@ -87,8 +87,14 @@ test("first-party instructor mutation surfaces use the shared error summary with
       path: "../app/app/golfers/[golferId]/LivingPlanForms.tsx",
       summaryId: "living-plan-forms-error-summary",
       describedBy: /aria-describedby=\{ERROR_SUMMARY_ID\}/g,
-      associations: 4,
+      associations: 5,
       successStatus: true,
+    },
+    {
+      path: "../app/app/golfers/[golferId]/complete/StagedCompletionForm.tsx",
+      summaryId: "staged-completion-form-error-summary",
+      describedBy: /aria-describedby=\{ERROR_SUMMARY_ID\}/g,
+      associations: 1,
     },
     {
       path: "../app/app/packages/PackageLifecycleControls.tsx",
@@ -227,6 +233,28 @@ test(
     const workspace = await golferResponse.json();
     assert.ok(workspace.golfer?.id);
 
+    const stagedResponse = await worker.dispatch("/api/golfers/staged", {
+      method: "POST",
+      headers: {
+        ...writeHeaders(coach.email, coach.name),
+        "idempotency-key": "accessibility-staged-authoring-0001",
+      },
+      body: JSON.stringify({
+        adultEligibilityConfirmed: true,
+        displayName: "Taylor Accessibility Staged",
+        preferredName: "Taylor",
+        email: "taylor.accessibility@example.test",
+        planTitle: "Accessible staged roadmap",
+        goal: {
+          statement: "Build a truthful staged accessibility goal.",
+          why: "Verify the resumable form semantics.",
+          context: "Synthetic local accessibility verification only.",
+        },
+      }),
+    });
+    assert.equal(stagedResponse.status, 201);
+    const staged = await stagedResponse.json();
+
     const golferPath = `/app/golfers/${workspace.golfer.id}`;
     for (const page of [
       { path: "/app/golfers/new", summaries: [["new-golfer-form-error-summary", 1]] },
@@ -253,6 +281,10 @@ test(
       {
         path: `${golferPath}/settings`,
         summaries: [["golfer-settings-form-error-summary", 1]],
+      },
+      {
+        path: `/app/golfers/${staged.golfer.id}/complete`,
+        summaries: [["staged-completion-form-error-summary", 1]],
       },
     ]) {
       const response = await worker.dispatch(page.path, { headers });

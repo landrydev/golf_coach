@@ -12,6 +12,8 @@ import {
   addEvidenceItem,
   addPhaseReview,
   addPracticeItem,
+  withdrawPlanContent,
+  type WithdrawablePlanContentKind,
 } from "@/lib/plan-content";
 
 type ContentPayload = Record<string, unknown> & { kind?: unknown; phaseId?: unknown };
@@ -174,6 +176,63 @@ export async function POST(
       },
       { status: 201 },
     );
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  context: { params: Promise<{ planId: string }> },
+) {
+  try {
+    assertSameOrigin(request);
+    const authentication = await requireApiIdentity();
+    if (authentication.response) return authentication.response;
+    const account = await getOrCreateAccountForIdentity(authentication.identity);
+    const { planId } = await context.params;
+    const payload = await readJson<Record<string, unknown>>(request);
+    const kind = enumValue(payload.kind, "kind", [
+      "lesson",
+      "practice",
+      "evidence",
+    ] as const) as WithdrawablePlanContentKind;
+    const itemId = required(payload.itemId, "itemId", 80);
+    const expectedRevision = positiveInteger(
+      payload.expectedRevision,
+      "expectedRevision",
+    );
+    if (payload.confirmation !== "withdraw_plan_content") {
+      throw new RequestError(
+        400,
+        "withdraw_confirmation_required",
+        "Confirm that this item should be removed from the golfer view.",
+      );
+    }
+    const allowed = ["kind", "itemId", "expectedRevision", "confirmation"];
+    const unexpected = Object.keys(payload).find((field) => !allowed.includes(field));
+    if (unexpected) {
+      throw new RequestError(
+        400,
+        "unexpected_field",
+        `Unsupported field: ${unexpected}.`,
+      );
+    }
+
+    await withdrawPlanContent(
+      {
+        accountId: account.id,
+        planId,
+        expectedRevision,
+        requestId: request.headers.get("cf-ray") ?? crypto.randomUUID(),
+      },
+      { kind, itemId },
+    );
+    return Response.json({
+      withdrawn: true,
+      item: { id: itemId, kind },
+      plan: { revision: expectedRevision + 1 },
+    });
   } catch (error) {
     return errorResponse(error);
   }

@@ -1,3 +1,5 @@
+import { safeErrorType } from "./log-safety.ts";
+
 const MAX_JSON_BYTES = 64 * 1024;
 
 export class RequestError extends Error {
@@ -200,7 +202,7 @@ export function errorResponse(error: unknown): Response {
   }
 
   console.error("Unhandled request error", {
-    errorType: error instanceof Error ? error.name : typeof error,
+    errorType: safeErrorType(error),
   });
   return Response.json(
     { error: { code: "internal_error", message: "The request could not be completed." } },

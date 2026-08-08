@@ -173,13 +173,17 @@ export async function recordHostedBillingSession(input: {
   providerSessionId: string;
   requestId?: string | null;
 }): Promise<void> {
+  const action = {
+    checkout: "billing.checkout_session_created",
+    portal: "billing.portal_session_created",
+  }[input.kind];
   const db = getDb();
   await db.insert(auditEvents).values({
     id: newId(),
     accountId: input.accountId,
     actorType: "account",
     actorAccountId: input.accountId,
-    action: `billing.${input.kind}_session_created`,
+    action,
     targetType: "billing_session",
     targetId: input.providerSessionId,
     outcome: "success",

@@ -60,7 +60,6 @@ export async function runBillingReconciliationSweep(input?: {
     } catch (error) {
       failed += 1;
       console.error("Scheduled billing reconciliation failed", {
-        accountId,
         errorCode: safeErrorCode(error),
       });
     }

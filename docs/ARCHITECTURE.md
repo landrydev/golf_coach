@@ -122,9 +122,9 @@ SIWC authenticates a user. It does not by itself establish a business entitlemen
 The selected capability pattern minimizes token exposure:
 
 1. Generate at least 32 random bytes with a cryptographically secure generator.
-2. Put the raw verifier in the URL fragment of a link shaped like `/g/{publicShareId}#t={verifier}`. Fragments are not sent in the initial HTTP request.
+2. Put the raw verifier in the URL fragment of a link shaped like `/r#token={verifier}`. The route contains no public share-record identifier, and fragments are not sent in the initial HTTP request.
 3. First-party browser code sends the verifier in a POST body to a same-origin exchange endpoint, then clears the fragment with `history.replaceState`.
-4. The server derives an HMAC-SHA-256 fingerprint using a dedicated secret pepper and compares it with the D1 record for the public share ID.
+4. The server derives an HMAC-SHA-256 fingerprint using a dedicated secret pepper and resolves the active D1 share-link record by that fingerprint.
 5. On success, issue a short-lived, `Secure`, `HttpOnly`, `SameSite=Lax` scoped session cookie that cannot outlive the share capability, then navigate to a token-free golfer URL.
 6. Revoke or rotate by changing the share record; the raw verifier is never stored, logged, placed in analytics, or returned after creation.
 

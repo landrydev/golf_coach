@@ -636,7 +636,10 @@
   gap: 0.65rem;
 }
 
-.choiceButtons button {
+.choiceButtons button,
+.choiceButtons a {
+  display: flex;
+  align-items: center;
   min-height: 3rem;
   border: 1px solid #8ea299;
   border-radius: 0.4rem;
@@ -645,7 +648,9 @@
   padding: 0.7rem 0.9rem;
   font: inherit;
   font-weight: 800;
+  line-height: 1.3;
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -655,16 +660,19 @@
   color: #fff;
 }
 
-.choiceButtons button:hover:not(:disabled) {
+.choiceButtons button:hover:not(:disabled),
+.choiceButtons a:hover {
   border-color: #17392f;
   background: #e7eee9;
 }
 
-.choiceButtons .primaryChoice:hover:not(:disabled) {
+.choiceButtons .primaryChoice:hover:not(:disabled),
+.choiceButtons a.primaryChoice:hover {
   background: #285345;
 }
 
-.choiceButtons button:focus-visible {
+.choiceButtons button:focus-visible,
+.choiceButtons a:focus-visible {
   outline: 3px solid #c58b1b;
   outline-offset: 2px;
 }
@@ -687,6 +695,12 @@
   border-left-color: #9d3d32;
   background: #fff0ed;
   color: #722c25;
+}
+
+.choicePanel .externalTrackingNote {
+  margin: 0;
+  color: #4d685e;
+  font-size: 0.9rem;
 }
 
 .footer {

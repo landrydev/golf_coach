@@ -11,6 +11,10 @@ const allowedOwner = {
   email: "coach.a@example.test",
   name: "Coach Avery",
 };
+const visualReviewOwner = {
+  email: "visual.coach@example.test",
+  name: "Visual Review Coach",
+};
 const unknownInstructor = {
   email: "not.allowed@example.test",
   name: "Unknown Instructor",
@@ -44,6 +48,11 @@ test(
       headers: identityHeaders(allowedOwner.email.toUpperCase(), allowedOwner.name),
     });
     assert.equal(allowed.status, 200);
+
+    const visualHarnessAllowed = await worker.dispatch("/api/profile", {
+      headers: identityHeaders(visualReviewOwner.email, visualReviewOwner.name),
+    });
+    assert.equal(visualHarnessAllowed.status, 200);
 
     for (const path of ["/api/profile", "/api/golfers"]) {
       const denied = await worker.dispatch(path, {
@@ -292,7 +301,7 @@ test(
 );
 
 test(
-  "missing or invalid policy configuration fails closed and health reveals only readiness",
+  "missing or invalid policy configuration fails closed while public liveness stays shallow",
   { timeout: 60_000 },
   async (context) => {
     const worker = await startD1Worker({
@@ -310,9 +319,9 @@ test(
     }
 
     const health = await worker.dispatch("/api/health");
-    assert.equal(health.status, 503);
+    assert.equal(health.status, 200);
     const body = await health.json();
-    assert.equal(body.checks.instructorAccessPolicy, false);
+    assert.deepEqual(body, { status: "live", releaseId: "unversioned" });
     assert.equal(JSON.stringify(body).includes("unknown_status"), false);
     assert.equal(JSON.stringify(body).includes("subscription_required"), false);
     assert.equal(JSON.stringify(body).includes("OWNER_PRIVATE"), false);

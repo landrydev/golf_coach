@@ -4,7 +4,7 @@ import { requirePageIdentity } from "@/lib/identity";
 import {
   getOrCreateAccountForIdentity,
   getStagedGolferWorkspace,
-  listPackages,
+  listActivePackagesPage,
 } from "@/lib/repository";
 import styles from "../../../workspace.module.css";
 import { StagedCompletionForm } from "./StagedCompletionForm";
@@ -34,9 +34,8 @@ export default async function CompleteStagedGolferPage({
     staged.plan.status === "draft" &&
     staged.plan.approvedRevision === null &&
     staged.plan.publishedRevision === null;
-  const packages = (await listPackages(account.id)).filter(
-    (coachingPackage) => coachingPackage.status === "active",
-  );
+  const packagePage = await listActivePackagesPage(account.id, { limit: 100 });
+  const packages = packagePage.items;
 
   return (
     <div className={styles.page}>
@@ -80,16 +79,28 @@ export default async function CompleteStagedGolferPage({
       </section>
 
       {resumable ? (
-        <StagedCompletionForm
-          golferId={staged.golfer.id}
-          planId={staged.plan.id}
-          expectedRevision={staged.plan.revision}
-          packages={packages.map((coachingPackage) => ({
-            id: coachingPackage.id,
-            name: coachingPackage.name,
-            fitDescription: coachingPackage.fitDescription,
-          }))}
-        />
+        <>
+          {packagePage.hasMore ? (
+            <div className={styles.notice} role="note">
+              <strong>Package selection is bounded.</strong>
+              <span>
+                Up to 100 active packages are available here, with your default first and
+                then recent updates. Archive or update older package records before
+                attaching one.
+              </span>
+            </div>
+          ) : null}
+          <StagedCompletionForm
+            golferId={staged.golfer.id}
+            planId={staged.plan.id}
+            expectedRevision={staged.plan.revision}
+            packages={packages.map((coachingPackage) => ({
+              id: coachingPackage.id,
+              name: coachingPackage.name,
+              fitDescription: coachingPackage.fitDescription,
+            }))}
+          />
+        </>
       ) : (
         <div className={styles.errorStatus} role="alert">
           <strong>This staged roadmap cannot be resumed safely.</strong>

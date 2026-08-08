@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import {
   accounts,
@@ -28,16 +28,29 @@ import { RequestError } from "@/lib/http";
 import { newId } from "@/lib/tokens";
 
 const EXPORT_VERSION = "roadmap-instructor-export.v1";
-const MAX_COLLECTION_RECORDS = 2_000;
-const MAX_TOTAL_RECORDS = 10_000;
+const MAX_COLLECTION_RECORDS = 250;
+const MAX_TOTAL_RECORDS = 1_000;
 const MAX_EXPORT_BYTES = 6 * 1024 * 1024;
 
 export type InstructorDataExport = {
+  kind: "download";
   body: string;
   byteSize: number;
   filename: string;
   recordCount: number;
   requestRecordId: string;
+};
+
+export type DeferredInstructorDataExport = {
+  kind: "manual_request";
+  created: boolean;
+  request: {
+    id: string;
+    type: "export";
+    status: "submitted" | "identity_verification_required" | "verified" | "in_progress";
+    createdAt: number;
+    updatedAt: number;
+  };
 };
 
 /**
@@ -48,7 +61,7 @@ export type InstructorDataExport = {
 export async function createInstructorDataExport(input: {
   accountId: string;
   requestId?: string | null;
-}): Promise<InstructorDataExport> {
+}): Promise<InstructorDataExport | DeferredInstructorDataExport> {
   const db = getDb();
   const [account] = await db
     .select({
@@ -67,6 +80,12 @@ export async function createInstructorDataExport(input: {
     .limit(1);
   if (!account) {
     throw new RequestError(404, "account_not_found", "Account not found.");
+  }
+
+  // Count first so an already-oversized tenant never materializes thousands of
+  // large text rows just to discover that synchronous delivery is unsafe.
+  if (await exceedsImmediateExportRecordBounds(input.accountId)) {
+    return queueDeferredInstructorDataExport(input);
   }
 
   const [
@@ -579,12 +598,12 @@ export async function createInstructorDataExport(input: {
   };
   const collectionSizes = Object.values(collections).map((rows) => rows.length);
   if (collectionSizes.some((size) => size > MAX_COLLECTION_RECORDS)) {
-    throw exportTooLarge();
+    return queueDeferredInstructorDataExport(input);
   }
   const recordCount =
     1 + profileRows.length + collectionSizes.reduce((sum, size) => sum + size, 0);
   if (recordCount > MAX_TOTAL_RECORDS) {
-    throw exportTooLarge();
+    return queueDeferredInstructorDataExport(input);
   }
 
   const generatedAt = new Date();
@@ -606,7 +625,7 @@ export async function createInstructorDataExport(input: {
   const body = JSON.stringify(document, null, 2);
   const byteSize = new TextEncoder().encode(body).byteLength;
   if (byteSize > MAX_EXPORT_BYTES) {
-    throw exportTooLarge();
+    return queueDeferredInstructorDataExport(input);
   }
 
   await db.batch([
@@ -639,6 +658,7 @@ export async function createInstructorDataExport(input: {
   ]);
 
   return {
+    kind: "download",
     body,
     byteSize,
     filename: `roadmap-data-export-${generatedAt.toISOString().slice(0, 10)}.json`,
@@ -647,10 +667,151 @@ export async function createInstructorDataExport(input: {
   };
 }
 
-function exportTooLarge(): RequestError {
-  return new RequestError(
-    413,
-    "export_too_large",
-    "This workspace is too large for an immediate JSON export. No partial file was created.",
+async function exceedsImmediateExportRecordBounds(
+  accountId: string,
+): Promise<boolean> {
+  const db = getDb();
+  const countRows = await db.batch([
+    db.select({ value: count() }).from(instructorProfiles).where(eq(instructorProfiles.accountId, accountId)),
+    db.select({ value: count() }).from(subscriptions).where(eq(subscriptions.accountId, accountId)),
+    db.select({ value: count() }).from(mediaAssets).where(eq(mediaAssets.accountId, accountId)),
+    db.select({ value: count() }).from(coachingPackages).where(eq(coachingPackages.accountId, accountId)),
+    db.select({ value: count() }).from(golfers).where(eq(golfers.accountId, accountId)),
+    db.select({ value: count() }).from(developmentPlans).where(eq(developmentPlans.accountId, accountId)),
+    db.select({ value: count() }).from(golferGoals).where(eq(golferGoals.accountId, accountId)),
+    db.select({ value: count() }).from(assessments).where(eq(assessments.accountId, accountId)),
+    db.select({ value: count() }).from(planPriorities).where(eq(planPriorities.accountId, accountId)),
+    db.select({ value: count() }).from(planPhases).where(eq(planPhases.accountId, accountId)),
+    db.select({ value: count() }).from(phasePriorities).where(eq(phasePriorities.accountId, accountId)),
+    db.select({ value: count() }).from(lessons).where(eq(lessons.accountId, accountId)),
+    db.select({ value: count() }).from(practiceItems).where(eq(practiceItems.accountId, accountId)),
+    db.select({ value: count() }).from(evidenceItems).where(eq(evidenceItems.accountId, accountId)),
+    db.select({ value: count() }).from(phaseReviews).where(eq(phaseReviews.accountId, accountId)),
+    db.select({ value: count() }).from(phaseReviewEvidence).where(eq(phaseReviewEvidence.accountId, accountId)),
+    db.select({ value: count() }).from(shareLinks).where(eq(shareLinks.accountId, accountId)),
+    db.select({ value: count() }).from(golferPlanResponses).where(eq(golferPlanResponses.accountId, accountId)),
+    db.select({ value: count() }).from(consentRecords).where(eq(consentRecords.accountId, accountId)),
+    db.select({ value: count() }).from(dataRequests).where(eq(dataRequests.accountId, accountId)),
+  ]);
+  const collectionCounts = countRows.map((rows) => rows[0]?.value ?? 0);
+  return (
+    collectionCounts.some((value) => value > MAX_COLLECTION_RECORDS) ||
+    1 + collectionCounts.reduce((total, value) => total + value, 0) >
+      MAX_TOTAL_RECORDS
+  );
+}
+
+const openDeferredExportStatuses = [
+  "submitted",
+  "identity_verification_required",
+  "verified",
+  "in_progress",
+] as const;
+
+async function queueDeferredInstructorDataExport(input: {
+  accountId: string;
+  requestId?: string | null;
+}): Promise<DeferredInstructorDataExport> {
+  const db = getDb();
+  const existing = await getOpenDeferredExport(input.accountId);
+  if (existing) return { kind: "manual_request", request: existing, created: false };
+
+  const id = newId();
+  try {
+    await db.batch([
+      db
+        .update(accounts)
+        .set({
+          // Serialize the open fallback on the tenant row so ambiguous retries
+          // cannot create duplicate manual-fulfilment work.
+          normalizedEmail: sql<string>`case when not exists (
+            select 1 from ${dataRequests}
+            where ${dataRequests.accountId} = ${input.accountId}
+              and ${dataRequests.requestType} = 'export'
+              and ${dataRequests.requestedByType} = 'account'
+              and ${dataRequests.status} in ('submitted', 'identity_verification_required', 'verified', 'in_progress')
+          ) then ${accounts.normalizedEmail} else null end`,
+        })
+        .where(eq(accounts.id, input.accountId)),
+      db.insert(dataRequests).values({
+        id,
+        accountId: input.accountId,
+        golferId: null,
+        requestType: "export",
+        requestedByType: "account",
+        status: "submitted",
+        details:
+          "Immediate tenant export exceeded the safe synchronous bounds and requires scoped manual fulfilment.",
+      }),
+      db.insert(auditEvents).values({
+        id: newId(),
+        accountId: input.accountId,
+        actorType: "account",
+        actorAccountId: input.accountId,
+        action: "data_request.submitted",
+        targetType: "data_request",
+        targetId: id,
+        outcome: "success",
+        requestId: input.requestId ?? null,
+        metadata: {
+          requestType: "export",
+          status: "submitted",
+          reason: "immediate_export_bounds",
+        },
+      }),
+    ]);
+  } catch (error) {
+    const raced = await getOpenDeferredExport(input.accountId);
+    if (raced) {
+      return { kind: "manual_request", request: raced, created: false };
+    }
+    throw error;
+  }
+
+  const created = await getOpenDeferredExport(input.accountId);
+  if (!created || created.id !== id) {
+    throw new Error("The deferred export request could not be loaded.");
+  }
+  return { kind: "manual_request", request: created, created: true };
+}
+
+async function getOpenDeferredExport(
+  accountId: string,
+): Promise<DeferredInstructorDataExport["request"] | null> {
+  const [row] = await getDb()
+    .select({
+      id: dataRequests.id,
+      status: dataRequests.status,
+      createdAt: dataRequests.createdAt,
+      updatedAt: dataRequests.updatedAt,
+    })
+    .from(dataRequests)
+    .where(
+      and(
+        eq(dataRequests.accountId, accountId),
+        eq(dataRequests.requestType, "export"),
+        eq(dataRequests.requestedByType, "account"),
+        inArray(dataRequests.status, openDeferredExportStatuses),
+      ),
+    )
+    .orderBy(asc(dataRequests.createdAt))
+    .limit(1);
+  if (!row || !isOpenDeferredExportStatus(row.status)) return null;
+  return row
+    ? {
+        id: row.id,
+        type: "export",
+        status: row.status,
+        createdAt: row.createdAt.getTime(),
+        updatedAt: row.updatedAt.getTime(),
+      }
+    : null;
+}
+
+function isOpenDeferredExportStatus(
+  value: string,
+): value is DeferredInstructorDataExport["request"]["status"] {
+  return openDeferredExportStatuses.includes(
+    value as DeferredInstructorDataExport["request"]["status"],
   );
 }

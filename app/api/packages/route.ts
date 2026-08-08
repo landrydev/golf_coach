@@ -1,6 +1,7 @@
 import {
   assertSameOrigin,
   errorResponse,
+  RequestError,
   readJson,
 } from "@/lib/http";
 import { requireApiIdentity } from "@/lib/identity";
@@ -8,16 +9,24 @@ import { parsePackageInput } from "@/lib/package-input";
 import {
   createCoachingPackage,
   getOrCreateAccountForIdentity,
-  listPackages,
+  listPackagesPage,
 } from "@/lib/repository";
+import {
+  offsetPaginationMetadata,
+  requestOffsetPage,
+} from "@/lib/pagination";
 import { newId } from "@/lib/tokens";
 
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
   try {
     const auth = await requireApiIdentity();
     if (auth.response) return noStore(auth.response);
     const account = await getOrCreateAccountForIdentity(auth.identity);
-    return json({ packages: await listPackages(account.id) });
+    const page = await listPackagesPage(account.id, requestOffsetPage(request));
+    return json({
+      packages: page.items,
+      pagination: offsetPaginationMetadata(page),
+    });
   } catch (error) {
     return noStore(errorResponse(error));
   }
@@ -29,20 +38,40 @@ export async function POST(request: Request): Promise<Response> {
     assertSameOrigin(request);
     const auth = await requireApiIdentity();
     if (auth.response) return noStore(auth.response, requestId);
+    const idempotencyKey = validatedIdempotencyKey(request);
     const input = parsePackageInput(await readJson<unknown>(request), {
       allowArchived: true,
       defaultStatus: "draft",
     });
     const account = await getOrCreateAccountForIdentity(auth.identity);
-    const coachingPackage = await createCoachingPackage(
+    const submission = await createCoachingPackage(
       account.id,
       input,
+      idempotencyKey,
       requestId,
     );
-    return json({ package: coachingPackage }, { status: 201, requestId });
+    return json(
+      {
+        package: submission.package,
+        idempotentReplay: !submission.created,
+      },
+      { status: submission.created ? 201 : 200, requestId },
+    );
   } catch (error) {
     return noStore(errorResponse(error), requestId);
   }
+}
+
+function validatedIdempotencyKey(request: Request): string {
+  const value = request.headers.get("idempotency-key")?.trim() ?? "";
+  if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{19,127}$/.test(value)) {
+    throw new RequestError(
+      400,
+      "idempotency_key_required",
+      "Provide a stable Idempotency-Key of 20 to 128 safe characters.",
+    );
+  }
+  return value;
 }
 
 function json(

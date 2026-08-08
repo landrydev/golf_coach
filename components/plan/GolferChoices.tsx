@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
+import { attemptExternalHandoffRecord } from "@/lib/client-recovery";
 import type { GolferResponseType } from "@/lib/plans";
 import styles from "./plan.module.css";
 
@@ -11,7 +12,9 @@ type ChoiceProps = {
   preview?: boolean;
 };
 
-const CONFIRMATIONS: Record<GolferResponseType, string> = {
+type RecordedChoice = Exclude<GolferResponseType, "external_action_opened">;
+
+const CONFIRMATIONS: Record<RecordedChoice, string> = {
   ask_question:
     "Your question choice was recorded. Your email app will open next; Roadmap has not sent a message.",
   wait: "Review later was recorded. This is not a booking, payment, or message.",
@@ -21,8 +24,6 @@ const CONFIRMATIONS: Record<GolferResponseType, string> = {
     "A reassessment request was recorded for your coach to review. Roadmap has not sent a message.",
   independent_practice:
     "Independent practice was recorded. Use only the coach-authored direction in this plan and ask when anything is unclear.",
-  external_action_opened:
-    "The external coach action was recorded as opened. Roadmap does not know whether a booking or payment occurs there.",
 };
 
 export function GolferChoices({
@@ -31,11 +32,12 @@ export function GolferChoices({
   externalActionUrl,
   preview = false,
 }: ChoiceProps) {
-  const [saving, setSaving] = useState<GolferResponseType | null>(null);
+  const externalHandoffNoteId = useId();
+  const [saving, setSaving] = useState<RecordedChoice | null>(null);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
 
-  async function choose(responseType: GolferResponseType) {
+  async function choose(responseType: RecordedChoice) {
     if (preview) return;
     setSaving(responseType);
     setMessage("");
@@ -61,9 +63,6 @@ export function GolferChoices({
       if (responseType === "ask_question" && coachEmail) {
         const subject = encodeURIComponent("Question about my Roadmap coaching plan");
         window.location.assign(`mailto:${coachEmail}?subject=${subject}`);
-      }
-      if (responseType === "external_action_opened" && externalActionUrl) {
-        window.location.assign(externalActionUrl);
       }
     } catch (error) {
       setIsError(true);
@@ -91,17 +90,25 @@ export function GolferChoices({
         </p>
       </div>
       <div className={styles.choiceButtons}>
-        {externalActionUrl ? (
+        {externalActionUrl && preview ? (
           <button
             className={styles.primaryChoice}
             type="button"
-            disabled={disabled}
-            onClick={() => choose("external_action_opened")}
+            disabled
           >
-            {saving === "external_action_opened"
-              ? "Recording choice…"
-              : "Continue to the coach’s external page"}
+            Continue to the coach’s external page
           </button>
+        ) : null}
+        {externalActionUrl && !preview ? (
+          <a
+            aria-describedby={externalHandoffNoteId}
+            className={styles.primaryChoice}
+            href={externalActionUrl}
+            rel="external noreferrer"
+            onClick={() => attemptExternalHandoffRecord()}
+          >
+            Continue to the coach’s external page
+          </a>
         ) : null}
         {coachEmail ? (
           <button
@@ -133,6 +140,14 @@ export function GolferChoices({
           Not pursuing this option
         </button>
       </div>
+      {externalActionUrl && !preview ? (
+        <p id={externalHandoffNoteId} className={styles.externalTrackingNote}>
+          This link always opens the coach&apos;s external service. Roadmap makes a
+          best-effort record that you opened it, but a tracking or network failure will not
+          block the handoff. Booking or payment is complete only when the external service
+          confirms it.
+        </p>
+      ) : null}
       {message ? (
         <p
           className={isError ? styles.choiceError : styles.choiceStatus}

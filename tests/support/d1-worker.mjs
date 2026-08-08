@@ -18,6 +18,7 @@ const TEST_OWNER_EMAIL_DIGESTS = [
   "407db0a81b1552eb43f7726f2608d79d82b83681106bf13a20bea6ec36e1e301",
   "cd30b063aee679470878e7c1b550c4eefb6a27d2ecec097c4e51fe343ff0f6ef",
   "0b7bb0ebde3cf931a8c2c76cbce9b1ab5f66415d13dae9531b7c7114862abd75",
+  "176319de4f95385464e1be770e0cf0368734c1cfc74a02e3db0d775a97192d88",
 ];
 
 export async function startD1Worker(bindingOverrides = {}, runtimeOptions = {}) {
@@ -197,6 +198,7 @@ export function writeHeaders(email, fullName) {
   return {
     ...identityHeaders(email, fullName),
     "content-type": "application/json",
+    "idempotency-key": crypto.randomUUID(),
     origin: testOrigin,
     "sec-fetch-site": "same-origin",
   };

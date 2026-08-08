@@ -176,17 +176,14 @@ export async function POST(request: Request) {
         });
       } catch {
         // Deliberately omit the thrown database error: runtime errors can contain
-        // statements or bound values. The opaque event ID is enough to reconcile.
+        // statements or bound values. Durable billing-event state retains the
+        // provider reference needed for reconciliation; runtime logs do not.
         console.error("Stripe webhook failure could not be recorded", {
-          providerEventId: event.id,
-          providerEventType: event.type,
           errorCode: failure.code,
         });
       }
     }
     console.error("Stripe webhook processing failed", {
-      providerEventId: event.id,
-      providerEventType: event.type,
       errorCode: failure.code,
     });
     return webhookError(500, failure.code, failure.message);

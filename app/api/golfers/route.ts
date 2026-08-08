@@ -10,19 +10,26 @@ import { requireApiIdentity } from "@/lib/identity";
 import {
   createGolferWorkspace,
   getOrCreateAccountForIdentity,
-  getPackageById,
   getProfile,
-  listGolfers,
+  listGolfersPage,
   type CreateGolferWorkspaceInput,
 } from "@/lib/repository";
+import {
+  offsetPaginationMetadata,
+  requestOffsetPage,
+} from "@/lib/pagination";
 import { newId } from "@/lib/tokens";
 
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
   try {
     const auth = await requireApiIdentity();
     if (auth.response) return noStore(auth.response);
     const account = await getOrCreateAccountForIdentity(auth.identity);
-    return json({ golfers: await listGolfers(account.id) });
+    const page = await listGolfersPage(account.id, requestOffsetPage(request));
+    return json({
+      golfers: page.items,
+      pagination: offsetPaginationMetadata(page),
+    });
   } catch (error) {
     return noStore(errorResponse(error));
   }
@@ -34,6 +41,7 @@ export async function POST(request: Request): Promise<Response> {
     assertSameOrigin(request);
     const auth = await requireApiIdentity();
     if (auth.response) return noStore(auth.response, requestId);
+    const idempotencyKey = validatedIdempotencyKey(request);
     const payload = asObject(await readJson<unknown>(request));
     rejectClientAccountId(payload);
     if (payload.adultEligibilityConfirmed !== true) {
@@ -131,17 +139,6 @@ export async function POST(request: Request): Promise<Response> {
     const firstPhasePackageId = optionalText(payload, "coachingPackageId", 64) ||
       optionalText(payload, "firstPhasePackageId", 64) ||
       null;
-    if (firstPhasePackageId) {
-      const coachingPackage = await getPackageById(account.id, firstPhasePackageId);
-      if (!coachingPackage || coachingPackage.status !== "active") {
-        throw new RequestError(
-          400,
-          "invalid_package",
-          "The selected coaching package is unavailable.",
-        );
-      }
-    }
-
     const email = optionalText(payload, "email", 254);
     const assessmentSummary = cleanText(
       assessment.summary ?? assessment.startingPoint,
@@ -208,15 +205,33 @@ export async function POST(request: Request): Promise<Response> {
       firstPhasePackageId,
     };
 
-    const workspace = await createGolferWorkspace(
+    const submission = await createGolferWorkspace(
       account.id,
       input,
-      requestId,
+      idempotencyKey,
     );
-    return json(workspace, { status: 201, requestId });
+    return json(
+      {
+        ...submission.workspace,
+        idempotentReplay: !submission.created,
+      },
+      { status: submission.created ? 201 : 200, requestId },
+    );
   } catch (error) {
     return noStore(errorResponse(error), requestId);
   }
+}
+
+function validatedIdempotencyKey(request: Request): string {
+  const value = request.headers.get("idempotency-key")?.trim() ?? "";
+  if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{19,127}$/.test(value)) {
+    throw new RequestError(
+      400,
+      "idempotency_key_required",
+      "Provide a stable Idempotency-Key of 20 to 128 safe characters.",
+    );
+  }
+  return value;
 }
 
 function asObject(value: unknown): Record<string, unknown> {

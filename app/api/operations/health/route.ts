@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { requireApiIdentity } from "@/lib/identity";
+import { loadApplicationReadiness } from "@/lib/application-readiness";
 import { ownerOperatorAccessGranted } from "@/lib/product-access";
 import { loadSchedulerOperationalHealth } from "@/lib/scheduler-heartbeat";
 
@@ -31,11 +32,23 @@ export async function GET(): Promise<Response> {
       );
     }
 
-    const health = await loadSchedulerOperationalHealth({
-      database: env.DB,
-      releaseId: process.env.RELEASE_ID,
-    });
-    return privateJson(health, health.status === "ready" ? 200 : 503);
+    const [schedulerHealth, application] = await Promise.all([
+      loadSchedulerOperationalHealth({
+        database: env.DB,
+        releaseId: process.env.RELEASE_ID,
+      }),
+      loadApplicationReadiness({ database: env.DB, media: env.MEDIA }),
+    ]);
+    const ready =
+      schedulerHealth.status === "ready" && application.status === "ready";
+    return privateJson(
+      {
+        ...schedulerHealth,
+        status: ready ? "ready" : "degraded",
+        application,
+      },
+      ready ? 200 : 503,
+    );
   } catch {
     return privateJson(
       {

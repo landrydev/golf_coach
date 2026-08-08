@@ -52,6 +52,21 @@ export function DataRequestControls({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
+      if (response.status === 202) {
+        const deferred = (await response.json()) as {
+          message?: string;
+          request?: AccountDataRequestView;
+        };
+        if (!deferred.request) {
+          throw new Error("The deferred export was accepted without a readable status record.");
+        }
+        setRequests((current) => mergeRequest(current, deferred.request!));
+        setMessage(
+          deferred.message ||
+            "The workspace needs a manually prepared export. The request is recorded in status history.",
+        );
+        return;
+      }
       if (!response.ok) {
         const result = (await response.json().catch(() => null)) as {
           error?: { message?: string };

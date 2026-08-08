@@ -10,6 +10,7 @@ const ERROR_SUMMARY_ID = "package-form-error-summary";
 export function PackageForm() {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
+  const idempotencyKeyRef = useRef("");
   const [state, setState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [message, setMessage] = useState("");
 
@@ -17,7 +18,10 @@ export function PackageForm() {
     event.preventDefault();
     setState("saving");
     setMessage("");
-    const form = new FormData(event.currentTarget);
+    // React may clear SyntheticEvent.currentTarget once this synchronous turn
+    // ends, so retain the concrete form before any await.
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const priceText = String(form.get("price") ?? "").trim();
     const price = priceText ? Number(priceText) : null;
     const priceCents = price !== null && Number.isFinite(price)
@@ -39,20 +43,42 @@ export function PackageForm() {
     };
 
     try {
+      if (!idempotencyKeyRef.current) {
+        idempotencyKeyRef.current = crypto.randomUUID();
+      }
       const response = await fetch("/api/packages", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKeyRef.current,
+        },
         body: JSON.stringify(payload),
       });
-      const result = (await response.json()) as { error?: { message?: string } };
+      const result = (await response.json()) as {
+        package?: { id?: unknown };
+        error?: { message?: string };
+      };
       if (!response.ok) throw new Error(result.error?.message || "The package could not be saved.");
-      event.currentTarget.reset();
-      setState("saved");
-      setMessage("Package saved. It can now be connected to a coaching phase.");
-      router.refresh();
+      if (typeof result.package?.id !== "string") {
+        throw new Error("The package save could not be confirmed. Retry to check its result.");
+      }
     } catch (error) {
       setState("error");
       setMessage(error instanceof Error ? error.message : "The package could not be saved.");
+      return;
+    }
+
+    // The server result is definitive. Complete local cleanup before retiring
+    // the retry key so an unexpected client-side reset failure cannot turn a
+    // committed save into a fresh duplicate submission.
+    formElement.reset();
+    idempotencyKeyRef.current = "";
+    setState("saved");
+    setMessage("Package saved. It can now be connected to a coaching phase.");
+    try {
+      router.refresh();
+    } catch {
+      // A refresh failure does not make the already-confirmed save fail.
     }
   }
 

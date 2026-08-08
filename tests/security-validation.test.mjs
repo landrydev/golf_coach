@@ -22,7 +22,11 @@ import {
   hashToken,
   newId,
 } from "../lib/tokens.ts";
-import { startD1Worker, testOrigin } from "./support/d1-worker.mjs";
+import {
+  identityHeaders,
+  startD1Worker,
+  testOrigin,
+} from "./support/d1-worker.mjs";
 
 register(new URL("./support/cloudflare-loader.mjs", import.meta.url));
 
@@ -265,15 +269,13 @@ test(
         SHARE_TOKEN_PEPPER: testCase.pepper,
       });
       try {
-        const response = await worker.dispatch("/api/health");
-        assert.equal(
-          response.status,
-          testCase.expectedReady ? 200 : 503,
-          testCase.name,
-        );
+        const response = await worker.dispatch("/api/operations/health", {
+          headers: identityHeaders("coach.a@example.test", "Coach Avery"),
+        });
+        assert.equal(response.status, 503, testCase.name);
         const body = await response.json();
         assert.equal(
-          body.checks.shareTokenPepper,
+          body.application.checks.shareCapabilitySigning,
           testCase.expectedReady,
           testCase.name,
         );
@@ -344,6 +346,22 @@ test("share-session source keeps verifiers out of cookies and scopes session con
   assert.match(closeControl, /fetch\("\/r\/session", \{ method: "DELETE" \}\)/);
   assert.match(publishRoute, /\/r#token=/);
   assert.doesNotMatch(publishRoute, /\/r\?token=/);
+});
+
+test("golfer capability documentation matches the implemented fragment URL contract", async () => {
+  const [architecture, publishRoute, shareAccess] = await Promise.all([
+    readFile(new URL("../docs/ARCHITECTURE.md", import.meta.url), "utf8"),
+    readFile(
+      new URL("../app/api/plans/[planId]/publish/route.ts", import.meta.url),
+      "utf8",
+    ),
+    readFile(new URL("../app/r/ShareAccess.tsx", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(architecture, /`\/r#token=\{verifier\}`/);
+  assert.doesNotMatch(architecture, /\/g\/\{publicShareId\}#t=/);
+  assert.match(publishRoute, /\/r#token=\$\{encodeURIComponent\(result\.rawToken\)\}/);
+  assert.match(shareAccess, /fragment\.get\("token"\)/);
 });
 
 test("built share-session endpoint clears only its scoped secure cookie", async () => {

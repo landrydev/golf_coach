@@ -1,4 +1,5 @@
 import { RequestError } from "./http";
+import { safeErrorType } from "./log-safety";
 import {
   isStripePriceId,
   readBillingPolicy,
@@ -400,7 +401,7 @@ async function stripeRequest<T>(
     });
   } catch (error) {
     console.error("Stripe API request did not complete", {
-      errorType: error instanceof Error ? error.name : typeof error,
+      errorType: safeErrorType(error),
     });
     throw new RequestError(
       502,
@@ -424,7 +425,7 @@ async function stripeRequest<T>(
   if (!response.ok) {
     console.error("Stripe API request failed", {
       status: response.status,
-      code: payload.error?.code ?? "unknown",
+      providerCodePresent: typeof payload.error?.code === "string",
     });
     throw new RequestError(
       502,

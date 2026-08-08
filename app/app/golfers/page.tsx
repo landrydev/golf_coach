@@ -1,15 +1,31 @@
 import Link from "next/link";
 import { requirePageIdentity } from "@/lib/identity";
-import { getOrCreateAccountForIdentity, listGolfers } from "@/lib/repository";
+import {
+  getOrCreateAccountForIdentity,
+  listGolfersPage,
+} from "@/lib/repository";
 import { workspaceNextAction } from "@/lib/workspace-next-action";
+import { canAdvanceOffsetPage, MAX_PAGE_OFFSET } from "@/lib/pagination";
 import styles from "../workspace.module.css";
 
 export const dynamic = "force-dynamic";
 
-export default async function GolfersPage() {
+const PAGE_SIZE = 25;
+
+export default async function GolfersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const identity = await requirePageIdentity("/app/golfers");
   const account = await getOrCreateAccountForIdentity(identity);
-  const golfers = await listGolfers(account.id);
+  const pageNumber = safePageNumber((await searchParams).page);
+  const page = await listGolfersPage(account.id, {
+    limit: PAGE_SIZE,
+    offset: pageNumber * PAGE_SIZE,
+  });
+  const canAdvance = canAdvanceOffsetPage(page);
+  const golfers = page.items;
   const currentGolfers = golfers.filter((golfer) => golfer.status !== "archived");
   const archivedGolfers = golfers.filter((golfer) => golfer.status === "archived");
 
@@ -110,6 +126,47 @@ export default async function GolfersPage() {
           </ul>
         </section>
       ) : null}
+
+      {page.hasMore && !canAdvance ? (
+        <div className={styles.notice} role="note">
+          <strong>Record navigation reached its safe bound.</strong>
+          <span>
+            More golfer records exist, but this workspace does not generate an unusable
+            next-page link. Archive or update older records before continuing this list.
+          </span>
+        </div>
+      ) : null}
+
+      {pageNumber > 0 || canAdvance ? (
+        <nav className={styles.actions} aria-label="Golfer record pages">
+          {pageNumber > 0 ? (
+            <Link
+              className={styles.secondaryButton}
+              href={pageNumber === 1 ? "/app/golfers" : `/app/golfers?page=${pageNumber - 1}`}
+            >
+              Previous records
+            </Link>
+          ) : null}
+          {canAdvance ? (
+            <Link
+              className={styles.secondaryButton}
+              href={`/app/golfers?page=${pageNumber + 1}`}
+            >
+              Next records
+            </Link>
+          ) : null}
+        </nav>
+      ) : null}
     </div>
   );
+}
+
+function safePageNumber(value: string | undefined): number {
+  if (!value || !/^\d+$/.test(value)) return 0;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) &&
+    parsed >= 0 &&
+    parsed <= Math.floor(MAX_PAGE_OFFSET / PAGE_SIZE)
+    ? parsed
+    : 0;
 }

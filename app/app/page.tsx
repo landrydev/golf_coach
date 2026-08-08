@@ -16,11 +16,10 @@ export default async function WorkspaceOverview() {
   const account = await getOrCreateAccountForIdentity(identity);
   const [summary, recentGolfers] = await Promise.all([
     getWorkspaceSummary(account.id),
-    listGolfers(account.id),
+    listGolfers(account.id, { limit: 5, includeArchived: false }),
   ]);
   const recent = recentGolfers
-    .filter((golfer) => golfer.status !== "archived")
-    .slice(0, 5);
+    .filter((golfer) => golfer.status !== "archived");
 
   return (
     <div className={styles.page}>

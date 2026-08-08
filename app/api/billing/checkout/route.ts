@@ -174,6 +174,7 @@ export async function POST(request: Request) {
               providerSessionId: validated.id,
               providerCreatedAt: validated.createdAt,
               operationLease,
+              requestId: requestId(request),
               now: new Date(),
             });
           if (
@@ -205,6 +206,7 @@ export async function POST(request: Request) {
             providerSessionId: validated.id,
             providerCreatedAt: validated.createdAt,
             operationLease,
+            requestId: requestId(request),
             now: new Date(),
           });
           throw new RequestError(
@@ -330,7 +332,6 @@ async function recordAttemptErrorBestEffort(
     });
   } catch {
     console.error("Checkout attempt error could not be recorded", {
-      attemptId: attempt.id,
       errorCode,
     });
   }

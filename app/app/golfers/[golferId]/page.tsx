@@ -68,6 +68,9 @@ export default async function GolferPlanPage({
               planId={model.plan.id}
               planRevision={model.plan.revision}
               phases={model.phases}
+              lessons={model.lessons}
+              practiceItems={model.practiceItems}
+              evidenceItems={model.evidenceItems}
             />
           </>
         ) : (

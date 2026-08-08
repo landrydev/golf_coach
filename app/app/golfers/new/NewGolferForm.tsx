@@ -12,6 +12,7 @@ const ERROR_SUMMARY_ID = "new-golfer-form-error-summary";
 export function NewGolferForm({ packages }: { packages: PackageOption[] }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
+  const idempotencyKeyRef = useRef("");
   const [phaseCount, setPhaseCount] = useState<3 | 4>(4);
   const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
   const [message, setMessage] = useState("");
@@ -53,9 +54,18 @@ export function NewGolferForm({ packages }: { packages: PackageOption[] }) {
     };
 
     try {
+      // Retain the key after ambiguous transport/server failures so an exact
+      // retry cannot create a second golfer workspace. Successful navigation
+      // unmounts the form and naturally starts a new intent with a new key.
+      if (!idempotencyKeyRef.current) {
+        idempotencyKeyRef.current = crypto.randomUUID();
+      }
       const response = await fetch("/api/golfers", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKeyRef.current,
+        },
         body: JSON.stringify(payload),
       });
       const result = (await response.json()) as ApiError & { golfer?: { id: string } };

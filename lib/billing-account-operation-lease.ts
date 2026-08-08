@@ -358,9 +358,7 @@ export async function releaseBillingAccountOperationLeaseBestEffort(
     await releaseBillingAccountOperationLease(claim, nowInput);
   } catch {
     console.error("Billing operation lease could not be released", {
-      accountId: claim.accountId,
       operation: claim.operation,
-      leaseGeneration: claim.leaseGeneration,
     });
   }
 }

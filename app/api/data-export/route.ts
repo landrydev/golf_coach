@@ -27,6 +27,28 @@ export async function POST(request: Request): Promise<Response> {
       requestId,
     });
 
+    if (dataExport.kind === "manual_request") {
+      return Response.json(
+        {
+          deferred: true,
+          existing: !dataExport.created,
+          request: dataExport.request,
+          message:
+            "This workspace exceeded the safe immediate-download bounds. A tenant-scoped export request was recorded for manual fulfilment; no partial file was created.",
+        },
+        {
+          status: 202,
+          headers: {
+            "Cache-Control": "private, no-store, max-age=0",
+            Pragma: "no-cache",
+            "Referrer-Policy": "no-referrer",
+            "X-Content-Type-Options": "nosniff",
+            "X-Request-ID": requestId,
+          },
+        },
+      );
+    }
+
     return new Response(dataExport.body, {
       status: 200,
       headers: {

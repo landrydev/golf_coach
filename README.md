@@ -88,11 +88,13 @@ Bindings declared in `.openai/hosting.json`:
 - `MEDIA`: private R2 bucket
 
 Checkout stays unavailable when Stripe configuration is absent. Production
-share-token hashing fails closed when its pepper is absent. `/api/health`
-returns `503 degraded` until D1, R2, origin, share-token-pepper,
-abuse-limit-pepper, the explicit Checkout enable/disable policy, and the selected
-instructor-access policy are ready. Health exposes only access-policy readiness,
-never its mode, status list, digests, pepper, or email.
+share-token hashing fails closed when its pepper is absent. Public `/api/health`
+is an intentionally shallow liveness probe: it reports only `live` plus the
+immutable release identifier and does not touch D1 or R2. The owner-only
+`/api/operations/health` endpoint performs the deeper D1, R2, origin,
+share-token-pepper, abuse-limit-pepper, explicit Checkout-policy, selected
+instructor-access-policy, and scheduler-readiness checks. It exposes only safe
+readiness statuses, never an access mode, allowlist, digest, pepper, or email.
 
 The Worker applies this policy to instructor HTML, Vinext `.rsc` navigation,
 and APIs. `owner_private` covers every `/app` route and every non-public API.

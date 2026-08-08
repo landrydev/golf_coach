@@ -1,5 +1,5 @@
 import { env } from "cloudflare:workers";
-import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 import { getDb } from "../db/index";
 import {
   billingCheckoutAttempts,
@@ -8,7 +8,6 @@ import {
 } from "../db/schema";
 import {
   billingAccountOperationLeaseD1Guard,
-  billingAccountOperationLeaseGuard,
   type BillingAccountOperation,
   type BillingAccountOperationLeaseClaim,
 } from "./billing-account-operation-lease";
@@ -421,6 +420,7 @@ export async function expireCheckoutAttemptAfterProviderConfirmation(input: {
   providerSessionId: string;
   providerCreatedAt: Date;
   operationLease?: BillingAccountOperationLeaseClaim;
+  requestId?: string | null;
   now?: Date;
 }): Promise<CheckoutAttemptMutation> {
   assertOpaqueIdentifier(input.accountId, "accountId");
@@ -435,49 +435,89 @@ export async function expireCheckoutAttemptAfterProviderConfirmation(input: {
     "checkout",
     "reconciliation",
   ]);
-  let expired: CheckoutAttemptRecord | undefined;
+  const requestId = optionalSafeString(input.requestId, "requestId", 128);
+  const auditMetadata = JSON.stringify({
+    provider: PROVIDER,
+    requestVersion: 1,
+    reason: "provider_session_expired",
+  });
+  let transitioned = false;
   try {
-    const db = getDb();
-    const mutation = db
-      .update(billingCheckoutAttempts)
-      .set({
-        state: "expired",
-        providerSessionId: input.providerSessionId,
-        providerCreatedAt: sql`coalesce(${billingCheckoutAttempts.providerCreatedAt}, ${providerCreatedAt.getTime()})`,
-        expiredAt: now,
-        lastErrorCode: null,
-        updatedAt: now,
-      })
-      .where(
-        and(
-          eq(billingCheckoutAttempts.id, input.attemptId),
-          eq(billingCheckoutAttempts.accountId, input.accountId),
-          eq(billingCheckoutAttempts.provider, PROVIDER),
-          inArray(billingCheckoutAttempts.state, ["reserved", "open"]),
-          or(
-            isNull(billingCheckoutAttempts.providerSessionId),
-            eq(
-              billingCheckoutAttempts.providerSessionId,
-              input.providerSessionId,
-            ),
-          ),
-          or(
-            isNull(billingCheckoutAttempts.providerCreatedAt),
-            eq(billingCheckoutAttempts.providerCreatedAt, providerCreatedAt),
-          ),
-          sql`${billingCheckoutAttempts.providerExpiresAt} > ${providerCreatedAt.getTime()}`,
+    const leaseGuards = input.operationLease
+      ? [billingAccountOperationLeaseD1Guard(input.operationLease, now)]
+      : [];
+    const results = await d1().batch<{ id: string }>([
+      ...leaseGuards,
+      d1()
+        .prepare(
+          `INSERT INTO audit_events (
+            id,
+            account_id,
+            actor_type,
+            actor_account_id,
+            action,
+            target_type,
+            target_id,
+            outcome,
+            request_id,
+            metadata,
+            occurred_at
+          )
+          SELECT ?, account_id, 'system', NULL,
+            'billing.checkout_session_expired',
+            'billing_checkout_attempt', id, 'success', ?, ?, ?
+          FROM billing_checkout_attempts
+          WHERE id = ?
+            AND account_id = ?
+            AND provider = 'stripe'
+            AND state IN ('reserved', 'open')
+            AND (provider_session_id IS NULL OR provider_session_id = ?)
+            AND (provider_created_at IS NULL OR provider_created_at = ?)
+            AND provider_expires_at > ?`,
+        )
+        .bind(
+          newId(),
+          requestId,
+          auditMetadata,
+          now.getTime(),
+          input.attemptId,
+          input.accountId,
+          input.providerSessionId,
+          providerCreatedAt.getTime(),
+          providerCreatedAt.getTime(),
         ),
-      )
-      .returning();
-    if (input.operationLease) {
-      const [, rows] = await db.batch([
-        billingAccountOperationLeaseGuard(db, input.operationLease, now),
-        mutation,
-      ]);
-      [expired] = rows;
-    } else {
-      [expired] = await mutation;
-    }
+      d1()
+        .prepare(
+          `UPDATE billing_checkout_attempts
+          SET state = 'expired',
+            provider_session_id = ?,
+            provider_created_at = COALESCE(provider_created_at, ?),
+            expired_at = ?,
+            last_error_code = NULL,
+            updated_at = ?
+          WHERE id = ?
+            AND account_id = ?
+            AND provider = 'stripe'
+            AND state IN ('reserved', 'open')
+            AND (provider_session_id IS NULL OR provider_session_id = ?)
+            AND (provider_created_at IS NULL OR provider_created_at = ?)
+            AND provider_expires_at > ?
+          RETURNING id`,
+        )
+        .bind(
+          input.providerSessionId,
+          providerCreatedAt.getTime(),
+          now.getTime(),
+          now.getTime(),
+          input.attemptId,
+          input.accountId,
+          input.providerSessionId,
+          providerCreatedAt.getTime(),
+          providerCreatedAt.getTime(),
+        ),
+    ]);
+    transitioned =
+      results[leaseGuards.length + 1]?.results.length === 1;
   } catch (cause) {
     throw providerTransitionError(
       cause,
@@ -485,12 +525,12 @@ export async function expireCheckoutAttemptAfterProviderConfirmation(input: {
     );
   }
 
-  if (expired) return { attempt: expired, changed: true };
   const attempt = await getCheckoutAttemptForAccount(
     input.accountId,
     input.attemptId,
   );
   if (!attempt) throw notFound();
+  if (transitioned) return { attempt, changed: true };
   if (
     ["expired", "completed_pending_sync", "completed"].includes(attempt.state) &&
     providerSnapshotMatches(attempt, input.providerSessionId, providerCreatedAt)
@@ -511,6 +551,7 @@ export async function markCheckoutAttemptCompletedPendingSync(input: {
   providerSessionId: string;
   providerCreatedAt: Date;
   operationLease?: BillingAccountOperationLeaseClaim;
+  requestId?: string | null;
   now?: Date;
 }): Promise<CheckoutAttemptMutation> {
   assertOpaqueIdentifier(input.accountId, "accountId");
@@ -525,49 +566,88 @@ export async function markCheckoutAttemptCompletedPendingSync(input: {
     "checkout",
     "reconciliation",
   ]);
-  let pending: CheckoutAttemptRecord | undefined;
+  const requestId = optionalSafeString(input.requestId, "requestId", 128);
+  const auditMetadata = JSON.stringify({
+    provider: PROVIDER,
+    requestVersion: 1,
+    state: "completed_pending_sync",
+  });
+  let transitioned = false;
   try {
-    const db = getDb();
-    const mutation = db
-      .update(billingCheckoutAttempts)
-      .set({
-        state: "completed_pending_sync",
-        providerSessionId: input.providerSessionId,
-        providerCreatedAt: sql`coalesce(${billingCheckoutAttempts.providerCreatedAt}, ${providerCreatedAt.getTime()})`,
-        expiredAt: null,
-        lastErrorCode: null,
-        updatedAt: now,
-      })
-      .where(
-        and(
-          eq(billingCheckoutAttempts.id, input.attemptId),
-          eq(billingCheckoutAttempts.accountId, input.accountId),
-          eq(billingCheckoutAttempts.provider, PROVIDER),
-          inArray(billingCheckoutAttempts.state, ["reserved", "open"]),
-          or(
-            isNull(billingCheckoutAttempts.providerSessionId),
-            eq(
-              billingCheckoutAttempts.providerSessionId,
-              input.providerSessionId,
-            ),
-          ),
-          or(
-            isNull(billingCheckoutAttempts.providerCreatedAt),
-            eq(billingCheckoutAttempts.providerCreatedAt, providerCreatedAt),
-          ),
-          sql`${billingCheckoutAttempts.providerExpiresAt} > ${providerCreatedAt.getTime()}`,
+    const leaseGuards = input.operationLease
+      ? [billingAccountOperationLeaseD1Guard(input.operationLease, now)]
+      : [];
+    const results = await d1().batch<{ id: string }>([
+      ...leaseGuards,
+      d1()
+        .prepare(
+          `INSERT INTO audit_events (
+            id,
+            account_id,
+            actor_type,
+            actor_account_id,
+            action,
+            target_type,
+            target_id,
+            outcome,
+            request_id,
+            metadata,
+            occurred_at
+          )
+          SELECT ?, account_id, 'system', NULL,
+            'billing.checkout_completion_pending_sync',
+            'billing_checkout_attempt', id, 'success', ?, ?, ?
+          FROM billing_checkout_attempts
+          WHERE id = ?
+            AND account_id = ?
+            AND provider = 'stripe'
+            AND state IN ('reserved', 'open')
+            AND (provider_session_id IS NULL OR provider_session_id = ?)
+            AND (provider_created_at IS NULL OR provider_created_at = ?)
+            AND provider_expires_at > ?`,
+        )
+        .bind(
+          newId(),
+          requestId,
+          auditMetadata,
+          now.getTime(),
+          input.attemptId,
+          input.accountId,
+          input.providerSessionId,
+          providerCreatedAt.getTime(),
+          providerCreatedAt.getTime(),
         ),
-      )
-      .returning();
-    if (input.operationLease) {
-      const [, rows] = await db.batch([
-        billingAccountOperationLeaseGuard(db, input.operationLease, now),
-        mutation,
-      ]);
-      [pending] = rows;
-    } else {
-      [pending] = await mutation;
-    }
+      d1()
+        .prepare(
+          `UPDATE billing_checkout_attempts
+          SET state = 'completed_pending_sync',
+            provider_session_id = ?,
+            provider_created_at = COALESCE(provider_created_at, ?),
+            expired_at = NULL,
+            last_error_code = NULL,
+            updated_at = ?
+          WHERE id = ?
+            AND account_id = ?
+            AND provider = 'stripe'
+            AND state IN ('reserved', 'open')
+            AND (provider_session_id IS NULL OR provider_session_id = ?)
+            AND (provider_created_at IS NULL OR provider_created_at = ?)
+            AND provider_expires_at > ?
+          RETURNING id`,
+        )
+        .bind(
+          input.providerSessionId,
+          providerCreatedAt.getTime(),
+          now.getTime(),
+          input.attemptId,
+          input.accountId,
+          input.providerSessionId,
+          providerCreatedAt.getTime(),
+          providerCreatedAt.getTime(),
+        ),
+    ]);
+    transitioned =
+      results[leaseGuards.length + 1]?.results.length === 1;
   } catch (cause) {
     throw providerTransitionError(
       cause,
@@ -575,12 +655,12 @@ export async function markCheckoutAttemptCompletedPendingSync(input: {
     );
   }
 
-  if (pending) return { attempt: pending, changed: true };
   const attempt = await getCheckoutAttemptForAccount(
     input.accountId,
     input.attemptId,
   );
   if (!attempt) throw notFound();
+  if (transitioned) return { attempt, changed: true };
   if (
     ["completed_pending_sync", "completed"].includes(attempt.state) &&
     providerSnapshotMatches(attempt, input.providerSessionId, providerCreatedAt)

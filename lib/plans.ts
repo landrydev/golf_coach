@@ -32,6 +32,14 @@ import {
 const DEFAULT_SHARE_DAYS = 30;
 export const SHARE_SESSION_MAX_SECONDS = 12 * 60 * 60;
 
+// A plan is intentionally a small, current-priority-led view rather than an
+// unbounded activity archive. The extra phase row is read only to fail closed
+// when the three-or-four-phase roadmap invariant has been breached.
+const PLAN_PHASE_CAP = 4;
+const PLAN_LESSON_SNAPSHOT_CAP = 12;
+const PLAN_PRACTICE_SNAPSHOT_CAP = 8;
+const PLAN_EVIDENCE_SNAPSHOT_CAP = 20;
+
 export type PlanShareSummary = {
   id: string;
   status: string;
@@ -840,9 +848,6 @@ async function assemblePlanView(
     assessmentRows,
     priorityRows,
     phaseRows,
-    lessonRows,
-    practiceRows,
-    evidenceRows,
     reviewRows,
   ] = await Promise.all([
     db.select().from(golfers).where(and(eq(golfers.accountId, accountId), eq(golfers.id, plan.golferId))).limit(1),
@@ -850,10 +855,7 @@ async function assemblePlanView(
     db.select().from(golferGoals).where(and(eq(golferGoals.accountId, accountId), eq(golferGoals.planId, plan.id), eq(golferGoals.isPrimary, true))).orderBy(desc(golferGoals.updatedAt)).limit(1),
     db.select().from(assessments).where(and(eq(assessments.accountId, accountId), eq(assessments.planId, plan.id))).orderBy(desc(assessments.updatedAt)).limit(1),
     db.select().from(planPriorities).where(and(eq(planPriorities.accountId, accountId), eq(planPriorities.planId, plan.id), eq(planPriorities.isCurrent, true))).orderBy(asc(planPriorities.sortOrder)).limit(1),
-    db.select().from(planPhases).where(and(eq(planPhases.accountId, accountId), eq(planPhases.planId, plan.id))).orderBy(asc(planPhases.sequence)),
-    db.select().from(lessons).where(and(eq(lessons.accountId, accountId), eq(lessons.planId, plan.id), eq(lessons.status, "completed"))).orderBy(asc(lessons.sequence)),
-    db.select().from(practiceItems).where(and(eq(practiceItems.accountId, accountId), eq(practiceItems.planId, plan.id), inArray(practiceItems.status, ["active", "completed", "paused"]))).orderBy(asc(practiceItems.createdAt)),
-    db.select().from(evidenceItems).where(and(eq(evidenceItems.accountId, accountId), eq(evidenceItems.planId, plan.id), eq(evidenceItems.status, "published"))).orderBy(desc(evidenceItems.observedAt)),
+    db.select().from(planPhases).where(and(eq(planPhases.accountId, accountId), eq(planPhases.planId, plan.id))).orderBy(asc(planPhases.sequence)).limit(PLAN_PHASE_CAP + 1),
     db.select().from(phaseReviews).where(and(eq(phaseReviews.accountId, accountId), eq(phaseReviews.planId, plan.id), inArray(phaseReviews.status, ["confirmed", "shared"]))).orderBy(desc(phaseReviews.updatedAt)).limit(1),
   ]);
 
@@ -864,6 +866,7 @@ async function assemblePlanView(
   const priority = priorityRows[0];
   const review = reviewRows[0];
   if (!golfer || !profile || !goal || !assessment) return null;
+  if (phaseRows.length > PLAN_PHASE_CAP) return null;
 
   const currentOrRecommendedPhase =
     phaseRows.find((phase) => phase.status === "active") ??
@@ -871,6 +874,74 @@ async function assemblePlanView(
     phaseRows.find((phase) => phase.isRecommended) ??
     [...phaseRows].reverse().find((phase) => phase.status === "complete") ??
     phaseRows[0];
+  const currentPhaseId = currentOrRecommendedPhase?.id;
+  const [selectedLessonRows, practiceRows, evidenceRows] = await Promise.all([
+    db
+      .select()
+      .from(lessons)
+      .where(
+        and(
+          eq(lessons.accountId, accountId),
+          eq(lessons.planId, plan.id),
+          eq(lessons.status, "completed"),
+        ),
+      )
+      .orderBy(
+        currentPhaseId
+          ? sql`case when ${lessons.phaseId} = ${currentPhaseId} then 0 else 1 end`
+          : sql`0`,
+        desc(lessons.sequence),
+      )
+      .limit(PLAN_LESSON_SNAPSHOT_CAP),
+    db
+      .select()
+      .from(practiceItems)
+      .where(
+        and(
+          eq(practiceItems.accountId, accountId),
+          eq(practiceItems.planId, plan.id),
+          inArray(practiceItems.status, ["active", "completed", "paused"]),
+        ),
+      )
+      .orderBy(
+        currentPhaseId
+          ? sql`case when ${practiceItems.phaseId} = ${currentPhaseId} then 0 else 1 end`
+          : sql`0`,
+        sql`case ${practiceItems.status}
+          when 'active' then 0
+          when 'paused' then 1
+          else 2
+        end`,
+        desc(practiceItems.updatedAt),
+        desc(practiceItems.createdAt),
+        desc(practiceItems.id),
+      )
+      .limit(PLAN_PRACTICE_SNAPSHOT_CAP),
+    db
+      .select()
+      .from(evidenceItems)
+      .where(
+        and(
+          eq(evidenceItems.accountId, accountId),
+          eq(evidenceItems.planId, plan.id),
+          eq(evidenceItems.status, "published"),
+        ),
+      )
+      .orderBy(
+        currentPhaseId
+          ? sql`case when ${evidenceItems.phaseId} = ${currentPhaseId} then 0 else 1 end`
+          : sql`0`,
+        desc(evidenceItems.observedAt),
+        desc(evidenceItems.updatedAt),
+        desc(evidenceItems.id),
+      )
+      .limit(PLAN_EVIDENCE_SNAPSHOT_CAP),
+  ]);
+  // Lesson selection is current-phase-first, but the selected chapters remain
+  // chronological in the rendered story.
+  const lessonRows = [...selectedLessonRows].sort(
+    (left, right) => left.sequence - right.sequence,
+  );
   let packageRow: typeof coachingPackages.$inferSelect | undefined;
   if (currentOrRecommendedPhase?.coachingPackageId) {
     [packageRow] = await db

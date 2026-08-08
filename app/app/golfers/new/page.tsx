@@ -3,7 +3,7 @@ import { requirePageIdentity } from "@/lib/identity";
 import {
   getOrCreateAccountForIdentity,
   getProfile,
-  listPackages,
+  listActivePackagesPage,
 } from "@/lib/repository";
 import styles from "../../workspace.module.css";
 import { NewGolferForm } from "./NewGolferForm";
@@ -38,9 +38,8 @@ export default async function NewGolferPage() {
       </div>
     );
   }
-  const packages = (await listPackages(account.id)).filter(
-    (coachingPackage) => coachingPackage.status === "active",
-  );
+  const packagePage = await listActivePackagesPage(account.id, { limit: 100 });
+  const packages = packagePage.items;
 
   return (
     <div className={styles.page}>
@@ -66,6 +65,16 @@ export default async function NewGolferPage() {
         </span>
       </div>
       <StagedGolferForm />
+      {packagePage.hasMore ? (
+        <div className={styles.notice} role="note">
+          <strong>Package selection is bounded.</strong>
+          <span>
+            Up to 100 active packages are available here, with your default first and then
+            recent updates. Archive or update older package records from the package
+            workspace before attaching one.
+          </span>
+        </div>
+      ) : null}
       <div className={styles.notice} role="note">
         <strong>Prefer one complete authoring session?</strong>
         <span>

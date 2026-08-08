@@ -161,6 +161,7 @@ test(
           attemptId: first.attempt.id,
           providerSessionId: "cs_provider_confirmed_expired",
           providerCreatedAt,
+          requestId: "request-provider-expiry",
           now: new Date(BASE_TIME + 3_600_000),
         });
         assert.equal(atBoundary.changed, true);
@@ -183,10 +184,38 @@ test(
           attemptId: first.attempt.id,
           providerSessionId: "cs_provider_confirmed_expired",
           providerCreatedAt,
+          requestId: "request-provider-expiry-retry",
           now: new Date(BASE_TIME + 3_600_001),
         });
         assert.equal(retry.changed, false);
         assert.equal(retry.attempt.state, "expired");
+
+        const expiryAudits = await database
+          .prepare(
+            "select actor_type, actor_account_id, action, target_type, target_id, outcome, request_id, metadata from audit_events where action = 'billing.checkout_session_expired' and target_id = ?",
+          )
+          .bind(first.attempt.id)
+          .all();
+        assert.deepEqual(expiryAudits.results, [
+          {
+            actor_type: "system",
+            actor_account_id: null,
+            action: "billing.checkout_session_expired",
+            target_type: "billing_checkout_attempt",
+            target_id: first.attempt.id,
+            outcome: "success",
+            request_id: "request-provider-expiry",
+            metadata: JSON.stringify({
+              provider: "stripe",
+              requestVersion: 1,
+              reason: "provider_session_expired",
+            }),
+          },
+        ]);
+        assert.doesNotMatch(
+          JSON.stringify(expiryAudits.results[0]),
+          /cs_provider_confirmed_expired|@example\.test|https?:\/\//,
+        );
 
         const replacement = await reserveOrLoadCheckoutAttempt({
           ...reservationInput(accounts.expiry, BASE_TIME + 3_600_001),
@@ -228,6 +257,7 @@ test(
               attemptId: reservation.attempt.id,
               providerSessionId: "cs_provider_complete",
               providerCreatedAt: new Date(BASE_TIME + 10_000),
+              requestId: "request-provider-complete",
               // Local expiry has passed; the validated provider response is
               // authoritative and must still make the attempt blocking.
               now: new Date(BASE_TIME + 3_600_001),
@@ -242,6 +272,33 @@ test(
           completions.every(
             ({ attempt }) => attempt.state === "completed_pending_sync",
           ),
+        );
+
+        const completionAudits = await database
+          .prepare(
+            "select actor_type, actor_account_id, action, target_type, target_id, outcome, request_id, metadata from audit_events where action = 'billing.checkout_completion_pending_sync' and target_id = ?",
+          )
+          .bind(reservation.attempt.id)
+          .all();
+        assert.deepEqual(completionAudits.results, [
+          {
+            actor_type: "system",
+            actor_account_id: null,
+            action: "billing.checkout_completion_pending_sync",
+            target_type: "billing_checkout_attempt",
+            target_id: reservation.attempt.id,
+            outcome: "success",
+            request_id: "request-provider-complete",
+            metadata: JSON.stringify({
+              provider: "stripe",
+              requestVersion: 1,
+              state: "completed_pending_sync",
+            }),
+          },
+        ]);
+        assert.doesNotMatch(
+          JSON.stringify(completionAudits.results[0]),
+          /cs_provider_complete|@example\.test|https?:\/\//,
         );
         assert.ok(
           completions.every(

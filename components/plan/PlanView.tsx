@@ -203,7 +203,11 @@ export function PlanView({ model, preview = false }: { model: PlanViewModel; pre
           <div className={styles.sectionHeading}>
             <span>Lesson chapters</span>
             <h2>What mattered, in the coach&apos;s words.</h2>
-            <p>Concise chapters preserve direction without becoming a transcript or media archive.</p>
+            <p>
+              Concise chapters preserve direction without becoming a transcript or media archive.
+              This bounded view shows up to 12 chapters, prioritizing the current phase before
+              the newest retained history.
+            </p>
           </div>
           {model.lessons.length ? (
             <div className={styles.cardGrid}>
@@ -239,7 +243,11 @@ export function PlanView({ model, preview = false }: { model: PlanViewModel; pre
           <div className={styles.sectionHeading}>
             <span>Practice direction</span>
             <h2>One focused task before more complexity.</h2>
-            <p>Practice is coach-authored and should match the current phase and available evidence.</p>
+            <p>
+              Practice is coach-authored and should match the current phase and available evidence.
+              This bounded view shows up to 8 items, prioritizing current-phase direction before
+              the newest retained history.
+            </p>
           </div>
           {model.practiceItems.length ? (
             <ol className={styles.practiceList}>
@@ -265,6 +273,10 @@ export function PlanView({ model, preview = false }: { model: PlanViewModel; pre
           <div className={styles.sectionHeading}>
             <span>Progress evidence</span>
             <h2>Claims stay proportional to what was actually observed.</h2>
+            <p>
+              This bounded view shows up to 20 published items, prioritizing current-phase
+              evidence before the most recently observed retained history.
+            </p>
           </div>
           {model.evidenceItems.length ? (
             <div className={styles.cardGrid}>

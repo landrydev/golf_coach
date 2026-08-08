@@ -48,3 +48,28 @@
   color: #1f5a48;
   font-weight: 800;
 }
+
+.card button {
+  min-height: 2.75rem;
+  border: 1px solid #1f5a48;
+  border-radius: 0.35rem;
+  background: #1f5a48;
+  color: #fff;
+  padding: 0.65rem 1rem;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.card button:hover {
+  background: #173f33;
+}
+
+.card button:focus-visible {
+  outline: 3px solid #c58b1b;
+  outline-offset: 3px;
+}
+
+.card .safetyNote {
+  font-size: 0.9rem;
+}

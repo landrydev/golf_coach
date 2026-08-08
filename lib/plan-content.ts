@@ -111,33 +111,52 @@ export async function addPracticeItem(
   const db = getDb();
   const itemId = newId();
   const now = new Date();
-  await db.batch([
-    db.insert(practiceItems).values({
-      id: itemId,
-      accountId: context.accountId,
-      planId: context.planId,
-      phaseId: phase.id,
-      title: input.title,
-      status: guardedStatus(context, "active"),
-      objective: input.objective,
-      rationale: input.rationale,
-      instructions: input.instructions,
-      timeOrCadence: input.timeOrCadence || null,
-      successCheck: input.successCheck,
-      commonMistake: input.commonMistake || null,
-      stopOrAskRule: input.stopOrAskRule,
-      constraintNote: input.constraintNote || null,
-      startsAt: now,
-      coachApprovedAt: now,
-    }),
-    ...invalidationStatements(
-      context,
-      plan.status === "paused" ? "paused" : "draft",
-      "practice updated",
-      now,
-    ),
-    auditStatement(context, "practice.create", "practice_item", itemId, { phaseId: phase.id }),
-  ]);
+  const currentRevision = currentPlanRevisionExists(context);
+  const activePractice = and(
+    eq(practiceItems.accountId, context.accountId),
+    eq(practiceItems.planId, context.planId),
+    eq(practiceItems.status, "active"),
+    currentRevision,
+  );
+
+  try {
+    await db.batch([
+      replacementRetirementAuditStatement(context, itemId, now),
+      db
+        .update(practiceItems)
+        .set({ status: "retired", retiredAt: now, updatedAt: now })
+        .where(activePractice),
+      db.insert(practiceItems).values({
+        id: itemId,
+        accountId: context.accountId,
+        planId: context.planId,
+        phaseId: phase.id,
+        title: input.title,
+        status: guardedStatus(context, "active"),
+        objective: input.objective,
+        rationale: input.rationale,
+        instructions: input.instructions,
+        timeOrCadence: input.timeOrCadence || null,
+        successCheck: input.successCheck,
+        commonMistake: input.commonMistake || null,
+        stopOrAskRule: input.stopOrAskRule,
+        constraintNote: input.constraintNote || null,
+        startsAt: now,
+        coachApprovedAt: now,
+      }),
+      ...invalidationStatements(
+        context,
+        plan.status === "paused" ? "paused" : "draft",
+        "practice updated",
+        now,
+      ),
+      auditStatement(context, "practice.create", "practice_item", itemId, {
+        phaseId: phase.id,
+      }, now),
+    ]);
+  } catch (error) {
+    await rethrowStaleRevision(context, error);
+  }
   return itemId;
 }
 
@@ -192,6 +211,162 @@ export async function addEvidenceItem(
     auditStatement(context, "evidence.create", "evidence_item", evidenceId, { phaseId: phase.id }),
   ]);
   return evidenceId;
+}
+
+export type WithdrawablePlanContentKind = "lesson" | "practice" | "evidence";
+
+export async function withdrawPlanContent(
+  context: MutationContext,
+  input: { kind: WithdrawablePlanContentKind; itemId: string },
+): Promise<void> {
+  const plan = await requireOwnedEditablePlan(context);
+  const db = getDb();
+  const now = new Date();
+  const nextPlanStatus = plan.status === "paused" ? "paused" : "draft";
+
+  if (input.kind === "lesson") {
+    const [item] = await db
+      .select({ status: lessons.status })
+      .from(lessons)
+      .where(
+        and(
+          eq(lessons.accountId, context.accountId),
+          eq(lessons.planId, context.planId),
+          eq(lessons.id, input.itemId),
+        ),
+      )
+      .limit(1);
+    if (!item) throw contentNotFound();
+    if (item.status === "archived") throw contentAlreadyWithdrawn();
+    try {
+      await db.batch([
+        db
+          .update(lessons)
+          .set({
+            status: guardedStatus(context, "archived"),
+            archivedAt: now,
+            updatedAt: now,
+          })
+          .where(
+            and(
+              eq(lessons.accountId, context.accountId),
+              eq(lessons.planId, context.planId),
+              eq(lessons.id, input.itemId),
+            ),
+          ),
+        ...invalidationStatements(context, nextPlanStatus, "lesson archived", now),
+        auditStatement(context, "lesson.archive", "lesson", input.itemId, {}),
+      ]);
+    } catch (error) {
+      await rethrowStaleRevision(context, error);
+    }
+    return;
+  }
+
+  if (input.kind === "practice") {
+    const [item] = await db
+      .select({ status: practiceItems.status })
+      .from(practiceItems)
+      .where(
+        and(
+          eq(practiceItems.accountId, context.accountId),
+          eq(practiceItems.planId, context.planId),
+          eq(practiceItems.id, input.itemId),
+        ),
+      )
+      .limit(1);
+    if (!item) throw contentNotFound();
+    if (item.status === "retired") throw contentAlreadyWithdrawn();
+    try {
+      await db.batch([
+        db
+          .update(practiceItems)
+          .set({
+            status: guardedStatus(context, "retired"),
+            retiredAt: now,
+            updatedAt: now,
+          })
+          .where(
+            and(
+              eq(practiceItems.accountId, context.accountId),
+              eq(practiceItems.planId, context.planId),
+              eq(practiceItems.id, input.itemId),
+            ),
+          ),
+        ...invalidationStatements(context, nextPlanStatus, "practice retired", now),
+        auditStatement(
+          context,
+          "practice.retire",
+          "practice_item",
+          input.itemId,
+          {},
+        ),
+      ]);
+    } catch (error) {
+      await rethrowStaleRevision(context, error);
+    }
+    return;
+  }
+
+  const [item] = await db
+    .select({ status: evidenceItems.status })
+    .from(evidenceItems)
+    .where(
+      and(
+        eq(evidenceItems.accountId, context.accountId),
+        eq(evidenceItems.planId, context.planId),
+        eq(evidenceItems.id, input.itemId),
+      ),
+    )
+    .limit(1);
+  if (!item) throw contentNotFound();
+  if (item.status === "withdrawn" || item.status === "archived") {
+    throw contentAlreadyWithdrawn();
+  }
+  try {
+    await db.batch([
+      db
+        .update(evidenceItems)
+        .set({
+          status: guardedStatus(context, "withdrawn"),
+          withdrawnAt: now,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(evidenceItems.accountId, context.accountId),
+            eq(evidenceItems.planId, context.planId),
+            eq(evidenceItems.id, input.itemId),
+          ),
+        ),
+      ...invalidationStatements(context, nextPlanStatus, "evidence withdrawn", now),
+      auditStatement(
+        context,
+        "evidence.withdraw",
+        "evidence_item",
+        input.itemId,
+        {},
+      ),
+    ]);
+  } catch (error) {
+    await rethrowStaleRevision(context, error);
+  }
+}
+
+function contentNotFound(): RequestError {
+  return new RequestError(
+    404,
+    "plan_content_not_found",
+    "This plan content item was not found.",
+  );
+}
+
+function contentAlreadyWithdrawn(): RequestError {
+  return new RequestError(
+    409,
+    "plan_content_already_withdrawn",
+    "This plan content item is already withdrawn from the golfer view.",
+  );
 }
 
 export async function addPhaseReview(
@@ -517,7 +692,24 @@ function validateReviewTransition(input: PhaseReviewInput) {
 
 async function requireOwnedPlanAndPhase(context: MutationContext, phaseId: string) {
   const db = getDb();
-  const [plan] = await db
+  const plan = await requireOwnedEditablePlan(context);
+  const [phase] = await db
+    .select()
+    .from(planPhases)
+    .where(
+      and(
+        eq(planPhases.accountId, context.accountId),
+        eq(planPhases.planId, context.planId),
+        eq(planPhases.id, phaseId),
+      ),
+    )
+    .limit(1);
+  if (!phase) throw new RequestError(400, "phase_not_found", "Selected phase does not belong to this plan.");
+  return { plan, phase };
+}
+
+async function requireOwnedEditablePlan(context: MutationContext) {
+  const [plan] = await getDb()
     .select()
     .from(developmentPlans)
     .where(and(eq(developmentPlans.accountId, context.accountId), eq(developmentPlans.id, context.planId)))
@@ -537,19 +729,7 @@ async function requireOwnedPlanAndPhase(context: MutationContext, phaseId: strin
       "Completed or archived plans cannot be changed.",
     );
   }
-  const [phase] = await db
-    .select()
-    .from(planPhases)
-    .where(
-      and(
-        eq(planPhases.accountId, context.accountId),
-        eq(planPhases.planId, context.planId),
-        eq(planPhases.id, phaseId),
-      ),
-    )
-    .limit(1);
-  if (!phase) throw new RequestError(400, "phase_not_found", "Selected phase does not belong to this plan.");
-  return { plan, phase };
+  return plan;
 }
 
 function invalidationStatements(
@@ -631,6 +811,16 @@ function guardedStatus(context: MutationContext, value: string) {
   ) = ${context.expectedRevision} then ${value} else null end`;
 }
 
+function currentPlanRevisionExists(context: MutationContext) {
+  return sql<boolean>`exists (
+    select 1
+    from ${developmentPlans}
+    where ${developmentPlans.accountId} = ${context.accountId}
+      and ${developmentPlans.id} = ${context.planId}
+      and ${developmentPlans.revision} = ${context.expectedRevision}
+  )`;
+}
+
 async function rethrowStaleRevision(context: MutationContext, error: unknown): Promise<never> {
   const [plan] = await getDb()
     .select({ revision: developmentPlans.revision })
@@ -658,6 +848,7 @@ function auditStatement(
   targetType: string,
   targetId: string,
   metadata: Record<string, unknown>,
+  occurredAt?: Date,
 ) {
   return getDb().insert(auditEvents).values({
     id: newId(),
@@ -670,5 +861,40 @@ function auditStatement(
     outcome: "success",
     requestId: context.requestId || null,
     metadata,
+    occurredAt,
   });
+}
+
+function replacementRetirementAuditStatement(
+  context: MutationContext,
+  replacementPracticeItemId: string,
+  now: Date,
+) {
+  const auditIdPrefix = `${newId()}:replacement-retirement:`;
+  return getDb().insert(auditEvents).select(sql`
+    select
+      ${auditIdPrefix} || ${practiceItems.id},
+      ${context.accountId},
+      'account',
+      ${context.accountId},
+      null,
+      'practice.retire',
+      'practice_item',
+      ${practiceItems.id},
+      'success',
+      ${context.requestId || null},
+      null,
+      json_object(
+        'reason', 'replaced_by_new_practice',
+        'relationship', 'retired_target_replaced_by_practice_item',
+        'replacementPracticeItemId', ${replacementPracticeItemId}
+      ),
+      ${now.getTime()},
+      null
+    from ${practiceItems}
+    where ${practiceItems.accountId} = ${context.accountId}
+      and ${practiceItems.planId} = ${context.planId}
+      and ${practiceItems.status} = 'active'
+      and ${currentPlanRevisionExists(context)}
+  `);
 }
