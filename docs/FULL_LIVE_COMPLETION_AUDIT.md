@@ -8,11 +8,12 @@
 ## Current conclusion
 
 The retired repository gates do not restrict implementation. The bounded V1 is
-implemented as a production Worker candidate and has a private owner-only Sites
-deployment history. The full-live goal is **not complete** because the exact current
-candidate has not yet been configured and deployed, the public commercial/policy
-inputs are unresolved, controlled real operations and recovery exercises are absent,
-and Aaron has not accepted an exact release.
+implemented as a production Worker and exact commit
+`8eed9e1395e18fee8e1e61f4344abcd5a35f93b5` is deployed privately as owner-only
+Sites version 3 with environment revision 5. The full-live goal is **not complete**
+because authenticated hosted acceptance is still absent, the public
+commercial/policy inputs are unresolved, controlled real operations and recovery
+exercises are absent, and Aaron has not accepted an exact release.
 
 Those are evidence, operating, and owner-decision dependencies. They are not a
 reinstated design gate and they do not invalidate completed engineering evidence.
@@ -29,7 +30,7 @@ reinstated design gate and they do not invalidate completed engineering evidence
 | SaaS billing | Server-controlled Checkout/Portal, signed webhook, local projection, bounded provider timeout, event processing lease | Checkout disabled; public billing blocked by policy/config and unresolved duplicate-session/recovery/customer-ownership findings |
 | Privacy lifecycle | Tenant export, correction through product edits, share revocation, truthful deletion-review status and retry deduplication | Destructive fulfillment, retention schedule, qualified review, and backup expiry remain unresolved |
 | Accessibility and responsive behavior | Semantic/rendered checks and recorded 1440/390/320 CSS-pixel local visual evidence | Manual keyboard, screen reader, forced-colour, zoom, reduced-motion, and supported-browser acceptance remain |
-| Deployment and observability | Prior exact owner-only Sites release succeeded; current provider logs contained no recorded errors | Current candidate deployment and authenticated smoke remain pending |
+| Deployment and observability | Exact version 3 deployed owner-only; the immediate error-only and wider log samples were empty | Deployment passed; authenticated hosted smoke and meaningful invocation logs remain pending |
 | Recoverability and operations | Runbooks document release, incident, D1 Time Travel, R2 limitations, rollback, support, and billing reconciliation | Named owners, alert/cost exercises, D1/R2 restore, rollback, and incident drills remain |
 | Commercial and public operation | `[PRICING HYPOTHESIS — REQUIRES VALIDATION]` and `[REAL-WORLD VALIDATION REQUIRED]` remain attached accurately | Exact offer, Stripe Price, tax/refund/failure/cancel/pause rules, domain, contacts, and policies require Aaron/external input |
 | Acceptance | No exact-release acceptance decision is recorded | `[OWNER INPUT REQUIRED]` |
@@ -72,22 +73,19 @@ Until the linked owner decisions and exercises are complete:
 
 ## Remaining completion sequence
 
-1. Configure the exact owner-private identity digest, deploy this candidate without
-   widening Sites access, and record its immutable source/version/deployment/config
-   evidence.
-2. Rotate/revoke the exposed bypass token under explicit Aaron authorization and run
+1. Rotate/revoke the exposed bypass token under explicit Aaron authorization and run
    authenticated hosted identity/header/spoof/session checks without using the
    exposed credential.
-3. Record exact owner decisions for scope/design/copy, operator and contacts,
+2. Record exact owner decisions for scope/design/copy, operator and contacts,
    commercial consequences, privacy/retention/deletion, media exclusion, providers,
    public origin, and residual risks.
-4. Remediate and test the public-billing lifecycle before enabling Checkout, including
+3. Remediate and test the public-billing lifecycle before enabling Checkout, including
    pending-session duplication, webhook crash recovery/reprocessing, durable Stripe
    customer ownership, accepted entitlement Price IDs, and freshness/reconciliation.
-5. Complete manual accessibility/browser review, controlled D1/R2 restore and
+4. Complete manual accessibility/browser review, controlled D1/R2 restore and
    rollback, monitoring/alert/cost/support/incident exercises, qualified policy
    review, and authorized real instructor/golfer journeys.
-6. Have Aaron accept the exact release with date, operating scope, configuration,
+5. Have Aaron accept the exact release with date, operating scope, configuration,
    policies, named owners, residual risks, and stop/revisit triggers.
 
 The goal may be marked complete only after every applicable item above is evidenced

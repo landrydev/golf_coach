@@ -3,7 +3,7 @@
 **Candidate:** `roadmap-production-saas` 1.0.0
 **Evidence opened:** 2026-08-07
 **Authority:** `AUTH-005`
-**Status:** owner-only Sites production release succeeded; not accepted for public launch or real-user operation
+**Status:** hardened owner-only Sites version 3 succeeded; not accepted for public launch or real-user operation
 
 This file records evidence for one exact candidate. A command result supports only
 the scope it actually exercised. A successful private deployment is not Aaron's
@@ -36,15 +36,15 @@ marketplace, AI, CRM/messaging, and unapproved analytics are excluded or disable
 | `npm run lint` | Passed | Repository ESLint; does not prove runtime behavior or accessibility |
 | `npm run typecheck` | Passed | Strict TypeScript including Worker/D1/R2 ambient types |
 | `npm run build` | Passed | Vinext/Worker production bundle and route discovery |
-| `npm test` | Passed: 36/36, zero failed or skipped | Rendered routes/headers, schema and migration parity, validation, billing controls, capability controls, rate limiting, and D1-backed critical/package/golfer/phase lifecycles |
-| `npm audit` | Passed: zero known vulnerabilities | Full dependency advisory snapshot; not an independent security assessment |
-| `npm audit --omit=dev` | Passed: zero known vulnerabilities | Production dependency advisory snapshot |
-| `npx drizzle-kit check` | Passed | Drizzle schema/config consistency; both journaled migrations were also byte-identical in the clean build |
-| D1 integration journeys | Passed | Production Worker plus real local D1 exercised tenant isolation, stale revisions, package/golfer invalidation, share lifecycle and response, and four phase-review transitions; not hosted SIWC or live-provider evidence |
+| `npm test` | Passed: 47/47, zero failed, skipped, or todo | Rendered routes/headers, schema/migration parity, canonical access routing, tenant substitution, CAS races, billing controls, capability/session expiry and revocation, data-request lifecycle, rate limiting, and D1-backed critical/package/golfer/phase journeys |
+| `npm audit` | Earlier snapshot passed: zero known vulnerabilities for the unchanged exact lock | Lock SHA-256 is unchanged; a 2026-08-08 live refresh could not run because external command approval capacity was unavailable, so no newer advisory snapshot is claimed |
+| `npm audit --omit=dev` | Earlier snapshot passed: zero known vulnerabilities for the unchanged exact lock | Production dependency snapshot; not an independent assessment and not refreshed on 2026-08-08 |
+| `npx drizzle-kit check` | Passed | Drizzle schema/config consistency; all three journaled migrations are packaged in the exact build |
+| D1 integration journeys | Passed | Production Worker plus real local D1 exercised tenant isolation, stale/concurrent revision handling, package/golfer invalidation, share/session expiry/revocation/response, deletion-request deduplication/status isolation, and four phase-review transitions; not hosted SIWC or live-provider evidence |
 
 The clean build's `dist/server/wrangler.json` pointed to `index.js`; the server entry
 passed `node --check`, client assets and observability configuration were present,
-the D1/R2 bindings were `DB`/`MEDIA`, and both journaled migrations were packaged.
+  the D1/R2 bindings were `DB`/`MEDIA`, and all three journaled migrations were packaged.
 
 ## Local rendered and reflow evidence
 
@@ -76,22 +76,23 @@ and real browser zoom remain explicitly unverified.
 
 | Field | Exact recorded value |
 |---|---|
-| Release commit / runtime `RELEASE_ID` | `240c9ed9d70ced5f3ed51691f1dc0339224f24bd` |
+| Release commit / runtime `RELEASE_ID` | `8eed9e1395e18fee8e1e61f4344abcd5a35f93b5` |
 | Sites project | `appgprj_6a76957326fc819196ebf3a0c95f1ec3` (`roadmap-golf-coaching`) |
-| Saved version | Version 2, `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_121f031c4ea88191ad84db23a0e0169e` |
-| Final deployment | `appgdep_6a769ade815881918e61687843424fb3`, `succeeded`, no failure message |
+| Saved version | Version 3, `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_7db5164ae51c8191b3e58dfc88d70000` |
+| Final deployment | `appgdep_6a76ac77ffb08191b3097b2b527b6e9f`, `succeeded`, no failure message |
 | Owner-only production URL | `https://roadmap-golf-coaching.aar-landry.chatgpt.site` |
-| Applied environment revision | 4 |
+| Applied environment revision | 5 |
 | Access policy | Revision 1; `custom`; one non-external owner; zero editors, groups, or external visitors |
-| Local archive SHA-256 | `85C7D78AA04814673869AF09299AB484E140ECDEDA09C93F603AF5EE637186DC` |
-| Sites archive content hash | `sha256:2c1d0c5d7b8cb0ce39fbc96f4deedbc1b82a1be9aae244815a5575f72aabb71f` |
+| Local archive SHA-256 | `08230A0E429E82C0F4A521C9D3221413F8D3B32A59C08064305E8C514427EBCA` |
+| Sites archive content hash | `sha256:edfa2095f11b91506bf2893895b1d6df699413dc09e1d4879acfb338cfe3d56e` |
 | Hosting metadata SHA-256 | `B5A8DCD7E593F2F90A2E084450CA64655077844F90CE763C7A8B8A449107B6BA` |
 | Migration `0000` SHA-256 | `867192A1E43D8243985CA838A7BCAF146CCF3FDFB4B1A736B0BD6F13198E1FF2` |
 | Migration `0001` SHA-256 | `564742C53AD8D13427673DEB69F96B24707A1E967525EDC1BBADF559A685573C` |
+| Migration `0002` SHA-256 | `097331EA0EA50AB2D218843D64E915D6792BF333E52F4A5A4E26E49366C6241C` |
 
 The archive contains top-level `dist/server/index.js`, current hosting metadata,
-both journaled migrations, client assets, and the production favicon. Sites reports
-33 archived files in the saved version. The source branch was pushed with a
+all three journaled migrations, client assets, and the production favicon. Sites
+reports 35 archived files in the saved version. The source branch was pushed with a
 short-lived per-command authorization header; no repository credential is stored in
 the remote URL, Git configuration, environment files, or source.
 
@@ -112,33 +113,38 @@ explicit instruction. Treat this credential as exposed: rotate or revoke it befo
 adding any visitor, changing the site to public, or accepting the release. Do not
 copy its value into an incident record, support channel, command, or repository file.
 
-Environment revision 4 contains the exact canonical `APP_URL`, the release commit,
-`BILLING_CHECKOUT_ENABLED=false`, and two independent masked secrets for share-token
-and abuse-counter HMACs. Stripe and development-auth variables are absent. Rotating
+Environment revision 5 contains the exact canonical `APP_URL`, the release commit,
+`BILLING_CHECKOUT_ENABLED=false`, `INSTRUCTOR_ACCESS_MODE=owner_private`, and three
+independent masked secrets for share-token, abuse-counter, and owner-access HMACs.
+Application configuration stores that owner identity only as a separate masked HMAC
+digest; plaintext was not copied into the application environment, source, or release
+output. Stripe and development-auth variables are absent. Rotating
 the share-token pepper would invalidate active golfer capabilities and therefore is
 an explicit operation, not routine redeployment behavior.
 
 ### Hosted smoke evidence and limits
 
-- Final version 2 deployed successfully with environment revision 4 and remains the
+- Final version 3 deployed successfully with environment revision 5 and remains the
   current live version at the recorded URL.
 - A signed-out request to `/` receives `401 Unauthorized` from the outer Sites access
   policy with `Cache-Control: no-store` and `Referrer-Policy: no-referrer`, proving
   the release is not anonymously reachable.
-- During the preceding immutable version-1 bootstrap of the same application code,
+- During the earlier immutable version-1 bootstrap,
   Sites' authenticated renderer recorded Worker `200` responses for `/`, `/.rsc`,
   and `/app.rsc`; the provider-generated production screenshot rendered the expected
   Roadmap landing page. Provider logs redacted cookies, SIWC identity headers, and
-  platform version metadata. Version 2 changes only favicon metadata/asset and its
-  rendered regression test; its full local production suite remains 36/36.
+  platform version metadata. That renderer evidence predates the version-3 hardening
+  release and is retained only for its direct scope; version 3 passes its own full
+  local production suite at 47/47.
 - The initial renderer exposed a missing `/favicon.ico` request. Version 2 adds an
   explicit SVG icon, asserts its rendered metadata, and packages `dist/client/favicon.svg`.
-- `errors_only` log queries immediately after final deployment and during the later
-  completion audit returned zero events. No 5xx, Worker exception, or failed
-  deployment is recorded. A wider read-only sample contains three successful
-  provider-renderer requests (`/`, `/.rsc`, and `/app.rsc`). Provider redaction hides
-  cookies and SIWC name/email values, but provider logs still expose network and
-  client metadata; retention, access, export, and alert routing remain unverified.
+- The version-3 `errors_only` log query immediately after deployment returned zero
+  events; the wider immediate sample was also empty. No failed deployment, Worker
+  exception, or version-3 5xx is recorded, but absence of an invocation is not a smoke
+  test. Earlier provider-renderer logs contained three successful requests (`/`,
+  `/.rsc`, and `/app.rsc`). Provider redaction hides cookies and SIWC name/email values,
+  but provider logs still expose network and client metadata; retention, access,
+  export, and alert routing remain unverified.
 
 The in-app browser backend was unavailable and the token-generation tool was not
 invoked. The unexpectedly disclosed existing bypass credential was not used.
@@ -166,10 +172,11 @@ from reaching the application by design.
 | Item | Current disposition |
 |---|---|
 | General public access | Blocked; working legal/support copy explicitly limits this to controlled private release |
-| Owner-only production release | Deployed successfully as Sites version 2; final authenticated owner acceptance and controlled real journeys remain unrecorded |
+| Owner-only production release | Deployed successfully as Sites version 3; final authenticated owner acceptance and controlled real journeys remain unrecorded |
 | SIWC bypass credential exposure | A connector-returned active bearer appeared in the private tool transcript and was not used or persisted; explicit owner-directed rotation/revocation is required before access expands |
 | New SaaS charges | Fail-closed through `BILLING_CHECKOUT_ENABLED=false` until exact price/policy approval and configuration |
-| Paid entitlement enforcement | Billing projection exists, but no owner-approved failed/cancelled/unpaid access consequence is implemented or claimed |
+| Paid entitlement enforcement | A fail-closed, explicit-status guard exists but production remains in `owner_private`; no owner-approved failed/cancelled/unpaid consequence is selected or claimed |
+| Public billing reliability | Checkout remains disabled; pending-session duplication, webhook crash reprocessing, durable Stripe-customer ownership, accepted entitlement Price IDs, and projection freshness must be resolved and exercised before charges are enabled |
 | Media upload | Disabled until consent, formats, scanning, accessibility, storage, and retention are approved and exercised |
 | Destructive account deletion | Not automated; only an identity/retention review request is created |
 | Fresh reauthentication | High-impact actions rely on the current SIWC session; provider capability/configuration for explicit recent-auth proof remains unresolved |
