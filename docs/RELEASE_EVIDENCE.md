@@ -49,7 +49,7 @@ marketplace, AI, CRM/messaging, and unapproved analytics are excluded or disable
 | `npm run verify` | Passed: lint, strict TypeScript, production Worker build, and 229/229 tests; zero failures, cancellations, skips, or todos | Exact version-9 release source commit; covers source/build/automated behavior, not hosted identity, provider operation, manual accessibility, policy, or real users |
 | `npm run verify:release-integrity` | Passed: 252 source text files scanned with zero pattern findings; historical Business Plan V1 digest preserved; canonical Git-blob/SBOM `package-lock.json` SHA-256 `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d` | Exact version-9 source only. The check intentionally excludes generated `dist`, `outputs`, dependencies, coverage, and work directories and is not an independent security assessment |
 | Exact-v9 artifact and submitted-archive audit | Passed: 61 safe tar entries/49 files; 23 source-mapped controls matched; all ten migrations were present; the archive matched the fresh local `dist`; exactly two matching generated prerender-credential files were confined to expected server locations; zero unexpected credential copies were found | The verifier reported `localBuildCompared: true`. Credential material was never printed. This proves the checked local build/archive relationship, not deterministic rebuilds on another machine or provider-side byte identity |
-| Isolated exact-commit clean install | Passed: `npm ci --no-audit` installed 501 packages; `npm run verify` rebuilt and passed 229/229 tests with zero skips/todos | [Detailed record](release-evidence/ROADMAP-SITES-V9-2026-08-08-clean-install.md). The rebuilt output did not byte-match the submitted archive after Windows checkout line-ending conversion; clean behavioral reproducibility passed, deterministic byte identity remains open |
+| Isolated exact-commit clean install | Passed: `npm ci --no-audit` installed 501 packages; `npm run verify` rebuilt and passed 229/229 tests with zero skips/todos | [Detailed record](release-evidence/ROADMAP-SITES-V9-2026-08-08-clean-install.md). The rebuilt output did not byte-match the submitted archive after Windows checkout line-ending conversion; clean behavioral reproducibility passed, while deterministic byte identity remains unproved for version 9 |
 | Full-lock SBOM inventory | Lockfile digest remains unchanged; CycloneDX 1.5 contains 676 components and SPDX 2.3 contains 677 packages | Lock-derived artifacts and hashes are recorded in [Software Supply Chain](SOFTWARE_SUPPLY_CHAIN.md); this is inventory, not provenance, license advice, or vulnerability certification |
 | `npm run audit:production` | Fresh 2026-08-08 result: zero known production vulnerabilities | Exact lock; advisory snapshot is time-bounded and not an independent assessment |
 | `npm run db:generate` | Passed: `No schema changes, nothing to migrate` | Drizzle schema, journal, snapshots, and ten packaged migrations agree across 31 tables |
@@ -57,6 +57,29 @@ marketplace, AI, CRM/messaging, and unapproved analytics are excluded or disable
 | `npm run exercise:capacity:local` | Passed: 54 synthetic requests at maximum concurrency four, four author/edit/publish/share flows, two exports, zero failures; local p50 42.75 ms, p95 107.09 ms, max 107.99 ms | Local synthetic exercise only; no approved SLO, hosted capacity, provider saturation, or real-user performance claim |
 | D1 integration journeys | Passed | Production Worker plus real local D1 exercised tenant isolation; consent grant/withdrawal and final-statement share/session race fencing; staged-save replay/races; three- and four-phase lifecycles; publication/session invalidation; share expiry/revocation/response; data-request operator boundaries; scheduler/dead-letter states; Checkout/reconciliation races; webhook healing; migration upgrades; and stale provider-read fencing; not hosted SIWC or live-provider evidence |
 | `git diff --check` | Passed; no whitespace errors, with only line-ending warnings reported | Source-tree consistency check only; not behavioral evidence |
+
+### Undeployed successor-source normalized reproducibility
+
+A separate, undeployed successor-source exercise at commit
+`66f5203a913f01c8da20555feebdbb99152c052c` used two independently created
+detached clean worktrees. In each worktree, `npm ci --no-audit` installed 501
+locked packages and reported five blocked install scripts, and `npm run verify`
+passed 234/234 tests. `npm audit --omit=dev` also reported zero known
+vulnerabilities for that exact successor lock; the result remains time-bounded.
+
+`npm run verify:reproducible-builds` compared the two clean `dist` trees. Both
+contained the same 49 paths. The only three raw content differences were
+`server/index.js`, `server/ssr/vinext-server.json`, and
+`server/vinext-server.json`. Strict allowlisted validation accepted only the
+framework-generated build identifier and within-build matching prerender-secret
+manifest pairs; after normalizing those values, zero differences remained. This proves
+normalized reproducibility under the recorded procedure, not byte-identical
+output. See the [successor reproducibility record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md).
+
+This exercise does not alter the version-9 clean-build result above: the
+version-9 rebuild still did not byte-match its submitted archive. The successor
+commit is not saved or deployed in Sites, is not a rollback target, and does not
+change the owner-only hosted version-9 status.
 
 Version-9 focused regressions additionally cover full-authoring and package-creation
 idempotency; client handoff/share retry; living-content withdrawal and practice

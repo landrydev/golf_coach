@@ -41,8 +41,24 @@ An isolated immutable-v9 export installed cleanly and passed the complete 229-te
 verification, but its rebuilt `dist` did not byte-match the submitted archive after
 Windows CRLF checkout conversion changed migrations/metadata and content-hashed
 bundles. Line endings are consistent with, but not proven to be the only cause.
-`SUPPLY-EVID-001` remains open; the LF rule added after runtime v9 must be exercised
-on a later exact candidate.
+`SUPPLY-EVID-001` therefore remained open for version 9; the LF rule added after
+runtime v9 still needed exercise on a later exact candidate.
+
+That later-source control was exercised separately at undeployed commit
+`66f5203a913f01c8da20555feebdbb99152c052c`. Two independently created detached
+clean worktrees each installed 501 locked packages with `npm ci --no-audit`, each
+reported five blocked install scripts, and each passed 234/234 tests through
+`npm run verify`. Their builds contained the same 49 paths. Only
+`server/index.js`, `server/ssr/vinext-server.json`, and
+`server/vinext-server.json` differed before strict allowlisted validation of the
+framework-generated build identifier and within-build matching prerender-secret
+manifest pairs;
+zero differences remained after normalization. `npm audit --omit=dev` also
+returned zero known production vulnerabilities for the exact successor lock in
+the time-bounded audit. This is
+normalized reproducibility, not byte-identical output. The [successor evidence](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md)
+does not retroactively change the failed version-9 byte comparison. The successor
+is not saved, deployed, or a rollback target and changes no hosted status.
 
 The current artifact regression preserves the version-8 closure of `SEC-003` for
 the build-generated prerender credential boundary and supersedes version 7. It does
@@ -500,6 +516,9 @@ The exact release requires proportionate evidence for:
 - upload, media failure, private-object, and deletion handling if media is enabled;
 - response header, cache, redirect, external-link, and browser security review;
 - dependency, configuration, secret, and repository scans;
+- normalized release-build comparison with `npm run verify:reproducible-builds`
+  across two independently created detached clean worktrees, retaining raw
+  differences and accepting only strictly validated generated-value variance;
 - D1/R2 backup and restore exercises;
 - keyboard, screen-reader, zoom/reflow, reduced-motion, no-media, error, and privacy-safe unauthorized-state checks; and
 - qualified privacy/legal review of actual product behavior and published copy.

@@ -38,6 +38,16 @@ empty and inconclusive, and no signed-in owner browser was mounted. Accordingly,
 `SEC-001` is **REMEDIATED — RETEST PENDING**, not an eligible residual risk. See the
 [rotation evidence](release-evidence/ROADMAP-SITES-V9-2026-08-08-sec001-rotation.md).
 
+Separate from this version-9 risk scope, exact undeployed successor source commit
+`66f5203a913f01c8da20555feebdbb99152c052c` passed two distinct detached clean
+checkouts and locked installs, two 234/234 verification runs, identical 49-file
+inventories, and strict allowlisted generated-value normalization with zero remaining
+differences; each install contained 501 packages and kept the same five install
+scripts blocked. `SUPPLY-EVID-001` therefore closes prospectively for the successor
+control only. The [reproducibility record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md)
+does not establish version-9 byte identity, deployment, acceptance, or rollback
+eligibility.
+
 ## Required risk record
 
 | Field | Required value |
@@ -59,7 +69,7 @@ Ratings below are recommendations for review, not Aaron's decisions.
 |---|---|---|---|
 | `RR-CSP-001`: vinext bootstrap currently requires CSP `'unsafe-inline'` for script elements | Medium | Exact v9 passed automated adversarial coverage; framework escaping, raw HTML/SVG exclusion, URL/input controls, no `unsafe-eval`, and inline script-attribute denial are implemented. No supported-browser deployed-CSP inspection exists. | Security owner reviews exact deployed CSP/test evidence. Revisit on vinext nonce/hash support, any XSS finding, CSP regression, or runtime change. |
 | `RR-CAP-001`: an intended golfer can forward a bearer capability | Medium | 256-bit verifier, HMAC fingerprint at rest, fragment/body exchange, short scoped session, neutral failures, expiry, rotation/revocation, no third-party analytics | Accept only after hosted exchange/revoke/session tests and approved sharing copy. Stop on token logging, cross-golfer access, unexplained forwarding harm, or inadequate revocation. |
-| `RR-PROVIDER-001`: Sites/Worker, SIWC, D1/R2, and deployment/control-plane concentration increases provider-exit impact | Medium | Versioned source/migrations, logical recovery path, immutable internal instructor IDs, private object metadata, and exact v9/v8 artifacts are recorded. An isolated exact-v9 clean install built and passed 229/229 tests, but did not reproduce the submitted archive byte-for-byte. Local recovery passed, but no hosted rollback, restore, or portability exercise exists. | Name owner and portability cadence. Revisit on terms/region/support/cost/recovery failure, unsupported runtime, deterministic-rebuild failure after the future LF-pinned candidate, or failed export/restore/portability exercise. |
+| `RR-PROVIDER-001`: Sites/Worker, SIWC, D1/R2, and deployment/control-plane concentration increases provider-exit impact | Medium | Versioned source/migrations, logical recovery path, immutable internal instructor IDs, private object metadata, and exact v9/v8 artifacts are recorded. An isolated exact-v9 clean install built and passed 229/229 tests, but did not reproduce the submitted archive byte-for-byte. The separate undeployed successor control passed two independent clean builds with zero differences after strict allowlisted generated-value normalization, closing `SUPPLY-EVID-001` prospectively only. Local recovery passed, but no hosted rollback, restore, or portability exercise exists. | Name owner and portability cadence. Revisit on terms/region/support/cost/recovery failure, unsupported runtime, a future deterministic-build control failure, or failed export/restore/portability exercise. |
 | `RR-EXTERNAL-001`: Roadmap cannot verify the instructor's external booking/purchase/contact destination or outcome | Medium | HTTPS validation, preview, explicit leave-site warning, separate SaaS billing, no sale/booking attribution, visible ask/wait/decline choices | Confirm truthful copy and support owner. Stop on unsafe/misleading destination reports, pressure pattern, or user belief that Roadmap processed the coach transaction. |
 
 ## Items not currently eligible for residual-risk acceptance
@@ -85,7 +95,9 @@ Ratings below are recommendations for review, not Aaron's decisions.
   `dist` did not byte-match the submitted archive: the Windows CRLF checkout changed
   migration/metadata bytes and content-hashed bundles. Line endings are consistent
   with the variance but are not proven to be its only cause. The repository LF rule
-  was added after the v9 runtime commit and must pass on a later exact candidate;
+  was added after the v9 runtime commit. Its separate exercise at undeployed successor
+  commit `66f5203a913f01c8da20555feebdbb99152c052c` closes `SUPPLY-EVID-001`
+  prospectively for successor control, but cannot retroactively prove v9 identity;
 - missing hosted rollback/restore, authenticated health, alert, incident, and
   staffed-operator evidence for the affected operating scope;
 - missing billing policy/configuration/webhook/controlled-transaction evidence before

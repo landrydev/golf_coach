@@ -1,9 +1,10 @@
 # Software supply-chain, SBOM, and license inventory
 
 **Status:** Reproducible inventory procedure plus exact Sites-version-9 lockfile,
-package, integrity-scan, and production-audit observations; not a legal opinion,
-vulnerability certification, exact deployed-archive SBOM, or deterministic
-byte-rebuild claim
+package, integrity-scan, and production-audit observations and an undeployed
+successor normalized-reproducibility pass; not a legal opinion, vulnerability
+certification, exact deployed-archive SBOM, retroactive v9 rebuild, or
+byte-for-byte identity claim
 **Observed:** 2026-08-08 with Node `24.18.0`, npm `12.0.1`
 **Authority:** `package-lock.json` is the exact dependency graph; `package.json`
 declares direct intent
@@ -68,10 +69,41 @@ LF for the same Git content; the comparison reported migration/metadata differen
 and different content-hashed client/server bundle names. The result is consistent
 with line-ending-driven variance, but it does not prove line endings are the only
 source of non-determinism. Repository `.gitattributes` now pins text checkouts to LF,
-but that control was added after runtime commit v9 and is not a v9 control. A later
-immutable candidate must exercise the clean checkout, install, build, and exact
-archive comparison before deterministic byte identity can be closed. See the
-[exact v9 clean-install record](release-evidence/ROADMAP-SITES-V9-2026-08-08-clean-install.md).
+but that control was added after runtime commit v9 and is not a v9 control. The
+deployed-v9 failure remains historical and was not retroactively reproduced. See
+the [exact v9 clean-install record](release-evidence/ROADMAP-SITES-V9-2026-08-08-clean-install.md).
+
+### Undeployed successor normalized-reproducibility observation
+
+At `2026-08-08T19:05:33.6134361Z`, two distinct detached clean worktrees at exact
+successor source commit `66f5203a913f01c8da20555feebdbb99152c052c` were
+verified on Windows with Node.js `v24.18.0` and npm `12.0.1`. In each worktree,
+`npm ci --no-audit` installed 501 locked packages and left five install scripts
+blocked. Each `npm run verify` passed lint, strict types, production build, the
+release-artifact verifier, and 234/234 tests with zero failures, skips, or todos.
+The lockfile SHA-256 remained
+`1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d`.
+The LF checkout policy had SHA-256
+`e4cb73429d1d8b59f472654c7ed41afb39872ef5c96f05032833bc62f1662bd6`
+and pins `* text=auto eol=lf` with binary exceptions. A successor-commit
+`npm audit --omit=dev` also passed on 2026-08-08 with zero reported
+vulnerabilities.
+
+The strict comparator found identical 49-file inventories. The only raw
+differences were `server/index.js`, `server/ssr/vinext-server.json`, and
+`server/vinext-server.json`. For each build, it required one generated UUID in
+exactly three anchored build-ID getter/ISR cache-key slots. It also required each
+manifest to have the exact single-property 64-hex `prerenderSecret` shape and the
+two manifest values to match within that build. No generated values were recorded.
+After normalizing only those validated generated values, zero differences remained.
+Five focused tests cover the comparator's fail-open boundaries.
+
+This closes `SUPPLY-EVID-001` prospectively for normalized reproducibility of the
+successor control. It does not establish byte-for-byte identity, retroactively
+reproduce deployed Sites version 9 commit
+`6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d`, or show that the successor was
+deployed or reconciled to a provider package. See the
+[successor normalized-reproducibility record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md).
 
 ### Direct production dependencies
 

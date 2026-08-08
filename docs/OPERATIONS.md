@@ -32,7 +32,23 @@ credential copies or paths, and `localBuildCompared: true`. A later retrospectiv
 inspection re-confirmed the value-safe inventory without comparing the subsequently
 rebuilt working-tree `dist`. Separately, an isolated clean build passed the full
 behavior suite but did not byte-match the archive; deterministic rebuilding remains
-open.
+open for version 9.
+
+A distinct successor-source exercise at commit
+`66f5203a913f01c8da20555feebdbb99152c052c` used two independently created
+detached clean worktrees. Each `npm ci --no-audit` installed 501 locked packages
+and reported five blocked install scripts; each `npm run verify` passed 234/234
+tests. Both builds contained the same 49 paths. The only three raw differences
+were `server/index.js`, `server/ssr/vinext-server.json`, and
+`server/vinext-server.json`; strict allowlisted validation accepted only the
+framework-generated build identifier and within-build matching prerender-secret
+manifest pairs, and
+zero differences remained after normalization. `npm audit --omit=dev` also
+returned zero known production vulnerabilities for the exact successor lock in
+the time-bounded audit. This is
+normalized reproducibility, not byte-identical output. The [successor record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md)
+does not change the failed version-9 byte comparison. The successor is not saved,
+deployed, or a rollback target and does not change the current hosted status.
 
 After version 9 deployed, plain HTTP `/` redirected to HTTPS. Signed-out HTTPS
 probes to `/`, `/app`, `/api/health`, and `/api/operations/health` each returned
@@ -209,6 +225,13 @@ The release operator records every step and attaches evidence to an immutable re
 ### 2. Verify build and behavior
 
 - Install from the committed lockfile in a clean environment.
+- For a release that claims reproducible output, create two independent detached
+  clean worktrees at the exact candidate commit, run `npm ci --no-audit` and
+  `npm run verify` in each, then run
+  `npm run verify:reproducible-builds -- --left-dist <first>/dist --right-dist <second>/dist`.
+  Preserve the raw difference paths and require strict validation of every
+  normalized generated value; record the outcome as normalized reproducibility,
+  not byte identity.
 - Run formatting/static checks, type/build checks, unit/integration tests, and the full relevant end-to-end suite.
 - Run cross-tenant, capability-link, Stripe-webhook, data-lifecycle, accessibility, and failure-path checks appropriate to the change.
 - Generate and inspect any D1 migration after schema changes.
@@ -216,7 +239,10 @@ The release operator records every step and attaches evidence to an immutable re
 - Run `npm run verify:release-integrity` to scan release text for secret-shaped values, reject unexpected environment files/symlinks, verify the immutable Business Plan V1 hash, check the migration journal, and validate the Sites resource manifest. Treat a clean scan as bounded evidence, not proof that no secret exists outside the scanned source.
 - Capture command, environment, version, result, limitations, and artifact checksums; a green command without scope/context is weak evidence.
 
-The repository's package scripts are the command authority. Typical current entry points are `npm run build`, `npm run lint`, and `npm test`; operators must inspect the scripts rather than assume their coverage.
+The repository's package scripts are the command authority. Typical current entry
+points are `npm run build`, `npm run lint`, `npm test`, and
+`npm run verify:reproducible-builds`; operators must inspect the scripts rather
+than assume their coverage.
 
 ### 3. Protect data and deploy
 
@@ -279,6 +305,11 @@ After consent-governed real data or disclosure under version 8 or 9, rollback to
 version 7 is class `B` behaviorally and forbidden as an ordinary code rollback.
 Freeze affected writes and use a tested forward fix or controlled recovery. Do not
 treat SQL shape compatibility as authorization/privacy compatibility.
+
+Undeployed successor source commit
+`66f5203a913f01c8da20555feebdbb99152c052c` has normalized build-reproducibility
+evidence only. It has no saved Sites version or deployment, has not been classified
+against the hosted schema/configuration, and is not a rollback target.
 
 Every rollback records trigger, decision maker, affected release/migration, customer impact, data-integrity result, verification, and follow-up action.
 

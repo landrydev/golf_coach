@@ -59,6 +59,18 @@ not infer any other owner decision or authorize access expansion or release acce
 
 **Evidence:** exact owner-only candidate `ROADMAP-SITES-V9-2026-08-08` is pinned to source/runtime release commit `6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d`, local archive gzip SHA-256 `8b3d0b13f03f0b13cd10602d24af09bf17c34afdcb4cf73518b2b0d857d59e22`, Sites archive content hash `sha256:0b3986dc73b1d06539dc85900dfd959549d92bcceb812c231a418766d29411fb`, saved Sites version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_58bb67e8e23c8191a584540a09e363c5`, deployment `appgdep_6a7768f92c588191934eda8abea6d6b4`, environment revision 11, and the evidence/limitation records linked below. Fresh signed-out boundary probes passed. Nine exact-commit local synthetic Chrome captures exercised the landing, workspace, and golfer views at 320, 390, and 1440 CSS pixels without root/body horizontal overflow; this is local layout evidence, not hosted or human accessibility acceptance. Deep readiness is intentionally degraded because exact owner-approved consent-policy content/version and privacy-operator access configuration are absent. Requirements traceability still identifies external, hosted, manual, and owner-decision gaps, so approval may be conditional or deferred.
 
+**Separate undeployed supply-control evidence:** exact successor source commit
+`66f5203a913f01c8da20555feebdbb99152c052c` passed two distinct detached clean
+checkouts and locked installs (501 packages and the same five blocked install scripts
+each), two full 234/234 verification runs, identical 49-file inventories, and a
+strict comparison whose only raw differences were `server/index.js` and the two
+`vinext-server.json` manifests and whose normalized difference count was zero.
+`npm audit --omit=dev` reported zero vulnerabilities. The
+[reproducibility record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md) closes
+`SUPPLY-EVID-001` prospectively for that successor control only. It does not change
+version 9's historical byte-rebuild failure or make the successor a deployed, saved,
+public, accepted, or rollback candidate.
+
 **Viable choices:** approve the exact bounded baseline with recorded conditions, require specified modifications and a new candidate, or defer approval while owner-only engineering continues.
 
 **Exact proposed decision wording:**

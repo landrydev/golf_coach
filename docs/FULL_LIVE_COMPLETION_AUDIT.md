@@ -74,8 +74,8 @@ provider observations remain historical predecessor evidence.
   checkout passed the full 229-test verification. Its rebuilt output did not
   byte-match the submitted archive after Windows line-ending conversion, so clean
   behavioral reproducibility is proved but deterministic byte identity is not. A
-  post-runtime `.gitattributes` control pins future text checkouts to LF and still
-  requires exact-candidate exercise.
+  post-runtime `.gitattributes` control pins future text checkouts to LF. It is not
+  version-9 evidence; the separate successor exercise below tests that later control.
 - `npm run exercise:recovery:local`: two synthetic tenants and three private
   synthetic objects matched after isolated D1/R2-compatible logical restore; the
   snapshot SHA-256 was
@@ -102,6 +102,23 @@ provider observations remain historical predecessor evidence.
 - Exact-commit local Chrome captures at 320, 390, and 1440 px cover the landing,
   instructor workspace, and golfer roadmap. All nine reported no page-level
   horizontal overflow; they do not replace human or hosted accessibility evidence.
+
+### Undeployed successor-source supply-control result
+
+Exact successor source commit `66f5203a913f01c8da20555feebdbb99152c052c`
+passed a separate prospective reproducibility exercise. Two distinct detached clean
+checkouts each completed a locked install of 501 packages with the same five install
+scripts blocked and passed the full 234/234 verification suite. Both builds produced
+identical 49-file inventories. Raw variation was confined to `server/index.js` and
+the two `vinext-server.json` manifests; strict allowlisted normalization of only the
+framework-generated build ID and within-build matching prerender-manifest values
+left zero differences. The exact
+commit also passed `npm audit --omit=dev` with zero vulnerabilities.
+
+This [successor reproducibility record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md)
+closes `SUPPLY-EVID-001` prospectively for the successor control only. It does not
+retroactively prove byte identity for the deployed version-9 archive. The successor
+is not deployed, saved as a Sites version, public, accepted, or a rollback target.
 
 Automated checks do not prove legal compliance, public demand, public-auth
 suitability, accessibility conformance, operational recoverability, or live-user

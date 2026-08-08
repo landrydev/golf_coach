@@ -23,8 +23,8 @@ facility administration, native coach-package payment, AI, or hidden concierge w
 | `OWNER-SEC-001` rotation | Aaron authorized the operation on 2026-08-08. One value-safe Sites rotation succeeded from `2026-08-08T18:32:25.588Z` through `2026-08-08T18:32:31.831Z`; the connector contract immediately invalidated the exposed prior bypass value. The replacement was not displayed, persisted, or used. Access remained `custom` revision 1 with one owner, zero groups, and zero external visitors. Four post-operation signed-out routes again returned `401`/`no-store`/`no-referrer`. A 15-minute Worker query returned zero events and was inconclusive; the original value was not replayed and normal signed-in owner operation remains untested. See the [rotation evidence](release-evidence/ROADMAP-SITES-V9-2026-08-08-sec001-rotation.md). |
 | Sanitized version-8-era log continuity | A read-only query started `2026-08-08T17:27:16.287Z`, completed `2026-08-08T17:27:17.305Z`, and requested 90 minutes from `2026-08-08T15:57:16.287Z`, limit 100, `errors_only=false`. It returned 24 events dated `16:37:26.325Z` through `17:16:40.472Z`: `fetch` 24, outcome `ok` 24, status `200` 23 and handled `403` 1. No scheduled event appeared. Only static route/count metadata was retained; no headers, identities, IPs, IDs, query strings, full URLs, messages, payloads, stacks, or credentials were recorded. This does not prove completeness, health, redaction, alerts, or scheduler operation. |
 | Post-version-9 logs | A 15-minute error-filtered query started `2026-08-08T17:41:24.033Z` and returned one handled `/app.rsc` `403` at level `info`/outcome `ok`, so zero error-level, exception, or crash events but one total filtered record. A separate 15-minute broad query started `2026-08-08T17:43:15.519Z` and returned three `fetch`/`ok` events (two `200`, one `403`) and zero scheduled events. These bounded samples do not prove error-free operation or a missing trigger. |
-| Artifact boundary | The release-time exact-build version-9 archive inspection passed: 61 safe entries/49 files, 23 source-mapped files, all 10 migrations, exactly 2 expected generated credential files, 0 unexpected copies or paths, and `localBuildCompared: true`. A later retrospective inspection also passed its narrower scope; the subsequently rebuilt working-tree `dist` is not treated as the submitted build. An isolated clean-checkout build passed behavior but did not byte-match the archive, so deterministic rebuild remains open. |
-| Automated/local | Exact-version-9 build, lint, strict types, and 229/229 tests passed. The runtime-source integrity scan covered 252 text files with zero secret findings and preserved Business Plan V1; the current expanded evidence tree covers 255 with the same result. Exact-lock production audit reported zero vulnerabilities; schema generation confirmed 31 tables/10 migrations with no change; local capacity completed 54 requests with zero failures; and local recovery matched 2 synthetic tenants/3 objects after all 10 migrations. These are local, not hosted/provider, results. |
+| Artifact boundary | The release-time exact-build version-9 archive inspection passed: 61 safe entries/49 files, 23 source-mapped files, all 10 migrations, exactly 2 expected generated credential files, 0 unexpected copies or paths, and `localBuildCompared: true`. A later retrospective inspection also passed its narrower scope; the subsequently rebuilt working-tree `dist` is not treated as the submitted build. An isolated clean-checkout build passed behavior but did not byte-match the archive, so deterministic byte identity remains unproved for version 9. |
+| Automated/local | Exact-version-9 build, lint, strict types, and 229/229 tests passed. The runtime-source integrity scan covered 252 text files with zero secret findings and preserved Business Plan V1; the current expanded evidence tree covers 258 with the same result. Exact-lock production audit reported zero vulnerabilities; schema generation confirmed 31 tables/10 migrations with no change; local capacity completed 54 requests with zero failures; and local recovery matched 2 synthetic tenants/3 objects after all 10 migrations. These are local, not hosted/provider, results. |
 | Not demonstrated | Exact-v9 authenticated browser/manual accessibility journeys, hosted scheduler/trigger provisioning, alert delivery, staffed monitoring, rollback, D1/R2 restore, or measured RPO/RTO. Deep readiness is intentionally degraded because exact owner-approved consent-policy content/version and privacy-operator access configuration are absent. |
 
 These are bounded release observations, not provider SLA, durability, recovery,
@@ -34,6 +34,23 @@ recorded and the exposed prior value is provider-invalidated. `SEC-001` is
 **REMEDIATED — RETEST PENDING**, not closed, because a normal signed-in owner journey
 and meaningful privacy-safe hosted log/redaction sample are still missing. No
 credential is reproduced or accepted here.
+
+### Undeployed successor-source supply-control observation
+
+Exact successor source commit `66f5203a913f01c8da20555feebdbb99152c052c`
+passed two distinct detached clean checkouts. Each locked install contained 501
+packages, kept the same five install scripts blocked, and passed 234/234 verification.
+A separate `npm audit --omit=dev` of the successor lock reported zero vulnerabilities.
+The builds had identical
+49-file inventories. Raw variation was limited to `server/index.js` and the two
+`vinext-server.json` manifests; strict allowlisted normalization of only the
+framework-generated build ID and within-build matching prerender-manifest values
+left zero differences.
+
+The [successor reproducibility record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md)
+closes `SUPPLY-EVID-001` prospectively for that control only. It does not alter the
+deployed version-9 artifact or historical byte-rebuild result. This source is not
+deployed, saved as a Sites version, public, accepted, or a rollback target.
 
 ## Current official-provider ambiguity and constraint
 

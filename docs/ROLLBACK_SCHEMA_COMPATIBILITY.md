@@ -22,7 +22,7 @@ or restore an exposed secret.
 | Record ID | `RB-CANDIDATE-009` |
 | Candidate | `ROADMAP-SITES-V9-2026-08-08` |
 | Source and runtime release ID | `6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d` |
-| Local source package | `outputs/roadmap-sites-v9-6b48fae.tar.gz`; gzip SHA-256 `8b3d0b13f03f0b13cd10602d24af09bf17c34afdcb4cf73518b2b0d857d59e22`; 2,965,984 bytes; 61 tar entries/49 files; the release-time exact-build comparison passed and found all 10 migrations. A later isolated clean build passed behavior but did not byte-match this archive, so deterministic rebuilding remains open. |
+| Local source package | `outputs/roadmap-sites-v9-6b48fae.tar.gz`; gzip SHA-256 `8b3d0b13f03f0b13cd10602d24af09bf17c34afdcb4cf73518b2b0d857d59e22`; 2,965,984 bytes; 61 tar entries/49 files; the release-time exact-build comparison passed and found all 10 migrations. A later isolated clean build passed behavior but did not byte-match this archive, so deterministic rebuilding remains unproved for version 9. |
 | Sites archive content | `sha256:0b3986dc73b1d06539dc85900dfd959549d92bcceb812c231a418766d29411fb`; 49 files; 6,737,920 bytes |
 | Saved Sites version | `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_58bb67e8e23c8191a584540a09e363c5` |
 | Successful deployment | `appgdep_6a7768f92c588191934eda8abea6d6b4`; final status `succeeded`, provider `updated_at` `2026-08-08T17:36:53.329945+00:00` |
@@ -33,6 +33,24 @@ or restore an exposed secret.
 | Hosted containment/log continuity | HTTP `/` redirected to HTTPS; four signed-out HTTPS probes returned `401` with `no-store`/`no-referrer`. A pre-v9 24-event sanitized log sample contained only `fetch`/`ok` events (23 `200`, one handled `403`) and no scheduled event. Post-v9 bounded queries found zero error-level/exception/crash events, one handled `403` in the broad error filter, and no scheduled event. None of this is rollback, authenticated-health, scheduler, or completeness evidence. |
 | Local recovery observation | The exact-version-9 exercise applied all 10 migrations, restored 2 synthetic tenants and 3 private synthetic objects, enforced child-process secret isolation, and matched snapshot SHA-256 `34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54`. This is local D1/R2-compatible evidence, not hosted/provider-native recovery. |
 | Exercise status | **IMMUTABLE CANDIDATE REGISTERED; NOT ROLLBACK- OR HOSTED-RESTORE-TESTED** |
+
+### Undeployed successor-source build observation
+
+Commit `66f5203a913f01c8da20555feebdbb99152c052c` was checked in two independently
+created detached clean worktrees. Each `npm ci --no-audit` installed 501 locked
+packages and reported five blocked install scripts; each `npm run verify` passed
+234/234 tests. The two builds had the same 49 paths. Only
+`server/index.js`, `server/ssr/vinext-server.json`, and
+`server/vinext-server.json` differed before strict allowlisted validation of the
+framework-generated build identifier and within-build matching prerender-secret
+manifest pairs;
+zero differences remained after normalization. This is normalized reproducibility,
+not byte identity. See the [successor reproducibility record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md).
+
+The successor commit is not saved or deployed in Sites, has no registered runtime
+or environment revision, has not been exercised against hosted state, and is not a
+rollback target. It does not alter any version-9 identifier, the version-9 failed
+byte-identity result, or the hosted owner-only status.
 
 ### Immediate historical predecessor and potential rollback baseline
 
@@ -100,6 +118,7 @@ controlled recovery. No hosted version switch or recovery exercise has been run.
 | Sites version 9 | `RB-BASE-008` / Sites version 8 | `U` pending exact behavior/configuration classification | Same schema journal alone is insufficient. Do not select until the source/configuration delta and an exact rollback drill prove safety. |
 | Sites version 9 after any version-8-or-later consent-governed use | `RB-BASE-007` / Sites version 7 | `B` (behavioral; SQL structures are backward-readable) | **Ordinary rollback forbidden.** Version 7 lacks the required consent enforcement; use a tested forward fix or controlled recovery. |
 | Sites version 9 | Version 6 or any older predecessor | `B` / unsupported | Multiple behavior and evidence deltas are not an approved rollback path. Use a forward fix or tested recovery. |
+| Undeployed successor source `66f5203a913f01c8da20555feebdbb99152c052c` | Any deployed version | Not applicable | Normalized build reproducibility alone does not create a saved runtime or rollback target. Do not use this source as a rollback action. |
 | Any future release with migration/configuration changes | Any predecessor | Unclassified | **Do not roll back** until the per-release matrix below is completed and exercised. |
 
 Compatibility classes are:
@@ -127,7 +146,7 @@ or migrations.
 | Data protection | Pre-change D1 bookmark/recovery point, R2 inventory/checksums, in-flight export/deletion state |
 | Billing protection | Checkout state, webhook backlog, account-operation leases, reconciliation targets, recognized/entitled Prices |
 | Trigger and authority | Quantified rollback triggers, decision maker, release operator, communication/escalation route |
-| Verification | Public/identity/instructor/golfer/consent/share/billing/data-request/health/audit/log smoke and integrity queries |
+| Verification | Public/identity/instructor/golfer/consent/share/billing/data-request/health/audit/log smoke and integrity queries; two independent clean builds compared with `npm run verify:reproducible-builds`, recorded as normalized reproducibility rather than byte identity |
 | Result | Time started/completed, customer effect, data integrity, unresolved findings, next action |
 
 Do not put secret values, raw capabilities, personal content, webhook bodies, or
