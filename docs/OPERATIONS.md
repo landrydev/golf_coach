@@ -16,22 +16,82 @@ not a public launch or Aaron's acceptance. No successful backup/restore or rollb
 exercise, staffed operating assignment, alert-delivery exercise, live Stripe flow,
 qualified legal/privacy review, or controlled real-user validation is claimed.
 
-The current exact private candidate is Sites version 8 at source/runtime release
-`cf117fef8ea42272d0b7e2358fe4197c024f86a7`, saved version
-`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_01ba2d860b508191b4d104339921606d`,
-deployment `appgdep_6a775b172534819196391fd626e95aa3`, and environment
-revision `10`. Deployment succeeded at `2026-08-08T16:36:50.529785+00:00`.
-Four signed-out probes to `/`, `/app`, `/api/health`, and
-`/api/operations/health` each returned the owner-only outer-policy `401`; they are
-containment evidence, not authenticated application or deep-health evidence.
+The current exact private candidate is Sites version 9 at source/runtime release
+`6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_58bb67e8e23c8191a584540a09e363c5`,
+deployment `appgdep_6a7768f92c588191934eda8abea6d6b4`, and environment
+revision `11`. Final deployment status is `succeeded` with provider `updated_at`
+`2026-08-08T17:36:53.329945+00:00`.
+The saved Sites archive is `sha256:0b3986dc73b1d06539dc85900dfd959549d92bcceb812c231a418766d29411fb`
+with 49 files and 6,737,920 unpacked bytes. The submitted local archive
+`outputs/roadmap-sites-v9-6b48fae.tar.gz` is 2,965,984 bytes with 61 entries and
+gzip SHA-256 `8b3d0b13f03f0b13cd10602d24af09bf17c34afdcb4cf73518b2b0d857d59e22`.
+The release-time exact-build inspection found all 10 migrations, 23 source-mapped
+files, exactly two expected server-manifest credential files, zero unexpected
+credential copies or paths, and `localBuildCompared: true`. A later retrospective
+inspection re-confirmed the value-safe inventory without comparing the subsequently
+rebuilt working-tree `dist`. Separately, an isolated clean build passed the full
+behavior suite but did not byte-match the archive; deterministic rebuilding remains
+open.
 
-The exact post-commit artifact and submitted archive checks passed: 49 build files,
-exactly two expected server-manifest credential copies, zero unexpected copies or
-paths, no production prerender binding, 10 packaged migrations, and gzip SHA-256
-`99d615410c2e145e77938f0c5df4449ab8aeb4a544a5c5949fcdafa56a8e1378`.
-This closes `SEC-003` for the version-8 build-generated prerender credential
-boundary. `SEC-001` remains contained/open, and `OWNER-SEC-001` rotation/retest is
-still required. Consent-policy-registry and privacy-operator owner decisions and
+After version 9 deployed, plain HTTP `/` redirected to HTTPS. Signed-out HTTPS
+probes to `/`, `/app`, `/api/health`, and `/api/operations/health` each returned
+the owner-only outer-policy `401` with `Cache-Control: no-store` and
+`Referrer-Policy: no-referrer`. These are transport/header/anonymous-containment
+observations, not authenticated application, deep-health, or journey evidence.
+
+A read-only version-8-era continuity query started at
+`2026-08-08T17:27:16.287Z`, completed at `2026-08-08T17:27:17.305Z`, and requested
+the preceding 90 minutes from `2026-08-08T15:57:16.287Z` with limit 100 and
+`errors_only=false`. It returned 24 events dated from
+`2026-08-08T16:37:26.325Z` through `2026-08-08T17:16:40.472Z`: all were `fetch`
+with Worker outcome `ok`, with 23 status `200` and one handled status `403`.
+Route counts were `/` 2, `/.rsc` 2, `/app.rsc` 7, `/app/billing.rsc` 2,
+`/app/golfers.rsc` 1, `/app/packages.rsc` 2, `/app/settings.rsc` 3,
+`/app/settings/data.rsc` 2, and `/privacy.rsc`, `/support.rsc`, and `/terms.rsc`
+1 each. No scheduled event appeared in that bounded snapshot. The recorded
+appendix excludes headers, cookies, identities, IPs, request/ray IDs, query
+strings, full URLs, messages, payloads, stack traces, and credential values.
+It proves only that the provider returned those invocations; it does not prove
+log completeness, retention, redaction, authenticated success, application
+health, alert delivery, or scheduler operation.
+
+A fresh post-version-9 error-filtered read started at
+`2026-08-08T17:41:24.033Z`, completed at `2026-08-08T17:41:25.057Z`, and requested
+15 minutes from `2026-08-08T17:26:24.033Z` with limit 100. The provider's broad
+error filter returned one handled non-owner `/app.rsc` `403` at
+`2026-08-08T17:36:51.476Z`; it was level `info`, `fetch`, and outcome `ok`.
+Accordingly, zero error-level, exception, or crash events were returned, but the
+query result count was one rather than zero. A separate bounded post-version-9
+query at `2026-08-08T17:43:15.519Z` requested 15 minutes with limit 100 and
+`errors_only=false`; it returned three `fetch`/`ok` events (two `200`, one `403`)
+and zero scheduled events. These short samples do not prove an error-free release.
+
+The packaged scheduled handler and local heartbeat evidence exist, but no hosted
+scheduled event has been observed in the bounded log samples. A missing or
+unprovisioned production cron trigger is therefore a working suspicion, not a
+confirmed diagnosis: the inspected evidence cannot distinguish a deployment
+trigger gap from no invocation in the sampled windows or incomplete provider logs.
+Do not rely on hosted scheduling until trigger configuration and an actual hosted
+invocation are independently demonstrated.
+
+Current official-provider guidance was checked on 2026-08-08. The
+[Sites developer guide](https://learn.chatgpt.com/docs/sites) says some background
+services or hosting patterns may be unsupported and directs builders not to use
+Sites to enable financial transactions; it does not document a cron/scheduled-trigger
+facility. The [Sites help article](https://help.openai.com/en/articles/20001339)
+likewise warns that some background services may be unsupported and places
+responsibility for third-party processor payments on the operator. Silence about a
+cron facility is provider ambiguity, not proof that no trigger can exist. Obtain
+explicit provider confirmation of the intended scheduler and payment architecture,
+or record and verify a superseding hosting/scheduler decision, before depending on
+hosted reconciliation, enabling Checkout, or expanding to public/paid operation.
+
+The existing exact version-8 artifact evidence closed `SEC-003` for its
+build-generated prerender credential boundary; the bounded version-9 retrospective
+inspection is additional continuity evidence, not a replacement exact-build
+attestation. `SEC-001` remains contained/open, and `OWNER-SEC-001` rotation/retest
+is still required. Consent-policy-registry and privacy-operator owner decisions and
 configuration also remain absent; those controls fail closed and deep readiness is
 intentionally degraded.
 
@@ -93,7 +153,7 @@ The inventory records a name, purpose, environment, provider owner, last rotatio
 
 Logical D1/R2 declarations live in `.openai/hosting.json`; Sites owns real Cloudflare resource provisioning and deployment wiring. Hosted runtime values are managed through the Sites control plane. No `.env` file, dashboard export, credential screenshot, or copied webhook payload belongs in version control.
 
-For the current private version-8 environment, do not invent consent or
+For the current private version-9 environment, do not invent consent or
 privacy-operator values to make deep health green. `CONSENT_POLICY_REGISTRY_JSON`
 and the independent operator access configuration remain owner/qualified-review
 dependencies. Their absence must continue to fail the affected controls closed and
@@ -192,13 +252,17 @@ Application rollback and data recovery are distinct:
 - If capability or secret exposure is involved, revoke/rotate separately; code rollback does not remove exposed secrets.
 - If a Stripe event processor caused a bad entitlement projection, preserve accepted webhook events and rebuild/reconcile state rather than deleting billing history.
 
-For Sites version 8, migrations `0008` and `0009` are structurally
-backward-readable, but the predecessor version 7 lacks version-8 consent enforcement
-for ordinary instructor reads/writes and golfer sharing. After any
-consent-governed real data or disclosure under version 8, rollback to version 7 is
-class `B` behaviorally and forbidden as an ordinary code rollback. Freeze affected
-writes and use a tested forward fix or controlled recovery. Do not treat SQL shape
-compatibility as authorization/privacy compatibility.
+Sites version 9 packages the migration journal through `0009`. Version 8 is the
+immediate deployed predecessor with the same journal, but no hosted version-9 to
+version-8 switch or full behavior/configuration compatibility drill has been run;
+do not presume that matching SQL shape makes it an approved rollback target.
+Migrations `0008` and `0009` remain structurally backward-readable by version 7,
+but version 7 lacks the consent enforcement introduced in version 8 and retained
+by the current candidate for ordinary instructor reads/writes and golfer sharing.
+After consent-governed real data or disclosure under version 8 or 9, rollback to
+version 7 is class `B` behaviorally and forbidden as an ordinary code rollback.
+Freeze affected writes and use a tested forward fix or controlled recovery. Do not
+treat SQL shape compatibility as authorization/privacy compatibility.
 
 Every rollback records trigger, decision maker, affected release/migration, customer impact, data-integrity result, verification, and follow-up action.
 
@@ -458,11 +522,11 @@ Deployment alone, a working happy path, or a green build does not complete this 
 | Dependency | Current truthful status | Required operational evidence |
 |---|---|---|
 | SIWC/public-auth suitability | Selected architecture; public production suitability unproven | Hosted sign-in/recovery/sign-out, identity continuity, abuse, and support evidence |
-| Stripe live account/price | Planned integration; production credentials and exact approved Price unavailable/unrecorded | Authorized secret/config inventory, policy alignment, webhook and controlled transaction evidence |
+| Stripe live account/price | Planned integration; Checkout disabled; production credentials and exact approved Price unavailable/unrecorded; current Sites guidance directs builders not to use Sites to enable financial transactions | Explicit provider confirmation or a verified superseding hosting decision, authorized secret/config inventory, policy alignment, reachable signed webhook, and controlled transaction evidence |
 | Domain | No approved production entry point recorded here | Authorized domain, DNS/redirect/TLS/origin checks, published support/legal destinations |
 | Legal and privacy copy | Exact qualified/owner-approved copy not recorded | Versioned review and deployed copy/behavior conformance |
 | Backup/restore | Procedure specified; no successful exercise claimed | D1/R2 restore evidence with integrity, measured recovery, and named owner |
-| Sites logs/alerts | Selected signal source; deployed access/retention/redaction/alerts unproven | Sampled production-like logs, token/PII checks, alert delivery and response exercise |
+| Sites logs/alerts and scheduling | Bounded sanitized fetch samples exist; access/retention/redaction/alerts remain unproven; no hosted scheduled event was observed and official guidance leaves background-service support ambiguous | Provider confirmation or superseding scheduler/hosting decision, hosted trigger invocation, token/PII checks, alert delivery and response exercise |
 | Live acceptance | No exact production release acceptance recorded | Complete evidence packet and Aaron's dated release acceptance |
 
 These dependencies determine whether affected production claims are supported. They do not retract `AUTH-005`, and they must not be described as completed until evidence exists.

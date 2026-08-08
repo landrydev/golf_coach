@@ -1,7 +1,7 @@
 # Provider responsibility, cost, portability, and exit record
 
 **Status:** Production implementation record under `AUTH-005`, reconciled to the
-owner-private Sites version-8 candidate; selected architecture and limited provider
+owner-private Sites version-9 candidate; selected architecture and limited provider
 observations, not provider-account approval, budget approval, SLA evidence, public
 operation, or live acceptance
 **Related decisions:** `TECH-001` through `TECH-004` in
@@ -17,28 +17,50 @@ facility administration, native coach-package payment, AI, or hidden concierge w
 
 | Field | Exact recorded observation |
 |---|---|
-| Source/runtime and package | Commit `cf117fef8ea42272d0b7e2358fe4197c024f86a7`; local gzip SHA-256 `99d615410c2e145e77938f0c5df4449ab8aeb4a544a5c5949fcdafa56a8e1378` (2,963,266 bytes; 61 entries/49 files); Sites content `sha256:9a4119ea60dd64d2a0bf14a55c7e2d27fb3e8ea250f0d064e8bc5a79fb34a87c` (49 files; 6,737,920 bytes) |
-| Sites identity | Project `appgprj_6a76957326fc819196ebf3a0c95f1ec3`; version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_01ba2d860b508191b4d104339921606d`; deployment `appgdep_6a775b172534819196391fd626e95aa3`; environment revision `10`; succeeded |
-| Access and safe probes | Owner-only at `https://roadmap-golf-coaching.aar-landry.chatgpt.site`. External signed-out probes of `/`, `/app`, `/api/health`, and `/api/operations/health` each returned outer-policy `401`. The immediate error-only provider-worker sample contained one expected non-owner `/app.rsc` `403` event with outcome `ok`. |
-| Artifact boundary | Fresh local archive verification passed with `localBuildCompared: true`: 61 safe entries/49 files, 23 source-mapped files, all 10 migrations, exactly 2 expected generated credential files, and 0 unexpected copies. |
-| Automated/local | 226/226 tests; 248-file integrity scan with zero secret findings and Business Plan V1 preserved; production dependency audit zero vulnerabilities; no generated schema changes; local recovery exercised 10 migrations and 2 synthetic tenants. |
-| Not demonstrated | Exact-v8 authenticated browser/manual accessibility journeys, hosted scheduler, alert delivery, staffed monitoring, rollback, D1/R2 restore, or measured RPO/RTO. Deep readiness is intentionally degraded because exact owner-approved consent-policy content/version and privacy-operator access configuration are absent. The browser backend was unavailable. |
+| Source/runtime and package | Commit `6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d`; local package `outputs/roadmap-sites-v9-6b48fae.tar.gz`, gzip SHA-256 `8b3d0b13f03f0b13cd10602d24af09bf17c34afdcb4cf73518b2b0d857d59e22` (2,965,984 bytes; 61 entries/49 files); Sites content `sha256:0b3986dc73b1d06539dc85900dfd959549d92bcceb812c231a418766d29411fb` (49 files; 6,737,920 bytes) |
+| Sites identity | Project `appgprj_6a76957326fc819196ebf3a0c95f1ec3`; version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_58bb67e8e23c8191a584540a09e363c5`; deployment `appgdep_6a7768f92c588191934eda8abea6d6b4`; environment revision `11`; final status `succeeded`, provider `updated_at` `2026-08-08T17:36:53.329945+00:00` |
+| Access and safe probes | Owner-only at `https://roadmap-golf-coaching.aar-landry.chatgpt.site`. Plain HTTP `/` redirected to HTTPS. Post-version-9 signed-out HTTPS probes of `/`, `/app`, `/api/health`, and `/api/operations/health` each returned outer-policy `401` with `Cache-Control: no-store` and `Referrer-Policy: no-referrer`. These are anonymous-containment observations, not authenticated application evidence. |
+| Sanitized version-8-era log continuity | A read-only query started `2026-08-08T17:27:16.287Z`, completed `2026-08-08T17:27:17.305Z`, and requested 90 minutes from `2026-08-08T15:57:16.287Z`, limit 100, `errors_only=false`. It returned 24 events dated `16:37:26.325Z` through `17:16:40.472Z`: `fetch` 24, outcome `ok` 24, status `200` 23 and handled `403` 1. No scheduled event appeared. Only static route/count metadata was retained; no headers, identities, IPs, IDs, query strings, full URLs, messages, payloads, stacks, or credentials were recorded. This does not prove completeness, health, redaction, alerts, or scheduler operation. |
+| Post-version-9 logs | A 15-minute error-filtered query started `2026-08-08T17:41:24.033Z` and returned one handled `/app.rsc` `403` at level `info`/outcome `ok`, so zero error-level, exception, or crash events but one total filtered record. A separate 15-minute broad query started `2026-08-08T17:43:15.519Z` and returned three `fetch`/`ok` events (two `200`, one `403`) and zero scheduled events. These bounded samples do not prove error-free operation or a missing trigger. |
+| Artifact boundary | The release-time exact-build version-9 archive inspection passed: 61 safe entries/49 files, 23 source-mapped files, all 10 migrations, exactly 2 expected generated credential files, 0 unexpected copies or paths, and `localBuildCompared: true`. A later retrospective inspection also passed its narrower scope; the subsequently rebuilt working-tree `dist` is not treated as the submitted build. An isolated clean-checkout build passed behavior but did not byte-match the archive, so deterministic rebuild remains open. |
+| Automated/local | Exact-version-9 build, lint, strict types, and 229/229 tests passed. The runtime-source integrity scan covered 252 text files with zero secret findings and preserved Business Plan V1; the expanded evidence tree later covered 254 with the same result. Exact-lock production audit reported zero vulnerabilities; schema generation confirmed 31 tables/10 migrations with no change; local capacity completed 54 requests with zero failures; and local recovery matched 2 synthetic tenants/3 objects after all 10 migrations. These are local, not hosted/provider, results. |
+| Not demonstrated | Exact-v9 authenticated browser/manual accessibility journeys, hosted scheduler/trigger provisioning, alert delivery, staffed monitoring, rollback, D1/R2 restore, or measured RPO/RTO. Deep readiness is intentionally degraded because exact owner-approved consent-policy content/version and privacy-operator access configuration are absent. |
 
 These are bounded release observations, not provider SLA, durability, recovery,
 regional-processing, account-support, cost, or public-suitability evidence. Sites
-versions 6 and 7 remain historical predecessor evidence. `SEC-001` remains contained and
+versions 6 through 8 remain historical predecessor evidence. `SEC-001` remains contained and
 open pending authorized rotation/revocation and retest; no credential is reproduced
 or accepted here.
+
+## Current official-provider ambiguity and constraint
+
+Official guidance was checked on 2026-08-08. The
+[Sites developer guide](https://learn.chatgpt.com/docs/sites) states that some
+background services or hosting patterns may be unsupported and directs builders
+not to use Sites to enable financial transactions. It does not document a
+cron/scheduled-trigger facility. The
+[Sites help article](https://help.openai.com/en/articles/20001339) also warns that
+some background services may be unsupported and says the operator remains
+responsible when using a third-party payment processor.
+
+The lack of cron documentation is an ambiguity, not direct proof that a trigger is
+absent. Combined with the lack of any observed hosted scheduled event, it makes a
+deployment/trigger gap a working suspicion only. Before scheduled reconciliation,
+public access, or billing becomes an operational dependency, obtain explicit
+provider confirmation that the required background and payment pattern is supported,
+or record a superseding hosting/scheduler decision and exercise that architecture.
+Keep Checkout disabled in the meantime. An owner approval cannot override an actual
+provider constraint.
 
 ## Responsibility boundary
 
 | Service/boundary | Provider responsibility | Roadmap/operator responsibility | Evidence or decision still open |
 |---|---|---|---|
-| OpenAI Sites and Cloudflare Worker runtime | Deployment/control-plane behavior, runtime execution, outer access-policy enforcement, binding delivery, provider logs | Secure application logic, release/configuration control, server authorization, headers, least privilege, smoke/rollback evidence | Public access policy, custom origin, account ownership/support path, hosted alerting/scheduling, terms and budget |
+| OpenAI Sites and Cloudflare Worker runtime | Deployment/control-plane behavior, runtime execution, outer access-policy enforcement, binding delivery, provider logs | Secure application logic, release/configuration control, server authorization, headers, least privilege, smoke/rollback evidence | Public access policy, custom origin, account ownership/support path, explicit provider confirmation or superseding decision for background scheduling and payment architecture, hosted alerting/scheduling, terms and budget |
 | Dispatch-owned SIWC | Authentication/session claims delivered at the trusted dispatch boundary | Internal immutable instructor ID, tenant authorization, entitlement, account lifecycle, spoof denial, recovery/support workflow | Public Canada-wide suitability, stable subject/continuity, sign-in/out/recovery and provider support evidence |
 | Cloudflare D1 | Managed database service and provider-native recovery capabilities according to the current account/plan | Schema/migrations, tenant constraints, query integrity, retention, backups beyond provider limits, restore testing, RPO/RTO | Exact production plan/region, hosted restore result, recovery owner and retention schedule |
 | Private Cloudflare R2 | Private object service and its provider durability/operations | Object authorization, D1 metadata/ownership, validation, lifecycle, independent recoverability, cost controls | Media remains excluded; plan/region, recovery design, retention/deletion and exercise remain open |
-| Stripe hosted billing | Hosted Checkout/Portal, payment processing, provider billing records, signed event delivery | Exact offer/policy, server-created sessions, webhook verification/idempotency, local entitlement projection, reconciliation, support/refunds under approved policy | Account, Product/Price, tax/refund/failure/cancel/pause rules, webhook ingress, live credentials/transaction and budget |
+| Stripe hosted billing | Hosted Checkout/Portal, payment processing, provider billing records, signed event delivery | Exact offer/policy, server-created sessions, webhook verification/idempotency, local entitlement projection, reconciliation, support/refunds under approved policy | Sites guidance currently directs builders not to use Sites to enable financial transactions; provider confirmation or superseding hosting decision, account, Product/Price, policy, webhook ingress, credentials/transaction and budget remain open |
 | Instructor's external action destination | Instructor/provider owns booking, purchase, contact, fulfillment, and coach-package transaction | Validate an HTTPS handoff, warn before leaving, preserve choices, never claim sale/booking completion | Real-world comprehension and external-link support evidence |
 | npm/open-source ecosystem | Registry distribution and upstream projects under their terms | Pin/integrity review, SBOM, license/advisory review, regression, emergency updates | Named dependency owner and qualified license-obligation review |
 | Domain/DNS, if approved | Registrar/DNS service availability and account controls | Authorized ownership, TLS/redirect/origin configuration, renewal, incident recovery | Domain, account, budget, contacts, and final-origin verification |
@@ -103,8 +125,11 @@ domain purchase, or provider-plan change is authorized by this recommendation.
 Reopen `TECH-001` through `TECH-003` when any of these occurs:
 
 - SIWC cannot provide stable, supportable public identity/recovery for the target users;
-- Sites cannot expose signed Stripe webhook ingress while protecting instructor routes;
-- hosted scheduling, logs, alerts, or controlled rollback cannot meet operations;
+- Sites cannot expose signed Stripe webhook ingress while protecting instructor routes,
+  or the provider does not confirm that the intended third-party payment pattern is
+  supportable under current guidance;
+- hosted scheduling/background services, logs, alerts, or controlled rollback cannot
+  be confirmed or meet operations;
 - D1/R2 capacity, consistency, latency, location, backup, RPO/RTO, or deletion behavior fails an approved requirement;
 - actual monthly or per-tenant cost crosses an owner-approved warning/stop threshold;
 - a provider/security/license incident, material terms change, unsupported runtime, or abandoned dependency changes risk;

@@ -3,7 +3,7 @@
 **Candidate:** `roadmap-production-saas` 1.0.0
 **Evidence opened:** 2026-08-07
 **Authority:** `AUTH-005`
-**Status:** hardened owner-only Sites version 8 succeeded; not accepted for public launch or real-user operation
+**Status:** hardened owner-only Sites version 9 succeeded; not accepted for public launch or real-user operation
 
 This file records evidence for one exact candidate. A command result supports only
 the scope it actually exercised. A successful private deployment is not Aaron's
@@ -46,17 +46,19 @@ marketplace, AI, CRM/messaging, and unapproved analytics are excluded or disable
 
 | Check | Current result | Scope and limitation |
 |---|---|---|
-| `npm run verify` | Passed: lint, strict TypeScript, production Worker build, and 226/226 tests; zero failures, cancellations, skips, or todos | Exact version-8 release source commit; covers source/build/automated behavior, not hosted identity, provider operation, manual accessibility, policy, or real users |
-| `npm run verify:release-integrity` | Release-time/pre-SBOM pass: 248 runtime-source text files scanned with zero pattern findings; historical Business Plan V1 digest preserved; the recorded Windows working-checkout/extracted Git source-archive byte representation of `package-lock.json` had SHA-256 `a29e63ce73d1de9f40d54ebc615982686af6c53084c107f84e35d1316ba425d1` | Exact version-8 source only; the canonical Git-blob/SBOM lock digest is `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d`. After the three SBOM JSON artifacts were retained, the reconciliation rerun scanned 251 files with zero findings. The check intentionally excludes generated `dist`, `outputs`, dependencies, coverage, and work directories and is not an independent security assessment |
-| Exact-v8 artifact and submitted-archive audit | Passed: 61 safe tar entries/49 files; 23 source-mapped controls matched; all ten migrations were present; the archive matched the fresh local `dist`; exactly two matching generated prerender-credential files were confined to expected server locations; zero unexpected credential copies were found | The verifier reported `localBuildCompared: true`. Credential material was never printed. This proves the checked local build/archive relationship, not deterministic rebuilds on another machine or provider-side byte identity |
-| Full-lock SBOM generation | Passed: lockfile digest matched exact source; CycloneDX 1.5 contains 676 components and SPDX 2.3 contains 677 packages | Exact-v8 artifacts and hashes are recorded in [Software Supply Chain](SOFTWARE_SUPPLY_CHAIN.md); this is inventory, not provenance, license advice, or vulnerability certification |
+| `npm run verify` | Passed: lint, strict TypeScript, production Worker build, and 229/229 tests; zero failures, cancellations, skips, or todos | Exact version-9 release source commit; covers source/build/automated behavior, not hosted identity, provider operation, manual accessibility, policy, or real users |
+| `npm run verify:release-integrity` | Passed: 252 source text files scanned with zero pattern findings; historical Business Plan V1 digest preserved; canonical Git-blob/SBOM `package-lock.json` SHA-256 `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d` | Exact version-9 source only. The check intentionally excludes generated `dist`, `outputs`, dependencies, coverage, and work directories and is not an independent security assessment |
+| Exact-v9 artifact and submitted-archive audit | Passed: 61 safe tar entries/49 files; 23 source-mapped controls matched; all ten migrations were present; the archive matched the fresh local `dist`; exactly two matching generated prerender-credential files were confined to expected server locations; zero unexpected credential copies were found | The verifier reported `localBuildCompared: true`. Credential material was never printed. This proves the checked local build/archive relationship, not deterministic rebuilds on another machine or provider-side byte identity |
+| Isolated exact-commit clean install | Passed: `npm ci --no-audit` installed 501 packages; `npm run verify` rebuilt and passed 229/229 tests with zero skips/todos | [Detailed record](release-evidence/ROADMAP-SITES-V9-2026-08-08-clean-install.md). The rebuilt output did not byte-match the submitted archive after Windows checkout line-ending conversion; clean behavioral reproducibility passed, deterministic byte identity remains open |
+| Full-lock SBOM inventory | Lockfile digest remains unchanged; CycloneDX 1.5 contains 676 components and SPDX 2.3 contains 677 packages | Lock-derived artifacts and hashes are recorded in [Software Supply Chain](SOFTWARE_SUPPLY_CHAIN.md); this is inventory, not provenance, license advice, or vulnerability certification |
 | `npm run audit:production` | Fresh 2026-08-08 result: zero known production vulnerabilities | Exact lock; advisory snapshot is time-bounded and not an independent assessment |
 | `npm run db:generate` | Passed: `No schema changes, nothing to migrate` | Drizzle schema, journal, snapshots, and ten packaged migrations agree across 31 tables |
 | `npm run exercise:recovery:local` | Passed: ten migrations per isolated D1 database, two synthetic tenants, three private synthetic objects, child-process secret isolation, and snapshot SHA-256 `34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54` | Deterministic D1/R2-compatible logical-copy exercise only; not hosted/provider-native recovery, production data, RPO, RTO, or operator evidence |
+| `npm run exercise:capacity:local` | Passed: 54 synthetic requests at maximum concurrency four, four author/edit/publish/share flows, two exports, zero failures; local p50 42.75 ms, p95 107.09 ms, max 107.99 ms | Local synthetic exercise only; no approved SLO, hosted capacity, provider saturation, or real-user performance claim |
 | D1 integration journeys | Passed | Production Worker plus real local D1 exercised tenant isolation; consent grant/withdrawal and final-statement share/session race fencing; staged-save replay/races; three- and four-phase lifecycles; publication/session invalidation; share expiry/revocation/response; data-request operator boundaries; scheduler/dead-letter states; Checkout/reconciliation races; webhook healing; migration upgrades; and stale provider-read fencing; not hosted SIWC or live-provider evidence |
 | `git diff --check` | Passed; no whitespace errors, with only line-ending warnings reported | Source-tree consistency check only; not behavioral evidence |
 
-Version-8 focused regressions additionally cover full-authoring and package-creation
+Version-9 focused regressions additionally cover full-authoring and package-creation
 idempotency; client handoff/share retry; living-content withdrawal and practice
 replacement audits; bounded golfer/package pagination and plan snapshots; export
 preflight/manual fallback; shallow liveness versus owner-only operational health;
@@ -64,12 +66,42 @@ allowlisted request telemetry and runtime log privacy; CSP/input/overposting cas
 consent policy/lifecycle/enforcement/migration and concurrent withdrawal fences;
 data-request operator access/pagination/abuse boundaries; and the complete declared
 mutation-route audit-event matrix. These remain automated
-local/production-bundle results, not mounted-browser or hosted operational evidence.
+local/production-bundle results, not hosted operational evidence. They also cover the
+visual-review capability-to-session exchange and the 320 px golfer-header regression
+described below.
 
 The clean build's `dist/server/wrangler.json` pointed to `index.js`; the server entry
 passed `node --check`, client assets and observability configuration were present,
   the D1/R2 bindings were `DB`/`MEDIA`, the `*/5 * * * *` scheduled trigger and
   Worker scheduled export were present, and all ten journaled migrations were packaged.
+
+## Exact version-9 local rendered and reflow evidence
+
+The exact-commit synthetic visual-review harness used the production Worker bundle,
+D1 migrations, synthetic instructor identity, and the real `/r/session`
+fragment-capability exchange before setting the returned session cookie. It did not
+place the raw share capability in the cookie. No customer data or hosted service was
+used.
+
+- Chrome `151.0.7922.75` captured landing, instructor workspace, and golfer roadmap
+  views at 320, 390, and 1440 CSS px from runtime commit
+  `6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d`.
+- All nine captures reported root and body scroll widths equal to their viewport
+  width. Decorative landing-page ambience is clipped by the page boundary; the
+  golfer section navigation intentionally scrolls inside its own horizontal region.
+- Visual inspection found the 320 px golfer-header close action compressed into an
+  unusable narrow column. The header was repaired to preserve a single-line action,
+  safely truncate the coach brand, and retain the 320 px page width; a source
+  regression and a fresh nine-capture retest passed.
+- The screenshots and machine-readable metrics in
+  [`docs/release-evidence`](release-evidence/) are named
+  `ROADMAP-SITES-V9-2026-08-08-*`; the JSON records each PNG digest, viewport and
+  overflow measurement.
+
+This is exact-commit, local, synthetic browser evidence. It is not a hosted owner
+journey, supported-browser matrix, real-device test, screen-reader result, manual
+keyboard review, 200%/400% browser-zoom test, forced-colour review, or human
+accessibility acceptance.
 
 ## Predecessor local rendered and reflow evidence
 
@@ -92,9 +124,9 @@ exchange. No customer data is used.
   broken `aria-labelledby` references. Focused semantic/contrast tests passed 16/16;
   sampled text and focus-ring contrasts met their applicable AA thresholds.
 
-Versions 6, 7, and 8 change roadmap, authoring, recovery, consent, and bounded-data surfaces, so
+Versions 6, 7, and 8 changed roadmap, authoring, recovery, consent, and bounded-data surfaces, so
 this visual evidence is retained only for predecessor scope and is not exact
-version-8 runtime evidence. It does not
+version-9 runtime evidence. It does not
 substitute for a real screen reader, supported-device matrix,
 or human keyboard/accessibility acceptance review. The in-app browser backend was not
 available, so actual Tab order, screen-reader announcements, forced-colour behavior,
@@ -104,21 +136,21 @@ and real browser zoom remain explicitly unverified.
 
 | Field | Exact recorded value |
 |---|---|
-| Candidate | `ROADMAP-SITES-V8-2026-08-08` |
-| Release commit / runtime `RELEASE_ID` | `cf117fef8ea42272d0b7e2358fe4197c024f86a7` |
-| Local submitted archive | `D:\Projects\golf-coaching-design-blueprint\10_production_saas\outputs\roadmap-sites-v8-cf117fe.tar.gz`; 2,963,266 bytes; 61 tar entries; gzip SHA-256 `99d615410c2e145e77938f0c5df4449ab8aeb4a544a5c5949fcdafa56a8e1378` |
+| Candidate | `ROADMAP-SITES-V9-2026-08-08` |
+| Release commit / runtime `RELEASE_ID` | `6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d` |
+| Local submitted archive | `D:\Projects\golf-coaching-design-blueprint\10_production_saas\outputs\roadmap-sites-v9-6b48fae.tar.gz`; 2,965,984 bytes; 61 tar entries; gzip SHA-256 `8b3d0b13f03f0b13cd10602d24af09bf17c34afdcb4cf73518b2b0d857d59e22` |
 | Sites project | `appgprj_6a76957326fc819196ebf3a0c95f1ec3` (`roadmap-golf-coaching`) |
-| Saved version | Version 8, `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_01ba2d860b508191b4d104339921606d` |
-| Sites archive record | Content hash `sha256:9a4119ea60dd64d2a0bf14a55c7e2d27fb3e8ea250f0d064e8bc5a79fb34a87c`; 49 files; 6,737,920 unpacked bytes |
-| Final deployment | `appgdep_6a775b172534819196391fd626e95aa3`, `succeeded` at `2026-08-08T16:36:50.529785+00:00`, no failure message |
+| Saved version | Version 9, `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_58bb67e8e23c8191a584540a09e363c5` |
+| Sites archive record | Content hash `sha256:0b3986dc73b1d06539dc85900dfd959549d92bcceb812c231a418766d29411fb`; 49 files; 6,737,920 unpacked bytes |
+| Final deployment | `appgdep_6a7768f92c588191934eda8abea6d6b4`; the deployment action returned `succeeded` at `2026-08-08T17:36:04.101015+00:00`; the final status recheck remained `succeeded` with provider `updated_at` `2026-08-08T17:36:53.329945+00:00`; no failure message |
 | Owner-only production URL | `https://roadmap-golf-coaching.aar-landry.chatgpt.site` |
-| Applied environment revision | 10 |
+| Applied environment revision | 11 |
 | Access policy | Owner-only; not a public release or real-user acceptance |
 
-The version-8 source branch was pushed using a short-lived authorization header
+The version-9 source branch was pushed using a short-lived authorization header
 scoped to the command; the credential was not persisted in the remote URL, Git
-configuration, environment files, or source. Environment revision 10 binds
-`RELEASE_ID` to the exact version-8 commit while retaining the owner-private,
+configuration, environment files, or source. Environment revision 11 binds
+`RELEASE_ID` to the exact version-9 commit while retaining the owner-private,
 billing-disabled configuration. The archive includes the built Worker, client
 assets, hosting metadata, all ten journaled migrations, and the production icon.
 The local gzip digest and Sites content hash describe different representations and
@@ -130,25 +162,53 @@ and found the two expected generated credential files with zero unexpected copie
 That bounded credential check does not authorize reading, copying, or reusing any
 generated credential material.
 
-### Version 8 hosted smoke evidence and limits
+### Version 9 hosted smoke evidence and limits
 
-- Fresh signed-out GETs to `/`, `/app`, `/api/health`, and
+- Plaintext HTTP `/` redirected to HTTPS. Fresh signed-out HTTPS GETs to `/`, `/app`, `/api/health`, and
   `/api/operations/health` each returned `401` from the outer owner-only Sites
-  policy. This demonstrates anonymous denial on those paths, not authenticated
-  application health or journey behavior.
-- An immediate error-only Worker-log query after the successful deployment returned
-  one expected `/app.rsc` event with status `403` and outcome `ok`. This is a
-  bounded non-owner renderer observation, not proof of error-free
+  policy with `Cache-Control: no-store` and `Referrer-Policy: no-referrer`. This
+  demonstrates anonymous denial on those paths, not authenticated application health
+  or journey behavior.
+- A post-deploy `errors_only=true` Worker-log query started at
+  `2026-08-08T17:41:24.033Z`, covered the preceding 15 minutes with limit 100, and
+  returned one expected handled non-owner `/app.rsc` fetch at
+  `2026-08-08T17:36:51.476Z`: status `403`, outcome `ok`, level `info`. It returned
+  zero error-level, exception, or crash events. This is a bounded outer-gate
+  renderer observation, not proof of error-free
   operation, log completeness, redaction, retention, alert delivery, or scheduled
   invocation.
 - Deep operational readiness is intentionally degraded because exact owner-approved
   consent-policy content/version and privacy-operator access configuration are absent.
   No authenticated deep-readiness response is claimed.
-- The in-app browser backend was unavailable. No exact version-8 authenticated
+- The in-app browser backend was unavailable. No exact version-9 authenticated
   mounted-browser journey, manual accessibility review, owner operational-health
   response, private golfer-link exercise, or hosted scheduler observation is
-  claimed. Version-5 screenshots and version-7/version-6 renderer/log observations are
-  historical evidence only.
+  claimed. The exact-version-9 screenshots are local synthetic evidence only;
+  version-8 and earlier renderer/log observations are historical evidence.
+
+### Predecessor version 8 exact record
+
+Sites version 8 used source/runtime release
+`cf117fef8ea42272d0b7e2358fe4197c024f86a7`, local gzip SHA-256
+`99d615410c2e145e77938f0c5df4449ab8aeb4a544a5c5949fcdafa56a8e1378`,
+Sites content hash
+`sha256:9a4119ea60dd64d2a0bf14a55c7e2d27fb3e8ea250f0d064e8bc5a79fb34a87c`,
+saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_01ba2d860b508191b4d104339921606d`,
+deployment `appgdep_6a775b172534819196391fd626e95aa3`, and environment
+revision 10.
+
+A read-only provider-log query started at `2026-08-08T17:27:16.287Z`, requested the
+preceding 90 minutes with limit 100, and returned 24 fetch events from
+`2026-08-08T16:37:26.325Z` through `2026-08-08T17:16:40.472Z`: 23 status-200
+responses, one status-403 response, and 24 `ok` Worker outcomes. It returned zero
+scheduled events despite spanning multiple expected five-minute boundaries. This
+proves only the 24 records returned by the provider. It does not prove log
+completeness, authenticated journey success, alert delivery, application health, or
+that the provider exposes scheduled invocations. The archive declares the cron and
+the Worker exports and locally exercises `scheduled()`, so hosted scheduling is a
+suspected deployment gap, not a confirmed defect. Version 9 supersedes version 8 at
+the same URL without resolving that evidence gap.
 
 ### Predecessor version 7 exact record
 
@@ -161,8 +221,8 @@ saved version
 `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_55fe270d85f081919dcd346c8476130d`,
 deployment `appgdep_6a772e0616b88191972b4e2e0603da52`, and environment
 revision 9. Its 1200×750 renderer image and Worker-log samples remain historical
-predecessor observations and do not supply exact-version-8 browser, accessibility,
-health, or operational evidence. Version 8 supersedes version 7 at the same URL.
+predecessor observations and do not supply exact-version-9 browser, accessibility,
+health, or operational evidence. Version 9 supersedes versions 8 and 7 at the same URL.
 
 ### Predecessor version 6 exact record
 
@@ -228,7 +288,7 @@ an explicit operation, not routine redeployment behavior.
 #### Version 6 hosted smoke evidence and limits
 
 - Version 6 deployed successfully with environment revision 8 and was current when
-  this predecessor evidence was recorded; version 8 now supersedes it at the same URL.
+  this predecessor evidence was recorded; version 9 now supersedes it at the same URL.
 - A fresh signed-out GET to `/` after version-6 deployment received `401 Unauthorized`
   from the outer Sites access policy with `Cache-Control: no-store` and
   `Referrer-Policy: no-referrer`; separate signed-out GETs to `/app` and
@@ -286,7 +346,7 @@ from reaching the application by design.
 | Item | Current disposition |
 |---|---|
 | General public access | Blocked; working legal/support copy explicitly limits this to controlled private release |
-| Owner-only production release | Deployed successfully as Sites version 8; final authenticated owner acceptance and controlled real journeys remain unrecorded |
+| Owner-only production release | Deployed successfully as Sites version 9; final authenticated owner acceptance and controlled real journeys remain unrecorded |
 | Deep operational readiness | Intentionally degraded because exact owner-approved consent-policy content/version and privacy-operator access configuration are absent; no authenticated deep-readiness pass is claimed |
 | SIWC bypass credential exposure | A connector-returned active bearer appeared in the private tool transcript and was not used or persisted; explicit owner-directed rotation/revocation is required before access expands |
 | New SaaS charges | Fail-closed through `BILLING_CHECKOUT_ENABLED=false` until exact price/policy approval and configuration |

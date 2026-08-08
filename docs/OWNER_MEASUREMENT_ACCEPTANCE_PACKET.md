@@ -15,29 +15,56 @@ or proven by Roadmap.
 
 ## Current candidate boundary
 
-The current recorded candidate is owner-private Sites version 8 at source/runtime
-release `cf117fef8ea42272d0b7e2358fe4197c024f86a7`, saved version
-`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_01ba2d860b508191b4d104339921606d`,
-deployment `appgdep_6a775b172534819196391fd626e95aa3`, and environment
-revision `10`. Its local release archive is 2,963,266 bytes with gzip SHA-256
-`99d615410c2e145e77938f0c5df4449ab8aeb4a544a5c5949fcdafa56a8e1378`;
+The current recorded candidate is owner-private Sites version 9 at source/runtime
+release `6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_58bb67e8e23c8191a584540a09e363c5`,
+deployment `appgdep_6a7768f92c588191934eda8abea6d6b4`, and environment
+revision `11`; final deployment status is `succeeded` with provider `updated_at`
+`2026-08-08T17:36:53.329945+00:00`.
+Its local release archive is 2,965,984 bytes with gzip SHA-256
+`8b3d0b13f03f0b13cd10602d24af09bf17c34afdcb4cf73518b2b0d857d59e22`;
 the Sites content hash is
-`sha256:9a4119ea60dd64d2a0bf14a55c7e2d27fb3e8ea250f0d064e8bc5a79fb34a87c`.
-Sites version 7 remains historical predecessor evidence and is not an ordinary
-rollback target after consent-governed use.
+`sha256:0b3986dc73b1d06539dc85900dfd959549d92bcceb812c231a418766d29411fb`.
+Sites version 8 is the immediate historical predecessor but is not a tested or
+approved version-9 rollback target. Version 7 remains privacy-behaviorally forbidden
+as an ordinary target after version-8-or-later consent-governed use.
 
-The exact-v8 automated suite passed 226/226 tests, but no authenticated browser
-journey, manual accessibility review, authorized real instructor/golfer protocol,
-or real-world measurement exists. Signed-out requests to `/`, `/app`,
-`/api/health`, and `/api/operations/health` all returned the outer owner-policy
-`401`; the bounded error-filtered Worker sample contained one expected non-owner
-`/app.rsc` `403` with outcome `ok`, not a crash. No exact-v8 mounted-browser or
-renderer inspection exists because the browser backend was unavailable. Deep
-readiness remains intentionally degraded because approved consent-policy and
-data-request-operator configuration is absent. None of these observations measures
-activation, usability, reliability over time, support burden, accessibility, or
-participant outcomes. This packet records no owner acceptance and authorizes no
-participant, analytics, public-access, or commercial activity.
+Exact-version-9 build, lint, strict types, and 229/229 tests passed. Its local
+capacity exercise completed 54 synthetic requests with zero failures, and its local
+recovery exercise matched 2 synthetic tenants and 3 objects after all 10 migrations.
+These do not supply an approved SLO, hosted capacity, production recovery, or
+real-user measurement result. After version 9 deployed, plain HTTP `/` redirected
+to HTTPS, while signed-out HTTPS requests to `/`, `/app`,
+`/api/health`, and `/api/operations/health` each returned the outer owner-policy
+`401` with `Cache-Control: no-store` and `Referrer-Policy: no-referrer`.
+
+A sanitized version-8-era continuity query started at
+`2026-08-08T17:27:16.287Z`, completed at `2026-08-08T17:27:17.305Z`, requested
+the preceding 90 minutes from `2026-08-08T15:57:16.287Z` with limit 100, and
+returned 24 `fetch`/outcome-`ok` events (23 `200`, one handled `403`) dated from
+`2026-08-08T16:37:26.325Z` through `2026-08-08T17:16:40.472Z`. It recorded only
+static route/count metadata and no headers, cookies, identities, IPs, request/ray
+IDs, query strings, full URLs, messages, payloads, stacks, or credentials. It does
+not prove complete logs, authenticated success, reliability, health, alerting, or
+scheduler operation.
+
+A post-version-9 15-minute error-filtered read started at
+`2026-08-08T17:41:24.033Z` and returned one handled non-owner `/app.rsc` `403` at
+level `info`/outcome `ok`: zero error-level, exception, or crash events, but one
+total filtered record. A separate 15-minute broad query started at
+`2026-08-08T17:43:15.519Z` and returned three `fetch`/`ok` events and no scheduled
+event. The packaged handler exists, but a missing production cron trigger is only a
+working suspicion; provider support and trigger configuration are not confirmed.
+Do not use these samples as an analytics feed or depend on hosted scheduling for
+measurement.
+
+No authenticated browser journey, manual accessibility review, authorized real
+instructor/golfer protocol, or real-world measurement exists. Deep readiness remains
+intentionally degraded because approved consent-policy and data-request-operator
+configuration is absent. None of these observations measures activation, usability,
+reliability over time, support burden, accessibility, or participant outcomes. This
+packet records no owner acceptance and authorizes no participant, analytics,
+public-access, or commercial activity.
 
 ## Recommended measurement dictionary
 

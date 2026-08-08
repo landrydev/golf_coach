@@ -1,8 +1,9 @@
 # Software supply-chain, SBOM, and license inventory
 
-**Status:** Reproducible inventory procedure plus exact Sites-version-8 lockfile,
+**Status:** Reproducible inventory procedure plus exact Sites-version-9 lockfile,
 package, integrity-scan, and production-audit observations; not a legal opinion,
-vulnerability certification, or exact deployed-archive SBOM
+vulnerability certification, exact deployed-archive SBOM, or deterministic
+byte-rebuild claim
 **Observed:** 2026-08-08 with Node `24.18.0`, npm `12.0.1`
 **Authority:** `package-lock.json` is the exact dependency graph; `package.json`
 declares direct intent
@@ -11,13 +12,15 @@ declares direct intent
 
 ## Current inventory observation
 
-**Implemented exact-v8 evidence:** the committed lockfile is lockfile version 3 and has
+**Implemented exact-v9 evidence:** the committed lockfile is lockfile version 3 and has
 SHA-256 `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d` at
-version-8 source commit `cf117fef8ea42272d0b7e2358fe4197c024f86a7`. Its 712
+version-9 source commit `6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d`. Its 712
 `node_modules/*` locations normalize to 676 unique `name@version` components.
 The built-in npm generator produced a CycloneDX 1.5 document with 676 components
 and an SPDX 2.3 document with 677 packages, including the application package.
-The exact-v8 full-lock artifacts are retained under `docs/release-evidence`:
+The lock digest is unchanged from version 8. The retained full-lock artifacts under
+`docs/release-evidence` therefore inventory the same exact locked graph, but keep
+their version-8 names and provenance; no version-9-named SBOM regeneration is claimed:
 
 | Retained artifact | Bytes | SHA-256 |
 |---|---:|---|
@@ -30,16 +33,16 @@ platform-optional packages. They do not prove which components Sites placed in
 the deployed archive. Exact-release evidence must retain both the full-lock SBOM
 and a shipped-artifact inventory.
 
-### Exact Sites version 8 package and scan observation
+### Exact Sites version 9 package and scan observation
 
 | Field | Recorded result |
 |---|---|
-| Source/runtime release ID | `cf117fef8ea42272d0b7e2358fe4197c024f86a7` |
-| Local package | Gzip SHA-256 `99d615410c2e145e77938f0c5df4449ab8aeb4a544a5c5949fcdafa56a8e1378`; 2,963,266 bytes; 61 tar entries/49 files |
-| Sites package | Content hash `sha256:9a4119ea60dd64d2a0bf14a55c7e2d27fb3e8ea250f0d064e8bc5a79fb34a87c`; 49 files; 6,737,920 bytes |
-| Saved/deployed version | `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_01ba2d860b508191b4d104339921606d`; deployment `appgdep_6a775b172534819196391fd626e95aa3`; environment revision `10` |
-| Source release-integrity scan | Release-time/pre-SBOM: 248 runtime-source text files inspected; post-SBOM evidence reconciliation: 251 files inspected. Both produced zero pattern findings and preserved historical Business Plan V1; generated output and dependencies were intentionally excluded |
-| Submitted-archive audit | 61 safe entries/49 files; ten migrations and 23 source-mapped files matched; archive matched the fresh local build; generated credential material was confined to two expected files with zero unexpected copies |
+| Source/runtime release ID | `6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d` |
+| Local package | Gzip SHA-256 `8b3d0b13f03f0b13cd10602d24af09bf17c34afdcb4cf73518b2b0d857d59e22`; 2,965,984 bytes; 61 tar entries/49 files |
+| Sites package | Content hash `sha256:0b3986dc73b1d06539dc85900dfd959549d92bcceb812c231a418766d29411fb`; 49 files; 6,737,920 bytes |
+| Saved/deployed version | `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_58bb67e8e23c8191a584540a09e363c5`; deployment `appgdep_6a7768f92c588191934eda8abea6d6b4`; environment revision `11`; final status `succeeded`, provider `updated_at` `2026-08-08T17:36:53.329945+00:00` |
+| Source release-integrity scan | 252 source text files inspected; zero pattern findings; historical Business Plan V1 preserved. Generated output and dependencies were intentionally excluded |
+| Submitted-archive audit | 61 safe entries/49 files; ten migrations and 23 source-mapped files matched the release working-tree build; generated credential material was confined to two expected files with zero unexpected copies. This is not an isolated deterministic-rebuild result |
 | Production dependency audit | `npm audit --omit=dev` reported zero vulnerabilities |
 
 The differing tar-entry and Sites-file counts are provider/package-format
@@ -47,8 +50,28 @@ observations, not a dependency-to-runtime reconciliation. The zero audit and sec
 findings apply only to the tools, inputs, and advisory data used at verification
 time; they do not certify package provenance, absence of malicious behavior, legal
 compliance, provider configuration, or runtime safety. An exact shipped-artifact
-SBOM and qualified license-obligation review remain open. Sites versions 6 and 7
-are retained as historical predecessor evidence in the release record.
+SBOM and qualified license-obligation review remain open. Sites versions 6, 7, and
+8 are retained as historical predecessor evidence in the release record.
+
+### Exact v9 isolated clean-install and rebuild observation
+
+An isolated export of immutable runtime commit
+`6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d` used Node.js `v24.18.0` and npm
+`12.0.1`. `npm ci --no-audit` installed 501 packages; npm reported five blocked
+package install scripts. The subsequent full verification still passed lint, strict
+types, production build, artifact-integrity checks, and 229/229 tests. This is clean
+behavioral reproducibility evidence for the exact commit.
+
+The isolated rebuilt `dist` did **not** byte-match the submitted v9 archive. The
+Windows isolated checkout used CRLF text bytes while the release working tree used
+LF for the same Git content; the comparison reported migration/metadata differences
+and different content-hashed client/server bundle names. The result is consistent
+with line-ending-driven variance, but it does not prove line endings are the only
+source of non-determinism. Repository `.gitattributes` now pins text checkouts to LF,
+but that control was added after runtime commit v9 and is not a v9 control. A later
+immutable candidate must exercise the clean checkout, install, build, and exact
+archive comparison before deterministic byte identity can be closed. See the
+[exact v9 clean-install record](release-evidence/ROADMAP-SITES-V9-2026-08-08-clean-install.md).
 
 ### Direct production dependencies
 

@@ -14,30 +14,65 @@
 
 ## Current exact private-candidate security observation
 
-Owner-only Sites version 8 is bound to source/runtime release
-`cf117fef8ea42272d0b7e2358fe4197c024f86a7`, saved version
-`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_01ba2d860b508191b4d104339921606d`,
-private deployment `appgdep_6a775b172534819196391fd626e95aa3`, and
-environment revision `10`. The deployment succeeded at
-`2026-08-08T16:36:50.529785+00:00`. This is an implementation evidence point,
+Owner-only Sites version 9 is bound to source/runtime release
+`6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_58bb67e8e23c8191a584540a09e363c5`,
+private deployment `appgdep_6a7768f92c588191934eda8abea6d6b4`, and
+environment revision `11`. Final deployment status is `succeeded` with provider
+`updated_at` `2026-08-08T17:36:53.329945+00:00`. This is an implementation evidence point,
 not public-release, legal-compliance, or owner-acceptance evidence.
 
-The exact source was freshly built after commit. The value-safe artifact verifier
-passed across 49 files with exactly two expected server-manifest copies of the
-build-generated prerender credential, zero unexpected copies or paths, and the
+The exact source was freshly built after commit. Build, strict types, lint, and
+229/229 tests passed; the integrity scan inspected 252 source text files with zero
+pattern findings and preserved historical Business Plan V1. The value-safe artifact
+verifier passed across 49 files with exactly two expected server-manifest copies of
+the build-generated prerender credential, zero unexpected copies or paths, and the
 production prerender binding absent. The exact submitted archive passed independent
 verification with gzip SHA-256
-`99d615410c2e145e77938f0c5df4449ab8aeb4a544a5c5949fcdafa56a8e1378`
-and 10 migrations. Four signed-out probes returned the outer-policy `401` for `/`,
-`/app`, `/api/health`, and `/api/operations/health`; those probes demonstrate
+`8b3d0b13f03f0b13cd10602d24af09bf17c34afdcb4cf73518b2b0d857d59e22`
+and 10 migrations. Plaintext HTTP `/` redirected to HTTPS, and signed-out HTTPS
+probes returned the outer-policy `401` for `/`, `/app`, `/api/health`, and
+`/api/operations/health` with `no-store` and `no-referrer`; those probes demonstrate
 signed-out containment only.
 
-This exact rebuild/archive/deployment retest closes `SEC-003` for the
-build-generated prerender credential boundary and supersedes version 7. It does
-not close `SEC-001`: the SIWC bypass credential incident remains contained/open,
-the prior credential is treated as compromised, and `OWNER-SEC-001` rotation,
-prior-value denial, normal-owner-authentication proof, and safe log review remain
-pending. No credential value is recorded here.
+The release working-tree/archive match is not deterministic byte-rebuild evidence.
+An isolated immutable-v9 export installed cleanly and passed the complete 229-test
+verification, but its rebuilt `dist` did not byte-match the submitted archive after
+Windows CRLF checkout conversion changed migrations/metadata and content-hashed
+bundles. Line endings are consistent with, but not proven to be the only cause.
+`SUPPLY-EVID-001` remains open; the LF rule added after runtime v9 must be exercised
+on a later exact candidate.
+
+The current artifact regression preserves the version-8 closure of `SEC-003` for
+the build-generated prerender credential boundary and supersedes version 7. It does
+not close `SEC-001`: the Critical SIWC bypass credential incident remains
+contained/open, the prior credential is treated as compromised, and
+`OWNER-SEC-001` rotation, prior-value denial, normal-owner-authentication proof, and
+safe log review remain pending. `SEC-002` also remains open because the exact-v9
+framework CSP still permits `'unsafe-inline'` for script elements and has not been
+inspected in a supported hosted browser. No credential value is recorded here.
+
+Exact-commit local synthetic Chrome captures cover landing, workspace, and golfer
+views at 320, 390, and 1440 CSS px. During preparation, the 320 px golfer close
+action was found compressed into an unusable narrow column; the responsive header
+was repaired and a source regression plus a fresh nine-capture retest passed with no
+root/body horizontal overflow. The predecessor visual harness also bypassed the
+production share-capability exchange by using the raw synthetic capability as a
+cookie. The v9 harness now POSTs the capability to `/r/session`, uses only the
+returned scoped session cookie, removes only `Secure` for loopback HTTP, and has a
+regression forbidding the old pattern. These two findings are closed locally only;
+they do not establish hosted golfer-session behavior, manual accessibility, real
+device, supported-browser, keyboard, screen-reader, forced-colour, or browser-zoom
+evidence.
+
+The packaged v9 Worker declares a `*/5 * * * *` cron, exports `scheduled()`, and
+passes local scheduler-heartbeat tests. A predecessor-v8 provider-log query spanning
+`2026-08-08T16:37:26.325Z` through `2026-08-08T17:16:40.472Z` returned 24 events,
+all `fetch` and zero `scheduled`, across multiple expected five-minute boundaries.
+No exact-v9 hosted heartbeat is recorded. Because provider-log completeness,
+scheduled-event visibility, and deployed trigger metadata are unavailable here,
+`OPS-CRON-001` records a suspected hosted scheduler gap rather than a confirmed
+platform or application defect. Billing remains disabled while it is open.
 
 `[OWNER INPUT REQUIRED]` Exact consent-policy-registry entries and the independent
 privacy-operator authority/configuration remain unresolved and absent from the
@@ -479,6 +514,7 @@ Findings need severity, affected release, owner, mitigation, retest evidence, an
 | Stripe production configuration | No production secret, approved Price, final billing terms, or live transaction evidence is recorded | Authorized configuration, signed webhook evidence, reconciliation, and controlled transaction/refund/failure checks |
 | Public domain | Final origin affects cookies, redirects, CSP, CORS, referrers, and public disclosures | Authorized domain plus final-origin security and privacy verification |
 | Backup and restore | A strategy without a successful restore does not prove recoverability | Versioned backup inventory and a timed, integrity-checked D1/R2 restore exercise |
+| Hosted scheduler | The exact package declares a five-minute cron and local invocation passes. A predecessor-v8 provider query contained 24 fetch events and zero scheduled events; two bounded post-v9 queries likewise surfaced fetch-only samples and no scheduled event. Log completeness and deployed trigger metadata are unavailable. | Establish Sites cron support and deployed trigger state or move to a supported scheduler; then observe at least three exact-release intervals through authenticated health/provider evidence and exercise a privacy-safe failure alert |
 | Sites logging | Provider-generated data, retention, redaction, access, and alerting are not demonstrated | Deployed log sampling, access review, token/PII leak test, and alert exercise |
 | Live acceptance | No exact production release has completed controlled real journeys and owner review | Release evidence packet and Aaron's dated acceptance record |
 

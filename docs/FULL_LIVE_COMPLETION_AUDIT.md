@@ -9,8 +9,8 @@
 
 The retired repository gates do not restrict implementation. The bounded V1 is
 implemented as a production Worker and exact commit
-`cf117fef8ea42272d0b7e2358fe4197c024f86a7` is deployed privately as owner-only
-Sites version 8 with environment revision 10. The full-live goal is **not complete**
+`6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d` is deployed privately as owner-only
+Sites version 9 with environment revision 11. The full-live goal is **not complete**
 because authenticated hosted acceptance is still absent, the public
 commercial/policy inputs and exact consent/operator configuration are unresolved,
 controlled real operations and hosted recovery exercises are absent, and Aaron has
@@ -18,6 +18,16 @@ not accepted an exact release.
 
 Those are evidence, operating, and owner-decision dependencies. They are not a
 reinstated design gate and they do not invalidate completed engineering evidence.
+
+Current official Sites guidance also leaves the paid-operation host unresolved.
+The [Sites developer guide](https://learn.chatgpt.com/docs/sites) says some
+background services or hosting patterns are unsupported and cautions against using
+Sites to enable financial transactions, while the
+[Sites help article](https://help.openai.com/en/articles/20001339) describes
+third-party payment processing as an operator responsibility. Neither documents a
+Sites cron facility. That conflict/omission plus the bounded zero-scheduled-event
+observations requires provider confirmation or a verified superseding host/scheduler
+before paid operation; it does not by itself prove that Sites discarded the trigger.
 
 ## Phase and definition-of-done status
 
@@ -30,33 +40,42 @@ reinstated design gate and they do not invalidate completed engineering evidence
 | Concurrency and lifecycle integrity | Revision CAS, tenant-scoped race-safe staged/full-authoring/package idempotency, single publish winner, profile-change and living-content publication/session invalidation, atomic practice-replacement retirement audits, idempotent revoke/session close, current-publication response guard, and atomic data-request/export-fallback deduplication | Automated evidence passed; formal external concurrency/load assessment remains |
 | SaaS billing | Server-controlled Checkout/Portal, durable single-attempt idempotency, account-operation leases, provider-authoritative expiry, durable reconciliation targets, pending-sync blocking, signed-webhook leases/replay/race healing, immutable customer ownership, explicit Price/entitlement/freshness policy, scheduled GET-only recovery with fairness/backoff/dead-letter handling, and stale-provider-read fencing | Automated local D1 evidence passed; Checkout remains disabled because exact commercial configuration, public Stripe webhook ingress, and controlled live reconciliation are absent |
 | Privacy lifecycle | Tenant export with pre-load record bounds and durable manual-request fallback; immutable versioned purpose grants/withdrawals with exact-text evidence; account `golfer_record` and golfer `roadmap_sharing` enforcement; atomic capability/session revocation; correction through product edits; truthful deletion-review status; bounded privacy-operator queue/marker; request deduplication; bounded request telemetry; and stable-identifier-free runtime log fields | Exact owner-approved consent policy/content versions and privacy-operator access configuration are absent, so deep readiness is intentionally degraded; destructive fulfillment, retention schedule, qualified review, hosted operator/log sampling, and backup expiry remain unresolved |
-| Accessibility and responsive behavior | Semantic/rendered checks and reusable focusable form-error summaries with first-invalid-control focus; predecessor Sites/version-5 images remain historical evidence only | Exact version-8 mounted-browser responsive captures remain outstanding, along with interaction, manual keyboard, screen reader, forced-colour, zoom, reduced-motion, and supported-browser acceptance; the browser backend was unavailable |
-| Deployment and observability | Exact version 8 deployed owner-only from the recorded commit/archive at environment revision 10; signed-out `/`, `/app`, `/api/health`, and `/api/operations/health` each returned `401`; the error-only Worker-log sample contained one expected non-owner `/app.rsc` `403` with outcome `ok` | Deployment and signed-out containment passed; no exact-v8 renderer/manual inspection is claimed, deep readiness is intentionally degraded pending exact consent/operator configuration, and authenticated mounted-browser owner smoke, hosted scheduler invocation, owner operational-health sampling, manual accessibility, and alert-delivery evidence remain pending |
+| Accessibility and responsive behavior | Semantic/rendered checks, reusable focusable form-error summaries, and exact-commit local synthetic Chrome captures for landing/workspace/golfer at 320/390/1440 px; the capture review found and closed a 320 px golfer-header action compression defect | Local responsive retest passed without page-level horizontal overflow; interaction, human keyboard, screen reader, forced-colour, browser zoom, reduced-motion, supported-browser, real-device, and hosted acceptance remain outstanding |
+| Deployment and observability | Exact version 9 deployed owner-only from the recorded commit/archive at environment revision 11; plaintext `/` redirects to HTTPS; signed-out HTTPS `/`, `/app`, `/api/health`, and `/api/operations/health` each returned `401`; the post-deploy broad error-filter sample contained one expected handled non-owner `/app.rsc` `403` with outcome `ok`/level `info` and no error-level event | Deployment and signed-out containment passed; exact local browser evidence is synthetic, deep readiness remains degraded pending exact consent/operator configuration, and authenticated mounted-browser owner smoke, owner operational-health sampling, manual accessibility, alert delivery, and hosted scheduler proof remain pending; zero scheduled events were observed in bounded provider logs, so scheduler deployment is a suspected—not confirmed—gap |
 | Recoverability and operations | Runbooks document release, incident, D1 Time Travel, R2 limitations, rollback, support, and billing reconciliation; deterministic isolated D1/R2-compatible synthetic export/restore passed | Named owners, alert/cost exercises, hosted D1/R2 restore, rollback, and incident drills remain |
 | Commercial and public operation | `[PRICING HYPOTHESIS — REQUIRES VALIDATION]` and `[REAL-WORLD VALIDATION REQUIRED]` remain attached accurately | Exact offer, Stripe Price, tax/refund/failure/cancel/pause rules, domain, contacts, and policies require Aaron/external input |
 | Acceptance | No exact-release acceptance decision is recorded | `[OWNER INPUT REQUIRED]` |
 
-The in-app browser backend was unavailable for the exact version-8 candidate.
-Accordingly, the one expected non-owner renderer-log event does not supply
-authenticated mounted-browser, interaction, manual accessibility, responsive,
-owner operational-health, or hosted scheduler evidence. Version-5 and version-7
-images are retained only as historical predecessor evidence.
+The in-app browser backend was unavailable for the exact version-9 candidate. Local
+headless Chrome supplied exact-commit synthetic responsive evidence, but it does not
+supply authenticated hosted, manual accessibility, real-device, owner
+operational-health, or scheduler evidence. The one expected handled non-owner
+renderer-log event supplies none of those missing categories. Version-8 and earlier
+provider observations remain historical predecessor evidence.
 
 ## Current automated candidate evidence
 
-- `npm run verify`: lint, strict TypeScript, production build, and 226/226 tests
+- `npm run verify`: lint, strict TypeScript, production build, and 229/229 tests
   passed with zero failures, skips, or todos.
 - `npm run db:generate`: `No schema changes, nothing to migrate`; schema, journal,
   all ten migrations, and snapshots agree across 31 tables.
-- Release-time/pre-SBOM `npm run verify:release-integrity`: 248 runtime-source
-  text files produced zero secret findings; Business Plan V1 remained unchanged and
-  the release lock was pinned. The post-SBOM evidence reconciliation rerun scanned
-  251 files with the same zero-finding and source-history result.
+- `npm run verify:release-integrity`: 252 source text files produced zero secret
+  findings; Business Plan V1 remained unchanged and the release lock was pinned.
+- An isolated exact-commit `npm ci --no-audit` installed 501 packages and the fresh
+  checkout passed the full 229-test verification. Its rebuilt output did not
+  byte-match the submitted archive after Windows line-ending conversion, so clean
+  behavioral reproducibility is proved but deterministic byte identity is not. A
+  post-runtime `.gitattributes` control pins future text checkouts to LF and still
+  requires exact-candidate exercise.
 - `npm run exercise:recovery:local`: two synthetic tenants and three private
   synthetic objects matched after isolated D1/R2-compatible logical restore; the
   snapshot SHA-256 was
   `34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54`; the
   Wrangler child-process probe inherited no secret-shaped parent variables.
+- `npm run exercise:capacity:local`: 54 synthetic requests at maximum concurrency
+  four, four author/edit/publish/share flows, two exports, and zero failures; local
+  p50 was 42.75 ms, p95 107.09 ms, and max 107.99 ms. This is not hosted capacity or
+  an approved SLO.
 - The production Worker test matrix covers declared mutation handlers, every
   discovered instructor HTML/RSC/API path, percent-encoded path aliases, missing
   identity, tenant substitution, current share/session expiry, revocation, and
@@ -65,12 +84,15 @@ images are retained only as historical predecessor evidence.
   the exact lock. The package-lock SHA-256 is
   `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d`.
 - `git diff --check` reported no whitespace errors (line-ending warnings only).
-- Focused version-8 regressions cover consent policy/lifecycle/enforcement/migration
+- Focused version-9 regressions cover consent policy/lifecycle/enforcement/migration
   and withdrawal races, privacy-operator access/pagination/abuse controls,
   full/package idempotency, handoff/share retry,
   living-content replacement and withdrawal, bounded lists/plan snapshots, export
   preflight/fallback, liveness versus operational readiness, telemetry/log privacy,
   CSP/input hardening, and the enforced production mutation audit-event matrix.
+- Exact-commit local Chrome captures at 320, 390, and 1440 px cover the landing,
+  instructor workspace, and golfer roadmap. All nine reported no page-level
+  horizontal overflow; they do not replace human or hosted accessibility evidence.
 
 Automated checks do not prove legal compliance, public demand, public-auth
 suitability, accessibility conformance, operational recoverability, or live-user
@@ -108,7 +130,9 @@ Until the linked owner decisions and exercises are complete:
    rotation, and reconciliation paths in controlled Stripe test and authorized live
    transactions before enabling Checkout.
 4. Complete manual accessibility/browser review, controlled D1/R2 restore and
-   rollback, monitoring/alert/cost/support/incident exercises, qualified policy
+   rollback, establish whether Sites actually installs or exposes the declared
+   five-minute Worker trigger, observe at least three successful heartbeats, then
+   complete monitoring/alert/cost/support/incident exercises, qualified policy
    review, and authorized real instructor/golfer journeys.
 5. Have Aaron accept the exact release with date, operating scope, configuration,
    policies, named owners, residual risks, and stop/revisit triggers.

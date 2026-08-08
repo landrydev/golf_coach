@@ -10,13 +10,23 @@ security, privacy, and operational decisions are documented in [`docs/`](docs/).
 
 ## Current private release
 
-Sites version 8 is deployed owner-only at
+Sites version 9 is deployed owner-only at
 <https://roadmap-golf-coaching.aar-landry.chatgpt.site> from release commit
-`cf117fef8ea42272d0b7e2358fe4197c024f86a7`. The outer Sites policy allows only
-the owner; Stripe Checkout remains disabled. This is a production deployment, not
+`6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_58bb67e8e23c8191a584540a09e363c5`,
+deployment `appgdep_6a7768f92c588191934eda8abea6d6b4`, and environment revision 11.
+The outer Sites policy allows only the owner; Stripe Checkout remains disabled. This is a production deployment, not
 a public launch or accepted real-user release. Exact evidence and unresolved
 operating dependencies are recorded in
 [`docs/RELEASE_EVIDENCE.md`](docs/RELEASE_EVIDENCE.md).
+
+Exact-commit local synthetic browser evidence records nine Chrome 151 captures of
+the landing page, instructor workspace, and golfer plan at 320, 390, and 1440 CSS
+pixels, with no root/body horizontal overflow. See the
+[`ROADMAP-SITES-V9-2026-08-08` responsive evidence](docs/release-evidence/ROADMAP-SITES-V9-2026-08-08-responsive-evidence.json).
+Those captures use the local production Worker bundle, local compatible D1, and
+synthetic adults-only fixtures. They are not hosted journey evidence, manual
+accessibility review, assistive-technology evidence, or owner acceptance.
 
 ## Runtime
 

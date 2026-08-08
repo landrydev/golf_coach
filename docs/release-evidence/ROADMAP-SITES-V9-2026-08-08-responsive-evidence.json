@@ -1,0 +1,286 @@
+﻿{
+    "evidenceClass":  "EXACT-COMMIT LOCAL SYNTHETIC BROWSER EVIDENCE — NOT HOSTED OR HUMAN ACCESSIBILITY ACCEPTANCE",
+    "candidate":  "ROADMAP-SITES-V9-2026-08-08",
+    "sourceCommit":  "6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d",
+    "generatedAtUtc":  "2026-08-08T17:37:39.6086499Z",
+    "browser":  {
+                    "browser":  "Chrome/151.0.7922.75",
+                    "protocolVersion":  "1.3",
+                    "userAgent":  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36"
+                },
+    "syntheticFixture":  true,
+    "captureCount":  9,
+    "captures":  [
+                     {
+                         "artifact":  "ROADMAP-SITES-V9-2026-08-08-landing-320.png",
+                         "sha256":  "f4c0d810aa8998aaee316c351d1ec1e5e1ac54750361a5594cba5c537fcfe0f4",
+                         "bytes":  102704,
+                         "metrics":  {
+                                         "url":  "http://127.0.0.1:4175/?capture=landing-320",
+                                         "title":  "Roadmap | Coach-branded golf development roadmaps",
+                                         "innerWidth":  320,
+                                         "innerHeight":  844,
+                                         "devicePixelRatio":  1,
+                                         "clientWidth":  320,
+                                         "rootScrollWidth":  320,
+                                         "bodyScrollWidth":  320,
+                                         "hasRootHorizontalOverflow":  false,
+                                         "overflowCandidates":  [
+                                                                    {
+                                                                        "tag":  "div",
+                                                                        "id":  null,
+                                                                        "classes":  "ambient ambient-one",
+                                                                        "left":  -32,
+                                                                        "right":  480,
+                                                                        "width":  512,
+                                                                        "overflowX":  "visible"
+                                                                    },
+                                                                    {
+                                                                        "tag":  "div",
+                                                                        "id":  null,
+                                                                        "classes":  "ambient ambient-two",
+                                                                        "left":  -160,
+                                                                        "right":  288,
+                                                                        "width":  448,
+                                                                        "overflowX":  "visible"
+                                                                    }
+                                                                ]
+                                     }
+                     },
+                     {
+                         "artifact":  "ROADMAP-SITES-V9-2026-08-08-landing-390.png",
+                         "sha256":  "9f8bf6ab144c9082744952a93d92fddf79c535e15184d8d541e9c14db6aa2995",
+                         "bytes":  109149,
+                         "metrics":  {
+                                         "url":  "http://127.0.0.1:4175/?capture=landing-390",
+                                         "title":  "Roadmap | Coach-branded golf development roadmaps",
+                                         "innerWidth":  390,
+                                         "innerHeight":  844,
+                                         "devicePixelRatio":  1,
+                                         "clientWidth":  390,
+                                         "rootScrollWidth":  390,
+                                         "bodyScrollWidth":  390,
+                                         "hasRootHorizontalOverflow":  false,
+                                         "overflowCandidates":  [
+                                                                    {
+                                                                        "tag":  "div",
+                                                                        "id":  null,
+                                                                        "classes":  "ambient ambient-one",
+                                                                        "left":  38,
+                                                                        "right":  550,
+                                                                        "width":  512,
+                                                                        "overflowX":  "visible"
+                                                                    },
+                                                                    {
+                                                                        "tag":  "div",
+                                                                        "id":  null,
+                                                                        "classes":  "ambient ambient-two",
+                                                                        "left":  -160,
+                                                                        "right":  288,
+                                                                        "width":  448,
+                                                                        "overflowX":  "visible"
+                                                                    }
+                                                                ]
+                                     }
+                     },
+                     {
+                         "artifact":  "ROADMAP-SITES-V9-2026-08-08-landing-1440.png",
+                         "sha256":  "78dd0ad41438e90c15839bedb4dcbdf6258ae37a9826a71746ee8df5e28f53df",
+                         "bytes":  187724,
+                         "metrics":  {
+                                         "url":  "http://127.0.0.1:4175/?capture=landing-1440",
+                                         "title":  "Roadmap | Coach-branded golf development roadmaps",
+                                         "innerWidth":  1440,
+                                         "innerHeight":  1000,
+                                         "devicePixelRatio":  1,
+                                         "clientWidth":  1440,
+                                         "rootScrollWidth":  1440,
+                                         "bodyScrollWidth":  1440,
+                                         "hasRootHorizontalOverflow":  false,
+                                         "overflowCandidates":  [
+                                                                    {
+                                                                        "tag":  "div",
+                                                                        "id":  null,
+                                                                        "classes":  "ambient ambient-one",
+                                                                        "left":  1088,
+                                                                        "right":  1600,
+                                                                        "width":  512,
+                                                                        "overflowX":  "visible"
+                                                                    },
+                                                                    {
+                                                                        "tag":  "div",
+                                                                        "id":  null,
+                                                                        "classes":  "ambient ambient-two",
+                                                                        "left":  -160,
+                                                                        "right":  288,
+                                                                        "width":  448,
+                                                                        "overflowX":  "visible"
+                                                                    }
+                                                                ]
+                                     }
+                     },
+                     {
+                         "artifact":  "ROADMAP-SITES-V9-2026-08-08-workspace-320.png",
+                         "sha256":  "45ec73606d9e7402573e9a1577d65b4797f93ebe79c309f35882d41d19f30b17",
+                         "bytes":  34331,
+                         "metrics":  {
+                                         "url":  "http://127.0.0.1:4175/app?capture=workspace-320",
+                                         "title":  "Coach overview | Roadmap",
+                                         "innerWidth":  320,
+                                         "innerHeight":  844,
+                                         "devicePixelRatio":  1,
+                                         "clientWidth":  320,
+                                         "rootScrollWidth":  320,
+                                         "bodyScrollWidth":  320,
+                                         "hasRootHorizontalOverflow":  false,
+                                         "overflowCandidates":  [
+
+                                                                ]
+                                     }
+                     },
+                     {
+                         "artifact":  "ROADMAP-SITES-V9-2026-08-08-workspace-390.png",
+                         "sha256":  "799a9e4db427bdf770ef1957aca5e27c4b70f26d23313ba89c3017777b32e2b1",
+                         "bytes":  35417,
+                         "metrics":  {
+                                         "url":  "http://127.0.0.1:4175/app?capture=workspace-390",
+                                         "title":  "Coach overview | Roadmap",
+                                         "innerWidth":  390,
+                                         "innerHeight":  844,
+                                         "devicePixelRatio":  1,
+                                         "clientWidth":  390,
+                                         "rootScrollWidth":  390,
+                                         "bodyScrollWidth":  390,
+                                         "hasRootHorizontalOverflow":  false,
+                                         "overflowCandidates":  [
+
+                                                                ]
+                                     }
+                     },
+                     {
+                         "artifact":  "ROADMAP-SITES-V9-2026-08-08-workspace-1440.png",
+                         "sha256":  "9d7dd265f29cce32355f4c86f14eb965af53ecd34e233b13dae85174e70fc656",
+                         "bytes":  98277,
+                         "metrics":  {
+                                         "url":  "http://127.0.0.1:4175/app?capture=workspace-1440",
+                                         "title":  "Coach overview | Roadmap",
+                                         "innerWidth":  1440,
+                                         "innerHeight":  1000,
+                                         "devicePixelRatio":  1,
+                                         "clientWidth":  1440,
+                                         "rootScrollWidth":  1440,
+                                         "bodyScrollWidth":  1440,
+                                         "hasRootHorizontalOverflow":  false,
+                                         "overflowCandidates":  [
+
+                                                                ]
+                                     }
+                     },
+                     {
+                         "artifact":  "ROADMAP-SITES-V9-2026-08-08-golfer-320.png",
+                         "sha256":  "7ecd8351a1d7828a4ed394b5f48dccf096aab042ade4407938599ea57351cc93",
+                         "bytes":  39125,
+                         "metrics":  {
+                                         "url":  "http://127.0.0.1:4175/r/plan",
+                                         "title":  "Private coaching plan | Roadmap",
+                                         "innerWidth":  320,
+                                         "innerHeight":  844,
+                                         "devicePixelRatio":  1,
+                                         "clientWidth":  320,
+                                         "rootScrollWidth":  320,
+                                         "bodyScrollWidth":  320,
+                                         "hasRootHorizontalOverflow":  false,
+                                         "overflowCandidates":  [
+                                                                    {
+                                                                        "tag":  "a",
+                                                                        "id":  null,
+                                                                        "classes":  "",
+                                                                        "left":  287.19,
+                                                                        "right":  359.92,
+                                                                        "width":  72.73,
+                                                                        "overflowX":  "visible"
+                                                                    },
+                                                                    {
+                                                                        "tag":  "a",
+                                                                        "id":  null,
+                                                                        "classes":  "",
+                                                                        "left":  363.11,
+                                                                        "right":  440.69,
+                                                                        "width":  77.58,
+                                                                        "overflowX":  "visible"
+                                                                    },
+                                                                    {
+                                                                        "tag":  "a",
+                                                                        "id":  null,
+                                                                        "classes":  "",
+                                                                        "left":  443.88,
+                                                                        "right":  546.91,
+                                                                        "width":  103.03,
+                                                                        "overflowX":  "visible"
+                                                                    }
+                                                                ]
+                                     }
+                     },
+                     {
+                         "artifact":  "ROADMAP-SITES-V9-2026-08-08-golfer-390.png",
+                         "sha256":  "a89549c73be7520783af91dbea17bb8d0521c4ff7bdfe5d55c76a2e095c2c680",
+                         "bytes":  40289,
+                         "metrics":  {
+                                         "url":  "http://127.0.0.1:4175/r/plan",
+                                         "title":  "Private coaching plan | Roadmap",
+                                         "innerWidth":  390,
+                                         "innerHeight":  844,
+                                         "devicePixelRatio":  1,
+                                         "clientWidth":  390,
+                                         "rootScrollWidth":  390,
+                                         "bodyScrollWidth":  390,
+                                         "hasRootHorizontalOverflow":  false,
+                                         "overflowCandidates":  [
+                                                                    {
+                                                                        "tag":  "a",
+                                                                        "id":  null,
+                                                                        "classes":  "",
+                                                                        "left":  363.11,
+                                                                        "right":  440.69,
+                                                                        "width":  77.58,
+                                                                        "overflowX":  "visible"
+                                                                    },
+                                                                    {
+                                                                        "tag":  "a",
+                                                                        "id":  null,
+                                                                        "classes":  "",
+                                                                        "left":  443.88,
+                                                                        "right":  546.91,
+                                                                        "width":  103.03,
+                                                                        "overflowX":  "visible"
+                                                                    }
+                                                                ]
+                                     }
+                     },
+                     {
+                         "artifact":  "ROADMAP-SITES-V9-2026-08-08-golfer-1440.png",
+                         "sha256":  "92d323f40c3aaf6c1a9506bb8a20a25e999f92114b1a6ca4b4a6095e79468268",
+                         "bytes":  74852,
+                         "metrics":  {
+                                         "url":  "http://127.0.0.1:4175/r/plan",
+                                         "title":  "Private coaching plan | Roadmap",
+                                         "innerWidth":  1440,
+                                         "innerHeight":  1000,
+                                         "devicePixelRatio":  1,
+                                         "clientWidth":  1440,
+                                         "rootScrollWidth":  1440,
+                                         "bodyScrollWidth":  1440,
+                                         "hasRootHorizontalOverflow":  false,
+                                         "overflowCandidates":  [
+
+                                                                ]
+                                     }
+                     }
+                 ],
+    "limitations":  [
+                        "Local production Worker bundle, local compatible D1, and synthetic adults-only fixture only.",
+                        "No Sites identity, hosted D1/R2, production credential, customer data, Stripe, public access, real user, assistive technology, or human manual review was exercised.",
+                        "Horizontal overflow candidates inside the golfer navigation are expected because that navigation is an intentional overflow-x auto region; root and body overflow remain the pass criterion.",
+                        "A screenshot and geometry record cannot prove keyboard order, screen-reader announcements, forced-colour behavior, reduced motion, zoom behavior, or supported-browser conformance."
+                    ]
+}
