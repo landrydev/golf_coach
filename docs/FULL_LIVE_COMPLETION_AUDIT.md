@@ -16,6 +16,15 @@ commercial/policy inputs and exact consent/operator configuration are unresolved
 controlled real operations and hosted recovery exercises are absent, and Aaron has
 not accepted an exact release.
 
+Aaron authorized `OWNER-SEC-001` on 2026-08-08, and one value-safe provider rotation
+succeeded. The connector contract immediately invalidated the exposed prior bypass
+value; its replacement was neither displayed, persisted, nor used. Owner-only access
+remained unchanged and four post-operation signed-out probes passed. The original
+value was not replayed, the 15-minute post-operation log sample was empty and
+inconclusive, and no signed-in owner browser was mounted. `SEC-001` is therefore
+**REMEDIATED — RETEST PENDING**, while `AUTH-EVID-001` remains open. See the
+[OWNER-SEC-001 rotation evidence](release-evidence/ROADMAP-SITES-V9-2026-08-08-sec001-rotation.md).
+
 Those are evidence, operating, and owner-decision dependencies. They are not a
 reinstated design gate and they do not invalidate completed engineering evidence.
 
@@ -36,7 +45,7 @@ before paid operation; it does not by itself prove that Sites discarded the trig
 | Authority and source precedence | `AUTH-005` authorizes production implementation; Business Plan V2 remains authoritative and Business Plan V1 remains unchanged | Implemented and preserved |
 | Bounded architecture | Sites/Vinext Worker, SIWC boundary, D1, private R2 binding, Stripe-hosted SaaS billing boundary, no AI or native coach-package payment | Selected under `AUTH-005`; provider suitability still needs live evidence |
 | Instructor and golfer journeys | Resumable minimum-first adult golfer setup, three- or four-phase coach-authored roadmap, profile/packages, preview/publication readiness, scoped share session with retry recovery, non-blocking native external handoff, living-plan create/archive/retire/withdraw/replace updates, responses, six data-request types, and bounded export/manual fallback | Automated production-bundle evidence passed |
-| Tenant and capability security | Server-derived tenant, D1 ownership constraints, canonical route guard, missing-identity denial, HMAC-only verifier/session storage, expiry/revocation, rate limits, CSRF, private headers | Automated evidence passed; hosted SIWC spoof/recovery tests remain |
+| Tenant and capability security | Server-derived tenant, D1 ownership constraints, canonical route guard, missing-identity denial, HMAC-only verifier/session storage, expiry/revocation, rate limits, CSRF, private headers; the exposed Sites bypass value was invalidated by one value-safe provider rotation under `OWNER-SEC-001` | Automated evidence and provider-attested rotation passed; `SEC-001` signed-in owner/log retest plus the broader hosted SIWC spoof/recovery matrix remain |
 | Concurrency and lifecycle integrity | Revision CAS, tenant-scoped race-safe staged/full-authoring/package idempotency, single publish winner, profile-change and living-content publication/session invalidation, atomic practice-replacement retirement audits, idempotent revoke/session close, current-publication response guard, and atomic data-request/export-fallback deduplication | Automated evidence passed; formal external concurrency/load assessment remains |
 | SaaS billing | Server-controlled Checkout/Portal, durable single-attempt idempotency, account-operation leases, provider-authoritative expiry, durable reconciliation targets, pending-sync blocking, signed-webhook leases/replay/race healing, immutable customer ownership, explicit Price/entitlement/freshness policy, scheduled GET-only recovery with fairness/backoff/dead-letter handling, and stale-provider-read fencing | Automated local D1 evidence passed; Checkout remains disabled because exact commercial configuration, public Stripe webhook ingress, and controlled live reconciliation are absent |
 | Privacy lifecycle | Tenant export with pre-load record bounds and durable manual-request fallback; immutable versioned purpose grants/withdrawals with exact-text evidence; account `golfer_record` and golfer `roadmap_sharing` enforcement; atomic capability/session revocation; correction through product edits; truthful deletion-review status; bounded privacy-operator queue/marker; request deduplication; bounded request telemetry; and stable-identifier-free runtime log fields | Exact owner-approved consent policy/content versions and privacy-operator access configuration are absent, so deep readiness is intentionally degraded; destructive fulfillment, retention schedule, qualified review, hosted operator/log sampling, and backup expiry remain unresolved |
@@ -112,14 +121,17 @@ Until the linked owner decisions and exercises are complete:
 - describe account deletion only as a review request, never as completed deletion;
 - do not treat D1 Time Travel or R2 durability as a completed backup/restore program;
   and
-- rotate or revoke the exposed SIWC bypass credential before access expands or the
-  release is accepted.
+- keep the replacement SIWC bypass bearer unused and access owner-only; do not expand
+  or accept the release until the `SEC-001` signed-in owner and meaningful hosted-log
+  retest passes.
 
 ## Remaining completion sequence
 
-1. Rotate/revoke the exposed bypass token under explicit Aaron authorization and run
-   authenticated hosted identity/header/spoof/session checks without using the
-   exposed credential.
+1. Complete the recorded post-rotation `SEC-001` retest with a normal signed-in owner
+   journey that uses no bypass header and a meaningful privacy-safe hosted
+   log/redaction sample. Then complete the broader hosted
+   identity/header/spoof/session/recovery matrix under `AUTH-EVID-001`. Do not recover
+   or replay the original exposed value merely to manufacture a denial probe.
 2. Record exact owner decisions for scope/design/copy, versioned consent purposes,
    privacy-operator assignment/access, public contacts, commercial consequences,
    privacy/retention/deletion, media exclusion, providers, public origin, and

@@ -13,7 +13,7 @@ copy does not claim a staffed public service.
 
 | Decision | Current state | Why |
 |---|---|---|
-| `OWNER-SEC-001` credential containment | **READY FOR DECISION** | Exact contained operation is known; Aaron's explicit authority is required before rotating/revoking the exposed credential |
+| `OWNER-SEC-001` credential containment | **RECORDED 2026-08-08; REMEDIATED — RETEST PENDING** | Aaron authorized the rotation; the provider-invalidated prior value and unchanged owner-only policy are evidenced, while normal signed-in owner and meaningful hosted-log retests remain missing |
 | `OWNER-SCOPE-001` product/design/content baseline | **READY FOR REVIEW** | Exact version 9 owner-only candidate and evidence records exist; Aaron may approve, modify, or reject the bounded baseline |
 | `OWNER-OPS-001` operators and contacts | **PREREQUISITE MISSING** | Names, entity, routes, and public contacts must be supplied |
 | `OWNER-COMM-001` offer and consequences | **PREREQUISITE MISSING** | Exact policy and Stripe Product/Price are not supplied or validated |
@@ -25,22 +25,33 @@ copy does not claim a staffed public service.
 
 Owner approval cannot substitute for missing qualified review, hosted authentication evidence, controlled billing evidence, manual accessibility review, real-user results, or restore/rollback/alert exercises. Those are facts to demonstrate, not facts to approve into existence.
 
-## Decision 0A — contain the exposed SIWC bypass credential
+## Recorded decision 0A — contain the exposed SIWC bypass credential
 
-**Evidence:** a live Sites bypass credential was exposed in a private tool transcript while inspecting the owner-only candidate. The value is not reproduced in repository evidence. The outer owner-only policy and application-level `owner_private` authorization contain current exposure, but prior values must be treated as compromised before access expands or a release is accepted.
+**Incident evidence:** a live Sites bypass credential was exposed in a private tool
+transcript while inspecting the owner-only candidate. No credential value is
+reproduced in repository evidence.
 
-**Viable choices:**
+**Aaron's recorded authorization, 2026-08-08:**
 
-1. Authorize immediate rotation/revocation while the site remains owner-only, then verify old-credential denial and owner access.
-2. Keep the candidate owner-only and defer rotation; do not accept or expand access.
+> `OWNER-SEC-001`: rotate and revoke the exposed Sites bypass credential.
 
-**Recommendation:** choice 1.
+**Operation outcome:** one value-safe Sites rotation for project
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3` succeeded from
+`2026-08-08T18:32:25.588Z` through `2026-08-08T18:32:31.831Z`. The connector contract
+immediately invalidated the exposed prior value. Its replacement was not displayed,
+persisted, copied, stored, or used. The Sites access policy remained `custom` revision
+1 with one owner, zero groups, and zero external visitors. Fresh signed-out requests
+to `/`, `/app`, `/api/health`, and `/api/operations/health` all returned `401` with
+`no-store` and `no-referrer`. See the
+[OWNER-SEC-001 rotation evidence](release-evidence/ROADMAP-SITES-V9-2026-08-08-sec001-rotation.md).
 
-**Exact proposed decision wording:**
-
-> `OWNER-SEC-001`: I authorize rotation or revocation of the exposed SIWC bypass credential for Sites project `appgprj_6a76957326fc819196ebf3a0c95f1ec3`. Treat every prior value as compromised and invalid after the operation. Do not record credential values. Keep access owner-only during rotation, verify the old credential is denied and owner authentication still works, and attach the operation result to release evidence.
-
-**Consequence of deferral:** keep owner-only containment; do not use the exposed value, expand access, or accept a release.
+**Remaining retest:** the original value was intentionally not recovered or replayed.
+A 15-minute post-operation Worker query returned zero events and is inconclusive for
+credential leakage/redaction. No supported signed-in owner browser was mounted, so a
+normal owner journey without a bypass header remains untested. `SEC-001` is
+**REMEDIATED — RETEST PENDING**, not closed, and the broader SIWC matrix remains open
+under `AUTH-EVID-001`. This record resolves only the rotation authorization; it does
+not infer any other owner decision or authorize access expansion or release acceptance.
 
 ## Decision 0B — exact product, design, and content baseline
 

@@ -33,7 +33,8 @@ verification with gzip SHA-256
 and 10 migrations. Plaintext HTTP `/` redirected to HTTPS, and signed-out HTTPS
 probes returned the outer-policy `401` for `/`, `/app`, `/api/health`, and
 `/api/operations/health` with `no-store` and `no-referrer`; those probes demonstrate
-signed-out containment only.
+signed-out containment only. The same four results were repeated after the
+`OWNER-SEC-001` rotation at approximately `2026-08-08T18:33:41Z`.
 
 The release working-tree/archive match is not deterministic byte-rebuild evidence.
 An isolated immutable-v9 export installed cleanly and passed the complete 229-test
@@ -45,12 +46,23 @@ on a later exact candidate.
 
 The current artifact regression preserves the version-8 closure of `SEC-003` for
 the build-generated prerender credential boundary and supersedes version 7. It does
-not close `SEC-001`: the Critical SIWC bypass credential incident remains
-contained/open, the prior credential is treated as compromised, and
-`OWNER-SEC-001` rotation, prior-value denial, normal-owner-authentication proof, and
-safe log review remain pending. `SEC-002` also remains open because the exact-v9
-framework CSP still permits `'unsafe-inline'` for script elements and has not been
-inspected in a supported hosted browser. No credential value is recorded here.
+not close `SEC-001`; that incident is tracked independently. Aaron authorized
+`OWNER-SEC-001` on 2026-08-08, and one value-safe Sites rotation completed at
+`2026-08-08T18:32:31.831Z`. The connector contract immediately invalidates the prior
+token on rotation. The replacement was not displayed, persisted, copied, or used,
+and the access policy remained `custom`, revision 1, with one owner and no groups or
+external visitors. The original value was not retained or empirically replayed.
+
+`SEC-001` is **REMEDIATED — RETEST PENDING**, not closed. The post-operation
+signed-out containment probes passed, but no supported signed-in owner browser was
+available. A 15-minute Worker-log query completed at
+`2026-08-08T18:35:07.665Z` and returned zero events; the empty sample is inconclusive
+for leakage and redaction behavior. Normal owner authentication without a bypass
+header and a meaningful privacy-safe log sample remain required. See the
+[value-free rotation evidence](release-evidence/ROADMAP-SITES-V9-2026-08-08-sec001-rotation.md).
+`SEC-002` also remains open because the exact-v9 framework CSP still permits
+`'unsafe-inline'` for script elements and has not been inspected in a supported
+hosted browser. No credential value is recorded here.
 
 Exact-commit local synthetic Chrome captures cover landing, workspace, and golfer
 views at 320, 390, and 1440 CSS px. During preparation, the 320 px golfer close

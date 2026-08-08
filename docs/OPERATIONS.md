@@ -40,6 +40,18 @@ the owner-only outer-policy `401` with `Cache-Control: no-store` and
 `Referrer-Policy: no-referrer`. These are transport/header/anonymous-containment
 observations, not authenticated application, deep-health, or journey evidence.
 
+Aaron authorized `OWNER-SEC-001` on 2026-08-08. One value-safe Sites rotation ran
+from `2026-08-08T18:32:25.588Z` through `2026-08-08T18:32:31.831Z` and succeeded;
+the connector contract immediately invalidated the exposed prior bypass value. The
+replacement bearer was not displayed, persisted, copied, stored, or used. The Sites
+policy remained `custom` revision 1 with one owner, zero groups, and zero external
+visitors. Fresh signed-out probes of the same four routes again returned `401` with
+`no-store` and `no-referrer`. A subsequent 15-minute Worker query returned zero
+events and is inconclusive for leakage or redaction. The original secret was not
+replayed, and no signed-in owner browser was mounted, so `SEC-001` is
+**REMEDIATED — RETEST PENDING**, not closed. See the
+[OWNER-SEC-001 rotation evidence](release-evidence/ROADMAP-SITES-V9-2026-08-08-sec001-rotation.md).
+
 A read-only version-8-era continuity query started at
 `2026-08-08T17:27:16.287Z`, completed at `2026-08-08T17:27:17.305Z`, and requested
 the preceding 90 minutes from `2026-08-08T15:57:16.287Z` with limit 100 and
@@ -90,10 +102,13 @@ hosted reconciliation, enabling Checkout, or expanding to public/paid operation.
 The existing exact version-8 artifact evidence closed `SEC-003` for its
 build-generated prerender credential boundary; the bounded version-9 retrospective
 inspection is additional continuity evidence, not a replacement exact-build
-attestation. `SEC-001` remains contained/open, and `OWNER-SEC-001` rotation/retest
-is still required. Consent-policy-registry and privacy-operator owner decisions and
-configuration also remain absent; those controls fail closed and deep readiness is
-intentionally degraded.
+attestation. `OWNER-SEC-001` is recorded and the exposed prior value was invalidated
+by the provider rotation contract. `SEC-001` remains **REMEDIATED — RETEST PENDING**
+until a normal signed-in owner journey and a meaningful privacy-safe hosted
+log/redaction sample pass; the original value was intentionally not recovered for
+replay. Consent-policy-registry and privacy-operator owner decisions and configuration
+also remain absent; those controls fail closed and deep readiness is intentionally
+degraded.
 
 `[SUPPORTED BY BUSINESS PLAN V2]` Normal operation must remain self-serve for an individual instructor. It must not rely on scheduled onboarding, custom setup, concierge roadmap creation, or facility administration. Support activity is logged so hidden founder labor is not mistaken for product performance.
 
@@ -132,6 +147,7 @@ The inventory records a name, purpose, environment, provider owner, last rotatio
 |---|---|---|
 | D1 `DB` binding | Sites-managed resource binding | Separate per environment; migration version and backup source recorded |
 | R2 binding | Sites-managed resource binding | Private; separate per environment; object lifecycle and inventory monitored |
+| Sites SIWC bypass bearer | Provider-managed credential | The exposed prior value was invalidated by one authorized provider rotation; the replacement was not displayed, persisted, or used. Available tooling exposes rotation rather than revoke-only disablement. Keep it unused and keep access owner-only pending the signed-in owner and hosted-log retest. |
 | Share-token pepper | Runtime secret | Unique per environment; rotation plan accounts for active capabilities rather than silently breaking them |
 | Abuse-limit pepper | Runtime secret | Unique and independent per environment; rotation resets non-reversible short-lived counters and must be correlated with the release |
 | Owner-private access pepper | Runtime secret | At least 32 characters, unique and independent; rotate atomically with every owner-email HMAC digest |
@@ -521,7 +537,7 @@ Deployment alone, a working happy path, or a green build does not complete this 
 
 | Dependency | Current truthful status | Required operational evidence |
 |---|---|---|
-| SIWC/public-auth suitability | Selected architecture; public production suitability unproven | Hosted sign-in/recovery/sign-out, identity continuity, abuse, and support evidence |
+| SIWC/public-auth suitability | Selected architecture; the exposed bypass value is provider-invalidated under recorded `OWNER-SEC-001`, but normal signed-in owner operation and public production suitability remain unproven | Normal signed-in owner retest without a bypass header; hosted sign-in/recovery/sign-out, identity continuity, spoof/abuse, meaningful privacy-safe log sampling, and support evidence |
 | Stripe live account/price | Planned integration; Checkout disabled; production credentials and exact approved Price unavailable/unrecorded; current Sites guidance directs builders not to use Sites to enable financial transactions | Explicit provider confirmation or a verified superseding hosting decision, authorized secret/config inventory, policy alignment, reachable signed webhook, and controlled transaction evidence |
 | Domain | No approved production entry point recorded here | Authorized domain, DNS/redirect/TLS/origin checks, published support/legal destinations |
 | Legal and privacy copy | Exact qualified/owner-approved copy not recorded | Versioned review and deployed copy/behavior conformance |

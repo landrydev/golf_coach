@@ -30,6 +30,14 @@ synthetic browser/harness boundary. They are closed defects, not candidate resid
 risks, and their closure does not replace hosted journey or manual accessibility
 evidence.
 
+Aaron authorized `OWNER-SEC-001` on 2026-08-08. A single value-safe Sites rotation
+immediately invalidated the exposed prior bypass value under the provider contract;
+the replacement was not displayed, persisted, or used, and owner-only access remained
+unchanged. The original value was not replayed, the post-operation Worker sample was
+empty and inconclusive, and no signed-in owner browser was mounted. Accordingly,
+`SEC-001` is **REMEDIATED — RETEST PENDING**, not an eligible residual risk. See the
+[rotation evidence](release-evidence/ROADMAP-SITES-V9-2026-08-08-sec001-rotation.md).
+
 ## Required risk record
 
 | Field | Required value |
@@ -56,7 +64,8 @@ Ratings below are recommendations for review, not Aaron's decisions.
 
 ## Items not currently eligible for residual-risk acceptance
 
-- `SEC-001` exposed SIWC bypass credential before rotation/revocation and retest;
+- `SEC-001` post-rotation retest: normal signed-in owner operation without a bypass
+  header and a meaningful privacy-safe hosted log/redaction sample remain missing;
 - missing hosted identity/spoof/recovery evidence before public authentication;
 - missing qualified privacy/legal, retention/deletion, and public-copy decisions
   before real customer/golfer data;

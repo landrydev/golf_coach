@@ -146,6 +146,7 @@ and real browser zoom remain explicitly unverified.
 | Owner-only production URL | `https://roadmap-golf-coaching.aar-landry.chatgpt.site` |
 | Applied environment revision | 11 |
 | Access policy | Owner-only; not a public release or real-user acceptance |
+| `OWNER-SEC-001` | Aaron authorized rotation on 2026-08-08. The provider rotation completed at `2026-08-08T18:32:31.831Z`; the prior exposed token was immediately invalidated by the connector contract. `SEC-001` is remediated with authenticated retest pending. |
 
 The version-9 source branch was pushed using a short-lived authorization header
 scoped to the command; the credential was not persisted in the remote URL, Git
@@ -185,6 +186,30 @@ generated credential material.
   response, private golfer-link exercise, or hosted scheduler observation is
   claimed. The exact-version-9 screenshots are local synthetic evidence only;
   version-8 and earlier renderer/log observations are historical evidence.
+
+### `OWNER-SEC-001` rotation and pending retest
+
+Aaron authorized `OWNER-SEC-001` on 2026-08-08. One value-safe Sites rotation ran
+from `2026-08-08T18:32:25.588Z` through `2026-08-08T18:32:31.831Z`. The connector
+contract states that rotation immediately invalidates the existing prior token. The
+replacement value was not displayed, persisted, copied, or used. Because the
+original exposed value had not been retained, it was not replayed; the provider
+contract is authoritative invalidation evidence, not an empirical replay-denial
+result.
+
+Before and after the operation, the project remained active on version 9 with
+`custom` access-policy revision 1, one allowed owner, and zero groups or external
+visitors. At approximately `2026-08-08T18:33:41Z`, signed-out requests to `/`,
+`/app`, `/api/health`, and `/api/operations/health` each returned `401` with
+`Cache-Control: no-store` and `Referrer-Policy: no-referrer`. A value-safe 15-minute
+Worker-log query completed at `2026-08-08T18:35:07.665Z` and returned zero events;
+no raw logs were emitted, so this empty sample is inconclusive for leakage or
+redaction behavior. No supported signed-in owner browser was available.
+
+`SEC-001` is therefore **REMEDIATED — RETEST PENDING**, not closed. Normal signed-in
+owner authentication without a bypass header and a meaningful privacy-safe hosted
+log/redaction sample remain required. See the
+[value-free rotation record](release-evidence/ROADMAP-SITES-V9-2026-08-08-sec001-rotation.md).
 
 ### Predecessor version 8 exact record
 
@@ -269,11 +294,12 @@ Credential-handling incident 2: at `2026-08-08T03:07:47.953Z`, a read-only Sites
 project lookup unexpectedly returned a non-null SIWC bypass bearer credential. A
 response sanitizer did not account for the connector's nested result envelope, so
 the credential appeared in the private tool transcript. It was not invoked, copied
-to a file, placed in Git, or used for any request. Current tooling does not expose a
-revoke-only operation, and the token-generation/rotation action requires Aaron's
-explicit instruction. Treat this credential as exposed: rotate or revoke it before
-adding any visitor, changing the site to public, or accepting the release. Do not
-copy its value into an incident record, support channel, command, or repository file.
+to a file, placed in Git, or used for any request. Tooling did not expose a revoke-only
+operation, and the token-generation/rotation action required Aaron's explicit
+instruction. Aaron supplied `OWNER-SEC-001` on 2026-08-08 and the exact rotation
+record above now supersedes the containment-only disposition. Preserve the incident
+history without copying any credential value into an incident record, support
+channel, command, or repository file.
 
 Environment revision 8 changed only `RELEASE_ID` to the exact version-6 commit;
 the Sites patch operation preserved revision-7 `APP_URL`,
@@ -319,8 +345,10 @@ an explicit operation, not routine redeployment behavior.
   cron invocation is not claimed or relied on for this billing-disabled owner-only
   release. Version-5 four-boundary log observations remain predecessor evidence only.
 
-The in-app browser backend was unavailable and the SIWC bypass token-generation tool
-was not invoked. The unexpectedly disclosed existing bypass credential was not used.
+During this predecessor observation, the in-app browser backend was unavailable and
+the SIWC bypass token-generation tool was not invoked. The unexpectedly disclosed
+existing bypass credential was not used. A later authorized rotation is recorded in
+the exact-version-9 section above.
 Consequently, an exact final authenticated owner session, `/api/health` response,
 private golfer link in an unaffiliated browser, and live R2 check are not claimed.
 The owner-only outer policy also prevents a real Stripe webhook or unaffiliated golfer
@@ -348,7 +376,7 @@ from reaching the application by design.
 | General public access | Blocked; working legal/support copy explicitly limits this to controlled private release |
 | Owner-only production release | Deployed successfully as Sites version 9; final authenticated owner acceptance and controlled real journeys remain unrecorded |
 | Deep operational readiness | Intentionally degraded because exact owner-approved consent-policy content/version and privacy-operator access configuration are absent; no authenticated deep-readiness pass is claimed |
-| SIWC bypass credential exposure | A connector-returned active bearer appeared in the private tool transcript and was not used or persisted; explicit owner-directed rotation/revocation is required before access expands |
+| SIWC bypass credential exposure | Aaron authorized `OWNER-SEC-001`; the provider rotation immediately invalidated the exposed prior value under its connector contract, the replacement was not displayed/persisted/used, and owner-only access remained unchanged. `SEC-001` is **REMEDIATED — RETEST PENDING** because signed-in owner authentication was unavailable and the empty post-operation log sample is inconclusive. |
 | New SaaS charges | Fail-closed through `BILLING_CHECKOUT_ENABLED=false` until exact price/policy approval and configuration |
 | Paid entitlement enforcement | A fail-closed, explicit-status guard exists but production remains in `owner_private`; no owner-approved failed/cancelled/unpaid consequence is selected or claimed |
 | Public billing reliability | Durable attempts and reconciliation targets, account-operation leases, provider-authoritative expiry, pending-sync blocking, event leases, customer ownership, explicit Price/freshness policy, scheduled GET-only recovery with fairness/backoff/dead-letter handling, webhook race healing, and stale-read fencing are implemented and locally exercised; Checkout remains disabled because owner-only Sites access blocks Stripe ingress and exact commercial configuration/live reconciliation evidence is absent |
