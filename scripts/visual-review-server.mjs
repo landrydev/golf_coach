@@ -32,10 +32,25 @@ const server = createServer(async (request, response) => {
       return;
     }
     if (incomingUrl.pathname === "/__visual/golfer") {
+      const exchangeResponse = await worker.dispatch("/r/session", {
+        method: "POST",
+        headers: writeHeaders(identity.email, identity.name),
+        body: JSON.stringify({ token: fixture.token }),
+      });
+      assertStatus(exchangeResponse, 200, "visual share-session exchange");
+      const sessionCookie = exchangeResponse.headers.get("set-cookie");
+      if (!sessionCookie) {
+        throw new Error("Visual share-session exchange did not return a cookie.");
+      }
+
       response.statusCode = 302;
+      // The production exchange correctly marks this cookie Secure because its
+      // internal test origin is HTTPS. This harness is intentionally bound to
+      // loopback HTTP, so remove only that transport attribute for the local
+      // synthetic browser. The capability itself is never placed in a cookie.
       response.setHeader(
         "Set-Cookie",
-        `roadmap_share=${fixture.token}; Path=/r; HttpOnly; SameSite=Lax`,
+        sessionCookie.replace(/;\s*Secure\b/gi, ""),
       );
       response.setHeader("Location", "/r/plan");
       response.end();

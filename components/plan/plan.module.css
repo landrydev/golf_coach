@@ -48,6 +48,8 @@
 }
 
 .brand {
+  min-width: 0;
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -56,6 +58,7 @@
 }
 
 .brand > span {
+  flex: 0 0 auto;
   width: 2.6rem;
   height: 2.6rem;
   display: grid;
@@ -68,6 +71,7 @@
 }
 
 .brand strong {
+  min-width: 0;
   font-family: Georgia, "Times New Roman", serif;
   font-size: 1.15rem;
   font-weight: 500;
@@ -78,6 +82,8 @@
 }
 
 .headerTools {
+  min-width: 0;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -98,6 +104,7 @@
   font: inherit;
   font-size: 0.78rem;
   font-weight: 800;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -765,12 +772,30 @@
 }
 
 @media (max-width: 480px) {
+  .header {
+    gap: 0.5rem;
+    padding-inline: 0.75rem;
+  }
+
+  .brand {
+    gap: 0.5rem;
+  }
+
+  .brand > span {
+    width: 2.4rem;
+    height: 2.4rem;
+  }
+
   .identity {
     display: none;
   }
 
   .headerTools {
     margin-left: auto;
+  }
+
+  .closeControl button {
+    padding-inline: 0.7rem;
   }
 
   .section {

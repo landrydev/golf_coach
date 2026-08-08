@@ -139,3 +139,22 @@ test("ShareAccess preserves retryable fragments and exposes accessible recovery"
   assert.match(component, /Do not copy or share the address/);
   assert.match(styles, /\.card button:focus-visible/);
 });
+
+test("golfer header keeps the session-close control usable at the 320px boundary", async () => {
+  const styles = await readFile(
+    new URL("../components/plan/plan.module.css", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(styles, /\.brand\s*\{[\s\S]*?min-width:\s*0;/);
+  assert.match(styles, /\.brand\s*>\s*span\s*\{[\s\S]*?flex:\s*0 0 auto;/);
+  assert.match(styles, /\.headerTools\s*\{[\s\S]*?flex:\s*0 0 auto;/);
+  assert.match(
+    styles,
+    /\.closeControl button\s*\{[\s\S]*?white-space:\s*nowrap;/,
+  );
+  assert.match(
+    styles,
+    /@media \(max-width:\s*480px\)[\s\S]*?\.header\s*\{[\s\S]*?gap:\s*0\.5rem;[\s\S]*?padding-inline:\s*0\.75rem;/,
+  );
+});
