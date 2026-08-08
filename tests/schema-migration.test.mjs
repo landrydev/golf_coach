@@ -25,6 +25,10 @@ function captures(source, expression) {
   return [...source.matchAll(expression)].map((match) => match[1]).sort();
 }
 
+function unique(values) {
+  return [...new Set(values)].sort();
+}
+
 test("the migration journal, SQL files, and schema table set agree", async () => {
   const { schema, journal, sqlNames, migration } = await loadDatabaseSources();
   assert.equal(journal.dialect, "sqlite");
@@ -38,7 +42,13 @@ test("the migration journal, SQL files, and schema table set agree", async () =>
     schema,
     /export const\s+\w+\s*=\s*sqliteTable\(\s*"([^"]+)"/g,
   );
-  const migrationTables = captures(migration, /CREATE TABLE `([^`]+)`/g);
+  const migrationTables = unique(
+    captures(migration, /CREATE TABLE `([^`]+)`/g).filter(
+      // Migration-only rebuild and link-preservation tables are deliberately
+      // dropped before the migration commits and are not domain schema.
+      (name) => !name.startsWith("__"),
+    ),
+  );
   assert.ok(schemaTables.length >= 20, "expected the production domain schema");
   assert.deepEqual(migrationTables, schemaTables);
 
@@ -46,16 +56,14 @@ test("the migration journal, SQL files, and schema table set agree", async () =>
     schema,
     /\b(?:uniqueIndex|index)\("([^"]+)"\)/g,
   );
-  const migrationIndexes = captures(
-    migration,
-    /CREATE (?:UNIQUE )?INDEX `([^`]+)`/g,
+  const migrationIndexes = unique(
+    captures(migration, /CREATE (?:UNIQUE )?INDEX `([^`]+)`/g),
   );
   assert.deepEqual(migrationIndexes, schemaIndexes);
 
   const schemaChecks = captures(schema, /\bcheck\(\s*"([^"]+)"/g);
-  const migrationChecks = captures(
-    migration,
-    /CONSTRAINT "([^"]+)" CHECK/g,
+  const migrationChecks = unique(
+    captures(migration, /CONSTRAINT "([^"]+)" CHECK/g),
   );
   assert.deepEqual(migrationChecks, schemaChecks);
 

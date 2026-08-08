@@ -380,11 +380,13 @@ test(
     assert.notEqual(activeSessionToken, firstSessionToken);
     assert.notEqual(activeSessionToken, replacedSessionToken);
 
+    const expiredSessionAt = Date.now() - 1_000;
     await worker.inspect([
       {
-        sql: "update share_sessions set expires_at = ? where token_hash = ?",
+        sql: "update share_sessions set created_at = ?, expires_at = ? where token_hash = ?",
         params: [
-          Date.now() - 1,
+          expiredSessionAt - 1,
+          expiredSessionAt,
           shareSessionHash(activeSessionToken),
         ],
       },

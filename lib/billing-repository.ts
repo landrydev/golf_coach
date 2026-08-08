@@ -1,14 +1,18 @@
-import { and, desc, eq, inArray, lt, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import {
   accounts,
   auditEvents,
+  billingCheckoutAttempts,
+  billingCustomers,
   billingEvents,
+  billingSubscriptionProjectionGenerations,
   subscriptions,
 } from "@/db/schema";
 import { newId } from "@/lib/tokens";
 
 const PROVIDER = "stripe";
+const BILLING_EVENT_LEASE_MS = 5 * 60 * 1_000;
 const OPEN_SUBSCRIPTION_STATUSES = [
   "incomplete",
   "trialing",
@@ -20,6 +24,15 @@ const OPEN_SUBSCRIPTION_STATUSES = [
 
 export type SubscriptionRecord = typeof subscriptions.$inferSelect;
 export type BillingEventRecord = typeof billingEvents.$inferSelect;
+export type BillingEventClaim = Readonly<{
+  eventId: string;
+  leaseToken: string;
+  leaseExpiresAt: Date;
+}>;
+export type StripeSubscriptionProjectionGeneration = Readonly<{
+  providerSubscriptionId: string;
+  generation: number;
+}>;
 export type SubscriptionStatus = SubscriptionRecord["status"];
 
 export type StripeSubscriptionProjection = {
@@ -39,6 +52,12 @@ export type StripeSubscriptionProjection = {
   canceledAt: Date | null;
   endedAt: Date | null;
 };
+
+export type CheckoutAttemptCompletion = Readonly<{
+  attemptId: string;
+  providerSessionId: string;
+  providerCreatedAt: Date | null;
+}>;
 
 export class BillingRepositoryError extends Error {
   constructor(
@@ -91,6 +110,53 @@ export function isOpenSubscription(subscription: SubscriptionRecord): boolean {
   return (OPEN_SUBSCRIPTION_STATUSES as readonly string[]).includes(
     subscription.status,
   );
+}
+
+/**
+ * Reserve the next provider-projection generation before retrieving Stripe.
+ * Any older retrieval still in flight is fenced out by the terminal D1 batch.
+ */
+export async function reserveStripeSubscriptionProjectionGeneration(
+  providerSubscriptionId: string,
+): Promise<StripeSubscriptionProjectionGeneration> {
+  assertProviderSubscriptionIdentifier(providerSubscriptionId);
+  const now = new Date();
+  const [reserved] = await getDb()
+    .insert(billingSubscriptionProjectionGenerations)
+    .values({
+      provider: PROVIDER,
+      providerSubscriptionId,
+      generation: 1,
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: [
+        billingSubscriptionProjectionGenerations.provider,
+        billingSubscriptionProjectionGenerations.providerSubscriptionId,
+      ],
+      set: {
+        generation: sql`${billingSubscriptionProjectionGenerations.generation} + 1`,
+        updatedAt: now,
+      },
+    })
+    .returning({
+      providerSubscriptionId:
+        billingSubscriptionProjectionGenerations.providerSubscriptionId,
+      generation: billingSubscriptionProjectionGenerations.generation,
+    });
+
+  if (
+    !reserved ||
+    reserved.providerSubscriptionId !== providerSubscriptionId ||
+    !Number.isSafeInteger(reserved.generation) ||
+    reserved.generation < 1
+  ) {
+    throw new BillingRepositoryError(
+      "subscription_projection_generation_failed",
+      "The provider subscription projection could not be reserved.",
+    );
+  }
+  return reserved;
 }
 
 /** Record creation of a hosted Stripe surface without persisting its URL. */
@@ -172,20 +238,25 @@ export async function receiveBillingEvent(input: {
   };
 }
 
-export async function markBillingEventProcessing(eventId: string): Promise<boolean> {
+export async function markBillingEventProcessing(
+  eventId: string,
+): Promise<BillingEventClaim | null> {
   const db = getDb();
   const now = new Date();
-  const staleBefore = new Date(now.getTime() - 5 * 60 * 1_000);
+  const leaseToken = newId();
+  const leaseExpiresAt = new Date(now.getTime() + BILLING_EVENT_LEASE_MS);
   const claimed = await db
     .update(billingEvents)
     .set({
       status: "processing",
-      // While status is processing, processedAt is the lease start. Terminal
-      // mutations replace it with their completion time.
-      processedAt: now,
+      processedAt: null,
+      leaseToken,
+      leaseExpiresAt,
+      lastAttemptAt: now,
       processingAttempts: sql`${billingEvents.processingAttempts} + 1`,
       lastErrorCode: null,
       lastErrorMessage: null,
+      updatedAt: now,
     })
     .where(
       and(
@@ -194,17 +265,23 @@ export async function markBillingEventProcessing(eventId: string): Promise<boole
           inArray(billingEvents.status, ["received", "failed"]),
           and(
             eq(billingEvents.status, "processing"),
-            lt(billingEvents.processedAt, staleBefore),
+            or(
+              isNull(billingEvents.leaseToken),
+              isNull(billingEvents.leaseExpiresAt),
+              lt(billingEvents.leaseExpiresAt, now),
+            ),
           ),
         ),
       ),
     )
     .returning({ id: billingEvents.id });
-  return claimed.length === 1;
+  return claimed.length === 1
+    ? { eventId, leaseToken, leaseExpiresAt }
+    : null;
 }
 
 export async function ignoreBillingEvent(input: {
-  eventId: string;
+  claim: BillingEventClaim;
   reasonCode: string;
   reasonMessage: string;
   providerInvoiceId?: string | null;
@@ -212,22 +289,35 @@ export async function ignoreBillingEvent(input: {
   currency?: string | null;
 }): Promise<void> {
   const db = getDb();
-  await db
-    .update(billingEvents)
-    .set({
-      status: "ignored",
-      processedAt: new Date(),
-      providerInvoiceId: input.providerInvoiceId ?? null,
-      amountMinor: input.amountMinor ?? null,
-      currency: input.currency ?? null,
-      lastErrorCode: input.reasonCode,
-      lastErrorMessage: input.reasonMessage,
-    })
-    .where(eq(billingEvents.id, input.eventId));
+  const now = new Date();
+  await db.batch([
+    billingEventLeaseGuard(db, input.claim, now),
+    db
+      .update(billingEvents)
+      .set({
+        status: "ignored",
+        processedAt: now,
+        leaseToken: null,
+        leaseExpiresAt: null,
+        providerInvoiceId: input.providerInvoiceId ?? null,
+        amountMinor: input.amountMinor ?? null,
+        currency: input.currency ?? null,
+        lastErrorCode: input.reasonCode,
+        lastErrorMessage: input.reasonMessage,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(billingEvents.id, input.claim.eventId),
+          eq(billingEvents.status, "processing"),
+          eq(billingEvents.leaseToken, input.claim.leaseToken),
+        ),
+      ),
+  ]);
 }
 
 export async function failBillingEvent(input: {
-  eventId: string;
+  claim: BillingEventClaim;
   providerEventId: string;
   providerEventType: string;
   errorCode: string;
@@ -239,7 +329,6 @@ export async function failBillingEvent(input: {
   requestId?: string | null;
 }): Promise<void> {
   const db = getDb();
-  const now = new Date();
   let verifiedAccountId: string | null = null;
   if (input.accountId) {
     const [account] = await db
@@ -249,20 +338,31 @@ export async function failBillingEvent(input: {
       .limit(1);
     verifiedAccountId = account?.id ?? null;
   }
+  const now = new Date();
   await db.batch([
+    billingEventLeaseGuard(db, input.claim, now),
     db
       .update(billingEvents)
       .set({
         accountId: verifiedAccountId,
         status: "failed",
         processedAt: now,
+        leaseToken: null,
+        leaseExpiresAt: null,
         providerInvoiceId: input.providerInvoiceId ?? null,
         amountMinor: input.amountMinor ?? null,
         currency: input.currency ?? null,
         lastErrorCode: input.errorCode,
         lastErrorMessage: input.errorMessage,
+        updatedAt: now,
       })
-      .where(eq(billingEvents.id, input.eventId)),
+      .where(
+        and(
+          eq(billingEvents.id, input.claim.eventId),
+          eq(billingEvents.status, "processing"),
+          eq(billingEvents.leaseToken, input.claim.leaseToken),
+        ),
+      ),
     db.insert(auditEvents).values({
       id: newId(),
       accountId: verifiedAccountId,
@@ -270,7 +370,7 @@ export async function failBillingEvent(input: {
       actorReference: input.providerEventId,
       action: "billing.webhook_failed",
       targetType: "billing_event",
-      targetId: input.eventId,
+      targetId: input.claim.eventId,
       outcome: "failure",
       requestId: input.requestId ?? null,
       metadata: {
@@ -289,11 +389,13 @@ export async function failBillingEvent(input: {
  * to webhook metadata alone.
  */
 export async function applyStripeSubscriptionEvent(input: {
-  eventId: string;
+  claim: BillingEventClaim;
   providerEventId: string;
   providerEventType: string;
   projection: StripeSubscriptionProjection;
+  projectionGeneration: StripeSubscriptionProjectionGeneration;
   eventOccurredAt: Date;
+  checkoutAttempt?: CheckoutAttemptCompletion | null;
   providerInvoiceId?: string | null;
   amountMinor?: number | null;
   currency?: string | null;
@@ -301,6 +403,14 @@ export async function applyStripeSubscriptionEvent(input: {
 }): Promise<void> {
   const db = getDb();
   const projection = input.projection;
+  const projectionGeneration = input.projectionGeneration;
+  if (!projectionGeneration) {
+    throw new BillingRepositoryError(
+      "subscription_projection_generation_missing",
+      "The provider subscription projection reservation is missing.",
+    );
+  }
+  assertProjectionGeneration(projectionGeneration, projection);
   const [account] = await db
     .select({ id: accounts.id })
     .from(accounts)
@@ -438,6 +548,7 @@ export async function applyStripeSubscriptionEvent(input: {
     pauseEndsAt,
     endedAt,
     lastProviderSyncAt: now,
+    projectionRevision: existing ? existing.projectionRevision + 1 : 1,
     updatedAt: now,
   } as const;
 
@@ -449,11 +560,57 @@ export async function applyStripeSubscriptionEvent(input: {
           and(
             eq(subscriptions.id, existing.id),
             eq(subscriptions.accountId, projection.accountId),
+            eq(subscriptions.projectionRevision, existing.projectionRevision),
           ),
         )
     : db.insert(subscriptions).values({ id: subscriptionId, ...values });
 
+  const subscriptionConcurrencyEffects = existing
+    ? [subscriptionProjectionRevisionGuard(db, existing)]
+    : [];
+
+  // This insert is part of the same D1 transaction as the subscription
+  // projection. Both uniqueness constraints and the subscription composite FK
+  // enforce immutable customer ownership even when two first events race.
+  const customerOwnershipMutation = db
+    .insert(billingCustomers)
+    .values({
+      provider: PROVIDER,
+      providerCustomerId: projection.providerCustomerId,
+      accountId: projection.accountId,
+      updatedAt: now,
+    })
+    .onConflictDoNothing();
+
+  const checkoutAttemptEffects = input.checkoutAttempt
+    ? checkoutAttemptCompletionEffects(
+        db,
+        input.checkoutAttempt,
+        projection,
+        input.eventOccurredAt,
+        now,
+      )
+    : [];
+
+  // Keep the terminal mutation shape uniform with ignore/fail while binding
+  // this apply invocation's pre-retrieval generation into its lease fence.
+  const billingEventLeaseGuard = (
+    terminalDb: ReturnType<typeof getDb>,
+    terminalClaim: BillingEventClaim,
+    terminalNow: Date,
+  ) =>
+    generationFencedBillingEventLeaseGuard(
+      terminalDb,
+      terminalClaim,
+      terminalNow,
+      projectionGeneration,
+    );
+
   await db.batch([
+    billingEventLeaseGuard(db, input.claim, now),
+    customerOwnershipMutation,
+    ...checkoutAttemptEffects,
+    ...subscriptionConcurrencyEffects,
     subscriptionMutation,
     db
       .update(billingEvents)
@@ -465,10 +622,19 @@ export async function applyStripeSubscriptionEvent(input: {
         amountMinor: input.amountMinor ?? null,
         currency: input.currency ?? null,
         processedAt: now,
+        leaseToken: null,
+        leaseExpiresAt: null,
         lastErrorCode: null,
         lastErrorMessage: null,
+        updatedAt: now,
       })
-      .where(eq(billingEvents.id, input.eventId)),
+      .where(
+        and(
+          eq(billingEvents.id, input.claim.eventId),
+          eq(billingEvents.status, "processing"),
+          eq(billingEvents.leaseToken, input.claim.leaseToken),
+        ),
+      ),
     db.insert(auditEvents).values({
       id: newId(),
       accountId: projection.accountId,
@@ -484,9 +650,178 @@ export async function applyStripeSubscriptionEvent(input: {
         eventType: input.providerEventType,
         status: projection.status,
         invoiceRecorded: Boolean(input.providerInvoiceId),
+        checkoutAttemptCompleted: Boolean(input.checkoutAttempt),
       },
     }),
   ]);
+}
+
+function subscriptionProjectionRevisionGuard(
+  db: ReturnType<typeof getDb>,
+  existing: SubscriptionRecord,
+) {
+  return db
+    .update(subscriptions)
+    .set({
+      productCode: sql`case
+        when ${subscriptions.accountId} = ${existing.accountId}
+          and ${subscriptions.provider} = ${PROVIDER}
+          and ${subscriptions.projectionRevision} = ${existing.projectionRevision}
+        then ${subscriptions.productCode}
+        else null
+      end`,
+    })
+    .where(eq(subscriptions.id, existing.id));
+}
+
+function checkoutAttemptCompletionEffects(
+  db: ReturnType<typeof getDb>,
+  checkoutAttempt: CheckoutAttemptCompletion,
+  projection: StripeSubscriptionProjection,
+  completedAt: Date,
+  now: Date,
+) {
+  const providerCreatedAt = checkoutAttempt.providerCreatedAt?.getTime() ?? null;
+  const completionGuard = db
+    .update(billingCheckoutAttempts)
+    .set({
+      state: sql`case
+        when ${billingCheckoutAttempts.accountId} = ${projection.accountId}
+          and ${billingCheckoutAttempts.provider} = ${PROVIDER}
+          and ${billingCheckoutAttempts.providerPriceId} = ${projection.providerPriceId}
+          and ${billingCheckoutAttempts.state} in ('reserved', 'open', 'completed_pending_sync', 'completed')
+          and (${billingCheckoutAttempts.providerSessionId} is null
+            or ${billingCheckoutAttempts.providerSessionId} = ${checkoutAttempt.providerSessionId})
+          and (${billingCheckoutAttempts.providerCustomerId} is null
+            or ${billingCheckoutAttempts.providerCustomerId} = ${projection.providerCustomerId})
+        then ${billingCheckoutAttempts.state}
+        else null
+      end`,
+    })
+    .where(eq(billingCheckoutAttempts.id, checkoutAttempt.attemptId));
+
+  const completionMutation = db
+    .update(billingCheckoutAttempts)
+    .set({
+      state: "completed",
+      providerSessionId: checkoutAttempt.providerSessionId,
+      providerCustomerId: projection.providerCustomerId,
+      providerCreatedAt:
+        providerCreatedAt === null
+          ? billingCheckoutAttempts.providerCreatedAt
+          : sql`coalesce(${billingCheckoutAttempts.providerCreatedAt}, ${providerCreatedAt})`,
+      completedAt: sql`coalesce(${billingCheckoutAttempts.completedAt}, ${completedAt.getTime()})`,
+      expiredAt: null,
+      lastErrorCode: null,
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(billingCheckoutAttempts.id, checkoutAttempt.attemptId),
+        eq(billingCheckoutAttempts.accountId, projection.accountId),
+        eq(billingCheckoutAttempts.provider, PROVIDER),
+        eq(
+          billingCheckoutAttempts.providerPriceId,
+          projection.providerPriceId,
+        ),
+        inArray(billingCheckoutAttempts.state, [
+          "reserved",
+          "open",
+          "completed_pending_sync",
+          "completed",
+        ]),
+        or(
+          isNull(billingCheckoutAttempts.providerSessionId),
+          eq(
+            billingCheckoutAttempts.providerSessionId,
+            checkoutAttempt.providerSessionId,
+          ),
+        ),
+        or(
+          isNull(billingCheckoutAttempts.providerCustomerId),
+          eq(
+            billingCheckoutAttempts.providerCustomerId,
+            projection.providerCustomerId,
+          ),
+        ),
+      ),
+    );
+  return [completionGuard, completionMutation] as const;
+}
+
+/**
+ * The first statement in every terminal batch is a fencing assertion. D1
+ * rolls the whole batch back when a stale or expired owner makes the required
+ * provider event ID null, so no terminal state, projection, or audit effect can
+ * escape from a worker that no longer owns the lease.
+ */
+function billingEventLeaseGuard(
+  db: ReturnType<typeof getDb>,
+  claim: BillingEventClaim,
+  now: Date,
+  projectionGeneration?: StripeSubscriptionProjectionGeneration,
+) {
+  const generationIsCurrent = projectionGeneration
+    ? sql`exists (
+        select 1
+        from ${billingSubscriptionProjectionGenerations}
+        where ${billingSubscriptionProjectionGenerations.provider} = ${PROVIDER}
+          and ${billingSubscriptionProjectionGenerations.providerSubscriptionId} = ${projectionGeneration.providerSubscriptionId}
+          and ${billingSubscriptionProjectionGenerations.generation} = ${projectionGeneration.generation}
+      )`
+    : sql`1 = 1`;
+  return db
+    .update(billingEvents)
+    .set({
+      providerEventId: sql<string>`case
+        when ${billingEvents.status} = 'processing'
+          and ${billingEvents.leaseToken} = ${claim.leaseToken}
+          and ${billingEvents.leaseExpiresAt} > ${now.getTime()}
+          and ${generationIsCurrent}
+        then ${billingEvents.providerEventId}
+        else null
+      end`,
+    })
+    .where(eq(billingEvents.id, claim.eventId));
+}
+
+function generationFencedBillingEventLeaseGuard(
+  db: ReturnType<typeof getDb>,
+  claim: BillingEventClaim,
+  now: Date,
+  projectionGeneration: StripeSubscriptionProjectionGeneration,
+) {
+  return billingEventLeaseGuard(db, claim, now, projectionGeneration);
+}
+
+function assertProjectionGeneration(
+  claim: StripeSubscriptionProjectionGeneration,
+  projection: StripeSubscriptionProjection,
+): void {
+  if (
+    claim.providerSubscriptionId !== projection.providerSubscriptionId ||
+    !Number.isSafeInteger(claim.generation) ||
+    claim.generation < 1
+  ) {
+    throw new BillingRepositoryError(
+      "subscription_projection_generation_invalid",
+      "The provider subscription projection reservation is invalid.",
+    );
+  }
+}
+
+function assertProviderSubscriptionIdentifier(value: string): void {
+  if (
+    value.length < 5 ||
+    value.length > 255 ||
+    value !== value.trim() ||
+    !/^sub_[A-Za-z0-9_]+$/.test(value)
+  ) {
+    throw new BillingRepositoryError(
+      "subscription_projection_generation_invalid",
+      "The provider subscription reference is invalid.",
+    );
+  }
 }
 
 function isOpenStatus(status: SubscriptionStatus): boolean {

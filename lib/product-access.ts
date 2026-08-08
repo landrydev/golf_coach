@@ -1,4 +1,10 @@
 import { subscriptionStatuses } from "@/db/schema";
+import {
+  isStripePriceId,
+  readBillingPolicy,
+  type BillingPolicy,
+  type BillingPolicyEnvironment,
+} from "@/lib/billing-policy";
 
 export const instructorAccessModes = [
   "owner_private",
@@ -15,7 +21,7 @@ export type InstructorAccessDecision =
   | "subscription_required"
   | "unavailable";
 
-export type ProductAccessEnvironment = {
+export type ProductAccessEnvironment = BillingPolicyEnvironment & {
   DB?: D1Database;
   INSTRUCTOR_ACCESS_MODE?: string;
   OWNER_PRIVATE_ACCESS_PEPPER?: string;
@@ -32,6 +38,7 @@ type OwnerPrivateConfiguration = {
 type SubscriptionConfiguration = {
   mode: "subscription_required";
   allowedStatuses: ReadonlySet<string>;
+  billingPolicy: BillingPolicy;
 };
 
 type ProductAccessConfiguration =
@@ -90,6 +97,7 @@ export async function evaluateInstructorRequestAccess(input: {
   pathname: string;
   authenticatedEmail: string | null;
   environment: ProductAccessEnvironment;
+  nowMs?: number;
 }): Promise<InstructorAccessDecision> {
   const scope = instructorAccessScopeForPath(input.pathname);
   if (!scope) return "not_applicable";
@@ -113,7 +121,9 @@ export async function evaluateInstructorRequestAccess(input: {
 
   try {
     const subscription = await input.environment.DB.prepare(
-      `select s.status as status
+      `select s.status as status,
+              s.provider_price_id as providerPriceId,
+              s.last_provider_sync_at as lastProviderSyncAt
          from accounts a
          join subscriptions s on s.account_id = a.id
         where a.normalized_email = ?1
@@ -125,11 +135,48 @@ export async function evaluateInstructorRequestAccess(input: {
         limit 1`,
     )
       .bind(normalizedEmail)
-      .first<{ status: string }>();
+      .first<{
+        status: string;
+        providerPriceId: string | null;
+        lastProviderSyncAt: number | null;
+      }>();
 
-    return subscription && configuration.allowedStatuses.has(subscription.status)
-      ? "granted"
-      : "subscription_required";
+    if (!subscription) return "subscription_required";
+
+    const knownStatuses = new Set<string>(subscriptionStatuses);
+    if (!knownStatuses.has(subscription.status)) return "unavailable";
+    if (!configuration.allowedStatuses.has(subscription.status)) {
+      return "subscription_required";
+    }
+
+    const priceId = subscription.providerPriceId;
+    if (
+      typeof priceId !== "string" ||
+      priceId !== priceId.trim() ||
+      !isStripePriceId(priceId) ||
+      !configuration.billingPolicy.recognizedPriceIds.has(priceId)
+    ) {
+      return "unavailable";
+    }
+    if (!configuration.billingPolicy.entitlementPriceIds.has(priceId)) {
+      return "subscription_required";
+    }
+
+    const nowMs = input.nowMs ?? Date.now();
+    const lastProviderSyncAt = subscription.lastProviderSyncAt;
+    if (
+      !Number.isSafeInteger(nowMs) ||
+      typeof lastProviderSyncAt !== "number" ||
+      !Number.isSafeInteger(lastProviderSyncAt) ||
+      lastProviderSyncAt < 0 ||
+      lastProviderSyncAt > nowMs ||
+      nowMs - lastProviderSyncAt >
+        configuration.billingPolicy.maxProjectionAgeSeconds * 1_000
+    ) {
+      return "unavailable";
+    }
+
+    return "granted";
   } catch {
     return "unavailable";
   }
@@ -215,8 +262,9 @@ function readProductAccessConfiguration(
     const allowedStatuses = parseSubscriptionStatuses(
       environment.SUBSCRIPTION_ACCESS_STATUSES,
     );
-    if (!allowedStatuses) return null;
-    return { mode, allowedStatuses };
+    const billingPolicy = readBillingPolicy(environment);
+    if (!allowedStatuses || !billingPolicy) return null;
+    return { mode, allowedStatuses, billingPolicy };
   }
 
   return null;

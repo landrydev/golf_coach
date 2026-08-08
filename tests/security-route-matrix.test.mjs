@@ -328,6 +328,10 @@ async function assertAccessClassification(path, expected) {
       ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) },
       INSTRUCTOR_ACCESS_MODE: "subscription_required",
       SUBSCRIPTION_ACCESS_STATUSES: "active",
+      STRIPE_CHECKOUT_PRICE_ID: "price_route_matrix",
+      STRIPE_RECOGNIZED_PRICE_IDS: "price_route_matrix",
+      SUBSCRIPTION_ENTITLEMENT_PRICE_IDS: "price_route_matrix",
+      SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS: "3600",
     },
   );
   const subscriptionBody = await subscriptionResponse.text();

@@ -315,6 +315,37 @@ Support themes feed product improvement and self-serve evidence. They do not jus
 - Ensure customer-facing price, recurrence, taxes, trial, cancel/pause, refund, and data consequences match Stripe configuration.
 - Keep SaaS billing support separate from the instructor's external coach-package transaction.
 
+### Fail-closed Price or credential rotation
+
+Treat Price, Stripe-account, and webhook-secret changes as a billing migration,
+not as a routine environment edit:
+
+1. Set `BILLING_CHECKOUT_ENABLED=false` first and verify health/runtime agree on
+   that exact canonical value. Disabling new Checkout does not cancel a hosted
+   Session whose URL was already issued and does not disable Customer Portal.
+2. Inventory every `reserved`, `open`, `completed_pending_sync`, and
+   `quarantined` Checkout attempt, every open subscription, and every failed or
+   processing billing event. Reconcile them against Stripe before changing the
+   active Price or account credentials. Explicitly expire obsolete open Stripe
+   Sessions; changing application configuration alone cannot revoke their URLs.
+3. Keep every unsettled or historically synchronized Price in
+   `STRIPE_RECOGNIZED_PRICE_IDS` through the complete provider retry and manual
+   reconciliation horizon. The current Checkout Price must remain recognized
+   and entitled. Removing a Price from
+   `SUBSCRIPTION_ENTITLEMENT_PRICE_IDS` intentionally removes product access for
+   subscriptions on that Price and therefore requires the exact approved
+   customer consequence—not an inferred operator choice.
+4. Keep the old webhook delivery path and verification secret usable until its
+   accepted events are terminally processed or reconciled. A Stripe-account or
+   secret cutover without that overlap can strand paid attempts.
+5. Apply the approved new configuration with Checkout still disabled, verify
+   policy readiness and signed test-mode reconciliation, then run the expressly
+   authorized controlled live transaction before enabling new commercial use.
+
+The owner-only Sites access layer currently blocks third-party webhook ingress.
+Do not enable live billing until an approved deployment exposes the signed
+webhook route to Stripe without exposing instructor routes.
+
 `[PRICING HYPOTHESIS — REQUIRES VALIDATION]` CAD $75/month, the trial, and a CAD $15/month seasonal pause are planning hypotheses until an exact later decision and Stripe configuration approve them. Production credentials and an exact Price remain unresolved operational dependencies.
 
 ## Dependency and cost maintenance

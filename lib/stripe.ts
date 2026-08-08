@@ -1,10 +1,27 @@
 import { RequestError } from "./http";
+import {
+  isStripePriceId,
+  readBillingPolicy,
+  type BillingPolicy,
+} from "./billing-policy";
 
 const STRIPE_API = "https://api.stripe.com/v1";
 const WEBHOOK_TOLERANCE_SECONDS = 300;
 const STRIPE_REQUEST_TIMEOUT_MS = 10_000;
 
 type StripeObject = Record<string, unknown> & { id: string };
+
+export type StripeCheckoutSession = StripeObject & {
+  url?: string | null;
+  mode?: string | null;
+  status?: string | null;
+  client_reference_id?: string | null;
+  customer?: string | StripeObject | null;
+  subscription?: string | StripeObject | null;
+  metadata?: Record<string, unknown> | null;
+  created?: number;
+  expires_at?: number;
+};
 
 export type StripeEvent = {
   id: string;
@@ -15,35 +32,94 @@ export type StripeEvent = {
 
 type CheckoutInput = {
   accountId: string;
+  attemptId: string;
+  idempotencyKey: string;
+  priceId: string;
   email: string;
   customerId?: string | null;
   successUrl: string;
   cancelUrl: string;
+  expiresAtSeconds: number;
+};
+
+export type CheckoutConfiguration = {
+  priceId: string;
+  sessionLifetimeSeconds: number;
+};
+
+export type ValidatedCheckoutSession = {
+  id: string;
+  status: "open" | "complete" | "expired";
+  url: string | null;
+  createdAt: Date;
+  expiresAt: Date;
 };
 
 export function billingConfigured(): boolean {
   return Boolean(
     process.env.STRIPE_SECRET_KEY?.trim() &&
       process.env.STRIPE_WEBHOOK_SECRET?.trim() &&
-      process.env.STRIPE_SOLO_PRICE_ID?.trim(),
+      billingPolicyFromProcessEnvironment(),
   );
 }
 
 export function checkoutEnabled(): boolean {
-  return billingConfigured() && process.env.BILLING_CHECKOUT_ENABLED === "true";
+  return Boolean(
+    billingConfigured() &&
+      checkoutConfiguration() &&
+      process.env.BILLING_CHECKOUT_ENABLED === "true",
+  );
+}
+
+export function checkoutConfiguration(): CheckoutConfiguration | null {
+  const policy = billingPolicyFromProcessEnvironment();
+  const normalizedLifetime =
+    process.env.STRIPE_CHECKOUT_SESSION_LIFETIME_SECONDS?.trim() ?? "";
+  if (!policy || !/^[1-9][0-9]*$/.test(normalizedLifetime)) return null;
+  const sessionLifetimeSeconds = Number(normalizedLifetime);
+  if (
+    !Number.isSafeInteger(sessionLifetimeSeconds) ||
+    // Reserve one minute above Stripe's provider-side 30-minute minimum so
+    // ordinary D1/network latency cannot make a freshly reserved timestamp
+    // invalid by the time the create request reaches Stripe.
+    sessionLifetimeSeconds < 31 * 60 ||
+    sessionLifetimeSeconds > 24 * 60 * 60
+  ) {
+    return null;
+  }
+  return { priceId: policy.checkoutPriceId, sessionLifetimeSeconds };
 }
 
 export async function createCheckoutSession(input: CheckoutInput) {
-  const priceId = requiredEnv("STRIPE_SOLO_PRICE_ID");
+  const policy = requiredBillingPolicy();
+  if (
+    !isStripePriceId(input.priceId) ||
+    !policy.recognizedPriceIds.has(input.priceId) ||
+    !safeOpaqueIdentifier(input.accountId) ||
+    !safeOpaqueIdentifier(input.attemptId) ||
+    !safeIdempotencyKey(input.idempotencyKey) ||
+    !Number.isSafeInteger(input.expiresAtSeconds)
+  ) {
+    throw new RequestError(
+      503,
+      "billing_not_configured",
+      "Billing is not available yet. No charge was made.",
+    );
+  }
   const body = new URLSearchParams({
     mode: "subscription",
     client_reference_id: input.accountId,
     success_url: input.successUrl,
     cancel_url: input.cancelUrl,
-    "line_items[0][price]": priceId,
+    "line_items[0][price]": input.priceId,
     "line_items[0][quantity]": "1",
     "subscription_data[metadata][account_id]": input.accountId,
+    "subscription_data[metadata][checkout_attempt_id]": input.attemptId,
+    "subscription_data[metadata][price_id]": input.priceId,
     "metadata[account_id]": input.accountId,
+    "metadata[checkout_attempt_id]": input.attemptId,
+    "metadata[price_id]": input.priceId,
+    expires_at: String(input.expiresAtSeconds),
     billing_address_collection: "auto",
     allow_promotion_codes: "false",
   });
@@ -51,12 +127,88 @@ export async function createCheckoutSession(input: CheckoutInput) {
   if (input.customerId) body.set("customer", input.customerId);
   else body.set("customer_email", input.email);
 
-  return stripeRequest<{ id: string; url: string }>(
+  return stripeRequest<StripeCheckoutSession>(
     "/checkout/sessions",
     body,
     "POST",
-    operationKey("checkout", input.accountId, 10 * 60 * 1_000),
+    input.idempotencyKey,
   );
+}
+
+export async function retrieveCheckoutSession(sessionId: string) {
+  if (!safeOpaqueIdentifier(sessionId)) {
+    throw new RequestError(
+      502,
+      "billing_provider_response_invalid",
+      "Billing is temporarily unavailable. No charge was made.",
+    );
+  }
+  return stripeRequest<StripeCheckoutSession>(
+    `/checkout/sessions/${encodeURIComponent(sessionId)}`,
+    undefined,
+    "GET",
+  );
+}
+
+/**
+ * Bind a provider response back to the immutable D1 attempt snapshot before
+ * any hosted URL is returned. Price is asserted through server-issued Stripe
+ * metadata here and through the actual subscription item in the webhook.
+ */
+export function validateCheckoutSessionForAttempt(
+  session: StripeCheckoutSession,
+  attempt: {
+    id: string;
+    accountId: string;
+    providerPriceId: string;
+    providerCustomerId: string | null;
+    providerExpiresAt: Date;
+    providerSessionId?: string | null;
+  },
+): ValidatedCheckoutSession {
+  const metadata = objectValue(session.metadata);
+  const sessionCustomerId = objectId(session.customer);
+  const created = session.created;
+  const expiresAt = session.expires_at;
+  const expectedExpirySeconds = Math.floor(
+    attempt.providerExpiresAt.getTime() / 1_000,
+  );
+  if (
+    !safeOpaqueIdentifier(session.id) ||
+    (attempt.providerSessionId && session.id !== attempt.providerSessionId) ||
+    session.mode !== "subscription" ||
+    session.client_reference_id !== attempt.accountId ||
+    metadata?.account_id !== attempt.accountId ||
+    metadata?.checkout_attempt_id !== attempt.id ||
+    metadata?.price_id !== attempt.providerPriceId ||
+    (attempt.providerCustomerId !== null &&
+      sessionCustomerId !== attempt.providerCustomerId) ||
+    typeof created !== "number" ||
+    !Number.isSafeInteger(created) ||
+    typeof expiresAt !== "number" ||
+    !Number.isSafeInteger(expiresAt) ||
+    expiresAt !== expectedExpirySeconds ||
+    created < 0 ||
+    created >= expiresAt ||
+    !["open", "complete", "expired"].includes(session.status ?? "") ||
+    (session.url !== null &&
+      session.url !== undefined &&
+      typeof session.url !== "string")
+  ) {
+    throw new RequestError(
+      502,
+      "billing_provider_response_invalid",
+      "Billing is temporarily unavailable. No charge was made.",
+    );
+  }
+
+  return {
+    id: session.id,
+    status: session.status as ValidatedCheckoutSession["status"],
+    url: session.url ?? null,
+    createdAt: new Date(created * 1_000),
+    expiresAt: new Date(expiresAt * 1_000),
+  };
 }
 
 export async function createBillingPortalSession(input: {
@@ -186,12 +338,36 @@ async function stripeRequest<T>(
 }
 
 function operationKey(
-  kind: "checkout" | "portal",
+  kind: "portal",
   subject: string,
   bucketMilliseconds: number,
 ): string {
   const bucket = Math.floor(Date.now() / bucketMilliseconds);
   return `roadmap-${kind}-${subject.slice(0, 96)}-${bucket}`;
+}
+
+function safeOpaqueIdentifier(value: string): boolean {
+  return (
+    value.length > 0 &&
+    value.length <= 255 &&
+    !/[\u0000-\u0020\u007f]/.test(value)
+  );
+}
+
+function safeIdempotencyKey(value: string): boolean {
+  return safeOpaqueIdentifier(value) && value.length <= 255;
+}
+
+function objectValue(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function objectId(value: unknown): string | null {
+  if (typeof value === "string") return value;
+  const id = objectValue(value)?.id;
+  return typeof id === "string" ? id : null;
 }
 
 function requiredEnv(name: string): string {
@@ -204,6 +380,29 @@ function requiredEnv(name: string): string {
     );
   }
   return value;
+}
+
+function billingPolicyFromProcessEnvironment(): BillingPolicy | null {
+  return readBillingPolicy({
+    STRIPE_CHECKOUT_PRICE_ID: process.env.STRIPE_CHECKOUT_PRICE_ID,
+    STRIPE_RECOGNIZED_PRICE_IDS: process.env.STRIPE_RECOGNIZED_PRICE_IDS,
+    SUBSCRIPTION_ENTITLEMENT_PRICE_IDS:
+      process.env.SUBSCRIPTION_ENTITLEMENT_PRICE_IDS,
+    SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS:
+      process.env.SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS,
+  });
+}
+
+function requiredBillingPolicy(): BillingPolicy {
+  const policy = billingPolicyFromProcessEnvironment();
+  if (!policy) {
+    throw new RequestError(
+      503,
+      "billing_not_configured",
+      "Billing is not available yet. No charge was made.",
+    );
+  }
+  return policy;
 }
 
 async function hmacHex(secret: string, value: string): Promise<string> {

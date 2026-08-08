@@ -1,7 +1,5 @@
-import {
-  getSubscriptionForAccount,
-  recordHostedBillingSession,
-} from "@/lib/billing-repository";
+import { recordHostedBillingSession } from "@/lib/billing-repository";
+import { getCanonicalBillingCustomer } from "@/lib/checkout-repository";
 import { assertSameOrigin, errorResponse, RequestError } from "@/lib/http";
 import { requireApiIdentity } from "@/lib/identity";
 import { getOrCreateAccountForIdentity } from "@/lib/repository";
@@ -29,8 +27,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const subscription = await getSubscriptionForAccount(account.id);
-    if (!subscription?.providerCustomerId) {
+    const customer = await getCanonicalBillingCustomer(account.id);
+    if (!customer) {
       throw new RequestError(
         409,
         "billing_customer_not_found",
@@ -40,7 +38,7 @@ export async function POST(request: Request) {
 
     const origin = applicationOrigin(request);
     const session = await createBillingPortalSession({
-      customerId: subscription.providerCustomerId,
+      customerId: customer.providerCustomerId,
       returnUrl: `${origin}/app/billing`,
     });
     const location = hostedBillingUrl(session.url);

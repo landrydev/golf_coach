@@ -5,7 +5,11 @@ declare namespace Cloudflare {
     APP_URL?: string;
     STRIPE_SECRET_KEY?: string;
     STRIPE_WEBHOOK_SECRET?: string;
-    STRIPE_SOLO_PRICE_ID?: string;
+    STRIPE_CHECKOUT_PRICE_ID?: string;
+    STRIPE_CHECKOUT_SESSION_LIFETIME_SECONDS?: string;
+    STRIPE_RECOGNIZED_PRICE_IDS?: string;
+    SUBSCRIPTION_ENTITLEMENT_PRICE_IDS?: string;
+    SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS?: string;
     BILLING_CHECKOUT_ENABLED?: string;
     SHARE_TOKEN_PEPPER?: string;
     ABUSE_LIMIT_PEPPER?: string;

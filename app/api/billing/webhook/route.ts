@@ -5,10 +5,19 @@ import {
   ignoreBillingEvent,
   markBillingEventProcessing,
   receiveBillingEvent,
+  reserveStripeSubscriptionProjectionGeneration,
+  type BillingEventClaim,
   type BillingEventRecord,
   type StripeSubscriptionProjection,
+  type StripeSubscriptionProjectionGeneration,
   type SubscriptionStatus,
 } from "@/lib/billing-repository";
+import { isStripePriceId, readBillingPolicy } from "@/lib/billing-policy";
+import {
+  CheckoutRepositoryError,
+  requireCheckoutAttemptForCompletion,
+  resolveCheckoutAttemptForSignedWebhook,
+} from "@/lib/checkout-repository";
 import { errorResponse, RequestError } from "@/lib/http";
 import {
   retrieveSubscription,
@@ -37,8 +46,14 @@ type ResolvedEvent =
   | {
       disposition: "process";
       projection: StripeSubscriptionProjection;
+      projectionGeneration: StripeSubscriptionProjectionGeneration;
       accountId: string;
       invoice: InvoiceSummary;
+      checkoutAttempt: {
+        attemptId: string;
+        providerSessionId: string;
+        providerCreatedAt: Date | null;
+      } | null;
     }
   | {
       disposition: "ignore";
@@ -51,6 +66,7 @@ class WebhookProcessingError extends Error {
   constructor(
     public readonly code: string,
     public readonly safeMessage: string,
+    public readonly accountId: string | null = null,
   ) {
     super(safeMessage);
     this.name = "WebhookProcessingError";
@@ -60,6 +76,7 @@ class WebhookProcessingError extends Error {
 export async function POST(request: Request) {
   let event: StripeEvent | null = null;
   let receipt: BillingEventRecord | null = null;
+  let claim: BillingEventClaim | null = null;
   let accountId: string | null = null;
   let invoice: InvoiceSummary = emptyInvoiceSummary();
   const currentRequestId = requestId(request);
@@ -94,17 +111,16 @@ export async function POST(request: Request) {
       return acknowledge(received.event.status, true);
     }
 
-    const claimed = await markBillingEventProcessing(receipt.id);
-    if (!claimed) {
-      // A concurrent delivery already owns the short processing lease. Stripe
-      // receives a successful acknowledgement while the owning invocation
-      // completes; a failed/abandoned lease can be reclaimed after five minutes.
-      return acknowledge("processing", true);
+    claim = await markBillingEventProcessing(receipt.id);
+    if (!claim) {
+      // Preserve Stripe's retry path until the owning invocation has completed.
+      // A crashed invocation's five-minute lease can then be reclaimed safely.
+      return processingInProgress();
     }
 
     if (!SUPPORTED_EVENT_TYPES.has(event.type)) {
       await ignoreBillingEvent({
-        eventId: receipt.id,
+        claim,
         reasonCode: "event_type_not_actionable",
         reasonMessage: "The signed event type is not used by this application.",
       });
@@ -115,7 +131,7 @@ export async function POST(request: Request) {
     invoice = resolved.invoice;
     if (resolved.disposition === "ignore") {
       await ignoreBillingEvent({
-        eventId: receipt.id,
+        claim,
         reasonCode: resolved.reasonCode,
         reasonMessage: resolved.reasonMessage,
         ...resolved.invoice,
@@ -125,11 +141,13 @@ export async function POST(request: Request) {
 
     accountId = resolved.accountId;
     await applyStripeSubscriptionEvent({
-      eventId: receipt.id,
+      claim,
       providerEventId: event.id,
       providerEventType: event.type,
       projection: resolved.projection,
+      projectionGeneration: resolved.projectionGeneration,
       eventOccurredAt: secondsToDate(event.created, "event_created_invalid"),
+      checkoutAttempt: resolved.checkoutAttempt,
       ...resolved.invoice,
       requestId: currentRequestId,
     });
@@ -137,26 +155,31 @@ export async function POST(request: Request) {
   } catch (error) {
     if (!receipt || !event) return preReceiptError(error);
 
+    if (error instanceof WebhookProcessingError && error.accountId) {
+      accountId = error.accountId;
+    }
     const failure = safeFailure(error);
-    try {
-      await failBillingEvent({
-        eventId: receipt.id,
-        providerEventId: event.id,
-        providerEventType: event.type,
-        errorCode: failure.code,
-        errorMessage: failure.message,
-        accountId,
-        ...invoice,
-        requestId: currentRequestId,
-      });
-    } catch {
-      // Deliberately omit the thrown database error: runtime errors can contain
-      // statements or bound values. The opaque event ID is enough to reconcile.
-      console.error("Stripe webhook failure could not be recorded", {
-        providerEventId: event.id,
-        providerEventType: event.type,
-        errorCode: failure.code,
-      });
+    if (claim) {
+      try {
+        await failBillingEvent({
+          claim,
+          providerEventId: event.id,
+          providerEventType: event.type,
+          errorCode: failure.code,
+          errorMessage: failure.message,
+          accountId,
+          ...invoice,
+          requestId: currentRequestId,
+        });
+      } catch {
+        // Deliberately omit the thrown database error: runtime errors can contain
+        // statements or bound values. The opaque event ID is enough to reconcile.
+        console.error("Stripe webhook failure could not be recorded", {
+          providerEventId: event.id,
+          providerEventType: event.type,
+          errorCode: failure.code,
+        });
+      }
     }
     console.error("Stripe webhook processing failed", {
       providerEventId: event.id,
@@ -170,24 +193,83 @@ export async function POST(request: Request) {
 async function resolveEvent(event: StripeEvent): Promise<ResolvedEvent> {
   const source = event.data.object;
   if (event.type === "checkout.session.completed") {
-    if (source.mode !== undefined && source.mode !== "subscription") {
-      return ignored(
-        "checkout_not_subscription",
-        "The Checkout event is outside the SaaS subscription flow.",
-      );
-    }
-    const checkoutAccountId = combineAccountReferences([
-      stringValue(source.client_reference_id),
-      metadataAccountId(source),
-    ]);
-    const subscriptionId = objectId(source.subscription);
-    if (!checkoutAccountId || !subscriptionId) {
+    const lookupAttemptId = checkoutAttemptLookupIdentifier(
+      metadataCheckoutAttemptId(source),
+    );
+    const lookupSessionId = checkoutSessionIdentifier(source.id);
+    const localAttempt =
+      lookupAttemptId || lookupSessionId
+        ? await resolveCheckoutAttemptForSignedWebhook({
+            attemptId: lookupAttemptId,
+            providerSessionId: lookupSessionId,
+          })
+        : null;
+
+    // Checkout events outside this application's durable attempt ledger are
+    // intentionally acknowledged without making a provider API request. If a
+    // local reference exists, every shape/ownership failure below is retryable
+    // and associated with that verified local account for reconciliation.
+    if (!localAttempt) {
       return ignored(
         "checkout_not_owned",
-        "The Checkout event has no server-issued account and subscription reference.",
+        "The Checkout event does not reference a local server-issued attempt.",
+      );
+    }
+    if (source.mode !== "subscription" || source.status !== "complete") {
+      throw localCheckoutError(
+        "checkout_shape_invalid",
+        "The local Checkout completion has an invalid mode or status.",
+        localAttempt.accountId,
+      );
+    }
+    let checkoutAccountId: string | null;
+    let checkoutAttemptId: string | null;
+    let checkoutPriceId: string | null;
+    try {
+      checkoutAccountId = combineAccountReferences([
+        stringValue(source.client_reference_id),
+        metadataAccountId(source),
+      ]);
+      checkoutAttemptId = combineCheckoutAttemptReferences([
+        metadataCheckoutAttemptId(source),
+      ]);
+      checkoutPriceId = combineCheckoutPriceReferences([
+        metadataPriceId(source),
+      ]);
+    } catch (error) {
+      throw associateLocalCheckoutError(error, localAttempt.accountId);
+    }
+    const providerSessionId = checkoutSessionIdentifier(source.id);
+    const subscriptionId = subscriptionIdentifier(source.subscription);
+    if (
+      !checkoutAccountId ||
+      !checkoutAttemptId ||
+      !checkoutPriceId ||
+      !providerSessionId ||
+      !subscriptionId
+    ) {
+      throw localCheckoutError(
+        "checkout_ownership_metadata_missing",
+        "The local Checkout completion has incomplete ownership references.",
+        localAttempt.accountId,
+      );
+    }
+    if (
+      checkoutAccountId !== localAttempt.accountId ||
+      checkoutAttemptId !== localAttempt.id ||
+      checkoutPriceId !== localAttempt.providerPriceId ||
+      (localAttempt.providerSessionId !== null &&
+        providerSessionId !== localAttempt.providerSessionId)
+    ) {
+      throw localCheckoutError(
+        "checkout_local_reference_mismatch",
+        "The local Checkout completion does not match its durable attempt.",
+        localAttempt.accountId,
       );
     }
 
+    const projectionGeneration =
+      await reserveStripeSubscriptionProjectionGeneration(subscriptionId);
     const subscription = await retrieveSubscription(subscriptionId);
     ensureSameIdentifier(subscriptionId, subscription.id, "subscription_id_mismatch");
     ensureSameOptionalIdentifier(
@@ -196,16 +278,58 @@ async function resolveEvent(event: StripeEvent): Promise<ResolvedEvent> {
       "customer_id_mismatch",
     );
     const accountId = requireAccountOwnership(subscription, checkoutAccountId);
+    const subscriptionAttemptId = combineCheckoutAttemptReferences([
+      checkoutAttemptId,
+      metadataCheckoutAttemptId(subscription),
+    ]);
+    const subscriptionPriceId = combineCheckoutPriceReferences([
+      checkoutPriceId,
+      metadataPriceId(subscription),
+    ]);
+    const projection = parseSubscriptionProjection(subscription, accountId);
+    if (
+      !subscriptionAttemptId ||
+      !subscriptionPriceId ||
+      subscriptionPriceId !== projection.providerPriceId
+    ) {
+      throw localCheckoutError(
+        "checkout_metadata_mismatch",
+        "The Checkout and subscription ownership metadata do not match.",
+        localAttempt.accountId,
+      );
+    }
+    await requireCheckoutAttemptForCompletion({
+      accountId,
+      attemptId: subscriptionAttemptId,
+      providerSessionId,
+      providerCustomerId: projection.providerCustomerId,
+      providerPriceId: projection.providerPriceId,
+    });
     return processed(
-      parseSubscriptionProjection(subscription, accountId),
+      projection,
       emptyInvoiceSummary(),
+      projectionGeneration,
+      {
+        attemptId: subscriptionAttemptId,
+        providerSessionId,
+        providerCreatedAt: optionalSecondsToDate(source.created),
+      },
     );
   }
 
   if (event.type.startsWith("customer.subscription.")) {
     const eventAccountId = metadataAccountId(source);
-    const subscription = await retrieveSubscription(source.id);
-    ensureSameIdentifier(source.id, subscription.id, "subscription_id_mismatch");
+    const subscriptionId = safeIdentifier(source.id);
+    if (!subscriptionId) {
+      throw new WebhookProcessingError(
+        "subscription_id_missing",
+        "The subscription reference is unavailable.",
+      );
+    }
+    const projectionGeneration =
+      await reserveStripeSubscriptionProjectionGeneration(subscriptionId);
+    const subscription = await retrieveSubscription(subscriptionId);
+    ensureSameIdentifier(subscriptionId, subscription.id, "subscription_id_mismatch");
     const accountId = combineAccountReferences([
       eventAccountId,
       metadataAccountId(subscription),
@@ -219,6 +343,7 @@ async function resolveEvent(event: StripeEvent): Promise<ResolvedEvent> {
     return processed(
       parseSubscriptionProjection(subscription, accountId),
       emptyInvoiceSummary(),
+      projectionGeneration,
     );
   }
 
@@ -236,6 +361,8 @@ async function resolveEvent(event: StripeEvent): Promise<ResolvedEvent> {
     metadataAccountId(source),
     invoiceSubscriptionMetadataAccountId(source),
   ]);
+  const projectionGeneration =
+    await reserveStripeSubscriptionProjectionGeneration(subscriptionId);
   const subscription = await retrieveSubscription(subscriptionId);
   ensureSameIdentifier(subscriptionId, subscription.id, "subscription_id_mismatch");
   ensureSameOptionalIdentifier(
@@ -254,18 +381,29 @@ async function resolveEvent(event: StripeEvent): Promise<ResolvedEvent> {
       summary,
     );
   }
-  return processed(parseSubscriptionProjection(subscription, accountId), summary);
+  return processed(
+    parseSubscriptionProjection(subscription, accountId),
+    summary,
+    projectionGeneration,
+  );
 }
 
 function parseSubscriptionProjection(
   subscription: JsonObject,
   accountId: string,
 ): StripeSubscriptionProjection {
-  const configuredPriceId = process.env.STRIPE_SOLO_PRICE_ID?.trim();
-  if (!configuredPriceId) {
+  const billingPolicy = readBillingPolicy({
+    STRIPE_CHECKOUT_PRICE_ID: process.env.STRIPE_CHECKOUT_PRICE_ID,
+    STRIPE_RECOGNIZED_PRICE_IDS: process.env.STRIPE_RECOGNIZED_PRICE_IDS,
+    SUBSCRIPTION_ENTITLEMENT_PRICE_IDS:
+      process.env.SUBSCRIPTION_ENTITLEMENT_PRICE_IDS,
+    SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS:
+      process.env.SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS,
+  });
+  if (!billingPolicy) {
     throw new WebhookProcessingError(
       "billing_price_not_configured",
-      "The approved billing price is not configured.",
+      "The billing Price policy is not configured.",
     );
   }
 
@@ -273,22 +411,24 @@ function parseSubscriptionProjection(
   const items = Array.isArray(itemsContainer?.data)
     ? itemsContainer.data.map(objectValue).filter(isPresent)
     : [];
-  const configuredItems = items.filter(
-    (item) => objectId(objectValue(item.price)) === configuredPriceId,
-  );
-  if (items.length !== 1 || configuredItems.length !== 1) {
+  if (items.length !== 1) {
     throw new WebhookProcessingError(
       "subscription_price_mismatch",
-      "The subscription does not contain the configured SaaS price.",
+      "The subscription does not contain exactly one recognized SaaS Price.",
     );
   }
 
-  const item = configuredItems[0];
+  const item = items[0];
   const price = objectValue(item.price);
-  if (!price) {
+  const providerPriceId = objectId(price);
+  if (
+    !price ||
+    !providerPriceId ||
+    !billingPolicy.recognizedPriceIds.has(providerPriceId)
+  ) {
     throw new WebhookProcessingError(
-      "subscription_price_missing",
-      "The subscription price details are unavailable.",
+      "subscription_price_mismatch",
+      "The subscription Price is not recognized for provider synchronization.",
     );
   }
   const recurring = objectValue(price.recurring);
@@ -328,7 +468,7 @@ function parseSubscriptionProjection(
     accountId,
     providerCustomerId: customerId,
     providerSubscriptionId: subscriptionId,
-    providerPriceId: configuredPriceId,
+    providerPriceId,
     status,
     billingInterval: interval,
     currency,
@@ -491,6 +631,49 @@ function combineAccountReferences(
   return unique[0] ?? null;
 }
 
+function combineCheckoutAttemptReferences(
+  references: Array<string | null>,
+): string | null {
+  const present = references.filter(isPresent).map((value) => {
+    const identifier = safeIdentifier(value, 128);
+    if (!identifier || !/^[A-Za-z0-9_-]+$/.test(identifier)) {
+      throw new WebhookProcessingError(
+        "checkout_attempt_reference_invalid",
+        "The Checkout attempt reference is invalid.",
+      );
+    }
+    return identifier;
+  });
+  const unique = [...new Set(present)];
+  if (unique.length > 1) {
+    throw new WebhookProcessingError(
+      "checkout_attempt_reference_mismatch",
+      "The billing event contains conflicting Checkout attempt references.",
+    );
+  }
+  return unique[0] ?? null;
+}
+
+function combineCheckoutPriceReferences(
+  references: Array<string | null>,
+): string | null {
+  const present = references.filter(isPresent);
+  if (present.some((priceId) => !isStripePriceId(priceId))) {
+    throw new WebhookProcessingError(
+      "checkout_price_reference_invalid",
+      "The Checkout Price reference is invalid.",
+    );
+  }
+  const unique = [...new Set(present)];
+  if (unique.length > 1) {
+    throw new WebhookProcessingError(
+      "checkout_price_reference_mismatch",
+      "The billing event contains conflicting Checkout Price references.",
+    );
+  }
+  return unique[0] ?? null;
+}
+
 function accountIdentifier(value: string): string {
   const identifier = safeIdentifier(value, 128);
   if (!identifier) {
@@ -504,6 +687,51 @@ function accountIdentifier(value: string): string {
 
 function metadataAccountId(value: JsonObject): string | null {
   return stringValue(objectValue(value.metadata)?.account_id);
+}
+
+function metadataCheckoutAttemptId(value: JsonObject): string | null {
+  return stringValue(objectValue(value.metadata)?.checkout_attempt_id);
+}
+
+function metadataPriceId(value: JsonObject): string | null {
+  return stringValue(objectValue(value.metadata)?.price_id);
+}
+
+function checkoutAttemptLookupIdentifier(value: string | null): string | null {
+  const identifier = safeIdentifier(value, 128);
+  return identifier && /^[A-Za-z0-9_-]+$/.test(identifier)
+    ? identifier
+    : null;
+}
+
+function checkoutSessionIdentifier(value: unknown): string | null {
+  const identifier = safeIdentifier(value);
+  return identifier && /^cs_[A-Za-z0-9_]+$/.test(identifier)
+    ? identifier
+    : null;
+}
+
+function subscriptionIdentifier(value: unknown): string | null {
+  const identifier = objectId(value);
+  return identifier && /^sub_[A-Za-z0-9_]+$/.test(identifier)
+    ? identifier
+    : null;
+}
+
+function localCheckoutError(
+  code: string,
+  message: string,
+  accountId: string,
+): WebhookProcessingError {
+  return new WebhookProcessingError(code, message, accountId);
+}
+
+function associateLocalCheckoutError(
+  error: unknown,
+  accountId: string,
+): unknown {
+  if (!(error instanceof WebhookProcessingError)) return error;
+  return new WebhookProcessingError(error.code, error.safeMessage, accountId);
 }
 
 function invoiceSubscriptionMetadataAccountId(invoice: JsonObject): string | null {
@@ -537,12 +765,20 @@ function emptyInvoiceSummary(): InvoiceSummary {
 function processed(
   projection: StripeSubscriptionProjection,
   invoice: InvoiceSummary,
+  projectionGeneration: StripeSubscriptionProjectionGeneration,
+  checkoutAttempt: {
+    attemptId: string;
+    providerSessionId: string;
+    providerCreatedAt: Date | null;
+  } | null = null,
 ): ResolvedEvent {
   return {
     disposition: "process",
     projection,
+    projectionGeneration,
     accountId: projection.accountId,
     invoice,
+    checkoutAttempt,
   };
 }
 
@@ -655,6 +891,24 @@ function acknowledge(disposition: string, duplicate: boolean): Response {
   );
 }
 
+function processingInProgress(): Response {
+  return Response.json(
+    {
+      error: {
+        code: "billing_event_processing_in_progress",
+        message: "The billing event is already being processed. Retry later.",
+      },
+    },
+    {
+      status: 503,
+      headers: {
+        "Cache-Control": "no-store",
+        "Retry-After": "60",
+      },
+    },
+  );
+}
+
 function webhookError(status: number, code: string, message: string): Response {
   return Response.json(
     { error: { code, message } },
@@ -664,6 +918,9 @@ function webhookError(status: number, code: string, message: string): Response {
 
 function safeFailure(error: unknown): { code: string; message: string } {
   if (error instanceof BillingRepositoryError) {
+    return { code: error.code, message: error.safeMessage };
+  }
+  if (error instanceof CheckoutRepositoryError) {
     return { code: error.code, message: error.safeMessage };
   }
   if (error instanceof WebhookProcessingError) {

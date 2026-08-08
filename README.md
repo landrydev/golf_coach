@@ -58,7 +58,15 @@ Public, non-secret variables:
   trimmed, lowercased owner SIWC emails; never plaintext emails
 - `SUBSCRIPTION_ACCESS_STATUSES`: explicit comma-separated Stripe statuses that
   may use core product routes in `subscription_required` mode
-- `STRIPE_SOLO_PRICE_ID`: the exact approved Stripe recurring Price
+- `STRIPE_CHECKOUT_PRICE_ID`: the sole Price for new Checkout Sessions
+- `STRIPE_RECOGNIZED_PRICE_IDS`: current and historical Prices whose provider
+  events may update the local projection
+- `SUBSCRIPTION_ENTITLEMENT_PRICE_IDS`: explicit recognized-Price subset that
+  may grant core product access
+- `SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS`: required maximum signed-provider
+  projection age in subscription mode; the application selects no default
+- `STRIPE_CHECKOUT_SESSION_LIFETIME_SECONDS`: explicit Checkout lifetime from
+  1860 through 86400 seconds; the application selects no default
 - `BILLING_CHECKOUT_ENABLED`: fail-closed `true` only after exact price/policy approval
 
 Hosted secrets:
@@ -85,8 +93,8 @@ pepper, or email.
 The Worker applies this policy to instructor HTML, Vinext `.rsc` navigation,
 and APIs. `owner_private` covers every `/app` route and every non-public API.
 In `subscription_required`, billing, settings/profile, export, and privacy-data
-request controls remain reachable; other instructor surfaces require the latest
-signed-webhook subscription status to be explicitly allowed. Health, Stripe's
+request controls remain reachable; other instructor surfaces require a fresh
+signed-webhook subscription status and Price to be explicitly allowed. Health, Stripe's
 signed webhook, and golfer capability endpoints remain separate.
 
 ## Verification

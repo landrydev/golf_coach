@@ -20,7 +20,7 @@ const TEST_OWNER_EMAIL_DIGESTS = [
   "0b7bb0ebde3cf931a8c2c76cbce9b1ab5f66415d13dae9531b7c7114862abd75",
 ];
 
-export async function startD1Worker(bindingOverrides = {}) {
+export async function startD1Worker(bindingOverrides = {}, runtimeOptions = {}) {
   const common = {
     compatibilityDate: "2026-08-07",
     compatibilityFlags: ["nodejs_compat"],
@@ -37,6 +37,9 @@ export async function startD1Worker(bindingOverrides = {}) {
     },
     d1Databases: { DB: "roadmap-critical-journey" },
     r2Buckets: { MEDIA: "roadmap-critical-journey-media" },
+    ...(runtimeOptions.outboundService
+      ? { outboundService: runtimeOptions.outboundService }
+      : {}),
   };
   const miniflare = new Miniflare({
     ...common,
@@ -51,6 +54,11 @@ export async function startD1Worker(bindingOverrides = {}) {
     const migrations = await Promise.all(
       [...journal.entries]
         .sort((left, right) => left.idx - right.idx)
+        .filter(
+          (entry) =>
+            runtimeOptions.migrationThroughIndex === undefined ||
+            entry.idx <= runtimeOptions.migrationThroughIndex,
+        )
         .map((entry) =>
           readFile(resolve(projectRoot, `drizzle/${entry.tag}.sql`), "utf8"),
         ),
@@ -96,6 +104,9 @@ export async function startD1Worker(bindingOverrides = {}) {
           ...init,
           headers,
         });
+      },
+      database() {
+        return miniflare.getD1Database("DB");
       },
       async inspect(queries) {
         await miniflare.setOptions({

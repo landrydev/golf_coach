@@ -129,6 +129,14 @@ export const billingEventStatuses = [
   "ignored",
   "failed",
 ] as const;
+export const billingCheckoutAttemptStatuses = [
+  "reserved",
+  "open",
+  "completed_pending_sync",
+  "completed",
+  "expired",
+  "quarantined",
+] as const;
 export const dataRequestStatuses = [
   "submitted",
   "identity_verification_required",
@@ -292,6 +300,150 @@ export const instructorProfiles = sqliteTable(
   ],
 );
 
+export const billingCustomers = sqliteTable(
+  "billing_customers",
+  {
+    provider: text("provider").notNull(),
+    providerCustomerId: text("provider_customer_id").notNull(),
+    accountId: text("account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    primaryKey({
+      name: "billing_customers_provider_customer_pk",
+      columns: [table.provider, table.providerCustomerId],
+    }),
+    uniqueIndex("billing_customers_provider_account_unique").on(
+      table.provider,
+      table.accountId,
+    ),
+    uniqueIndex("billing_customers_tenant_reference_unique").on(
+      table.provider,
+      table.providerCustomerId,
+      table.accountId,
+    ),
+    check(
+      "billing_customers_provider_check",
+      sql`${table.provider} = 'stripe'`,
+    ),
+  ],
+);
+
+export const billingSubscriptionProjectionGenerations = sqliteTable(
+  "billing_subscription_projection_generations",
+  {
+    provider: text("provider").notNull(),
+    providerSubscriptionId: text("provider_subscription_id").notNull(),
+    generation: integer("generation").notNull().default(1),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    primaryKey({
+      name: "billing_subscription_projection_generations_provider_subscription_pk",
+      columns: [table.provider, table.providerSubscriptionId],
+    }),
+    check(
+      "billing_subscription_projection_generations_provider_check",
+      sql`${table.provider} = 'stripe'`,
+    ),
+    check(
+      "billing_subscription_projection_generations_generation_check",
+      sql`${table.generation} >= 1`,
+    ),
+  ],
+);
+
+export const billingCheckoutAttempts = sqliteTable(
+  "billing_checkout_attempts",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull().default("stripe"),
+    state: text("state", { enum: billingCheckoutAttemptStatuses })
+      .notNull()
+      .default("reserved"),
+    requestVersion: integer("request_version").notNull().default(1),
+    idempotencyKey: text("idempotency_key").notNull(),
+    providerPriceId: text("provider_price_id").notNull(),
+    applicationOrigin: text("application_origin").notNull(),
+    providerCustomerId: text("provider_customer_id"),
+    customerEmail: text("customer_email").notNull(),
+    providerSessionId: text("provider_session_id"),
+    providerCreatedAt: timestamp("provider_created_at"),
+    providerExpiresAt: timestamp("provider_expires_at").notNull(),
+    completedAt: timestamp("completed_at"),
+    expiredAt: timestamp("expired_at"),
+    lastErrorCode: text("last_error_code"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    foreignKey({
+      name: "billing_checkout_attempts_customer_tenant_fk",
+      columns: [
+        table.provider,
+        table.providerCustomerId,
+        table.accountId,
+      ],
+      foreignColumns: [
+        billingCustomers.provider,
+        billingCustomers.providerCustomerId,
+        billingCustomers.accountId,
+      ],
+    }).onDelete("no action"),
+    uniqueIndex("billing_checkout_attempts_provider_key_unique").on(
+      table.provider,
+      table.idempotencyKey,
+    ),
+    uniqueIndex("billing_checkout_attempts_provider_session_unique")
+      .on(table.provider, table.providerSessionId)
+      .where(sql`${table.providerSessionId} is not null`),
+    uniqueIndex("billing_checkout_attempts_one_blocking_per_account")
+      .on(table.provider, table.accountId)
+      .where(
+        sql`${table.state} in ('reserved', 'open', 'completed_pending_sync', 'quarantined')`,
+      ),
+    index("billing_checkout_attempts_expiry_idx").on(
+      table.state,
+      table.providerExpiresAt,
+    ),
+    check(
+      "billing_checkout_attempts_provider_check",
+      sql`${table.provider} = 'stripe'`,
+    ),
+    check(
+      "billing_checkout_attempts_state_check",
+      sql`${table.state} in ('reserved', 'open', 'completed_pending_sync', 'completed', 'expired', 'quarantined')`,
+    ),
+    check(
+      "billing_checkout_attempts_request_version_check",
+      sql`${table.requestVersion} = 1`,
+    ),
+    check(
+      "billing_checkout_attempts_expiry_check",
+      sql`${table.providerExpiresAt} > ${table.createdAt}`,
+    ),
+    check(
+      "billing_checkout_attempts_session_state_check",
+      sql`${table.state} not in ('open', 'completed_pending_sync', 'completed') or ${table.providerSessionId} is not null`,
+    ),
+    check(
+      "billing_checkout_attempts_completed_check",
+      sql`(${table.state} = 'completed' and ${table.completedAt} is not null) or (${table.state} <> 'completed' and ${table.completedAt} is null)`,
+    ),
+    check(
+      "billing_checkout_attempts_expired_check",
+      sql`(${table.state} = 'expired' and ${table.expiredAt} is not null) or (${table.state} <> 'expired' and ${table.expiredAt} is null)`,
+    ),
+  ],
+);
+
 export const subscriptions = sqliteTable(
   "subscriptions",
   {
@@ -325,10 +477,20 @@ export const subscriptions = sqliteTable(
     pauseEndsAt: timestamp("pause_ends_at"),
     endedAt: timestamp("ended_at"),
     lastProviderSyncAt: timestamp("last_provider_sync_at"),
+    projectionRevision: integer("projection_revision").notNull().default(1),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (table) => [
+    foreignKey({
+      name: "subscriptions_customer_tenant_fk",
+      columns: [table.provider, table.providerCustomerId, table.accountId],
+      foreignColumns: [
+        billingCustomers.provider,
+        billingCustomers.providerCustomerId,
+        billingCustomers.accountId,
+      ],
+    }).onDelete("no action"),
     uniqueIndex("subscriptions_account_id_unique").on(table.accountId, table.id),
     uniqueIndex("subscriptions_provider_subscription_unique")
       .on(table.provider, table.providerSubscriptionId)
@@ -382,10 +544,14 @@ export const billingEvents = sqliteTable(
     eventOccurredAt: timestamp("event_occurred_at"),
     receivedAt: timestamp("received_at").notNull().default(currentTimestampMs),
     processedAt: timestamp("processed_at"),
+    leaseToken: text("lease_token"),
+    leaseExpiresAt: timestamp("lease_expires_at"),
+    lastAttemptAt: timestamp("last_attempt_at"),
     processingAttempts: integer("processing_attempts").notNull().default(0),
     lastErrorCode: text("last_error_code"),
     lastErrorMessage: text("last_error_message"),
     createdAt: createdAt(),
+    updatedAt: updatedAt(),
   },
   (table) => [
     uniqueIndex("billing_events_provider_event_unique").on(

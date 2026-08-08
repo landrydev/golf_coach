@@ -15,6 +15,10 @@ interface Env {
   OWNER_PRIVATE_ACCESS_PEPPER?: string;
   OWNER_PRIVATE_EMAIL_DIGESTS?: string;
   SUBSCRIPTION_ACCESS_STATUSES?: string;
+  STRIPE_CHECKOUT_PRICE_ID?: string;
+  STRIPE_RECOGNIZED_PRICE_IDS?: string;
+  SUBSCRIPTION_ENTITLEMENT_PRICE_IDS?: string;
+  SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS?: string;
   IMAGES: {
     input(stream: ReadableStream): {
       transform(options: Record<string, unknown>): {

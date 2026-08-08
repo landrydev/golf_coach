@@ -25,6 +25,13 @@ const subscriptionStatuses = [
   "unpaid",
   "ended",
 ];
+const subscriptionPolicyBindings = {
+  STRIPE_CHECKOUT_PRICE_ID: "price_access_matrix",
+  STRIPE_RECOGNIZED_PRICE_IDS:
+    "price_access_matrix,price_historical_access",
+  SUBSCRIPTION_ENTITLEMENT_PRICE_IDS: "price_access_matrix",
+  SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS: "3600",
+};
 
 test(
   "owner-private policy covers instructor HTML, RSC, and APIs while public boundaries remain separate",
@@ -133,6 +140,7 @@ test(
     const worker = await startD1Worker({
       INSTRUCTOR_ACCESS_MODE: "subscription_required",
       SUBSCRIPTION_ACCESS_STATUSES: "active",
+      ...subscriptionPolicyBindings,
       OWNER_PRIVATE_ACCESS_PEPPER: "",
       OWNER_PRIVATE_EMAIL_DIGESTS: "",
     });
@@ -202,6 +210,7 @@ test(
     const worker = await startD1Worker({
       INSTRUCTOR_ACCESS_MODE: "subscription_required",
       SUBSCRIPTION_ACCESS_STATUSES: subscriptionStatuses.join(","),
+      ...subscriptionPolicyBindings,
       OWNER_PRIVATE_ACCESS_PEPPER: "",
       OWNER_PRIVATE_EMAIL_DIGESTS: "",
     });
@@ -219,12 +228,77 @@ test(
 );
 
 test(
+  "subscription access distinguishes explicit Price ineligibility from an uncertain provider projection",
+  { timeout: 90_000 },
+  async (context) => {
+    const worker = await startD1Worker({
+      INSTRUCTOR_ACCESS_MODE: "subscription_required",
+      SUBSCRIPTION_ACCESS_STATUSES: "active",
+      ...subscriptionPolicyBindings,
+      SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS: "60",
+      OWNER_PRIVATE_ACCESS_PEPPER: "",
+      OWNER_PRIVATE_EMAIL_DIGESTS: "",
+    });
+    context.after(() => worker.dispose());
+    const headers = identityHeaders(allowedOwner.email, allowedOwner.name);
+
+    await worker.dispatch("/api/profile", { headers });
+    await insertSubscription(worker, "active");
+    assert.equal(
+      (await worker.dispatch("/api/golfers", { headers })).status,
+      200,
+    );
+
+    await setSubscriptionProjection(
+      worker,
+      "price_historical_access",
+      Date.now(),
+    );
+    await assertCoreDecision(worker, headers, 402, "subscription_required");
+
+    await setSubscriptionProjection(worker, null, Date.now());
+    await assertCoreDecision(worker, headers, 503, "product_access_unavailable");
+
+    await setSubscriptionProjection(
+      worker,
+      "price_not_in_recognized_policy",
+      Date.now(),
+    );
+    await assertCoreDecision(worker, headers, 503, "product_access_unavailable");
+
+    await setSubscriptionProjection(worker, "price_access_matrix", null);
+    await assertCoreDecision(worker, headers, 503, "product_access_unavailable");
+
+    await setSubscriptionProjection(
+      worker,
+      "price_access_matrix",
+      Date.now() - 61_000,
+    );
+    await assertCoreDecision(worker, headers, 503, "product_access_unavailable");
+
+    await setSubscriptionProjection(
+      worker,
+      "price_access_matrix",
+      Date.now() + 60_000,
+    );
+    await assertCoreDecision(worker, headers, 503, "product_access_unavailable");
+
+    await setSubscriptionProjection(worker, "price_access_matrix", Date.now());
+    assert.equal(
+      (await worker.dispatch("/api/golfers", { headers })).status,
+      200,
+    );
+  },
+);
+
+test(
   "missing or invalid policy configuration fails closed and health reveals only readiness",
   { timeout: 60_000 },
   async (context) => {
     const worker = await startD1Worker({
       INSTRUCTOR_ACCESS_MODE: "subscription_required",
       SUBSCRIPTION_ACCESS_STATUSES: "active,unknown_status",
+      ...subscriptionPolicyBindings,
     });
     context.after(() => worker.dispose());
     const headers = identityHeaders(allowedOwner.email, allowedOwner.name);
@@ -245,16 +319,31 @@ test(
   },
 );
 
-async function insertSubscription(worker, status) {
+async function insertSubscription(
+  worker,
+  status,
+  {
+    priceId = "price_access_matrix",
+    lastProviderSyncAt = Date.now(),
+  } = {},
+) {
   await worker.inspect([
+    {
+      sql: `insert or ignore into billing_customers
+        (provider, provider_customer_id, account_id)
+        select 'stripe', 'cus_access_matrix', id
+          from accounts where normalized_email = ?`,
+      params: [allowedOwner.email],
+    },
     {
       sql: `insert into subscriptions
         (id, account_id, provider, provider_customer_id,
-         provider_subscription_id, provider_price_id, product_code, status)
+         provider_subscription_id, provider_price_id, product_code, status,
+         last_provider_sync_at)
         select 'sub_access_matrix', id, 'stripe', 'cus_access_matrix',
-               'stripe_sub_access_matrix', 'price_access_matrix', 'roadmap_solo', ?
+               'stripe_sub_access_matrix', ?, 'roadmap_solo', ?, ?
           from accounts where normalized_email = ?`,
-      params: [status, allowedOwner.email],
+      params: [priceId, status, lastProviderSyncAt, allowedOwner.email],
     },
   ]);
 }
@@ -266,6 +355,25 @@ async function setSubscriptionStatus(worker, status) {
       params: [status],
     },
   ]);
+}
+
+async function setSubscriptionProjection(worker, priceId, lastProviderSyncAt) {
+  await worker.inspect([
+    {
+      sql: `update subscriptions
+               set provider_price_id = ?, last_provider_sync_at = ?,
+                   updated_at = (cast((julianday('now') - 2440587.5) * 86400000 as integer))
+             where id = 'sub_access_matrix'`,
+      params: [priceId, lastProviderSyncAt],
+    },
+  ]);
+}
+
+async function assertCoreDecision(worker, headers, status, code) {
+  const response = await worker.dispatch("/api/golfers", { headers });
+  assert.equal(response.status, status);
+  assert.equal((await response.json()).error.code, code);
+  assertPrivate(response);
 }
 
 function assertPrivate(response) {
