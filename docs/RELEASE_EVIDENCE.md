@@ -126,9 +126,9 @@ an explicit operation, not routine redeployment behavior.
 
 - Final version 3 deployed successfully with environment revision 5 and remains the
   current live version at the recorded URL.
-- A signed-out request to `/` receives `401 Unauthorized` from the outer Sites access
-  policy with `Cache-Control: no-store` and `Referrer-Policy: no-referrer`, proving
-  the release is not anonymously reachable.
+- A fresh signed-out request after the version-3 deployment receives `401 Unauthorized`
+  from the outer Sites access policy with `Cache-Control: no-store` and
+  `Referrer-Policy: no-referrer`, proving the release is not anonymously reachable.
 - During the earlier immutable version-1 bootstrap,
   Sites' authenticated renderer recorded Worker `200` responses for `/`, `/.rsc`,
   and `/app.rsc`; the provider-generated production screenshot rendered the expected
