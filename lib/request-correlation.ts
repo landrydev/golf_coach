@@ -30,10 +30,18 @@ export function requestCorrelationId(request: Request): string {
 export function withTrustedRequestCorrelation(
   request: Request,
   requestId: string,
+  contentSecurityPolicy?: string,
 ): Request {
   const trustedRequestId = safeRequestCorrelationId(requestId);
   const headers = new Headers(request.headers);
   headers.delete("x-request-id");
+  // The application boundary owns the render nonce. A caller-supplied CSP or
+  // report-only policy must never select the nonce consumed by the framework.
+  headers.delete("content-security-policy");
+  headers.delete("content-security-policy-report-only");
+  if (contentSecurityPolicy) {
+    headers.set("content-security-policy", contentSecurityPolicy);
+  }
   headers.set(INTERNAL_REQUEST_ID_HEADER, trustedRequestId);
   return new Request(request, { headers });
 }

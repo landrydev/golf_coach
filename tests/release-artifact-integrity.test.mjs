@@ -26,6 +26,7 @@ test("the exact build keeps its generated prerender credential server-only", asy
   assert.equal(report.unexpectedCredentialCopies, 0);
   assert.equal(report.unexpectedCredentialPathCopies, 0);
   assert.equal(report.productionPrerenderBindingConfigured, false);
+  assert.equal(report.expectedSchedulerConfigured, true);
 });
 
 test("artifact audit rejects credential copies outside the server manifests without disclosing them", async (context) => {
@@ -94,6 +95,30 @@ test("artifact audit rejects production prerender configuration forms", async (c
   });
   const safeReport = await auditReleaseArtifacts(safeRoot);
   assert.equal(safeReport.productionPrerenderBindingConfigured, false);
+});
+
+test("artifact audit requires the exact packaged billing-recovery schedule", async (context) => {
+  for (const configuration of [
+    { triggers: { crons: [] } },
+    { triggers: { crons: ["0 * * * *"] } },
+    { triggers: { crons: ["*/5 * * * *", "0 * * * *"] } },
+    { vars: {} },
+  ]) {
+    const root = await createSyntheticArtifacts(context, configuration);
+    const report = await auditReleaseArtifacts(root);
+    assert.equal(report.expectedSchedulerConfigured, false);
+    assert.ok(
+      report.findings.some((finding) =>
+        finding.includes("expected billing-recovery schedule"),
+      ),
+    );
+  }
+
+  const root = await createSyntheticArtifacts(context, {
+    triggers: { crons: ["*/5 * * * *"] },
+  });
+  const report = await auditReleaseArtifacts(root);
+  assert.equal(report.expectedSchedulerConfigured, true);
 });
 
 test("archive entry validation rejects traversal, links, and portable-path collisions", () => {
@@ -245,7 +270,10 @@ async function createSyntheticReleaseFixture(context) {
     ),
     writeFile(path.join(dist, "client", "favicon.svg"), favicon),
     writeFile(path.join(dist, "server", "index.js"), "export default {};\n"),
-    writeFile(path.join(dist, "server", "wrangler.json"), '{"vars":{}}\n'),
+    writeFile(
+      path.join(dist, "server", "wrangler.json"),
+      '{"triggers":{"crons":["*/5 * * * *"]}}\n',
+    ),
     writeFile(path.join(dist, "server", "vinext-server.json"), manifest),
     writeFile(path.join(dist, "server", "ssr", "vinext-server.json"), manifest),
   ]);

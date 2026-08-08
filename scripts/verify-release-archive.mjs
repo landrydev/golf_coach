@@ -555,6 +555,8 @@ async function runCli() {
           report.artifactReport.unexpectedCredentialCopies,
         unexpectedCredentialPathCopies:
           report.artifactReport.unexpectedCredentialPathCopies,
+        expectedSchedulerConfigured:
+          report.artifactReport.expectedSchedulerConfigured,
         verificationMode: report.verificationMode,
       },
     );

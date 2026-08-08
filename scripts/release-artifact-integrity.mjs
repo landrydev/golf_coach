@@ -6,6 +6,7 @@ const EXPECTED_PRERENDER_MANIFESTS = [
   "server/vinext-server.json",
   "server/ssr/vinext-server.json",
 ];
+const EXPECTED_CRONS = ["*/5 * * * *"];
 
 export async function auditReleaseArtifacts(rootDirectory) {
   const root = path.resolve(rootDirectory);
@@ -77,6 +78,7 @@ export async function auditReleaseArtifacts(rootDirectory) {
 
   const workerConfigPath = path.join(root, "server", "wrangler.json");
   let productionPrerenderBindingConfigured = false;
+  let expectedSchedulerConfigured = false;
   try {
     const workerConfig = JSON.parse(await readFile(workerConfigPath, "utf8"));
     productionPrerenderBindingConfigured = containsConfigurationToken(
@@ -85,6 +87,17 @@ export async function auditReleaseArtifacts(rootDirectory) {
     );
     if (productionPrerenderBindingConfigured) {
       findings.push("server/wrangler.json: VINEXT_PRERENDER must not be configured for production");
+    }
+    expectedSchedulerConfigured =
+      Array.isArray(workerConfig.triggers?.crons) &&
+      workerConfig.triggers.crons.length === EXPECTED_CRONS.length &&
+      workerConfig.triggers.crons.every(
+        (cron, index) => cron === EXPECTED_CRONS[index],
+      );
+    if (!expectedSchedulerConfigured) {
+      findings.push(
+        "server/wrangler.json: expected billing-recovery schedule is missing or changed",
+      );
     }
   } catch {
     findings.push("server/wrangler.json: required packaged Worker configuration is missing or malformed");
@@ -98,6 +111,7 @@ export async function auditReleaseArtifacts(rootDirectory) {
     unexpectedCredentialCopies,
     unexpectedCredentialPathCopies,
     productionPrerenderBindingConfigured,
+    expectedSchedulerConfigured,
     findings: findings.map((finding) =>
       redactKnownCredentials(finding, credentialValues),
     ),
@@ -200,6 +214,7 @@ async function runCli() {
         report.unexpectedCredentialPathCopies,
       productionPrerenderBindingConfigured:
         report.productionPrerenderBindingConfigured,
+      expectedSchedulerConfigured: report.expectedSchedulerConfigured,
     });
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));

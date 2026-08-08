@@ -76,6 +76,8 @@ test(
       assert.equal(responses[1].status, 401);
       assert.equal(responses[2].status, 401);
 
+      const responseNonces = [];
+
       for (const response of responses) {
         assert.equal(response.headers.get("x-content-type-options"), "nosniff");
         assert.equal(response.headers.get("x-frame-options"), "DENY");
@@ -92,14 +94,50 @@ test(
         assert.deepEqual(policy.get("worker-src"), ["'none'"]);
         assert.deepEqual(policy.get("manifest-src"), ["'self'"]);
         assert.deepEqual(policy.get("connect-src"), ["'self'"]);
-        assert.ok(policy.get("script-src")?.includes("'unsafe-inline'"));
-        assert.ok(policy.get("script-src-elem")?.includes("'unsafe-inline'"));
+        const scriptNonce = requireScriptNonce(policy);
+        responseNonces.push(scriptNonce);
+        assert.ok(
+          policy.get("script-src-elem")?.includes(`'nonce-${scriptNonce}'`),
+        );
+        assert.equal(policy.get("script-src")?.includes("'unsafe-inline'"), false);
+        assert.equal(
+          policy.get("script-src-elem")?.includes("'unsafe-inline'"),
+          false,
+        );
         assert.equal(policy.get("script-src")?.includes("'unsafe-eval'"), false);
       }
+      assert.equal(
+        new Set(responseNonces).size,
+        responses.length,
+        "every response must receive a fresh CSP nonce",
+      );
 
       const html = await responses[0].text();
+      assert.match(responses[0].headers.get("cache-control") ?? "", /no-store/i);
       assert.match(html, /<script\b/i, "vinext currently emits an inline bootstrap");
+      assertAllScriptsUseResponseNonce(html, responses[0]);
       assert.doesNotMatch(html, /<base\b|<object\b|<embed\b|<iframe\b/i);
+    });
+
+    await context.test("client CSP headers cannot select the framework nonce", async () => {
+      const attackerNonce = "attackerSelectedNonce";
+      const response = await worker.dispatch("/", {
+        headers: {
+          accept: "text/html",
+          "content-security-policy": `script-src 'nonce-${attackerNonce}'`,
+          "content-security-policy-report-only":
+            `script-src 'nonce-${attackerNonce}'`,
+        },
+      });
+      assert.equal(response.status, 200);
+      const policy = parseCsp(
+        response.headers.get("content-security-policy") ?? "",
+      );
+      const responseNonce = requireScriptNonce(policy);
+      assert.notEqual(responseNonce, attackerNonce);
+      const html = await response.text();
+      assert.equal(html.includes(attackerNonce), false);
+      assertAllScriptsUseNonce(html, responseNonce);
     });
 
     await context.test("stored adversarial text is preserved as text and escaped when rendered", async () => {
@@ -479,6 +517,31 @@ function assertSecureCsp(response) {
   assert.deepEqual(policy.get("object-src"), ["'none'"]);
   assert.deepEqual(policy.get("frame-src"), ["'none'"]);
   assert.deepEqual(policy.get("frame-ancestors"), ["'none'"]);
+  requireScriptNonce(policy);
+  assert.equal(policy.get("script-src")?.includes("'unsafe-inline'"), false);
+  assert.equal(policy.get("script-src-elem")?.includes("'unsafe-inline'"), false);
+}
+
+function requireScriptNonce(policy) {
+  const nonceSources = (policy.get("script-src") ?? []).filter((source) =>
+    /^'nonce-[0-9a-f]{32}'$/i.test(source),
+  );
+  assert.equal(nonceSources.length, 1, "CSP must contain one strong script nonce");
+  return nonceSources[0].slice(7, -1);
+}
+
+function assertAllScriptsUseResponseNonce(html, response) {
+  const policy = parseCsp(response.headers.get("content-security-policy") ?? "");
+  assertAllScriptsUseNonce(html, requireScriptNonce(policy));
+}
+
+function assertAllScriptsUseNonce(html, nonce) {
+  const scripts = [...html.matchAll(/<script\b([^>]*)>/gi)];
+  assert.ok(scripts.length > 0, "rendered HTML must contain bootstrap scripts");
+  for (const [, attributes] of scripts) {
+    const match = attributes.match(/\bnonce=["']([^"']+)["']/i);
+    assert.equal(match?.[1], nonce, "every script must use the response CSP nonce");
+  }
 }
 
 async function collectRouteFiles(directory) {

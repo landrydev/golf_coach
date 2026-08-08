@@ -44,6 +44,31 @@ test("the Worker replaces client correlation claims before application routing",
   assert.equal(requestCorrelationId(directRequest), fallback);
 });
 
+test("the trusted request boundary replaces caller-supplied CSP nonce sources", async () => {
+  const { withTrustedRequestCorrelation } = await import(
+    "../lib/request-correlation.ts"
+  );
+  const incoming = new Request("https://roadmap.test/app", {
+    headers: {
+      "content-security-policy": "script-src 'nonce-attacker'",
+      "content-security-policy-report-only": "script-src 'nonce-attacker'",
+    },
+  });
+  const trustedPolicy =
+    "script-src 'self' 'nonce-0123456789abcdef0123456789abcdef'";
+  const trusted = withTrustedRequestCorrelation(
+    incoming,
+    crypto.randomUUID(),
+    trustedPolicy,
+  );
+
+  assert.equal(trusted.headers.get("content-security-policy"), trustedPolicy);
+  assert.equal(
+    trusted.headers.has("content-security-policy-report-only"),
+    false,
+  );
+});
+
 test(
   "an audited mutation persists the boundary ID and errors deny spoofed IDs",
   { timeout: 60_000 },

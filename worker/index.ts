@@ -50,6 +50,10 @@ const worker = {
     const startedAt = performance.now();
     const url = new URL(request.url);
     const applicationPath = normalizeApplicationPath(url.pathname);
+    const contentSecurityPolicy = contentSecurityPolicyForRequest(
+      request,
+      applicationPath,
+    );
 
     try {
       // Vinext's build-only prerender namespace must never be reachable from
@@ -71,6 +75,7 @@ const worker = {
           }),
           request,
           requestId,
+          contentSecurityPolicy,
         );
         emitRequestTelemetry({
           request,
@@ -91,6 +96,7 @@ const worker = {
           canonicalRequestResponse(canonicalDecision),
           request,
           requestId,
+          contentSecurityPolicy,
         );
         emitRequestTelemetry({
           request,
@@ -114,6 +120,7 @@ const worker = {
           productAccessDeniedResponse(accessDecision, request),
           request,
           requestId,
+          contentSecurityPolicy,
         );
         emitRequestTelemetry({
           request,
@@ -124,11 +131,16 @@ const worker = {
         return response;
       }
 
-      const trustedRequest = withTrustedRequestCorrelation(request, requestId);
+      const trustedRequest = withTrustedRequestCorrelation(
+        request,
+        requestId,
+        contentSecurityPolicy ?? undefined,
+      );
       const response = withSecurityHeaders(
         await handler.fetch(trustedRequest, env, ctx),
         request,
         requestId,
+        contentSecurityPolicy,
       );
       emitRequestTelemetry({
         request,
@@ -157,6 +169,7 @@ const worker = {
         ),
         request,
         requestId,
+        contentSecurityPolicy,
       );
       console.error("Worker request failed", {
         errorType: safeErrorType(error),
@@ -246,16 +259,15 @@ function withSecurityHeaders(
   response: Response,
   request: Request,
   requestId: string,
+  contentSecurityPolicy: string | null,
 ): Response {
   const headers = new Headers(response.headers);
   const requestUrl = new URL(request.url);
   const applicationPath = normalizeApplicationPath(requestUrl.pathname);
-  const isLocal = requestUrl.hostname === "localhost" || requestUrl.hostname === "127.0.0.1";
   const isInstructorPath =
     applicationPath === "/app" || applicationPath.startsWith("/app/");
   const isGolferPath =
     applicationPath === "/r" || applicationPath.startsWith("/r/");
-  const isBillingPage = applicationPath === "/app/billing";
   const isOperationalHealth = applicationPath === "/api/operations/health";
   const isPublicHealth = applicationPath === "/api/health";
 
@@ -283,35 +295,9 @@ function withSecurityHeaders(
     headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
   }
 
-  if (!isLocal) {
+  if (contentSecurityPolicy) {
     headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
-    headers.set(
-      "Content-Security-Policy",
-      [
-        // Vinext currently emits inline script elements for its RSC/hydration
-        // bootstrap. Keep those elements working, while CSP3-capable browsers
-        // independently block injected event-handler attributes. Replacing the
-        // element allowance requires a framework-propagated per-response nonce.
-        "default-src 'self'",
-        "base-uri 'none'",
-        "frame-ancestors 'none'",
-        isBillingPage
-          ? "form-action 'self' https://checkout.stripe.com https://billing.stripe.com"
-          : "form-action 'self'",
-        "img-src 'self' data: blob:",
-        "font-src 'self' data:",
-        "style-src 'self' 'unsafe-inline'",
-        "script-src 'self' 'unsafe-inline'",
-        "script-src-elem 'self' 'unsafe-inline'",
-        "script-src-attr 'none'",
-        "connect-src 'self'",
-        "frame-src 'none'",
-        "object-src 'none'",
-        "worker-src 'none'",
-        "manifest-src 'self'",
-        "upgrade-insecure-requests",
-      ].join("; "),
-    );
+    headers.set("Content-Security-Policy", contentSecurityPolicy);
   }
 
   return new Response(response.body, {
@@ -319,6 +305,45 @@ function withSecurityHeaders(
     statusText: response.statusText,
     headers,
   });
+}
+
+function contentSecurityPolicyForRequest(
+  request: Request,
+  applicationPath: string,
+): string | null {
+  const requestUrl = new URL(request.url);
+  if (
+    requestUrl.hostname === "localhost" ||
+    requestUrl.hostname === "127.0.0.1"
+  ) {
+    return null;
+  }
+
+  // Vinext 0.0.45 reads a nonce from the trusted request CSP and propagates it
+  // to its RSC/hydration bootstrap. Hex is a valid nonce-source value and a
+  // UUID v4 supplies fresh per-response entropy without retaining key material.
+  const nonce = crypto.randomUUID().replaceAll("-", "");
+  const isBillingPage = applicationPath === "/app/billing";
+  return [
+    "default-src 'self'",
+    "base-uri 'none'",
+    "frame-ancestors 'none'",
+    isBillingPage
+      ? "form-action 'self' https://checkout.stripe.com https://billing.stripe.com"
+      : "form-action 'self'",
+    "img-src 'self' data: blob:",
+    "font-src 'self' data:",
+    "style-src 'self' 'unsafe-inline'",
+    `script-src 'self' 'nonce-${nonce}'`,
+    `script-src-elem 'self' 'nonce-${nonce}'`,
+    "script-src-attr 'none'",
+    "connect-src 'self'",
+    "frame-src 'none'",
+    "object-src 'none'",
+    "worker-src 'none'",
+    "manifest-src 'self'",
+    "upgrade-insecure-requests",
+  ].join("; ");
 }
 
 function emitRequestTelemetry(input: {
