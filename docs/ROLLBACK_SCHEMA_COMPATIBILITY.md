@@ -1,8 +1,9 @@
 # Rollback artifact and schema-compatibility record
 
-**Status:** Exact current candidate and predecessors registered; version 7 is not an
-ordinary rollback target after version-8-or-later consent-governed use; hosted rollback and
-restore remain unexercised
+**Status:** Exact current candidate and predecessors registered; version 10 is not
+an ordinary rollback target from version 11 because it would regress the CSP
+security boundary, and version 7 remains forbidden after version-8-or-later
+consent-governed use; hosted rollback and restore remain unexercised
 **Last reconciled:** 2026-08-08
 **Related:** [Operations rollback procedure](OPERATIONS.md#rollback-procedure),
 [release evidence](RELEASE_EVIDENCE.md#exact-private-sites-release), and
@@ -19,22 +20,32 @@ or restore an exposed secret.
 
 | Field | Exact recorded value / status |
 |---|---|
-| Record ID | `RB-CANDIDATE-010` |
-| Candidate | `ROADMAP-SITES-V10-2026-08-08` |
-| Source and runtime release ID | `ae35ef25ed46563f6b8f09f5c22dc12581eff8b1` |
-| Local source package | Submitted archive; gzip SHA-256 `5d67423e253009714bebe85bba118ded922c9f6b30b926f2af7bd0e3d05cd953`; 2,965,930 bytes; 61 tar entries/49 files; all 10 migrations |
-| Sites archive content | `sha256:0534d35af6fcdd8a0f104c5bb21fab5edd0641ec952bd32ae7a3f9c024c62033`; 49 files; 6,737,920 bytes |
-| Saved Sites version | `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_1007b9b4ea8c8191968d55991abf374c` |
-| Successful deployment | `appgdep_6a779cabaec4819191b0cf1e815ce2e5`; deployment action succeeded at approximately `2026-08-08T21:16:38Z`; final status remained `succeeded`, provider `updated_at` `2026-08-08T21:17:13.525116+00:00` |
-| Environment revision used by that deployment | `12` |
+| Record ID | `RB-CANDIDATE-011` |
+| Candidate | `ROADMAP-SITES-V11-2026-08-08` |
+| Source and runtime release ID | `44670a64498779cf747914b4465380916a939301` |
+| Local source package | `outputs/roadmap-sites-v11-44670a6.tar.gz`; gzip SHA-256 `d88be6513bc58afd057d4a3fb3a6d64b744f7a5c359731ec9fc693a788e1fa0e`; 2,966,073 bytes; 61 tar entries/49 files; all 10 migrations |
+| Sites archive content | `sha256:d717035871790252548e7fff4e1192e590b73b7cabfe3f4c011d65ffe4493daa`; 49 files; 6,737,920 bytes |
+| Saved Sites version | `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_4c49cdec72bc8191aeece01f5689e51a` |
+| Successful deployment | `appgdep_6a77b01714b881918245bb5248349e0d`; final status `succeeded`, provider `updated_at` `2026-08-08T22:40:07.742084+00:00` |
+| Environment revision used by that deployment | `13` |
 | Access boundary | Owner-only at `https://roadmap-golf-coaching.aar-landry.chatgpt.site` |
-| Schema journal | `0000` through `0009`; no additional SQL migration or application/runtime source change appears relative to version 9; version 7 does not enforce the consent requirements introduced in version 8 and retained by the current candidate |
+| Schema and security behavior | Journal `0000` through `0009`. Version 11 binds framework scripts to per-response CSP nonces and removes `script-src 'unsafe-inline'`. Version 10 would reintroduce that directive, so unchanged SQL shape does not make it an ordinary rollback target. Version 7 also lacks the consent requirements introduced in version 8 and retained by the current candidate. |
 | Package-lock SHA-256 | `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d` |
-| Hosted containment/log continuity | Four post-v10 signed-out HTTPS probes returned `401` with `no-store`/`no-referrer`. The final 30-minute query at `2026-08-08T21:31:05.892Z`, after three expected five-minute boundaries, returned zero events and zero scheduled events. This strengthens the suspected scheduler gap but remains inconclusive because completeness and scheduled-event visibility are unconfirmed. Predecessor v9/v8 samples remain historical; none of this is rollback, authenticated-health, or redaction evidence. |
-| Local recovery observation | The post-deployment exact-version-10 runtime exercise applied all 10 migrations, covered 31/31 application tables, restored 2 synthetic tenants and 3 private synthetic objects, enforced child-process secret isolation, and matched snapshot SHA-256 `34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54`. This remains local synthetic evidence, not hosted/provider-native recovery. |
+| Hosted containment/log continuity | Four post-v11 signed-out probes from `2026-08-08T22:40:40.8612310Z` through `2026-08-08T22:40:42.0058063Z` returned `401` with `no-store`/`no-referrer`. A signed-in hosted browser was unavailable. The final 30-minute provider-log aggregate captured at `2026-08-08T22:58:53.646Z`, 19 minutes 23 seconds after deployment success and after the `22:45`, `22:50`, and `22:55` expected boundaries, returned exactly three events: `fetch=3`, `outcome ok=3`, `level info=3`, and `scheduled=0`. Its `errors_only` query returned one `fetch`/`info`/`ok` event with zero error fields; no raw events were emitted. The archive verifier separately confirmed the scheduler-manifest invariant. The aggregate strengthens the `OPS-CRON-001` suspicion but does not prove scheduler absence or error-free operation because provider-log completeness, scheduled-event visibility, and trigger metadata were unavailable. Predecessor v10/v9/v8 samples remain historical; none of this is rollback, authenticated-health, CSP-execution, redaction, or scheduler-operation evidence. |
+| Local recovery observation | The historical post-deployment exact-version-10 runtime exercise applied all 10 migrations, covered 31/31 application tables, restored 2 synthetic tenants and 3 private synthetic objects, enforced child-process secret isolation, and matched snapshot SHA-256 `34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54`. It was not rerun as a hosted or version-11 provider-native recovery exercise. |
 | Exercise status | **IMMUTABLE CANDIDATE REGISTERED; NOT ROLLBACK- OR HOSTED-RESTORE-TESTED** |
 
-### Prospective supply-control lineage
+### Current and precursor supply-control lineage
+
+Exact version-11 commit `44670a64498779cf747914b4465380916a939301` was
+checked in two detached clean worktrees. Each `npm ci --no-audit` installed 501
+locked packages and reported five blocked install scripts; each `npm run verify`
+passed 237/237 tests. Both builds had 49 files, the three controlled raw
+differences, and zero differences after strict allowlisted normalization. The
+production dependency audit reported zero vulnerabilities, and the integrity scan
+covered 259 source/evidence text files with zero findings while preserving
+historical Business Plan V1. This is exact-candidate normalized reproducibility,
+not byte identity or hosted rollback evidence.
 
 Commit `66f5203a913f01c8da20555feebdbb99152c052c` was checked in two independently
 created detached clean worktrees. Each `npm ci --no-audit` installed 501 locked
@@ -48,12 +59,33 @@ zero differences remained after normalization. This is normalized reproducibilit
 not byte identity. See the [successor reproducibility record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md).
 
 Exact commit `66f5203a...` remains unsaved and undeployed and is not a rollback
-target. Current version 10 is a later descendant that contains the comparator and LF
-control, but the exact-commit exercise does not become an independent two-build
-comparison of `ae35ef25...`. It does not alter the historical version-9 failed
-byte-identity result or prove hosted rollback/restore.
+target. Versions 10 and 11 are later deployed descendants with their own exact
+release evidence. The precursor exercise does not alter the historical version-9
+failed byte-identity result or prove hosted rollback/restore.
 
-### Immediate historical predecessor and potential rollback baseline
+### Immediate historical predecessor and prohibited routine rollback baseline
+
+| Field | Exact recorded value / status |
+|---|---|
+| Record ID | `RB-BASE-010` |
+| Candidate | `ROADMAP-SITES-V10-2026-08-08` |
+| Source and runtime release ID | `ae35ef25ed46563f6b8f09f5c22dc12581eff8b1` |
+| Local source package | `outputs/roadmap-sites-v10-ae35ef2.tar.gz`; gzip SHA-256 `5d67423e253009714bebe85bba118ded922c9f6b30b926f2af7bd0e3d05cd953`; 2,965,930 bytes; 61 tar entries/49 files; all 10 migrations |
+| Sites archive content hash | `sha256:0534d35af6fcdd8a0f104c5bb21fab5edd0641ec952bd32ae7a3f9c024c62033`; 49 files; 6,737,920 bytes |
+| Saved Sites version | `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_1007b9b4ea8c8191968d55991abf374c` |
+| Successful deployment | `appgdep_6a779cabaec4819191b0cf1e815ce2e5`; final status `succeeded`, provider `updated_at` `2026-08-08T21:17:13.525116+00:00` |
+| Environment revision used by that deployment | `12` |
+| Access boundary | Owner-only at `https://roadmap-golf-coaching.aar-landry.chatgpt.site` |
+| Schema journal | `0000` through `0009` |
+| Package-lock SHA-256 | `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d` |
+| Exercise status | **SUPERSEDED SUCCESSFUL DEPLOYMENT; V11-TO-V10 IS CLASS `B` SECURITY/BEHAVIORALLY AND VERSION 10 IS NOT A ROUTINE ROLLBACK TARGET** |
+
+Version 10 is retained as immutable historical evidence. It uses
+`script-src 'unsafe-inline'` rather than version 11's per-response CSP nonce
+boundary. Its unchanged schema journal is subordinate to that security regression
+and must not be used to label the overall v11-to-v10 path class `N`.
+
+### Earlier version-9 predecessor
 
 | Field | Exact recorded value / status |
 |---|---|
@@ -68,7 +100,7 @@ byte-identity result or prove hosted rollback/restore.
 | Access boundary | Owner-only at `https://roadmap-golf-coaching.aar-landry.chatgpt.site` |
 | Schema journal | `0000` through `0009` |
 | Package-lock SHA-256 | `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d` |
-| Exercise status | **SUPERSEDED SUCCESSFUL DEPLOYMENT; APPLICATION/SCHEMA CLASS `N` FROM V10, BUT NOT A TESTED OR APPROVED ROLLBACK TARGET** |
+| Exercise status | **SUPERSEDED SUCCESSFUL DEPLOYMENT; HISTORICAL V10-TO-V9 APPLICATION/SCHEMA CLASS `N`, BUT NOT A CURRENT TESTED OR APPROVED ROLLBACK TARGET** |
 
 ### Earlier version-8 predecessor
 
@@ -80,7 +112,7 @@ byte-identity result or prove hosted rollback/restore.
 (49 files; 6,737,920 bytes), saved version
 `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_01ba2d860b508191b4d104339921606d`,
 deployment `appgdep_6a775b172534819196391fd626e95aa3`, environment revision
-10, and journal `0000` through `0009`. It is not the immediate v10 rollback target
+10, and journal `0000` through `0009`. It is not the immediate v11 rollback target
 and remains unexercised for that purpose.
 
 ### Older privacy-incompatible predecessor
@@ -96,40 +128,45 @@ the Sites content hash is
 It is privacy-behaviorally forbidden as an ordinary target after version-8-or-later
 consent-governed use.
 
-The version-10 identifiers bind the current candidate. Version 9 is the immediate
-historical predecessor; versions 8, 7, and 6 are older predecessor evidence. No older
-version is a presumed safe target. These records do not prove that Sites can switch
-versions from environment revision 12, that an older application can safely operate
-on current hosted data/configuration, or that application/data recovery will succeed.
+The version-11 identifiers bind the current candidate. Version 10 is the immediate
+historical predecessor; versions 9, 8, 7, and 6 are older predecessor evidence. No
+older version is a presumed safe target. These records do not prove that Sites can
+switch versions from environment revision 13, that an older application can safely
+operate on current hosted data/configuration, or that application/data recovery will
+succeed.
 
 ## Current compatibility observation
 
-**Implemented exact-candidate evidence:** Sites version 10 is immutable at commit
-`ae35ef25ed46563f6b8f09f5c22dc12581eff8b1` with migration journal `0000`
-through `0009`. Git comparison proves no application/runtime source, package-lock,
-binding, or migration difference from version 9. The v10-to-v9 application/schema
-classification is therefore `N`; the provider switch and exact smoke remain
-unexercised, so this classification is not an approval to roll back. Migration
-`0008` rebuilds the abuse-rate-limit table to admit the
-two privacy-operator scopes; migration `0009` rebuilds the existing consent table
-with timestamp-consistency checks while preserving the column shape and indexes.
-The migration path preserves valid rows and fails atomically rather than replacing
-the original table when a contradictory row violates the new constraint.
+**Implemented exact-candidate evidence:** Sites version 11 is immutable at commit
+`44670a64498779cf747914b4465380916a939301` with migration journal `0000`
+through `0009`. It adds per-response CSP nonces for framework scripts and removes
+`script-src 'unsafe-inline'`. The v11-to-v10 database shape is unchanged, but the
+overall rollback classification is `B` because selecting version 10 would remove a
+mandatory security behavior and reintroduce `script-src 'unsafe-inline'`. The
+provider switch and exact smoke also remain unexercised. Version 10 is therefore
+neither a routine class-`N` target nor an approved rollback target.
 
-Version 9 has the same application/runtime source, package lock, bindings, runtime
-configuration contract, and schema journal. A controlled rollback must preserve the
-current secret values, owner-only access, and `BILLING_CHECKOUT_ENABLED=false`, and
-change only `RELEASE_ID` to
-`6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d`; do not restore environment revision 11
+The historical v10-to-v9 comparison found the same application/runtime source,
+package lock, bindings, runtime configuration contract, and schema journal for that
+past pair, supporting application/schema class `N` between those two releases. That
+fact does not classify or authorize a current v11-to-v9 action. Any version selection
+must preserve current secret values, owner-only access, and
+`BILLING_CHECKOUT_ENABLED=false`; do not restore an old environment revision
 wholesale. Application rollback is not D1/R2 data restore and does not undo or
 repeat the project-level `OWNER-SEC-001` SIWC credential rotation.
+
+Migration `0008` rebuilds the abuse-rate-limit table to admit the two
+privacy-operator scopes; migration `0009` rebuilds the existing consent table with
+timestamp-consistency checks while preserving the column shape and indexes. The
+migration path preserves valid rows and fails atomically rather than replacing the
+original table when a contradictory row violates the new constraint.
 
 The SQL structures are also backward-readable by version 7,
 but structural
 readability is not sufficient for a safe application rollback. Version 7 lacks the
 version-8 account `golfer_record` and golfer `roadmap_sharing` enforcement on
 ordinary reads, mutations, publication, token exchange, live sessions, and golfer
-responses. Once version 8, 9, or 10 has governed any real data or disclosure through those
+responses. Once version 8, 9, 10, or 11 has governed any real data or disclosure through those
 controls, selecting version 7 would remove a mandatory privacy/authorization
 boundary. The overall rollback is therefore class `B` behaviorally: ordinary
 rollback is forbidden; stop affected writes and use a tested forward fix or
@@ -137,11 +174,13 @@ controlled recovery. No hosted version switch or recovery exercise has been run.
 
 | From state | To target | Schema class | Current conclusion |
 |---|---|---|---|
-| Immutable Sites version 10 | Same saved version 10 | `N` | Existing successful private deployment proves deployability at that time, not rollback or restore |
-| Sites version 10 | `RB-BASE-009` / Sites version 9 | `N` application/schema; operationally unexercised | Application/runtime source, package lock, bindings, runtime configuration contract, and migration journal are unchanged. Preserve current secrets, owner-only access, and Checkout-off; change only `RELEASE_ID` to the exact v9 commit and run the complete smoke. **Not yet a tested or approved rollback target.** |
-| Sites version 10 | `RB-BASE-008` / Sites version 8 | `U` pending exact behavior/configuration classification | Version 8 is not the immediate baseline. Do not select it merely because the journal matches. |
-| Sites version 10 after any version-8-or-later consent-governed use | `RB-BASE-007` / Sites version 7 | `B` (behavioral; SQL structures are backward-readable) | **Ordinary rollback forbidden.** Version 7 lacks the required consent enforcement; use a tested forward fix or controlled recovery. |
-| Sites version 10 | Version 6 or any older predecessor | `B` / unsupported | Multiple behavior and evidence deltas are not an approved rollback path. Use a forward fix or tested recovery. |
+| Immutable Sites version 11 | Same saved version 11 | `N` | Existing successful private deployment proves deployability at that time, not rollback or restore |
+| Sites version 11 | `RB-BASE-010` / Sites version 10 | `B` security/behaviorally; schema shape unchanged | **Ordinary rollback forbidden.** Version 10 removes the per-response framework-script nonce boundary and reintroduces `script-src 'unsafe-inline'`. Use a tested forward fix or another explicitly classified recovery path. |
+| Sites version 11 | `RB-BASE-009` / Sites version 9 | `B` / unsupported as a current rollback path | Skips the immediate predecessor and does not preserve version 11's CSP nonce behavior. Historical v10-to-v9 class `N` does not authorize this action. |
+| Historical Sites version 10 | `RB-BASE-009` / Sites version 9 | `N` application/schema for that historical pair; operationally unexercised | Preserved compatibility evidence only. It is not a current v11 rollback route and neither release is approved as a routine target. |
+| Sites version 11 | `RB-BASE-008` / Sites version 8 | `U` pending exact behavior/configuration classification | Version 8 is not the immediate baseline. Do not select it merely because the journal matches. |
+| Sites version 11 after any version-8-or-later consent-governed use | `RB-BASE-007` / Sites version 7 | `B` (behavioral; SQL structures are backward-readable) | **Ordinary rollback forbidden.** Version 7 lacks the required consent enforcement; use a tested forward fix or controlled recovery. |
+| Sites version 11 | Version 6 or any older predecessor | `B` / unsupported | Multiple security, behavior, and evidence deltas are not an approved rollback path. Use a forward fix or tested recovery. |
 | Undeployed successor source `66f5203a913f01c8da20555feebdbb99152c052c` | Any deployed version | Not applicable | Normalized build reproducibility alone does not create a saved runtime or rollback target. Do not use this source as a rollback action. |
 | Any future release with migration/configuration changes | Any predecessor | Unclassified | **Do not roll back** until the per-release matrix below is completed and exercised. |
 
@@ -183,9 +222,11 @@ customer identifiers in this record.
 2. Identify the currently running release, environment revision, D1 migration
    state, R2 inventory, Stripe backlog, and exact `RB-*` target.
 3. Confirm the compatibility record is complete. If class `B` or unknown, do not
-   select old code; choose a tested forward fix or controlled recovery. Version 7
-   is class `B` behaviorally after any version-8-or-later consent-governed use even though
-   migrations `0008` and `0009` remain structurally backward-readable.
+   select old code; choose a tested forward fix or controlled recovery. Version 10
+   is class `B` from version 11 because it would reintroduce
+   `script-src 'unsafe-inline'`; version 7 is also class `B` behaviorally after any
+   version-8-or-later consent-governed use even though migrations `0008` and `0009`
+   remain structurally backward-readable.
 4. Record the provider D1 pre-change bookmark/recovery point. Do not run reverse SQL.
 5. Redeploy/select the exact saved Sites version and apply only its compatible
    non-secret configuration. Preserve hosted secret values unless a separate
@@ -209,8 +250,11 @@ a migration is partially applied, tenant ownership/integrity is uncertain, conse
 or sharing enforcement would regress, capability/secret exposure exists, audit writes
 fail, deletion/export work is in flight without a safe state, Stripe events are
 unresolved, or the target/configuration hashes do not match. In particular, do not
-select version 7 after version 8, 9, or 10 has governed real records or disclosure; preserve
-the current state and use a tested forward fix or recovery path.
+select version 10 as an ordinary target from version 11, because doing so would
+remove the nonce-based framework-script boundary and restore
+`script-src 'unsafe-inline'`. Also do not select version 7 after version 8, 9, 10,
+or 11 has governed real records or disclosure. Preserve the current state and use a
+tested forward fix or recovery path.
 
 `[REAL-WORLD VALIDATION REQUIRED]` No hosted rollback, D1 Time Travel restore, R2
 recovery, measured RPO/RTO, or staffed execution is claimed. `OPS-EVID-001` remains

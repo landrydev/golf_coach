@@ -15,27 +15,34 @@ or proven by Roadmap.
 
 ## Current candidate boundary
 
-The current recorded candidate is owner-private Sites version 10 at source/runtime
-release `ae35ef25ed46563f6b8f09f5c22dc12581eff8b1`, saved version
-`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_1007b9b4ea8c8191968d55991abf374c`,
-deployment `appgdep_6a779cabaec4819191b0cf1e815ce2e5`, and environment
-revision `12`; final deployment status is `succeeded` with provider `updated_at`
-`2026-08-08T21:17:13.525116Z`.
-Its 61-entry local release archive is 2,965,930 bytes with gzip SHA-256
-`5d67423e253009714bebe85bba118ded922c9f6b30b926f2af7bd0e3d05cd953`;
+The current recorded candidate is owner-private Sites version 11 at source/runtime
+release `44670a64498779cf747914b4465380916a939301`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_4c49cdec72bc8191aeece01f5689e51a`,
+deployment `appgdep_6a77b01714b881918245bb5248349e0d`, and environment
+revision `13`; final deployment status is `succeeded` with provider `updated_at`
+`2026-08-08T22:40:07.742084+00:00`.
+Its 61-entry/49-file local release archive is 2,966,073 bytes, contains all 10
+migrations, and has gzip SHA-256
+`d88be6513bc58afd057d4a3fb3a6d64b744f7a5c359731ec9fc693a788e1fa0e`;
 the Sites content hash is
-`sha256:0534d35af6fcdd8a0f104c5bb21fab5edd0641ec952bd32ae7a3f9c024c62033`
+`sha256:d717035871790252548e7fff4e1192e590b73b7cabfe3f4c011d65ffe4493daa`
 across 49 files and 6,737,920 bytes. Sites version 9 is the immediate historical
-predecessor but is not a tested or approved version-10 rollback target. Version 7 remains privacy-behaviorally forbidden
+predecessor of version 10; version 10 is the immediate predecessor of version 11.
+Because version 11 replaces script `'unsafe-inline'` with per-response nonces,
+version-11-to-10 rollback would be a security/behavior regression rather than class
+`N` and is not a tested or approved target. Version 7 remains privacy-behaviorally forbidden
 as an ordinary target after version-8-or-later consent-governed use.
 
-Exact-version-10 build, lint, strict types, and 234/234 tests passed in three complete
-runs. Its local
-capacity exercise completed 54 synthetic requests with zero failures, and its local
-recovery exercise matched 2 synthetic tenants and 3 objects after all 10 migrations.
-These do not supply an approved SLO, hosted capacity, production recovery, or
-real-user measurement result. Historical version-9 smoke recorded plain HTTP `/`
-redirecting to HTTPS. After version 10 deployed, signed-out HTTPS requests to `/`,
+Both exact-version-11 clean installs contained 501 packages with the same five
+blocked install scripts and passed 237/237 verification. Their 49-file builds had
+three controlled raw differences and zero normalized differences. Release integrity
+inspected 259 source/evidence files with zero findings and preserved Business Plan V1;
+the production dependency audit reported zero vulnerabilities. Historical exact-v10
+local capacity completed 54 synthetic requests with zero failures, and historical
+local recovery matched 2 synthetic tenants and 3 objects after all 10 migrations.
+These do not supply an approved SLO, exact-v11 hosted capacity, production recovery,
+or real-user measurement result. Historical version-9 smoke recorded plain HTTP `/`
+redirecting to HTTPS. After version 11 deployed, signed-out HTTPS requests to `/`,
 `/app`, `/api/health`, and `/api/operations/health` each returned the outer
 owner-policy `401` with `Cache-Control: no-store` and
 `Referrer-Policy: no-referrer`.
@@ -60,9 +67,13 @@ working suspicion; provider support and trigger configuration are not confirmed.
 Do not use these samples as an analytics feed or depend on hosted scheduling for
 measurement.
 
-An exact-version-10 bounded provider-log sample returned zero events. It is
-inconclusive and does not supersede the historical version-8/version-9 observations
-or establish logs, scheduling, authenticated success, reliability, or alerting.
+The final exact-version-11 30-minute provider-log aggregate returned three
+`fetch`/`info`/`ok` events and zero observed `scheduled` events after three
+expected five-minute boundaries; its `errors_only` aggregate returned one
+`fetch`/`info`/`ok` event with zero error fields. No raw events were emitted. This
+strengthens the scheduler suspicion but does not establish log completeness or
+redaction, hosted scheduling or absence, authenticated success, reliability, or
+alerting. Historical version-8 through version-10 observations remain preserved.
 
 No authenticated browser journey, manual accessibility review, authorized real
 instructor/golfer protocol, or real-world measurement exists. Deep readiness remains
@@ -71,6 +82,11 @@ configuration is absent. None of these observations measures activation, usabili
 reliability over time, support burden, accessibility, or participant outcomes. This
 packet records no owner acceptance and authorizes no participant, analytics,
 public-access, or commercial activity.
+
+Version 11's nonce remediation passed automated coverage, but no supported signed-in
+hosted browser was available for CSP, hydration, navigation, or interaction retesting.
+`SEC-002` is **REMEDIATED — HOSTED RETEST PENDING**. Historical `OWNER-SEC-001`
+authorization is complete, while `SEC-001` remains **REMEDIATED — RETEST PENDING**.
 
 ## Recommended measurement dictionary
 

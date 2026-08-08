@@ -12,46 +12,56 @@ policy decision that has never been made is not made safe by calling it residual
 
 ## Current candidate scope
 
-These candidate risks are reconciled to owner-private Sites version 10 at
-source/runtime release `ae35ef25ed46563f6b8f09f5c22dc12581eff8b1`, local release
+These candidate risks are reconciled to owner-private Sites version 11 at
+source/runtime release `44670a64498779cf747914b4465380916a939301`, local release
 archive SHA-256
-`5d67423e253009714bebe85bba118ded922c9f6b30b926f2af7bd0e3d05cd953`,
+`d88be6513bc58afd057d4a3fb3a6d64b744f7a5c359731ec9fc693a788e1fa0e`
+(2,966,073 bytes; 61 entries/49 files; 10 migrations),
 Sites content hash
-`sha256:0534d35af6fcdd8a0f104c5bb21fab5edd0641ec952bd32ae7a3f9c024c62033`,
-saved version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_1007b9b4ea8c8191968d55991abf374c`,
-deployment `appgdep_6a779cabaec4819191b0cf1e815ce2e5`, and environment
-revision `12`; final status is `succeeded` with provider `updated_at`
-`2026-08-08T21:17:13.525116Z`. Sites version 9 and earlier remain historical predecessor evidence;
+`sha256:d717035871790252548e7fff4e1192e590b73b7cabfe3f4c011d65ffe4493daa`
+(49 files; 6,737,920 bytes), saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_4c49cdec72bc8191aeece01f5689e51a`,
+deployment `appgdep_6a77b01714b881918245bb5248349e0d`, and environment
+revision `13`; final status is `succeeded` with provider `updated_at`
+`2026-08-08T22:40:07.742084+00:00`. Sites version 10 and earlier remain historical predecessor evidence;
+version-11-to-10 rollback would reintroduce the prior script policy and is a
+security/behavior regression, not class `N`. In addition,
 the privacy-behavior boundary relative to version 7 is not an ordinary rollback
 target after consent-governed use. This identity record does not accept a risk or
 authorize public, real-user, or paid use.
 
 `RESP-001` and `HARNESS-001` are fixed and their source/test regressions passed
-in the exact-version-10 automated suite. The actual Chrome captures remain
-exact-version-9 source-equivalent evidence for the unchanged app/runtime UI, not
-an exact-version-10 browser, hosted, or manual retest. These are closed defects,
+in the exact-version-11 automated suite. The actual Chrome captures remain
+exact-version-9 renderer/layout-equivalent evidence for the unchanged UI/CSS only,
+not evidence of version-11 CSP, headers, authentication, hosted behavior, or a
+manual retest. These are closed defects,
 not candidate residual risks, and their closure does not replace hosted journey
 or manual accessibility evidence.
 
-Aaron authorized `OWNER-SEC-001` on 2026-08-08. A single value-safe Sites rotation
+Aaron authorized `OWNER-SEC-001` on 2026-08-08, and that historical authorization
+is complete. A single value-safe Sites rotation
 immediately invalidated the exposed prior bypass value under the provider contract;
 the replacement was not displayed, persisted, or used, and owner-only access remained
 unchanged. The original value was not replayed, the post-operation Worker sample was
 empty and inconclusive, and no signed-in owner browser was mounted. Accordingly,
 `SEC-001` is **REMEDIATED — RETEST PENDING**, not an eligible residual risk. See the
 [rotation evidence](release-evidence/ROADMAP-SITES-V9-2026-08-08-sec001-rotation.md).
-Version 10 retained that project-level containment: four signed-out HTTPS probes
-returned the outer owner-policy `401` with `no-store`/`no-referrer`; its bounded log
-sample contained zero events and was inconclusive, and no browser retest occurred.
+Version 11 retained that project-level containment: four no-credential HTTPS probes
+returned the outer owner-policy `401` with `no-store`/`no-referrer`; no supported
+signed-in owner browser retest occurred.
 
-Exact version-10 source commit `ae35ef25ed46563f6b8f09f5c22dc12581eff8b1`
-passed two distinct detached clean checkouts and locked installs, three complete
-234/234 verification runs, identical 49-file inventories, and strict allowlisted
+Version 11 also replaces script `'unsafe-inline'` with per-response CSP nonces.
+Automated coverage passed, but supported signed-in hosted-browser CSP, hydration,
+navigation, and interaction evidence is absent. `SEC-002` is **REMEDIATED — HOSTED
+RETEST PENDING**, not closed or eligible for residual-risk acceptance yet.
+
+Exact version-11 source commit `44670a64498779cf747914b4465380916a939301`
+passed two distinct detached clean checkouts and locked installs, two complete
+237/237 verification runs, identical 49-file inventories, and strict allowlisted
 generated-value normalization with zero remaining differences; each install contained
 501 packages and kept the same five install scripts blocked. `SUPPLY-EVID-001`
 therefore closes for the current candidate's normalized reproducibility control. The
-[exact version-10 record](release-evidence/ROADMAP-SITES-V10-2026-08-08.md)
-binds that result to the candidate. The separate
+exact version-11 release record binds that result to the candidate. The separate
 [precursor record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md)
 and version-9 byte-identity failure remain historical; none of these results
 establishes owner acceptance or rollback eligibility.
@@ -75,37 +85,41 @@ Ratings below are recommendations for review, not Aaron's decisions.
 
 | Risk | Proposed residual rating | Implemented containment/evidence | Required disposition and trigger |
 |---|---|---|---|
-| `RR-CSP-001`: vinext bootstrap currently requires CSP `'unsafe-inline'` for script elements | Medium | Exact v10 passed automated adversarial coverage; framework escaping, raw HTML/SVG exclusion, URL/input controls, no `unsafe-eval`, and inline script-attribute denial are implemented. No version-10 supported-browser deployed-CSP inspection exists. | Security owner reviews exact deployed CSP/test evidence. Revisit on vinext nonce/hash support, any XSS finding, CSP regression, or runtime change. |
 | `RR-CAP-001`: an intended golfer can forward a bearer capability | Medium | 256-bit verifier, HMAC fingerprint at rest, fragment/body exchange, short scoped session, neutral failures, expiry, rotation/revocation, no third-party analytics | Accept only after hosted exchange/revoke/session tests and approved sharing copy. Stop on token logging, cross-golfer access, unexplained forwarding harm, or inadequate revocation. |
-| `RR-PROVIDER-001`: Sites/Worker, SIWC, D1/R2, and deployment/control-plane concentration increases provider-exit impact | Medium | Versioned source/migrations, logical recovery path, immutable internal instructor IDs, private object metadata, and exact v10/v9/v8 artifacts are recorded. Exact v10 passed two independent clean builds with zero differences after strict allowlisted generated-value normalization; v9's earlier byte-identity failure remains historical. Local recovery passed, but no hosted rollback, restore, or portability exercise exists. | Name owner and portability cadence. Revisit on terms/region/support/cost/recovery failure, unsupported runtime, a future deterministic-build control failure, or failed export/restore/portability exercise. |
+| `RR-PROVIDER-001`: Sites/Worker, SIWC, D1/R2, and deployment/control-plane concentration increases provider-exit impact | Medium | Versioned source/migrations, logical recovery path, immutable internal instructor IDs, private object metadata, and exact v11/v10/v9/v8 artifacts are recorded. Exact v11 passed two independent clean builds with zero differences after strict allowlisted generated-value normalization; v9's earlier byte-identity failure remains historical. Historical local recovery passed, but no hosted rollback, restore, or portability exercise exists. | Name owner and portability cadence. Revisit on terms/region/support/cost/recovery failure, unsupported runtime, a future deterministic-build control failure, or failed export/restore/portability exercise. |
 | `RR-EXTERNAL-001`: Roadmap cannot verify the instructor's external booking/purchase/contact destination or outcome | Medium | HTTPS validation, preview, explicit leave-site warning, separate SaaS billing, no sale/booking attribution, visible ask/wait/decline choices | Confirm truthful copy and support owner. Stop on unsafe/misleading destination reports, pressure pattern, or user belief that Roadmap processed the coach transaction. |
 
 ## Items not currently eligible for residual-risk acceptance
 
 - `SEC-001` post-rotation retest: normal signed-in owner operation without a bypass
   header and a meaningful privacy-safe hosted log/redaction sample remain missing;
+- `SEC-002` hosted retest: exact version 11 removes script `'unsafe-inline'` through
+  per-response nonces, but a supported signed-in hosted browser has not verified CSP
+  enforcement, hydration, navigation, and representative interactions;
 - missing hosted identity/spoof/recovery evidence before public authentication;
 - missing qualified privacy/legal, retention/deletion, and public-copy decisions
   before real customer/golfer data;
 - absent approved consent-policy text/version/required choices and data-request
   operator allowlist/pepper configuration; deep readiness therefore remains degraded;
 - missing manual accessibility review where an undiscovered blocker may exist;
-  version-9 local 320/390/1440 captures are source-equivalent for the unchanged
-  app/runtime UI, while exact-v10 automated regression passed; neither body of evidence
+  version-9 local 320/390/1440 captures are renderer/layout-equivalent for the
+  unchanged UI/CSS only, while exact-v11 automated regression passed; neither body of evidence
   establish keyboard, screen-reader, real-zoom, device, or human acceptance;
 - `OPS-CRON-001`: suspected hosted scheduler deployment gap before paid operation.
-  A predecessor-v8 provider query contained 24 fetch events and zero scheduled
-  events across multiple expected intervals, and two bounded post-v9 queries
-  likewise surfaced fetch-only samples and no scheduled event. The bounded v10
-  sample returned zero events and is inconclusive. Log completeness,
+  Predecessor-v8 through v10 observations supplied no scheduled event. The final
+  exact-v11 30-minute aggregate returned three `fetch`/`info`/`ok` events, zero
+  observed `scheduled` events after three expected boundaries, and one
+  `errors_only` `fetch`/`info`/`ok` event with zero error fields. No raw events
+  were emitted. Multiple boundaries strengthen suspicion, but log completeness,
   scheduled-event visibility, and deployed-trigger metadata are unavailable, so
-  the defect is not confirmed and the evidence remains incomplete;
+  neither scheduler absence nor error-free operation is proved and the finding
+  remains open;
 - historical deterministic byte identity for v9. Its isolated immutable-commit export passed
   `npm ci --no-audit` (501 packages), built, and passed 229/229 tests, but the rebuilt
   `dist` did not byte-match the submitted archive: the Windows CRLF checkout changed
   migration/metadata bytes and content-hashed bundles. Line endings are consistent
   with the variance but are not proven to be its only cause. The repository LF rule
-  was added after the v9 runtime commit. Exact v10 now closes `SUPPLY-EVID-001` for
+  was added after the v9 runtime commit. Exact v11 now closes `SUPPLY-EVID-001` for
   the current normalized reproducibility control, but cannot retroactively prove v9
   byte identity;
 - missing hosted rollback/restore, authenticated health, alert, incident, and

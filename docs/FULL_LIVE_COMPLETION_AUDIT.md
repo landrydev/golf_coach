@@ -9,17 +9,17 @@
 
 The retired repository gates do not restrict implementation. The bounded V1 is
 implemented as a production Worker and exact commit
-`ae35ef25ed46563f6b8f09f5c22dc12581eff8b1` is deployed privately as owner-only
-Sites version 10 with environment revision 12. The full-live goal is **not complete**
+`44670a64498779cf747914b4465380916a939301` is deployed privately as owner-only
+Sites version 11 with environment revision 13. The full-live goal is **not complete**
 because authenticated hosted acceptance is still absent, the public
 commercial/policy inputs and exact consent/operator configuration are unresolved,
 controlled real operations and hosted recovery exercises are absent, and Aaron has
 not accepted an exact release.
 
 The saved version is
-`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_1007b9b4ea8c8191968d55991abf374c`;
-deployment `appgdep_6a779cabaec4819191b0cf1e815ce2e5` remains `succeeded`,
-with final provider status `updated_at` `2026-08-08T21:17:13.525116+00:00`.
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_4c49cdec72bc8191aeece01f5689e51a`;
+deployment `appgdep_6a77b01714b881918245bb5248349e0d` remains `succeeded`,
+with final provider status `updated_at` `2026-08-08T22:40:07.742084+00:00`.
 Checkout remains disabled and access remains owner-only.
 
 Aaron authorized `OWNER-SEC-001` on 2026-08-08, and one value-safe provider rotation
@@ -29,9 +29,14 @@ remained unchanged and four post-operation signed-out probes passed. The origina
 value was not replayed, the 15-minute post-operation log sample was empty and
 inconclusive, and no signed-in owner browser was mounted. `SEC-001` remains
 **REMEDIATED — RETEST PENDING**, while `AUTH-EVID-001` remains open. The later
-version-10 deployment neither reverses the project-level credential rotation nor
+version-11 deployment neither reverses the project-level credential rotation nor
 supplies the missing normal signed-in owner/log retest. See the
 [OWNER-SEC-001 rotation evidence](release-evidence/ROADMAP-SITES-V9-2026-08-08-sec001-rotation.md).
+
+Version 11 replaces the prior script-element `'unsafe-inline'` allowance with
+per-response CSP nonces. Exact automated coverage passed, but a supported signed-in
+hosted browser was unavailable for deployed CSP and hydration/interaction retesting.
+`SEC-002` is **REMEDIATED — HOSTED RETEST PENDING**, not closed.
 
 Those are evidence, operating, and owner-decision dependencies. They are not a
 reinstated design gate and they do not invalidate completed engineering evidence.
@@ -57,58 +62,60 @@ before paid operation; it does not by itself prove that Sites discarded the trig
 | Concurrency and lifecycle integrity | Revision CAS, tenant-scoped race-safe staged/full-authoring/package idempotency, single publish winner, profile-change and living-content publication/session invalidation, atomic practice-replacement retirement audits, idempotent revoke/session close, current-publication response guard, and atomic data-request/export-fallback deduplication | Automated evidence passed; formal external concurrency/load assessment remains |
 | SaaS billing | Server-controlled Checkout/Portal, durable single-attempt idempotency, account-operation leases, provider-authoritative expiry, durable reconciliation targets, pending-sync blocking, signed-webhook leases/replay/race healing, immutable customer ownership, explicit Price/entitlement/freshness policy, scheduled GET-only recovery with fairness/backoff/dead-letter handling, and stale-provider-read fencing | Automated local D1 evidence passed; Checkout remains disabled because exact commercial configuration, public Stripe webhook ingress, and controlled live reconciliation are absent |
 | Privacy lifecycle | Tenant export with pre-load record bounds and durable manual-request fallback; immutable versioned purpose grants/withdrawals with exact-text evidence; account `golfer_record` and golfer `roadmap_sharing` enforcement; atomic capability/session revocation; correction through product edits; truthful deletion-review status; bounded privacy-operator queue/marker; request deduplication; bounded request telemetry; and stable-identifier-free runtime log fields | Exact owner-approved consent policy/content versions and privacy-operator access configuration are absent, so deep readiness is intentionally degraded; destructive fulfillment, retention schedule, qualified review, hosted operator/log sampling, and backup expiry remain unresolved |
-| Accessibility and responsive behavior | Semantic/rendered checks, reusable focusable form-error summaries, and exact-commit local synthetic Chrome captures for landing/workspace/golfer at 320/390/1440 px; the capture review found and closed a 320 px golfer-header action compression defect | Local responsive retest passed without page-level horizontal overflow; interaction, human keyboard, screen reader, forced-colour, browser zoom, reduced-motion, supported-browser, real-device, and hosted acceptance remain outstanding |
-| Deployment and observability | Exact version 10 deployed owner-only from commit `ae35ef25ed46563f6b8f09f5c22dc12581eff8b1` and the recorded archives at environment revision 12; signed-out HTTPS `/`, `/app`, `/api/health`, and `/api/operations/health` each returned `401` with `no-store`/`no-referrer`; the final 30-minute query at `2026-08-08T21:31:05.892Z`, after the `21:20`, `21:25`, and `21:30` expected boundaries, returned zero events and zero scheduled events | Deployment and signed-out containment passed; the empty exact-v10 log sample strengthens the suspected scheduler gap but proves neither error-free operation, redaction, completeness, health, nor missing trigger because scheduled-event visibility is unconfirmed. Exact local browser evidence is synthetic, deep readiness remains degraded pending exact consent/operator configuration, and authenticated mounted-browser owner smoke, owner operational-health sampling, manual accessibility, alert delivery, and hosted scheduler proof remain pending |
+| Accessibility and responsive behavior | Semantic/rendered checks, reusable focusable form-error summaries, and historical exact-version-9 local synthetic Chrome captures for renderer/layout-equivalent landing/workspace/golfer UI and CSS at 320/390/1440 px; the capture review found and closed a 320 px golfer-header action compression defect | The historical local responsive retest passed without page-level horizontal overflow; it is not version-11 CSP, header, authentication, or security evidence. Interaction, human keyboard, screen reader, forced-colour, browser zoom, reduced-motion, supported-browser, real-device, and hosted acceptance remain outstanding |
+| Deployment and observability | Exact version 11 deployed owner-only from commit `44670a64498779cf747914b4465380916a939301` and the recorded archives at environment revision 13; signed-out HTTPS `/`, `/app`, `/api/health`, and `/api/operations/health` each returned `401` with `no-store`/`no-referrer`. The final exact-v11 30-minute aggregate returned three `fetch`/`info`/`ok` events, zero observed `scheduled` events after three expected boundaries, and one `errors_only` `fetch`/`info`/`ok` event with zero error fields; no raw events were emitted. | Version-11 deployment and signed-out containment passed. The bounded log result strengthens the suspected scheduler gap but proves neither version-11 error-free operation, log completeness/redaction, health, nor hosted scheduler invocation or absence because trigger metadata and scheduled-event visibility are unconfirmed. `SEC-002` nonce remediation still needs supported signed-in hosted-browser retesting. Exact local browser evidence is synthetic, deep readiness remains degraded pending exact consent/operator configuration, and authenticated mounted-browser owner smoke, owner operational-health sampling, manual accessibility, alert delivery, and hosted scheduler proof remain pending. |
 | Recoverability and operations | Runbooks document release, incident, D1 Time Travel, R2 limitations, rollback, support, and billing reconciliation; deterministic isolated D1/R2-compatible synthetic export/restore passed | Named owners, alert/cost exercises, hosted D1/R2 restore, rollback, and incident drills remain |
 | Commercial and public operation | `[PRICING HYPOTHESIS — REQUIRES VALIDATION]` and `[REAL-WORLD VALIDATION REQUIRED]` remain attached accurately | Exact offer, Stripe Price, tax/refund/failure/cancel/pause rules, domain, contacts, and policies require Aaron/external input |
 | Acceptance | No exact-release acceptance decision is recorded | `[OWNER INPUT REQUIRED]` |
 
-The in-app browser backend remained unavailable for the exact version-10 candidate.
-Version-9 local headless Chrome evidence covers the unchanged application/runtime
-source at its recorded commit, but it is predecessor evidence and does not supply
+The in-app browser backend remained unavailable for the exact version-11 candidate.
+Version-9 local headless Chrome evidence covers only the renderer/layout-equivalent
+UI and CSS at its recorded commit; it does not establish version-11 CSP, headers,
+authentication, or other Worker security behavior. It is predecessor evidence and does not supply
 authenticated hosted, manual accessibility, real-device, owner operational-health,
-or scheduler evidence for version 10. The empty version-10 log sample and the
-predecessor handled non-owner renderer event supply none of those missing categories.
+or scheduler evidence for version 11. The final bounded version-11 provider
+aggregate and predecessor samples supply no authenticated, complete-redaction,
+alert-delivery, or confirmed scheduler evidence for those missing categories.
 Version 9 and earlier provider observations remain historical predecessor evidence.
 
 ## Current candidate and inherited automated evidence
 
-- Exact version 10 uses source/runtime commit
-  `ae35ef25ed46563f6b8f09f5c22dc12581eff8b1`. Its submitted local archive has
-  SHA-256 `5d67423e253009714bebe85bba118ded922c9f6b30b926f2af7bd0e3d05cd953`,
-  is 2,965,930 bytes, and contains 61 entries/49 files and all ten migrations.
+- Exact version 11 uses source/runtime commit
+  `44670a64498779cf747914b4465380916a939301`. Its submitted local archive has
+  SHA-256 `d88be6513bc58afd057d4a3fb3a6d64b744f7a5c359731ec9fc693a788e1fa0e`,
+  is 2,966,073 bytes, and contains 61 entries/49 files and all ten migrations.
   The saved provider archive has content hash
-  `sha256:0534d35af6fcdd8a0f104c5bb21fab5edd0641ec952bd32ae7a3f9c024c62033`,
+  `sha256:d717035871790252548e7fff4e1192e590b73b7cabfe3f4c011d65ffe4493daa`,
   49 files, and 6,737,920 bytes.
-- Git comparison with version 9 shows no changes to application/runtime source,
-  schema/migrations, package lock, bindings, or runtime configuration contract.
-  Version 10 adds documentation, LF/reproducibility controls, verification tooling,
-  and a test-fixture clock stabilization; this equivalence is not hosted journey,
-  rollback, restore, or acceptance evidence.
-- Exact-version-10 verification passed lint, strict TypeScript, production build,
-  artifact checks, and 234/234 tests in the main release run and in each of two
-  detached clean worktrees. Each clean worktree installed 501 locked packages and
-  reported the same five blocked install scripts.
-- Exact-version-10 release integrity inspected 258 source/evidence text files,
+- Version 11 implements per-response script nonces and removes script
+  `'unsafe-inline'`. That is a security/behavior delta from version 10, so
+  version-11-to-10 rollback is a regression and not application class `N` even
+  though the migration journal remains unchanged.
+- Each of two exact-version-11 detached clean worktrees installed 501 locked
+  packages, reported the same five blocked install scripts, and passed the full
+  237/237 verification suite.
+- Exact-version-11 release integrity inspected 259 source/evidence text files,
   found zero secret findings, preserved Business Plan V1, and confirmed the lock
   SHA-256. `npm audit --omit=dev` reported zero known production vulnerabilities.
-- The two exact-version-10 clean builds produced identical 49-file inventories.
+- The two exact-version-11 clean builds produced identical 49-file inventories.
   Raw variation was limited to three validated generated-value files; strict
   allowlisted normalization left zero differences. This proves the recorded
   normalized-reproducibility control, not byte-for-byte identity.
-- A post-deployment exact-runtime rerun of `npm run db:generate` confirmed
+- Historical exact-version-10 local evidence includes a post-deployment
+  `npm run db:generate` result confirming
   31 tables and no migration drift. The local synthetic capacity exercise
   completed 54 requests at concurrency four with zero failures; the isolated
   recovery exercise applied all ten migrations, covered 31/31 tables, restored
   two synthetic tenants and three private objects, and matched snapshot SHA-256
   `34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54`.
-  These are local synthetic results, not hosted capacity, provider-native
+  These remain historical local synthetic results, not exact-version-11 hosted
+  capacity, provider-native
   recovery, RPO/RTO, SLO, or operator evidence.
 
 - The exact-version-9 runtime baseline `npm run verify` passed lint, strict
   TypeScript, production build, and 229/229 tests with zero failures, skips, or
   todos; preserve that result as predecessor evidence rather than relabelling it as
-  an exact-version-10 execution.
+  an exact-version-11 execution.
 - `npm run db:generate`: `No schema changes, nothing to migrate`; schema, journal,
   all ten migrations, and snapshots agree across 31 tables.
 - `npm run verify:release-integrity`: 252 source text files produced zero secret
@@ -136,19 +143,21 @@ Version 9 and earlier provider observations remain historical predecessor eviden
   the exact lock. The package-lock SHA-256 is
   `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d`.
 - `git diff --check` reported no whitespace errors (line-ending warnings only).
-- Focused version-9 regressions cover consent policy/lifecycle/enforcement/migration
+- Focused historical version-9 regressions cover consent policy/lifecycle/enforcement/migration
   and withdrawal races, privacy-operator access/pagination/abuse controls,
   full/package idempotency, handoff/share retry,
   living-content replacement and withdrawal, bounded lists/plan snapshots, export
   preflight/fallback, liveness versus operational readiness, telemetry/log privacy,
   CSP/input hardening, and the enforced production mutation audit-event matrix.
-- Exact-commit local Chrome captures at 320, 390, and 1440 px cover the landing,
+- Historical exact-version-9 local Chrome captures at 320, 390, and 1440 px cover the landing,
   instructor workspace, and golfer roadmap. All nine reported no page-level
-  horizontal overflow; they do not replace human or hosted accessibility evidence.
+  horizontal overflow. Their source-equivalence is limited to renderer/layout UI
+  and CSS; they do not verify version-11 CSP, headers, authentication, or other
+  security behavior and do not replace human or hosted accessibility evidence.
 
-### Exact-version-10 supply-control result and historical precursor
+### Exact-version-11 supply-control result and historical predecessors
 
-Exact version-10 commit `ae35ef25ed46563f6b8f09f5c22dc12581eff8b1`
+Exact version-11 commit `44670a64498779cf747914b4465380916a939301`
 passed the two-detached-worktree normalized-reproducibility exercise described
 above. Raw variation was confined to `server/index.js` and the two
 `vinext-server.json` manifests; strict normalization accepted only the validated
@@ -158,9 +167,9 @@ differences.
 Exact precursor commit `66f5203a913f01c8da20555feebdbb99152c052c`
 previously passed the same prospective control. Its
 [historical reproducibility record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md)
-remains separate, as does version 9's failed byte-identity result. The exact
-[version-10 release record](release-evidence/ROADMAP-SITES-V10-2026-08-08.md)
-binds the current control to the saved provider version and deployment.
+remains separate, as do the version-10 release record and version 9's failed
+byte-identity result. The exact version-11 release record binds the current control
+to the saved provider version and deployment.
 `SUPPLY-EVID-001` is closed only for this normalized-reproducibility scope; it
 does not prove byte-for-byte identity, public acceptance, rollback, or hosted
 restore.
@@ -182,10 +191,11 @@ Until the linked owner decisions and exercises are complete:
   and outbound messaging absent;
 - describe account deletion only as a review request, never as completed deletion;
 - do not treat D1 Time Travel or R2 durability as a completed backup/restore program;
-  and
 - keep the replacement SIWC bypass bearer unused and access owner-only; do not expand
   or accept the release until the `SEC-001` signed-in owner and meaningful hosted-log
-  retest passes.
+  retest passes;
+- do not close `SEC-002` until a supported signed-in hosted browser verifies the
+  nonce CSP, hydration, navigation, and representative interactions on exact version 11.
 
 ## Remaining completion sequence
 
@@ -193,7 +203,10 @@ Until the linked owner decisions and exercises are complete:
    journey that uses no bypass header and a meaningful privacy-safe hosted
    log/redaction sample. Then complete the broader hosted
    identity/header/spoof/session/recovery matrix under `AUTH-EVID-001`. Do not recover
-   or replay the original exposed value merely to manufacture a denial probe.
+   or replay the original exposed value merely to manufacture a denial probe. In the
+   same supported signed-in hosted browser, verify version 11's nonce CSP, hydration,
+   navigation, and representative interactions; keep `SEC-002` at **REMEDIATED —
+   HOSTED RETEST PENDING** until that passes.
 2. Record exact owner decisions for scope/design/copy, versioned consent purposes,
    privacy-operator assignment/access, public contacts, commercial consequences,
    privacy/retention/deletion, media exclusion, providers, public origin, and

@@ -1,6 +1,6 @@
 # Software supply-chain, SBOM, and license inventory
 
-**Status:** Reproducible inventory procedure plus exact Sites-version-10 lockfile,
+**Status:** Reproducible inventory procedure plus exact Sites-version-11 lockfile,
 package, integrity-scan, production-audit, two-clean-build normalized-
 reproducibility, and provider/deployment observations; not a legal opinion,
 vulnerability certification, exact deployed-archive SBOM, retroactive v9 rebuild,
@@ -13,15 +13,15 @@ declares direct intent
 
 ## Current inventory observation
 
-**Implemented exact-v10 evidence:** the committed lockfile is lockfile version 3 and has
+**Implemented exact-v11 evidence:** the committed lockfile is lockfile version 3 and has
 SHA-256 `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d` at
-version-10 source commit `ae35ef25ed46563f6b8f09f5c22dc12581eff8b1`. Its 712
+version-11 source commit `44670a64498779cf747914b4465380916a939301`. Its 712
 `node_modules/*` locations normalize to 676 unique `name@version` components.
 The built-in npm generator produced a CycloneDX 1.5 document with 676 components
 and an SPDX 2.3 document with 677 packages, including the application package.
-The lock digest is unchanged from versions 8 and 9. The retained full-lock artifacts under
+The lock digest is unchanged from versions 8, 9, and 10. The retained full-lock artifacts under
 `docs/release-evidence` therefore inventory the same exact locked graph, but keep
-their version-8 names and provenance; no version-9- or version-10-named SBOM
+their version-8 names and provenance; no version-9-, version-10-, or version-11-named SBOM
 regeneration is claimed:
 
 | Retained artifact | Bytes | SHA-256 |
@@ -35,7 +35,49 @@ platform-optional packages. They do not prove which components Sites placed in
 the deployed archive. Exact-release evidence must retain both the full-lock SBOM
 and a shipped-artifact inventory.
 
-### Exact Sites version 10 package, scan, and normalized-reproducibility observation
+### Exact Sites version 11 package, scan, and normalized-reproducibility observation
+
+| Field | Recorded result |
+|---|---|
+| Source/runtime release ID | `44670a64498779cf747914b4465380916a939301` |
+| Local package | `outputs/roadmap-sites-v11-44670a6.tar.gz`; gzip SHA-256 `d88be6513bc58afd057d4a3fb3a6d64b744f7a5c359731ec9fc693a788e1fa0e`; 2,966,073 bytes; 61 tar entries/49 files; ten migrations |
+| Sites package | Content hash `sha256:d717035871790252548e7fff4e1192e590b73b7cabfe3f4c011d65ffe4493daa`; 49 files; 6,737,920 bytes |
+| Saved/deployed version | `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_4c49cdec72bc8191aeece01f5689e51a`; deployment `appgdep_6a77b01714b881918245bb5248349e0d`; environment revision `13`; final status `succeeded`, provider `updated_at` `2026-08-08T22:40:07.742084+00:00`; owner-only URL unchanged |
+| Source release-integrity scan | 259 source/evidence text files inspected; zero findings; historical Business Plan V1 preserved; lockfile SHA-256 unchanged. Generated output and dependencies were intentionally excluded |
+| Exact archive audit | 61 safe entries/49 files and ten migrations matched the checked clean build; the scheduler-manifest invariant was true. This confirms packaged configuration, not hosted scheduler provisioning or execution |
+| Two-clean-build comparison | Two detached exact-commit worktrees each installed 501 locked packages, reported the same five blocked install scripts, and passed 237/237 tests. Both inventories had 49 files; raw differences were confined to three strictly validated generated-value files and zero differences remained after allowlisted normalization |
+| Production dependency audit | `npm audit --omit=dev` reported zero vulnerabilities on 2026-08-08 |
+
+The exact version-11 comparator retained the strict framework-generated-value
+boundaries: 49-file inventories, three controlled raw difference paths, and zero
+differences after allowlisted normalization. It recorded no generated value. This
+is normalized reproducibility, not byte-for-byte identity. The archive verifier
+and Sites package record bind the checked candidate to the saved version and
+successful revision-13 deployment; they do not prove provider-side byte identity,
+hosted scheduler operation, or create an exact shipped-artifact SBOM.
+
+A separate final provider-log aggregate was captured at
+`2026-08-08T22:58:53.646Z`, 19 minutes 23 seconds after deployment success and
+after the `22:45`, `22:50`, and `22:55` expected five-minute boundaries. Its
+30-minute broad window returned exactly three events: `fetch=3`, `outcome ok=3`,
+`level info=3`, and `scheduled=0`; the companion `errors_only` query returned one
+`fetch`/`info`/`ok` event with zero error fields. Neither query emitted raw events.
+This aggregate is not package-identity evidence. It strengthens the `OPS-CRON-001`
+suspicion but cannot prove scheduler absence or error-free operation because
+provider-log completeness, scheduled-event visibility, and trigger metadata were
+unavailable.
+
+Version 11 binds framework scripts to per-response CSP nonces and removes
+`script-src 'unsafe-inline'`. Four signed-out probes from
+`2026-08-08T22:40:40.8612310Z` through `2026-08-08T22:40:42.0058063Z` confirmed
+only the owner-policy `401`/`no-store`/`no-referrer` boundary. A signed-in hosted
+browser was unavailable, so hosted nonce-bearing HTML and framework-script
+execution remain uninspected.
+Version 10 is retained below as historical supply-chain evidence, not as an approved
+routine rollback target; selecting it from v11 would reintroduce
+`script-src 'unsafe-inline'`.
+
+### Historical exact Sites version 10 package, scan, and normalized-reproducibility observation
 
 | Field | Recorded result |
 |---|---|
@@ -52,8 +94,8 @@ The exact version-10 comparator required the framework UUID in exactly three
 anchored getter/ISR slots and required the two single-property 64-hex prerender
 manifests to match within each build. It recorded no generated value. This is
 normalized reproducibility, not byte-for-byte identity. The archive verifier and
-Sites package record bind the checked candidate to the saved version and successful
-revision-12 deployment; they do not prove provider-side byte identity or create an
+Sites package record bind the checked historical candidate to the saved version and
+successful revision-12 deployment; they do not prove provider-side byte identity or create an
 exact shipped-artifact SBOM. See the
 [exact version-10 release record](release-evidence/ROADMAP-SITES-V10-2026-08-08.md).
 
@@ -75,7 +117,7 @@ findings apply only to the tools, inputs, and advisory data used at verification
 time; they do not certify package provenance, absence of malicious behavior, legal
 compliance, provider configuration, or runtime safety. An exact shipped-artifact
 SBOM and qualified license-obligation review remain open. Sites versions 6, 7, 8,
-and 9 are retained as historical predecessor evidence in the release record.
+9, and 10 are retained as historical predecessor evidence in the release record.
 
 ### Historical exact v9 isolated clean-install and rebuild observation
 
@@ -125,10 +167,10 @@ At the time, this closed `SUPPLY-EVID-001` prospectively for normalized
 reproducibility of the precursor control. It did not establish byte-for-byte
 identity, retroactively reproduce deployed Sites version 9 commit
 `6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d`, or show that commit `66f5203` was
-deployed or reconciled to a provider package. Exact version 10 later repeated the
-two-clean-build comparison at its own immutable commit and separately bound the
-checked archive to a provider package and deployment; that evidence retains the
-same normalized-not-byte-identical limitation. See the
+deployed or reconciled to a provider package. Exact versions 10 and 11 later
+repeated the two-clean-build comparison at their own immutable commits and
+separately bound their checked archives to provider packages and deployments; that
+evidence retains the same normalized-not-byte-identical limitation. See the
 [successor normalized-reproducibility record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md).
 
 ### Direct production dependencies
