@@ -5,6 +5,7 @@ import {
   getWorkspaceSummary,
   listGolfers,
 } from "@/lib/repository";
+import { workspaceNextAction } from "@/lib/workspace-next-action";
 import styles from "./workspace.module.css";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +18,9 @@ export default async function WorkspaceOverview() {
     getWorkspaceSummary(account.id),
     listGolfers(account.id),
   ]);
-  const recent = recentGolfers.slice(0, 5);
+  const recent = recentGolfers
+    .filter((golfer) => golfer.status !== "archived")
+    .slice(0, 5);
 
   return (
     <div className={styles.page}>
@@ -73,12 +76,13 @@ export default async function WorkspaceOverview() {
                   <div>
                     <strong>{golfer.preferredName || golfer.displayName}</strong>
                     <span>{golfer.plan?.title || "No plan yet"}</span>
+                    <small>{workspaceNextAction(golfer).explanation}</small>
                     <small>Updated {new Date(golfer.updatedAt).toLocaleDateString("en-CA")}</small>
                   </div>
                   <div>
                     <span className={styles.status}>{golfer.plan?.status || golfer.status}</span>
                     <Link className={styles.textLink} href={`/app/golfers/${golfer.id}`}>
-                      Open
+                      {workspaceNextAction(golfer).label}
                     </Link>
                   </div>
                 </li>

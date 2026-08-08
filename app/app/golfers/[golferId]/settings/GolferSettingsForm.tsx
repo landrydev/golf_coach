@@ -1,8 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
+import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
 import styles from "../../../workspace.module.css";
+
+const ERROR_SUMMARY_ID = "golfer-settings-form-error-summary";
 
 export function GolferSettingsForm(props: {
   golferId: string;
@@ -14,11 +17,15 @@ export function GolferSettingsForm(props: {
   status: string;
 }) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
+  const summaryOnlyRef = useRef<HTMLFormElement>(null);
   const [busy, setBusy] = useState<"save" | "archive" | null>(null);
+  const [errorFocus, setErrorFocus] = useState<"form" | "summary">("form");
   const [message, setMessage] = useState("");
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setErrorFocus("form");
     setBusy("save");
     setMessage("");
     const form = new FormData(event.currentTarget);
@@ -46,6 +53,7 @@ export function GolferSettingsForm(props: {
 
   async function archive() {
     if (!window.confirm("Archive this golfer and revoke every active private link?")) return;
+    setErrorFocus("summary");
     setBusy("archive");
     setMessage("");
     try {
@@ -69,7 +77,12 @@ export function GolferSettingsForm(props: {
   return (
     <div className={styles.form}>
       {props.status === "active" ? (
-      <form className={styles.formCard} onSubmit={save}>
+      <form
+        ref={formRef}
+        className={styles.formCard}
+        aria-describedby={ERROR_SUMMARY_ID}
+        onSubmit={save}
+      >
         <fieldset className={styles.formSection} disabled={busy !== null}>
           <legend>Golfer identity and contact</legend>
           <div className={styles.fieldGrid}>
@@ -115,7 +128,12 @@ export function GolferSettingsForm(props: {
           {busy === "archive" ? "Archiving…" : "Archive golfer and revoke access"}
         </button>
       </section> : null}
-      {message ? <div className={styles.errorStatus} role="alert">{message}</div> : null}
+      <FormErrorSummary
+        id={ERROR_SUMMARY_ID}
+        message={message}
+        formRef={errorFocus === "form" ? formRef : summaryOnlyRef}
+        className={styles.errorStatus}
+      />
     </div>
   );
 }

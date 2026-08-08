@@ -146,6 +146,11 @@ export const billingReconciliationTargetStates = [
   "succeeded",
   "failed",
 ] as const;
+export const schedulerHeartbeatStates = [
+  "running",
+  "succeeded",
+  "failed",
+] as const;
 export const billingAccountOperationLeaseStates = ["idle", "held"] as const;
 export const billingAccountOperationTypes = [
   "checkout",
@@ -707,6 +712,66 @@ export const billingReconciliationTargets = sqliteTable(
     check(
       "billing_reconciliation_targets_success_failure_reset_check",
       sql`${table.state} <> 'succeeded' or ${table.automaticFailureCount} = 0`,
+    ),
+  ],
+);
+
+/**
+ * One non-tenant scheduler heartbeat. The attempt token fences completion so
+ * an older overlapping invocation cannot replace a newer invocation's state.
+ * Only bounded counters and normalized machine codes are stored; this table
+ * intentionally has no tenant identifiers, provider payloads, or messages.
+ */
+export const schedulerHeartbeat = sqliteTable(
+  "scheduler_heartbeat",
+  {
+    schedulerKey: text("scheduler_key").primaryKey(),
+    attemptToken: text("attempt_token").notNull(),
+    releaseId: text("release_id").notNull(),
+    state: text("state", { enum: schedulerHeartbeatStates }).notNull(),
+    startedAt: timestamp("started_at").notNull(),
+    completedAt: timestamp("completed_at"),
+    billingConfigured: integer("billing_configured", { mode: "boolean" }),
+    consideredCount: integer("considered_count"),
+    attemptedCount: integer("attempted_count"),
+    succeededCount: integer("succeeded_count"),
+    failedCount: integer("failed_count"),
+    deadLetterCount: integer("dead_letter_count"),
+    lastFailureCode: text("last_failure_code"),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    check(
+      "scheduler_heartbeat_singleton_check",
+      sql`${table.schedulerKey} = 'billing_reconciliation'`,
+    ),
+    check(
+      "scheduler_heartbeat_attempt_token_check",
+      sql`length(${table.attemptToken}) between 1 and 128 and ${table.attemptToken} not glob '*[^A-Za-z0-9._:-]*'`,
+    ),
+    check(
+      "scheduler_heartbeat_release_id_check",
+      sql`length(${table.releaseId}) between 1 and 128 and ${table.releaseId} not glob '*[^A-Za-z0-9._:-]*'`,
+    ),
+    check(
+      "scheduler_heartbeat_state_check",
+      sql`${table.state} in ('running', 'succeeded', 'failed')`,
+    ),
+    check(
+      "scheduler_heartbeat_completion_check",
+      sql`(${table.state} = 'running' and ${table.completedAt} is null) or (${table.state} <> 'running' and ${table.completedAt} is not null and ${table.completedAt} >= ${table.startedAt})`,
+    ),
+    check(
+      "scheduler_heartbeat_result_shape_check",
+      sql`(${table.state} = 'succeeded' and ${table.billingConfigured} is not null and ${table.consideredCount} is not null and ${table.attemptedCount} is not null and ${table.succeededCount} is not null and ${table.failedCount} is not null and ${table.deadLetterCount} is not null and ${table.lastFailureCode} is null) or (${table.state} <> 'succeeded' and ${table.billingConfigured} is null and ${table.consideredCount} is null and ${table.attemptedCount} is null and ${table.succeededCount} is null and ${table.failedCount} is null and ${table.deadLetterCount} is null)`,
+    ),
+    check(
+      "scheduler_heartbeat_failure_check",
+      sql`(${table.state} = 'failed' and ${table.lastFailureCode} is not null and length(${table.lastFailureCode}) between 1 and 64 and ${table.lastFailureCode} not glob '*[^a-z0-9_]*') or (${table.state} <> 'failed' and ${table.lastFailureCode} is null)`,
+    ),
+    check(
+      "scheduler_heartbeat_counts_check",
+      sql`${table.consideredCount} is null or (${table.consideredCount} >= 0 and ${table.attemptedCount} >= 0 and ${table.succeededCount} >= 0 and ${table.failedCount} >= 0 and ${table.deadLetterCount} >= 0 and ${table.attemptedCount} <= ${table.consideredCount} and ${table.succeededCount} + ${table.failedCount} = ${table.attemptedCount})`,
     ),
   ],
 );

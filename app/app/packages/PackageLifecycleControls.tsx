@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
+import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
 import type { PackageView } from "@/lib/repository";
 import styles from "../workspace.module.css";
 
@@ -14,10 +15,14 @@ type LifecycleResponse = {
 
 export function PackageLifecycleControls({ item }: { item: PackageView }) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
+  const summaryOnlyRef = useRef<HTMLFormElement>(null);
   const [state, setState] = useState<
     "idle" | "saving" | "archiving" | "success" | "error"
   >("idle");
+  const [errorFocus, setErrorFocus] = useState<"form" | "summary">("form");
   const [message, setMessage] = useState("");
+  const errorSummaryId = `package-${item.id}-lifecycle-error-summary`;
 
   if (item.status === "archived") {
     return (
@@ -30,6 +35,7 @@ export function PackageLifecycleControls({ item }: { item: PackageView }) {
 
   async function updatePackage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setErrorFocus("form");
     setState("saving");
     setMessage("");
     const form = new FormData(event.currentTarget);
@@ -45,10 +51,10 @@ export function PackageLifecycleControls({ item }: { item: PackageView }) {
       priceCents,
       currency: priceCents === null ? undefined : form.get("currency"),
       currentDetailsText: form.get("currentDetailsText"),
-      inclusions: item.inclusions,
-      cadence: item.cadence,
-      practiceExpectation: item.practiceExpectation,
-      evaluationDescription: item.evaluationDescription,
+      inclusions: lineItems(form.get("inclusions")),
+      cadence: form.get("cadence"),
+      practiceExpectation: form.get("practiceExpectation"),
+      evaluationDescription: form.get("evaluationDescription"),
       termsSummary: form.get("termsSummary"),
       externalActionType: form.get("externalActionType"),
       externalActionLabel: form.get("externalActionLabel"),
@@ -78,6 +84,7 @@ export function PackageLifecycleControls({ item }: { item: PackageView }) {
       return;
     }
 
+    setErrorFocus("summary");
     setState("archiving");
     setMessage("");
     try {
@@ -101,7 +108,13 @@ export function PackageLifecycleControls({ item }: { item: PackageView }) {
     <div style={{ gridColumn: "1 / -1" }}>
       <details>
         <summary className={styles.textLink}>Edit or archive this package</summary>
-        <form className={styles.form} onSubmit={updatePackage} style={{ marginTop: "1rem" }}>
+        <form
+          ref={formRef}
+          className={styles.form}
+          aria-describedby={errorSummaryId}
+          onSubmit={updatePackage}
+          style={{ marginTop: "1rem" }}
+        >
           <fieldset className={styles.formSection} disabled={isBusy}>
             <legend>Edit package facts</legend>
             <div className={styles.notice} role="note">
@@ -180,6 +193,40 @@ export function PackageLifecycleControls({ item }: { item: PackageView }) {
                 />
               </label>
               <label className={styles.fullField}>
+                Material inclusions — one per line
+                <textarea
+                  name="inclusions"
+                  defaultValue={item.inclusions.join("\n")}
+                  required
+                  maxLength={2_000}
+                />
+                <small>Active packages need at least one truthful material inclusion before they can be published in a golfer view.</small>
+              </label>
+              <label className={styles.field}>
+                Cadence (optional)
+                <input
+                  name="cadence"
+                  defaultValue={item.cadence ?? ""}
+                  maxLength={300}
+                />
+              </label>
+              <label className={styles.fullField}>
+                Practice expectation (optional)
+                <textarea
+                  name="practiceExpectation"
+                  defaultValue={item.practiceExpectation ?? ""}
+                  maxLength={1_000}
+                />
+              </label>
+              <label className={styles.fullField}>
+                Evaluation approach (optional)
+                <textarea
+                  name="evaluationDescription"
+                  defaultValue={item.evaluationDescription ?? ""}
+                  maxLength={1_000}
+                />
+              </label>
+              <label className={styles.fullField}>
                 Terms
                 <textarea
                   name="termsSummary"
@@ -247,17 +294,26 @@ export function PackageLifecycleControls({ item }: { item: PackageView }) {
           </div>
         </form>
       </details>
-      {message ? (
-        <div
-          className={state === "error" ? styles.errorStatus : styles.formStatus}
-          role={state === "error" ? "alert" : "status"}
-          style={{ marginTop: "0.8rem" }}
-        >
+      <FormErrorSummary
+        id={errorSummaryId}
+        message={state === "error" ? message : ""}
+        formRef={errorFocus === "form" ? formRef : summaryOnlyRef}
+        className={styles.errorStatus}
+      />
+      {state !== "error" && message ? (
+        <div className={styles.formStatus} role="status" style={{ marginTop: "0.8rem" }}>
           {message}
         </div>
       ) : null}
     </div>
   );
+}
+
+function lineItems(value: FormDataEntryValue | null): string[] {
+  return String(value ?? "")
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 async function lifecycleRequest(

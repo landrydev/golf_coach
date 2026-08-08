@@ -103,6 +103,7 @@ test(
         assessment: {
           summary: "Contact location varies as tempo increases.",
           strengths: "Athletic setup and strong awareness of strike feedback.",
+          primaryPattern: "Strike moves away from center as transition tempo increases.",
           limitations: "Low-point control becomes inconsistent late in the session.",
         },
         priority: {
@@ -114,6 +115,8 @@ test(
             number: 1,
             title: "Calibrate contact",
             purpose: "Establish a repeatable low point and centered strike window.",
+            rationale: "Contact is the narrowest observed foundation for later work.",
+            progressSignals: ["Centered contact repeats in a coach-reviewed set."],
           },
           {
             number: 2,
@@ -147,10 +150,11 @@ test(
         why: "Play confidently without guarding against a two-way miss.",
         context: "Local synthetic journey, revised after coach review.",
       },
-      assessment: {
-        summary: "Strike drifts toward the heel when transition tempo increases.",
-        strengths: "Athletic setup and accurate strike awareness.",
-        limitations: "Low-point control varies after several full-speed swings.",
+        assessment: {
+          summary: "Strike drifts toward the heel when transition tempo increases.",
+          strengths: "Athletic setup and accurate strike awareness.",
+          primaryPattern: "Heel contact appears as transition tempo increases.",
+          limitations: "Low-point control varies after several full-speed swings.",
       },
       priority: {
         title: "Centered contact at playing tempo",
@@ -161,21 +165,29 @@ test(
           number: 1,
           title: "Own centered contact",
           purpose: "Create a stable strike window at a controlled playing tempo.",
+          rationale: "Centered contact remains the first observable barrier.",
+          progressSignals: ["Centered contact repeats at a controlled playing tempo."],
         },
         {
           number: 2,
           title: "Shape trajectory",
           purpose: "Add predictable launch windows without losing contact quality.",
+          rationale: null,
+          progressSignals: [],
         },
         {
           number: 3,
           title: "Choose targets",
           purpose: "Transfer the pattern into representative club and target decisions.",
+          rationale: null,
+          progressSignals: [],
         },
         {
           number: 4,
           title: "Perform under pressure",
           purpose: "Validate the pattern with scored and time-constrained tasks.",
+          rationale: null,
+          progressSignals: [],
         },
       ],
     };
@@ -301,7 +313,12 @@ test(
     assert.match(privatePlanHtml, /Jordan Synthetic/);
     assert.match(privatePlanHtml, /Jordan Predictable Contact Roadmap/);
     assert.match(privatePlanHtml, /Centered contact at playing tempo/);
+    assert.match(privatePlanHtml, /Heel contact appears as transition tempo increases/);
+    assert.match(privatePlanHtml, /Why this phase leads/);
+    assert.match(privatePlanHtml, /Centered contact repeats at a controlled playing tempo/);
     assert.match(privatePlanHtml, /Momentum Coaching Series/);
+    assert.match(privatePlanHtml, /Four private lessons/);
+    assert.match(privatePlanHtml, /Practice feedback/);
     assert.match(privatePlanHtml, /Close roadmap/);
     assert.equal(privatePlanHtml.includes(token), false);
     assert.equal(privatePlanHtml.includes(firstSessionToken), false);

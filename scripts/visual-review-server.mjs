@@ -125,6 +125,7 @@ async function createSyntheticFixture(reviewWorker) {
     assessment: {
       summary: "Strike drifts toward the heel when transition tempo increases.",
       strengths: "Athletic setup and accurate awareness of strike location.",
+      primaryPattern: "Heel contact appears as transition tempo increases.",
       limitations: "A small indoor sample does not prove transfer to the course.",
     },
     priority: {
@@ -136,7 +137,13 @@ async function createSyntheticFixture(reviewWorker) {
       [2, "Shape trajectory", "Add launch windows without losing contact quality."],
       [3, "Choose targets", "Transfer the pattern into representative decisions."],
       [4, "Perform under pressure", "Test the pattern with scored constraints."],
-    ].map(([number, title, purpose]) => ({ number, title, purpose })),
+    ].map(([number, title, purpose]) => ({
+      number,
+      title,
+      purpose,
+      rationale: number === 1 ? "Centered contact is the narrowest observed foundation." : null,
+      progressSignals: number === 1 ? ["Centered contact repeats in a coach-reviewed set."] : [],
+    })),
   });
   assertStatus(golferResponse, 201, "golfer fixture");
   const golfer = await golferResponse.json();

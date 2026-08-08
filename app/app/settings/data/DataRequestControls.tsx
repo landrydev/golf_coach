@@ -1,8 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import type { AccountDataRequestView } from "@/lib/repository";
+import { useRef, useState } from "react";
+import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
+import type {
+  AccountDataRequestType,
+  AccountDataRequestView,
+} from "@/lib/repository";
 import styles from "../../workspace.module.css";
+
+const ERROR_SUMMARY_ID = "data-request-controls-error-summary";
 
 const openDeletionStatuses = new Set<AccountDataRequestView["status"]>([
   "submitted",
@@ -16,9 +22,17 @@ export function DataRequestControls({
 }: {
   initialRequests: AccountDataRequestView[];
 }) {
+  const formRef = useRef<HTMLFormElement>(null);
+  const summaryOnlyRef = useRef<HTMLFormElement>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState(false);
-  const [busy, setBusy] = useState<"export" | "deletion" | null>(null);
+  const [errorFocus, setErrorFocus] = useState<"form" | "summary">("summary");
+  const [busy, setBusy] = useState<"export" | "deletion" | "manual" | null>(
+    null,
+  );
+  const [reviewType, setReviewType] = useState<ManualReviewType>("access");
+  const [reviewDetails, setReviewDetails] = useState("");
+  const [reviewDetailsInvalid, setReviewDetailsInvalid] = useState(false);
   const [requests, setRequests] = useState(initialRequests);
   const openDeletionRequest = requests.find(
     (request) =>
@@ -26,6 +40,8 @@ export function DataRequestControls({
   );
 
   async function downloadExport() {
+    setErrorFocus("summary");
+    setReviewDetailsInvalid(false);
     setBusy("export");
     setMessage("");
     setError(false);
@@ -109,6 +125,8 @@ export function DataRequestControls({
       return;
     }
 
+    setErrorFocus("summary");
+    setReviewDetailsInvalid(false);
     setBusy("deletion");
     setMessage("");
     setError(false);
@@ -147,8 +165,61 @@ export function DataRequestControls({
     }
   }
 
+  async function submitManualReview() {
+    setErrorFocus("form");
+    const details = reviewDetails.trim();
+    if (!details) {
+      setReviewDetailsInvalid(true);
+      setError(true);
+      setMessage("Describe the data or outcome you want reviewed.");
+      return;
+    }
+
+    setBusy("manual");
+    setReviewDetailsInvalid(false);
+    setMessage("");
+    setError(false);
+    try {
+      const response = await fetch("/api/data-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: reviewType, details }),
+      });
+      const result = (await response.json()) as {
+        error?: { message?: string };
+        request?: AccountDataRequestView;
+      };
+      if (!response.ok) {
+        throw new Error(result.error?.message || "The request could not be queued.");
+      }
+      if (!result.request) {
+        throw new Error("The request was accepted without a readable status record.");
+      }
+      setRequests((current) => mergeRequest(current, result.request!));
+      setReviewDetails("");
+      setMessage(
+        `${requestTypeLabel(reviewType)} submitted for manual review. ` +
+          "This records the request but does not claim that an outcome or deadline has been approved.",
+      );
+    } catch (requestError) {
+      setError(true);
+      setMessage(
+        requestError instanceof Error
+          ? requestError.message
+          : "The request could not be queued.",
+      );
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
-    <div className={styles.form}>
+    <form
+      ref={formRef}
+      className={styles.form}
+      aria-describedby={ERROR_SUMMARY_ID}
+      onSubmit={(event) => event.preventDefault()}
+    >
       <section className={styles.formCard}>
         <div className={styles.cardHeader}>
           <h2>Export your account data</h2>
@@ -172,6 +243,60 @@ export function DataRequestControls({
           The export excludes private-link tokens and fingerprints, provider payloads and
           identifiers, internal storage keys and hashes, and security audit records.
         </p>
+      </section>
+
+      <section className={styles.formCard}>
+        <div className={styles.cardHeader}>
+          <h2>Request a data-rights review</h2>
+        </div>
+        <p className={styles.muted} id="data-rights-review-help">
+          Record an access, correction, processing-restriction, or consent-withdrawal
+          request for manual identity and scope review. Submission does not promise a
+          deadline or automatically change any record or consent state.
+        </p>
+        <label className={styles.field} htmlFor="data-rights-review-type">
+          <span>Request type</span>
+          <select
+            id="data-rights-review-type"
+            value={reviewType}
+            disabled={busy !== null}
+            aria-describedby="data-rights-review-help"
+            onChange={(event) =>
+              setReviewType(event.target.value as ManualReviewType)
+            }
+          >
+            <option value="access">Access review</option>
+            <option value="correction">Correction review</option>
+            <option value="restriction">Processing-restriction review</option>
+            <option value="consent_withdrawal">Consent-withdrawal review</option>
+          </select>
+        </label>
+        <label className={styles.field} htmlFor="data-rights-review-details">
+          <span>What should be reviewed?</span>
+          <textarea
+            id="data-rights-review-details"
+            value={reviewDetails}
+            maxLength={1_000}
+            aria-required="true"
+            disabled={busy !== null}
+            aria-invalid={reviewDetailsInvalid}
+            aria-describedby={`data-rights-review-help ${ERROR_SUMMARY_ID}`}
+            onChange={(event) => {
+              setReviewDetails(event.target.value);
+              if (reviewDetailsInvalid) setReviewDetailsInvalid(false);
+            }}
+          />
+        </label>
+        <div className={styles.actions}>
+          <button
+            className={styles.secondaryButton}
+            type="button"
+            disabled={busy !== null}
+            onClick={submitManualReview}
+          >
+            {busy === "manual" ? "Submitting..." : "Submit review request"}
+          </button>
+        </div>
       </section>
 
       <section className={styles.formCard}>
@@ -228,20 +353,23 @@ export function DataRequestControls({
           </ul>
         ) : (
           <p className={styles.muted} style={{ marginTop: "1rem" }}>
-            No export or deletion-review records have been created for this account.
+            No data-request records have been created for this account.
           </p>
         )}
       </section>
 
-      {message ? (
-        <div
-          className={error ? styles.errorStatus : styles.formStatus}
-          role={error ? "alert" : "status"}
-        >
+      <FormErrorSummary
+        id={ERROR_SUMMARY_ID}
+        message={error ? message : ""}
+        formRef={errorFocus === "form" ? formRef : summaryOnlyRef}
+        className={styles.errorStatus}
+      />
+      {!error && message ? (
+        <div className={styles.formStatus} role="status">
           {message}
         </div>
       ) : null}
-    </div>
+    </form>
   );
 }
 
@@ -254,8 +382,13 @@ function mergeRequest(
   );
 }
 
-function requestTypeLabel(type: AccountDataRequestView["type"]): string {
-  const labels: Record<AccountDataRequestView["type"], string> = {
+type ManualReviewType = Exclude<
+  AccountDataRequestType,
+  "export" | "deletion"
+>;
+
+function requestTypeLabel(type: AccountDataRequestType): string {
+  const labels: Record<AccountDataRequestType, string> = {
     access: "Access request",
     export: "Workspace export",
     correction: "Correction request",
@@ -289,6 +422,13 @@ function statusExplanation(request: AccountDataRequestView): string {
   }
   if (request.type === "deletion" && openDeletionStatuses.has(request.status)) {
     return "The review remains open; this status does not claim deletion.";
+  }
+  if (
+    request.type !== "export" &&
+    request.type !== "deletion" &&
+    request.status === "submitted"
+  ) {
+    return "The request is recorded for manual review; no outcome or deadline is claimed.";
   }
   return `Last status update recorded ${formatDate(request.updatedAt)}.`;
 }

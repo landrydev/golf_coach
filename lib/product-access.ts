@@ -57,6 +57,7 @@ const ACCOUNT_API_PATHS = new Set([
   "/api/billing/checkout",
   "/api/billing/portal",
   "/api/billing/reconcile",
+  "/api/operations/health",
 ]);
 
 /**
@@ -92,6 +93,29 @@ export function productAccessConfigurationReady(
   environment: ProductAccessEnvironment,
 ): boolean {
   return readProductAccessConfiguration(environment) !== null;
+}
+
+/**
+ * Reuse the owner-private allowlist as the explicit operator allowlist even if
+ * the wider product later runs in subscription mode. Authentication alone is
+ * never enough to read global operational state.
+ */
+export async function ownerOperatorAccessGranted(input: {
+  authenticatedEmail: string;
+  environment: Pick<
+    ProductAccessEnvironment,
+    "OWNER_PRIVATE_ACCESS_PEPPER" | "OWNER_PRIVATE_EMAIL_DIGESTS"
+  >;
+}): Promise<boolean> {
+  const normalizedEmail = normalizeIdentityEmail(input.authenticatedEmail);
+  const pepper = input.environment.OWNER_PRIVATE_ACCESS_PEPPER?.trim() ?? "";
+  const emailDigests = parseDigestList(
+    input.environment.OWNER_PRIVATE_EMAIL_DIGESTS,
+  );
+  if (!normalizedEmail || pepper.length < 32 || !emailDigests) return false;
+
+  const digest = await hmacSha256Hex(pepper, normalizedEmail);
+  return constantTimeListIncludes(emailDigests, digest);
 }
 
 export async function evaluateInstructorRequestAccess(input: {

@@ -395,6 +395,11 @@ test(
     assert.equal(finalPlan.status, 200);
     const finalPlanHtml = await finalPlan.text();
     assert.match(finalPlanHtml, /Completion Contract Golfer/);
+    assert.match(finalPlanHtml, /Establish the current phase purpose/);
+    assert.match(finalPlanHtml, /Repeated in synthetic practice evidence/);
+    assert.match(finalPlanHtml, /The golfer reported increased clarity/);
+    assert.match(finalPlanHtml, /The transition follows the recorded synthetic evidence/);
+    assert.match(finalPlanHtml, /Validate the decision under broader constraints/);
 
     const postCompletionMutation = await postReview(
       worker,
@@ -503,6 +508,7 @@ async function createWorkspace(worker, golferName) {
     assessment: {
       summary: "Start direction varies under changing constraints.",
       strengths: "Clear strike awareness.",
+      primaryPattern: "Start direction changes as constraints increase.",
       limitations: "The pattern is not yet reliable on course.",
     },
     priority: {
@@ -510,7 +516,13 @@ async function createWorkspace(worker, golferName) {
       rationale: "A stable window supports the next phase decision.",
     },
     phases: [
-      { number: 1, title: "Calibrate", purpose: "Establish the starting window." },
+      {
+        number: 1,
+        title: "Calibrate",
+        purpose: "Establish the starting window.",
+        rationale: "A trustworthy starting window must come first.",
+        progressSignals: ["The starting window repeats in a coach-reviewed set."],
+      },
       { number: 2, title: "Build", purpose: "Repeat the pattern across clubs." },
       { number: 3, title: "Transfer", purpose: "Use the pattern for target decisions." },
       { number: 4, title: "Retain", purpose: "Verify the pattern under constraints." },
@@ -557,8 +569,9 @@ async function publish(worker, planId, revision, recipient) {
       expiresInDays: 7,
     },
   );
-  assert.equal(response.status, 201);
-  const share = (await response.json()).share;
+  const result = await response.json();
+  assert.equal(response.status, 201, JSON.stringify(result));
+  const share = result.share;
   const token = new URLSearchParams(new URL(share.url).hash.slice(1)).get("token");
   assert.ok(token);
   return { ...share, token };

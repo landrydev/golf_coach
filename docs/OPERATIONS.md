@@ -109,6 +109,7 @@ The release operator records every step and attaches evidence to an immutable re
 - Run cross-tenant, capability-link, Stripe-webhook, data-lifecycle, accessibility, and failure-path checks appropriate to the change.
 - Generate and inspect any D1 migration after schema changes.
 - Confirm no development preview metadata, starter content, debug endpoint, fake billing success, or synthetic-only critical-path behavior remains.
+- Run `npm run verify:release-integrity` to scan release text for secret-shaped values, reject unexpected environment files/symlinks, verify the immutable Business Plan V1 hash, check the migration journal, and validate the Sites resource manifest. Treat a clean scan as bounded evidence, not proof that no secret exists outside the scanned source.
 - Capture command, environment, version, result, limitations, and artifact checksums; a green command without scope/context is weak evidence.
 
 The repository's package scripts are the command authority. Typical current entry points are `npm run build`, `npm run lint`, and `npm test`; operators must inspect the scripts rather than assume their coverage.
@@ -246,7 +247,14 @@ No availability objective, alert threshold, response-time promise, RPO, or RTO i
 6. Confirm deleted/revoked records do not re-enter ordinary access incorrectly.
 7. Record actual recovery point, recovery time, integrity result, gaps, owner, and corrective actions.
 
-`[REAL-WORLD VALIDATION REQUIRED]` No successful D1/R2 restore exercise is claimed here. Backup and restore exercises are unresolved operational evidence, not a reason to stop implementation work.
+For a repeatable pre-production check of the repository's logical-copy path, run
+`npm run exercise:recovery:local` and follow
+[Local synthetic recovery exercise](LOCAL_SYNTHETIC_RECOVERY_EXERCISE.md). Its
+result is labelled `LOCAL SYNTHETIC EVIDENCE — NOT HOSTED BACKUP/RESTORE
+EVIDENCE`; it exercises only temporary fake D1/R2-compatible state and must not
+be entered as provider or production recovery evidence.
+
+`[REAL-WORLD VALIDATION REQUIRED]` No successful hosted D1/R2 restore exercise is claimed here. Provider-native backup and restore, real environment separation, operator execution, alerting, deletion recovery, and measured RPO/RTO remain unresolved operational evidence, not a reason to stop implementation work.
 
 ## Incident response runbook
 
@@ -315,7 +323,7 @@ Support themes feed product improvement and self-serve evidence. They do not jus
 ## Billing operations
 
 - Maintain a production/test Stripe inventory: account owner, product/Price IDs, portal configuration, webhook endpoint/secrets, tax settings, supported account changes, and policy version.
-- Reconcile accepted webhook events and local subscription projections through the bounded five-minute Worker schedule and the authenticated account refresh. The schedule selects only due existing provider-backed Checkout work, failed/expired reconciliation targets, and stale nonterminal subscription projections; it does not create a provider object or sweep every subscription speculatively. It safely does no provider work when Stripe credentials or the complete billing policy are absent.
+- Reconcile accepted webhook events and local subscription projections through the authenticated account refresh and, only after hosted trigger provisioning is independently proven, the packaged bounded five-minute Worker schedule. The handler selects only due existing provider-backed Checkout work, failed/expired reconciliation targets, and stale nonterminal subscription projections; it does not create a provider object or sweep every subscription speculatively. It records a privacy-safe singleton D1 heartbeat even when billing is disabled and safely does no provider work when Stripe credentials or the complete billing policy are absent. Local invocation is exercised; current Sites-hosted invocation remains unproven and must not be an operational billing dependency.
 - Use the tenant-scoped refresh for an authenticated account when a signed webhook is delayed. Its durable reconciliation target records lease, retry, failure, and success state; provider generation fencing prevents an older GET response from overwriting a newer provider projection.
 - Automatic retries use bounded backoff and stop after eight consecutive
   automatic failures; successful refreshes reset that failure budget without

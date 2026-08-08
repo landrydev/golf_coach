@@ -22,9 +22,20 @@ const BODY_FIELDS = [
   "phases",
 ] as const;
 const GOAL_FIELDS = ["statement", "why", "context"] as const;
-const ASSESSMENT_FIELDS = ["summary", "strengths", "limitations"] as const;
+const ASSESSMENT_FIELDS = [
+  "summary",
+  "strengths",
+  "primaryPattern",
+  "limitations",
+] as const;
 const PRIORITY_FIELDS = ["title", "rationale"] as const;
-const PHASE_FIELDS = ["number", "title", "purpose"] as const;
+const PHASE_FIELDS = [
+  "number",
+  "title",
+  "purpose",
+  "rationale",
+  "progressSignals",
+] as const;
 
 export async function PUT(
   request: Request,
@@ -94,11 +105,11 @@ function parseChanges(payload: Record<string, unknown>): CorePlanEditInput {
   const priority = asObject(payload.priority, "priority");
   assertOnlyFields(priority, "priority", PRIORITY_FIELDS);
 
-  if (!Array.isArray(payload.phases) || payload.phases.length !== 4) {
+  if (!Array.isArray(payload.phases) || ![3, 4].includes(payload.phases.length)) {
     throw new RequestError(
       400,
       "invalid_field",
-      "phases must contain exactly four ordered phases.",
+      "phases must contain three or four ordered phases.",
     );
   }
 
@@ -115,6 +126,32 @@ function parseChanges(payload: Record<string, unknown>): CorePlanEditInput {
       );
     }
 
+    const rationale = optionalText(
+      phase.rationale,
+      `${field}.rationale`,
+      1_500,
+    );
+    const progressSignals = textArray(
+      phase.progressSignals,
+      `${field}.progressSignals`,
+      10,
+      240,
+    );
+    if (index === 0 && !rationale) {
+      throw new RequestError(
+        400,
+        "invalid_field",
+        "phases[0].rationale is required for the first phase.",
+      );
+    }
+    if (index === 0 && progressSignals.length === 0) {
+      throw new RequestError(
+        400,
+        "invalid_field",
+        "phases[0].progressSignals must contain at least one observable signal.",
+      );
+    }
+
     return {
       number: expectedNumber,
       title: cleanText(phase.title, `${field}.title`, {
@@ -125,6 +162,8 @@ function parseChanges(payload: Record<string, unknown>): CorePlanEditInput {
         required: true,
         max: 700,
       }),
+      rationale: rationale || null,
+      progressSignals,
     };
   });
 
@@ -143,10 +182,15 @@ function parseChanges(payload: Record<string, unknown>): CorePlanEditInput {
         required: true,
         max: 2_000,
       }),
-      strengths: optionalText(
+      strengths: cleanText(
         assessment.strengths,
         "assessment.strengths",
-        1_500,
+        { required: true, max: 1_500 },
+      ),
+      primaryPattern: cleanText(
+        assessment.primaryPattern,
+        "assessment.primaryPattern",
+        { required: true, max: 2_000 },
       ),
       limitations: cleanText(
         assessment.limitations,
@@ -200,6 +244,24 @@ function optionalText(value: unknown, field: string, max: number): string {
     throw new RequestError(400, "invalid_field", `${field} must be text.`);
   }
   return cleanText(value, field, { max });
+}
+
+function textArray(
+  value: unknown,
+  field: string,
+  maxItems: number,
+  maxLength: number,
+): string[] {
+  if (!Array.isArray(value) || value.length > maxItems) {
+    throw new RequestError(
+      400,
+      "invalid_field",
+      `${field} must contain at most ${maxItems} items.`,
+    );
+  }
+  return value.map((item, index) =>
+    cleanText(item, `${field}[${index}]`, { required: true, max: maxLength }),
+  );
 }
 
 function rejectClientAccountId(payload: Record<string, unknown>): void {

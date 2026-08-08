@@ -1,0 +1,105 @@
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import { requirePageIdentity } from "@/lib/identity";
+import {
+  getOrCreateAccountForIdentity,
+  getStagedGolferWorkspace,
+  listPackages,
+} from "@/lib/repository";
+import styles from "../../../workspace.module.css";
+import { StagedCompletionForm } from "./StagedCompletionForm";
+
+export const dynamic = "force-dynamic";
+
+export default async function CompleteStagedGolferPage({
+  params,
+}: {
+  params: Promise<{ golferId: string }>;
+}) {
+  const { golferId } = await params;
+  const returnTo = `/app/golfers/${encodeURIComponent(golferId)}/complete`;
+  const identity = await requirePageIdentity(returnTo);
+  const account = await getOrCreateAccountForIdentity(identity);
+  const staged = await getStagedGolferWorkspace(account.id, golferId);
+  if (!staged) notFound();
+  if (staged.authoringState === "complete") {
+    redirect(`/app/golfers/${encodeURIComponent(golferId)}`);
+  }
+
+  const resumable =
+    staged.authoringState === "staged" &&
+    staged.goal !== null &&
+    staged.golfer.status === "active" &&
+    staged.golfer.eligibilityStatus === "adult_confirmed" &&
+    staged.plan.status === "draft" &&
+    staged.plan.approvedRevision === null &&
+    staged.plan.publishedRevision === null;
+  const packages = (await listPackages(account.id)).filter(
+    (coachingPackage) => coachingPackage.status === "active",
+  );
+
+  return (
+    <div className={styles.page}>
+      <header className={styles.pageHeader}>
+        <div>
+          <span className={styles.eyebrow}>Resume staged roadmap</span>
+          <h1>
+            Finish {staged.golfer.preferredName || staged.golfer.displayName}&apos;s
+            coach-authored draft.
+          </h1>
+          <p>
+            The golfer identity, plan title, and primary goal are already saved. Add only
+            real assessment and sequencing judgment; Roadmap has not filled gaps with
+            placeholder coaching content.
+          </p>
+        </div>
+        <Link className={styles.secondaryButton} href="/app/golfers">
+          Save and return later
+        </Link>
+      </header>
+
+      <section className={styles.panel} aria-labelledby="saved-basics-heading">
+        <div className={styles.panelHeader}>
+          <h2 id="saved-basics-heading">Saved basics</h2>
+          <span className={styles.status}>publication blocked</span>
+        </div>
+        <dl>
+          <div>
+            <dt>Plan</dt>
+            <dd>{staged.plan.title}</dd>
+          </div>
+          <div>
+            <dt>Primary goal</dt>
+            <dd>{staged.goal?.desiredOutcome || "Goal record unavailable"}</dd>
+          </div>
+        </dl>
+        <p className={styles.muted}>
+          This staged record cannot be previewed, published, or shared until the assessment,
+          priority, and three-or-four-phase roadmap are saved atomically below.
+        </p>
+      </section>
+
+      {resumable ? (
+        <StagedCompletionForm
+          golferId={staged.golfer.id}
+          planId={staged.plan.id}
+          expectedRevision={staged.plan.revision}
+          packages={packages.map((coachingPackage) => ({
+            id: coachingPackage.id,
+            name: coachingPackage.name,
+            fitDescription: coachingPackage.fitDescription,
+          }))}
+        />
+      ) : (
+        <div className={styles.errorStatus} role="alert">
+          <strong>This staged roadmap cannot be resumed safely.</strong>
+          <span>
+            Its ownership, adult eligibility, lifecycle, or partial-content state changed.
+            No new coaching content was stored. Return to the golfer list and review the
+            record before trying again.
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}

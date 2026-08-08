@@ -36,6 +36,19 @@ test("form error focus prioritizes the first invalid control and falls back to t
   assert.equal(focusFormError(null, null), "none");
 });
 
+test("summary-only mutation errors bypass invalid controls from unrelated actions", () => {
+  const focusOrder = [];
+  const unrelatedForm = {
+    querySelector: () => ({ focus: () => focusOrder.push("unrelated-control") }),
+  };
+  const summary = { focus: () => focusOrder.push("operation-summary") };
+
+  assert.equal(focusFormError(null, summary), "error-summary");
+  assert.deepEqual(focusOrder, ["operation-summary"]);
+  assert.equal(focusFormError(unrelatedForm, summary), "invalid-control");
+  assert.deepEqual(focusOrder, ["operation-summary", "unrelated-control"]);
+});
+
 test("client error summary runs the shared focus policy when a message appears", async () => {
   const source = await readFile(
     new URL("../components/forms/FormErrorSummary.tsx", import.meta.url),
@@ -47,6 +60,98 @@ test("client error summary runs the shared focus policy when a message appears",
   assert.match(source, /role="alert"/);
   assert.match(source, /aria-atomic="true"/);
   assert.match(source, /tabIndex=\{-1\}/);
+});
+
+test("first-party instructor mutation surfaces use the shared error summary without weakening success announcements", async () => {
+  const surfaces = [
+    {
+      path: "../app/app/golfers/[golferId]/edit/PlanEditorForm.tsx",
+      summaryId: "plan-editor-form-error-summary",
+      describedBy: /aria-describedby=\{ERROR_SUMMARY_ID\}/g,
+      associations: 1,
+    },
+    {
+      path: "../app/app/golfers/[golferId]/PublishControls.tsx",
+      summaryId: "publish-controls-error-summary",
+      describedBy: /aria-describedby=\{ERROR_SUMMARY_ID\}/g,
+      associations: 1,
+      successStatus: true,
+    },
+    {
+      path: "../app/app/golfers/[golferId]/settings/GolferSettingsForm.tsx",
+      summaryId: "golfer-settings-form-error-summary",
+      describedBy: /aria-describedby=\{ERROR_SUMMARY_ID\}/g,
+      associations: 1,
+    },
+    {
+      path: "../app/app/golfers/[golferId]/LivingPlanForms.tsx",
+      summaryId: "living-plan-forms-error-summary",
+      describedBy: /aria-describedby=\{ERROR_SUMMARY_ID\}/g,
+      associations: 4,
+      successStatus: true,
+    },
+    {
+      path: "../app/app/packages/PackageLifecycleControls.tsx",
+      summaryId: "lifecycle-error-summary",
+      describedBy: /aria-describedby=\{errorSummaryId\}/g,
+      associations: 1,
+      successStatus: true,
+    },
+    {
+      path: "../app/app/settings/data/DataRequestControls.tsx",
+      summaryId: "data-request-controls-error-summary",
+      describedBy: /aria-describedby=\{ERROR_SUMMARY_ID\}/g,
+      associations: 1,
+      successStatus: true,
+    },
+  ];
+
+  for (const surface of surfaces) {
+    const source = await readFile(new URL(surface.path, import.meta.url), "utf8");
+    assert.match(source, /import \{ FormErrorSummary \} from "@\/components\/forms\/FormErrorSummary";/, surface.path);
+    assert.match(source, /useRef<HTMLFormElement>\(null\)/, surface.path);
+    assert.match(source, /<FormErrorSummary\s/, surface.path);
+    assert.match(source, new RegExp(surface.summaryId), surface.path);
+    assert.equal(
+      source.match(surface.describedBy)?.length,
+      surface.associations,
+      `${surface.path} should associate every mutation form with its error summary`,
+    );
+    if (surface.successStatus) {
+      assert.match(source, /role="status"/, `${surface.path} should retain a polite success status`);
+    }
+  }
+
+  for (const surface of [
+    {
+      path: "../app/app/golfers/[golferId]/PublishControls.tsx",
+      summaryActions: 1,
+    },
+    {
+      path: "../app/app/golfers/[golferId]/settings/GolferSettingsForm.tsx",
+      summaryActions: 1,
+    },
+    {
+      path: "../app/app/packages/PackageLifecycleControls.tsx",
+      summaryActions: 1,
+    },
+    {
+      path: "../app/app/settings/data/DataRequestControls.tsx",
+      summaryActions: 2,
+    },
+  ]) {
+    const source = await readFile(new URL(surface.path, import.meta.url), "utf8");
+    assert.match(source, /const summaryOnlyRef = useRef<HTMLFormElement>\(null\);/);
+    assert.match(
+      source,
+      /formRef=\{errorFocus === "form" \? formRef : summaryOnlyRef\}/,
+    );
+    assert.equal(
+      source.match(/setErrorFocus\("summary"\)/g)?.length,
+      surface.summaryActions,
+      `${surface.path} should mark every non-form mutation as summary-only`,
+    );
+  }
 });
 
 test(
@@ -67,27 +172,110 @@ test(
     });
     assert.equal(profileResponse.status, 200);
 
+    const packageResponse = await worker.dispatch("/api/packages", {
+      method: "POST",
+      headers: writeHeaders(coach.email, coach.name),
+      body: JSON.stringify({
+        title: "Accessible coaching series",
+        description: "A synthetic package used only to verify rendered form semantics.",
+        priceCents: 25_000,
+        currency: "CAD",
+        terms: "Synthetic local test terms with no purchase or communication.",
+        inclusions: ["Two private lessons"],
+        externalActionUrl: "https://booking.example.ca/accessibility",
+        status: "active",
+      }),
+    });
+    assert.equal(packageResponse.status, 201);
+    const coachingPackage = (await packageResponse.json()).package;
+    assert.ok(coachingPackage?.id);
+
+    const golferResponse = await worker.dispatch("/api/golfers", {
+      method: "POST",
+      headers: writeHeaders(coach.email, coach.name),
+      body: JSON.stringify({
+        adultEligibilityConfirmed: true,
+        displayName: "Jordan Accessibility",
+        email: "jordan.accessibility@example.test",
+        planTitle: "Accessible coaching roadmap",
+        firstPhasePackageId: coachingPackage.id,
+        goal: {
+          statement: "Build more predictable contact during ordinary rounds.",
+          why: "Enjoy play with a clearer practice direction.",
+          context: "Synthetic local form-accessibility verification only.",
+        },
+        assessment: {
+          summary: "Contact varies as tempo increases.",
+          strengths: "Clear awareness of strike feedback.",
+          primaryPattern: "Strike location changes as tempo increases.",
+          limitations: "One synthetic observation cannot predict on-course outcomes.",
+        },
+        priority: {
+          title: "Centered contact",
+          rationale: "A stable strike pattern supports later direction choices.",
+        },
+        phases: [1, 2, 3, 4].map((number) => ({
+          number,
+          title: `Phase ${number}`,
+          purpose: `Synthetic directional purpose for phase ${number}.`,
+          rationale: number === 1 ? "Establish the observed strike baseline first." : null,
+          progressSignals: number === 1 ? ["Strike location repeats in a coach-reviewed set."] : [],
+        })),
+      }),
+    });
+    assert.equal(golferResponse.status, 201);
+    const workspace = await golferResponse.json();
+    assert.ok(workspace.golfer?.id);
+
+    const golferPath = `/app/golfers/${workspace.golfer.id}`;
     for (const page of [
-      { path: "/app/golfers/new", summaryId: "new-golfer-form-error-summary" },
-      { path: "/app/settings", summaryId: "profile-form-error-summary" },
-      { path: "/app/packages", summaryId: "package-form-error-summary" },
+      { path: "/app/golfers/new", summaries: [["new-golfer-form-error-summary", 1]] },
+      { path: "/app/settings", summaries: [["profile-form-error-summary", 1]] },
+      {
+        path: "/app/packages",
+        summaries: [
+          ["package-form-error-summary", 1],
+          [`package-${coachingPackage.id}-lifecycle-error-summary`, 1],
+        ],
+      },
+      { path: "/app/settings/data", summaries: [["data-request-controls-error-summary", 1]] },
+      {
+        path: golferPath,
+        summaries: [
+          ["living-plan-forms-error-summary", 4],
+          ["publish-controls-error-summary", 1],
+        ],
+      },
+      {
+        path: `${golferPath}/edit`,
+        summaries: [["plan-editor-form-error-summary", 1]],
+      },
+      {
+        path: `${golferPath}/settings`,
+        summaries: [["golfer-settings-form-error-summary", 1]],
+      },
     ]) {
       const response = await worker.dispatch(page.path, { headers });
       assert.equal(response.status, 200, page.path);
       const html = await response.text();
-      assert.match(
-        html,
-        new RegExp(`<form(?=[^>]*aria-describedby="${page.summaryId}")[^>]*>`, "i"),
-        page.path,
-      );
-      assert.match(
-        html,
-        new RegExp(
-          `<div(?=[^>]*id="${page.summaryId}")(?=[^>]*role="alert")(?=[^>]*tabindex="-1")[^>]*>`,
-          "i",
-        ),
-        page.path,
-      );
+      for (const [summaryId, associationCount] of page.summaries) {
+        const associatedForms = html.match(
+          new RegExp(`<form(?=[^>]*aria-describedby="${escapeRegExp(summaryId)}")[^>]*>`, "gi"),
+        ) ?? [];
+        assert.equal(associatedForms.length, associationCount, `${page.path}: ${summaryId}`);
+        assert.match(
+          html,
+          new RegExp(
+            `<div(?=[^>]*id="${escapeRegExp(summaryId)}")(?=[^>]*role="alert")(?=[^>]*tabindex="-1")[^>]*>`,
+            "i",
+          ),
+          `${page.path}: ${summaryId}`,
+        );
+      }
     }
   },
 );
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}

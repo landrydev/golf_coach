@@ -29,6 +29,10 @@ export function PackageForm() {
       priceCents,
       currency: priceCents === null ? undefined : "CAD",
       currentDetailsText: form.get("currentDetailsText"),
+      inclusions: lineItems(form.get("inclusions")),
+      cadence: form.get("cadence"),
+      practiceExpectation: form.get("practiceExpectation"),
+      evaluationDescription: form.get("evaluationDescription"),
       terms: form.get("terms"),
       externalActionUrl: form.get("externalActionUrl"),
       status: "active",
@@ -86,6 +90,28 @@ export function PackageForm() {
               <small>Provide either an exact price or an honest current-details message.</small>
             </label>
             <label className={styles.fullField}>
+              Material inclusions — one per line
+              <textarea
+                name="inclusions"
+                required
+                maxLength={2_000}
+                placeholder={"Four individual lessons\nWritten practice direction\nEnd-of-phase review"}
+              />
+              <small>List only what this package currently includes. Do not imply booking or payment has occurred.</small>
+            </label>
+            <label className={styles.field}>
+              Cadence (optional)
+              <input name="cadence" maxLength={300} placeholder="Four lessons over six to eight weeks" />
+            </label>
+            <label className={styles.fullField}>
+              Practice expectation (optional)
+              <textarea name="practiceExpectation" maxLength={1_000} />
+            </label>
+            <label className={styles.fullField}>
+              Evaluation approach (optional)
+              <textarea name="evaluationDescription" maxLength={1_000} />
+            </label>
+            <label className={styles.fullField}>
               Terms
               <textarea
                 name="terms"
@@ -120,4 +146,11 @@ export function PackageForm() {
       </div>
     </form>
   );
+}
+
+function lineItems(value: FormDataEntryValue | null): string[] {
+  return String(value ?? "")
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 }

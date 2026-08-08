@@ -1,11 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
+import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
 import styles from "../../workspace.module.css";
 
 type PhaseOption = { id: string; number: number; title: string; purpose: string; status: string };
 type ReviewTransition = "continue" | "pause" | "advance" | "complete_plan";
+const ERROR_SUMMARY_ID = "living-plan-forms-error-summary";
 
 export function LivingPlanForms({
   planId,
@@ -17,6 +19,7 @@ export function LivingPlanForms({
   phases: PhaseOption[];
 }) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState(false);
@@ -30,6 +33,7 @@ export function LivingPlanForms({
 
   async function submit(event: FormEvent<HTMLFormElement>, kind: string) {
     event.preventDefault();
+    formRef.current = event.currentTarget;
     setBusy(kind);
     setMessage("");
     setError(false);
@@ -76,7 +80,11 @@ export function LivingPlanForms({
       <div className={styles.form} style={{ marginTop: "1rem" }}>
         <details>
           <summary>Add a completed lesson chapter</summary>
-          <form className={styles.form} onSubmit={(event) => submit(event, "lesson")}>
+          <form
+            className={styles.form}
+            aria-describedby={ERROR_SUMMARY_ID}
+            onSubmit={(event) => submit(event, "lesson")}
+          >
             <PhaseSelect phases={phases} />
             <div className={styles.fieldGrid}>
               <Field name="title" label="Lesson title" required maxLength={160} />
@@ -93,7 +101,11 @@ export function LivingPlanForms({
 
         <details>
           <summary>Add or replace the current practice direction</summary>
-          <form className={styles.form} onSubmit={(event) => submit(event, "practice")}>
+          <form
+            className={styles.form}
+            aria-describedby={ERROR_SUMMARY_ID}
+            onSubmit={(event) => submit(event, "practice")}
+          >
             <PhaseSelect phases={phases} />
             <div className={styles.fieldGrid}>
               <Field name="title" label="Practice title" required maxLength={160} />
@@ -117,7 +129,11 @@ export function LivingPlanForms({
 
         <details>
           <summary>Add evidence with its limits</summary>
-          <form className={styles.form} onSubmit={(event) => submit(event, "evidence")}>
+          <form
+            className={styles.form}
+            aria-describedby={ERROR_SUMMARY_ID}
+            onSubmit={(event) => submit(event, "evidence")}
+          >
             <PhaseSelect phases={phases} />
             <div className={styles.fieldGrid}>
               <label className={styles.field}>
@@ -177,7 +193,11 @@ export function LivingPlanForms({
         <details>
           <summary>Complete a phase review and choose what happens next</summary>
           {currentPhase ? (
-            <form className={styles.form} onSubmit={(event) => submit(event, "review")}>
+            <form
+              className={styles.form}
+              aria-describedby={ERROR_SUMMARY_ID}
+              onSubmit={(event) => submit(event, "review")}
+            >
               <input type="hidden" name="phaseId" value={currentPhase.id} />
               <p className={styles.muted}>
                 Reviewing Phase {currentPhase.number} — {currentPhase.title}. Roadmap applies only
@@ -270,8 +290,14 @@ export function LivingPlanForms({
         </details>
       </div>
 
-      {message ? (
-        <div className={error ? styles.errorStatus : styles.formStatus} role={error ? "alert" : "status"}>
+      <FormErrorSummary
+        id={ERROR_SUMMARY_ID}
+        message={error ? message : ""}
+        formRef={formRef}
+        className={styles.errorStatus}
+      />
+      {!error && message ? (
+        <div className={styles.formStatus} role="status">
           {message}
         </div>
       ) : null}

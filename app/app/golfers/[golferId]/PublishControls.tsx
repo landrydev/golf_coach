@@ -1,19 +1,29 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
+import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
 import type { PlanShareSummary } from "@/lib/plans";
 import styles from "../../workspace.module.css";
+
+const ERROR_SUMMARY_ID = "publish-controls-error-summary";
 
 export function PublishControls({
   planId,
   planRevision,
+  golferName,
+  blockers,
   initialShares,
 }: {
   planId: string;
   planRevision: number;
+  golferName: string;
+  blockers: string[];
   initialShares: PlanShareSummary[];
 }) {
+  const formRef = useRef<HTMLFormElement>(null);
+  const summaryOnlyRef = useRef<HTMLFormElement>(null);
   const [state, setState] = useState<"idle" | "publishing" | "ready" | "error">("idle");
+  const [errorFocus, setErrorFocus] = useState<"form" | "summary">("form");
   const [message, setMessage] = useState("");
   const [shareUrl, setShareUrl] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
@@ -22,6 +32,7 @@ export function PublishControls({
 
   async function publish(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setErrorFocus("form");
     setState("publishing");
     setMessage("");
     setShareUrl("");
@@ -32,7 +43,7 @@ export function PublishControls({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          intendedRecipientContext: "Private golfer roadmap",
+          intendedRecipientContext: form.get("intendedRecipientContext"),
           expiresInDays: Number(form.get("expiresInDays")),
           expectedRevision: planRevision,
           confirmation: form.get("confirmation"),
@@ -77,6 +88,7 @@ export function PublishControls({
 
   async function revoke(shareId: string) {
     if (!window.confirm("Revoke this private access link now?")) return;
+    setErrorFocus("summary");
     setRevokingId(shareId);
     setMessage("");
     try {
@@ -124,7 +136,32 @@ export function PublishControls({
           <h2 id="publish-heading">Review the exact golfer view before creating access.</h2>
         </div>
       </div>
-      <form className={styles.form} onSubmit={publish}>
+      {blockers.length ? (
+        <div className={styles.notice} role="note">
+          <strong>Resolve these material blockers before publishing.</strong>
+          <ul>
+            {blockers.map((blocker) => (
+              <li key={blocker}>{blocker}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      <form
+        ref={formRef}
+        className={styles.form}
+        aria-describedby={ERROR_SUMMARY_ID}
+        onSubmit={publish}
+      >
+        <label className={styles.fullField}>
+          Intended recipient and context
+          <input
+            name="intendedRecipientContext"
+            defaultValue={`${golferName} — private golfer roadmap`}
+            required
+            maxLength={240}
+          />
+          <small>Confirm who should receive this exact private view. Roadmap does not send it automatically.</small>
+        </label>
         <label className={styles.field}>
           Link expiry
           <select name="expiresInDays" defaultValue="30">
@@ -148,13 +185,27 @@ export function PublishControls({
           </span>
         </label>
         <div className={styles.actions}>
-          <button className={styles.primaryButton} type="submit" disabled={state === "publishing"}>
-            {state === "publishing" ? "Publishing…" : "Publish and create private link"}
+          <button
+            className={styles.primaryButton}
+            type="submit"
+            disabled={state === "publishing" || blockers.length > 0}
+          >
+            {state === "publishing"
+              ? "Publishing…"
+              : blockers.length
+                ? "Resolve blockers before publishing"
+                : "Publish and create private link"}
           </button>
         </div>
       </form>
-      {message ? (
-        <div className={state === "error" ? styles.errorStatus : styles.formStatus} role={state === "error" ? "alert" : "status"}>
+      <FormErrorSummary
+        id={ERROR_SUMMARY_ID}
+        message={state === "error" ? message : ""}
+        formRef={errorFocus === "form" ? formRef : summaryOnlyRef}
+        className={styles.errorStatus}
+      />
+      {state !== "error" && message ? (
+        <div className={styles.formStatus} role="status">
           {message}
         </div>
       ) : null}

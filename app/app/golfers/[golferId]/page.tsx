@@ -8,6 +8,7 @@ import {
   listPlanShares,
   type GolferResponseType,
 } from "@/lib/plans";
+import { publicationBlockers } from "@/lib/publication-readiness";
 import { getOrCreateAccountForIdentity } from "@/lib/repository";
 import styles from "../../workspace.module.css";
 import { PublishControls } from "./PublishControls";
@@ -29,8 +30,11 @@ export default async function GolferPlanPage({
     listPlanShares(account.id, model.plan.id),
     listPlanResponses(account.id, model.plan.id),
   ]);
-  const editable = !["completed", "archived"].includes(model.plan.status);
-  const publishable = model.plan.status !== "archived";
+  const golferArchived = model.golfer.status === "archived";
+  const editable =
+    !golferArchived && !["completed", "archived"].includes(model.plan.status);
+  const publishable = !golferArchived && model.plan.status !== "archived";
+  const publishBlockers = publicationBlockers(model);
 
   return (
     <div>
@@ -68,10 +72,16 @@ export default async function GolferPlanPage({
           </>
         ) : (
           <div className={styles.notice} role="note">
-            <strong>This plan is {model.plan.status}.</strong>
+            <strong>
+              {golferArchived
+                ? "This golfer record is archived."
+                : `This plan is ${model.plan.status}.`}
+            </strong>
             <span>
               Its retained coach preview is read-only.
-              {model.plan.status === "completed"
+              {golferArchived
+                ? " New updates and private access are unavailable in this state."
+                : model.plan.status === "completed"
                 ? " You may still publish this exact final revision for the golfer."
                 : " Archived plans cannot create new private access."}
             </span>
@@ -83,6 +93,8 @@ export default async function GolferPlanPage({
             <PublishControls
               planId={model.plan.id}
               planRevision={model.plan.revision}
+              golferName={model.golfer.displayName}
+              blockers={publishBlockers.map((blocker) => blocker.message)}
               initialShares={shares}
             />
           </>

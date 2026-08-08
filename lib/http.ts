@@ -155,7 +155,7 @@ export function cleanExternalUrl(value: unknown, field: string): string {
   return parsed.toString();
 }
 
-function isPublicHostname(value: string): boolean {
+export function isPublicHostname(value: string): boolean {
   const hostname = value.toLowerCase().replace(/^\[|\]$/g, "");
   if (!hostname || hostname.length > 253 || !hostname.includes(".")) return false;
 

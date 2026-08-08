@@ -26,7 +26,7 @@ export function PlanView({ model, preview = false }: { model: PlanViewModel; pre
       </a>
       {preview ? (
         <div className={styles.previewBanner} role="status">
-          Coach preview — this is the exact content a golfer will see after publishing.
+          Coach preview — content, order, and choices match the golfer view. Response and external-action controls are disabled and record nothing here.
         </div>
       ) : null}
       <header className={styles.header}>
@@ -64,9 +64,10 @@ export function PlanView({ model, preview = false }: { model: PlanViewModel; pre
               {currentPhase ? ` · Phase ${currentPhase.number}` : " · Plan setup"}
             </span>
             <h1>{model.priority?.title || currentPhase?.title || model.plan.title}</h1>
-            <p>
-              {model.priority?.rationale ||
-                currentPhase?.purpose ||
+              <p>
+                {model.priority?.rationale ||
+                  currentPhase?.rationale ||
+                  currentPhase?.purpose ||
                 "Your coach is preparing the first clear priority for this plan."}
             </p>
           </div>
@@ -149,9 +150,18 @@ export function PlanView({ model, preview = false }: { model: PlanViewModel; pre
                 <p>{model.assessment.strengths}</p>
               </div>
             ) : null}
+            {model.assessment.primaryPattern ? (
+              <div>
+                <span>Primary pattern</span>
+                <p>{model.assessment.primaryPattern}</p>
+              </div>
+            ) : null}
             <div className={styles.limits}>
               <span>Evidence limits</span>
-              <p>{model.assessment.limitations}</p>
+              <p>
+                {model.assessment.limitations.trim() ||
+                  "No evidence limitations have been recorded yet."}
+              </p>
             </div>
           </div>
           <ol className={styles.phases}>
@@ -162,6 +172,27 @@ export function PlanView({ model, preview = false }: { model: PlanViewModel; pre
                   <small>{phaseStatusLabel(phase.status)}</small>
                   <strong>{phase.title}</strong>
                   <p>{phase.purpose}</p>
+                  {phase.rationale ? (
+                    <p className={styles.phaseDetail}>
+                      <b>{phase.number === 1 ? "Why this phase leads: " : "Why this phase follows: "}</b>
+                      {phase.rationale}
+                    </p>
+                  ) : null}
+                  {phase.progressSignals.length ? (
+                    <div className={styles.phaseSignals}>
+                      <b>Progress signals</b>
+                      <ul>
+                        {phase.progressSignals.map((signal) => (
+                          <li key={signal}>{signal}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                  {phase.expectations || phase.estimatedDuration ? (
+                    <small className={styles.phaseMeta}>
+                      {[phase.expectations, phase.estimatedDuration].filter(Boolean).join(" · ")}
+                    </small>
+                  ) : null}
                 </div>
               </li>
             ))}
@@ -240,12 +271,18 @@ export function PlanView({ model, preview = false }: { model: PlanViewModel; pre
               {model.evidenceItems.map((item) => (
                 <article className={styles.evidenceCard} key={item.id}>
                   <div>
-                    <span>{humanize(item.sourceType)}</span>
+                    <span>{item.sourceLabel}</span>
                     {item.observedAt ? <time>{formatDate(item.observedAt)}</time> : null}
                   </div>
                   <h3>{item.title}</h3>
                   <p>{item.summary}</p>
+                  <small>
+                    {humanize(item.sourceType)} · {humanize(item.contextType)} · {humanize(item.maturity)}
+                  </small>
                   {item.limitations ? <small>Limit: {item.limitations}</small> : null}
+                  {item.nextEvidenceNeeded ? (
+                    <small>Next evidence needed: {item.nextEvidenceNeeded}</small>
+                  ) : null}
                 </article>
               ))}
             </div>
@@ -262,16 +299,40 @@ export function PlanView({ model, preview = false }: { model: PlanViewModel; pre
           {model.phaseReview ? (
             <div className={styles.reviewCard}>
               <strong>{model.phaseReview.summary}</strong>
+              <div>
+                <span>Original phase purpose</span>
+                <p>{model.phaseReview.originalPurpose}</p>
+              </div>
               {model.phaseReview.evidenceSummary ? (
                 <div>
                   <span>Evidence considered</span>
                   <p>{model.phaseReview.evidenceSummary}</p>
                 </div>
               ) : null}
+              <div>
+                <span>Reliability</span>
+                <p>{model.phaseReview.reliabilityLabel}</p>
+              </div>
               {model.phaseReview.limitations ? (
                 <div>
                   <span>What remains uncertain</span>
                   <p>{model.phaseReview.limitations}</p>
+                </div>
+              ) : null}
+              {model.phaseReview.golferContribution ? (
+                <div>
+                  <span>Golfer contribution</span>
+                  <p>{model.phaseReview.golferContribution}</p>
+                </div>
+              ) : null}
+              <div>
+                <span>Coach conclusion</span>
+                <p>{model.phaseReview.coachConclusion}</p>
+              </div>
+              {model.phaseReview.remainingOpportunity ? (
+                <div>
+                  <span>Remaining opportunity</span>
+                  <p>{model.phaseReview.remainingOpportunity}</p>
                 </div>
               ) : null}
               {model.phaseReview.nextRecommendation ? (
@@ -296,8 +357,27 @@ export function PlanView({ model, preview = false }: { model: PlanViewModel; pre
               </div>
               <div>
                 <p>{model.coachingPackage.description}</p>
+                {model.coachingPackage.inclusions.length ? (
+                  <div className={styles.packageDetails}>
+                    <strong>What is included</strong>
+                    <ul>
+                      {model.coachingPackage.inclusions.map((inclusion) => (
+                        <li key={inclusion}>{inclusion}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+                {model.coachingPackage.cadence ? (
+                  <small>Cadence: {model.coachingPackage.cadence}</small>
+                ) : null}
+                {model.coachingPackage.practiceExpectation ? (
+                  <small>Practice expectation: {model.coachingPackage.practiceExpectation}</small>
+                ) : null}
+                {model.coachingPackage.evaluationDescription ? (
+                  <small>Evaluation: {model.coachingPackage.evaluationDescription}</small>
+                ) : null}
                 <small>{model.coachingPackage.terms}</small>
-                {!model.access ? (
+                {!model.access && !preview ? (
                   <a
                     href={model.coachingPackage.externalActionUrl}
                     rel="external noopener noreferrer"
@@ -318,11 +398,12 @@ export function PlanView({ model, preview = false }: { model: PlanViewModel; pre
               <p>You can ask the coach, wait, or continue practising independently.</p>
             </div>
           )}
-          {model.access ? (
+          {model.access || preview ? (
             <GolferChoices
               coachName={model.coach.displayName}
               coachEmail={model.coach.contactEmail}
               externalActionUrl={model.coachingPackage?.externalActionUrl}
+              preview={preview}
             />
           ) : model.coach.contactEmail ? (
             <div className={styles.choiceLinks}>

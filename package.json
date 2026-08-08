@@ -14,7 +14,9 @@
     "typecheck": "tsc --noEmit --pretty false",
     "verify": "npm run lint && npm run typecheck && npm test",
     "audit:production": "npm audit --omit=dev",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "exercise:recovery:local": "node scripts/local-synthetic-recovery-exercise.mjs",
+    "verify:release-integrity": "node scripts/release-integrity-check.mjs"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",
@@ -34,6 +36,7 @@
     "drizzle-kit": "0.31.10",
     "eslint": "9.39.4",
     "eslint-config-next": "16.3.0",
+    "miniflare": "5.20260801.1-alpha",
     "react-server-dom-webpack": "19.2.8",
     "tailwindcss": "4.2.1",
     "typescript": "5.9.3",

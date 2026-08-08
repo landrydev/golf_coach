@@ -12,6 +12,7 @@ const ERROR_SUMMARY_ID = "new-golfer-form-error-summary";
 export function NewGolferForm({ packages }: { packages: PackageOption[] }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
+  const [phaseCount, setPhaseCount] = useState<3 | 4>(4);
   const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
   const [message, setMessage] = useState("");
 
@@ -35,16 +36,19 @@ export function NewGolferForm({ packages }: { packages: PackageOption[] }) {
       assessment: {
         summary: form.get("assessmentSummary"),
         strengths: form.get("strengths"),
+        primaryPattern: form.get("primaryPattern"),
         limitations: form.get("limitations"),
       },
       priority: {
         title: form.get("priorityTitle"),
         rationale: form.get("priorityRationale"),
       },
-      phases: [1, 2, 3, 4].map((number) => ({
+      phases: Array.from({ length: phaseCount }, (_, index) => index + 1).map((number) => ({
         number,
         title: form.get(`phase${number}Title`),
         purpose: form.get(`phase${number}Purpose`),
+        rationale: form.get(`phase${number}Rationale`),
+        progressSignals: lineItems(form.get(`phase${number}ProgressSignals`)),
       })),
     };
 
@@ -169,7 +173,16 @@ export function NewGolferForm({ packages }: { packages: PackageOption[] }) {
             </label>
             <label className={styles.fullField}>
               Strengths to preserve
-              <textarea name="strengths" maxLength={1_500} />
+              <textarea name="strengths" required maxLength={1_500} />
+            </label>
+            <label className={styles.fullField}>
+              Primary pattern
+              <textarea
+                name="primaryPattern"
+                required
+                maxLength={2_000}
+                placeholder="Describe the narrow recurring pattern the roadmap addresses. Keep observation separate from interpretation."
+              />
             </label>
             <label className={styles.fullField}>
               Evidence limits
@@ -189,7 +202,7 @@ export function NewGolferForm({ packages }: { packages: PackageOption[] }) {
           <legend>Current priority</legend>
           <div className={styles.fieldGrid}>
             <label className={styles.field}>
-              Priority title
+              Primary priority barrier
               <input name="priorityTitle" required maxLength={120} />
             </label>
             <label className={styles.fullField}>
@@ -206,7 +219,18 @@ export function NewGolferForm({ packages }: { packages: PackageOption[] }) {
           <p className={styles.muted}>
             Future phases are direction, not promises. They can change as evidence develops.
           </p>
-          {[1, 2, 3, 4].map((number) => (
+          <label className={styles.field}>
+            Number of phases
+            <select
+              name="phaseCount"
+              value={phaseCount}
+              onChange={(event) => setPhaseCount(event.target.value === "3" ? 3 : 4)}
+            >
+              <option value="3">3 directional phases</option>
+              <option value="4">4 directional phases</option>
+            </select>
+          </label>
+          {Array.from({ length: phaseCount }, (_, index) => index + 1).map((number) => (
             <div className={styles.fieldGrid} key={number}>
               <label className={styles.field}>
                 Phase {number} title
@@ -215,6 +239,24 @@ export function NewGolferForm({ packages }: { packages: PackageOption[] }) {
               <label className={styles.field}>
                 Phase {number} purpose
                 <textarea name={`phase${number}Purpose`} required maxLength={700} />
+              </label>
+              <label className={styles.fullField}>
+                {number === 1 ? "Why this phase leads" : `Why Phase ${number} follows (optional)`}
+                <textarea
+                  name={`phase${number}Rationale`}
+                  required={number === 1}
+                  maxLength={1_500}
+                />
+              </label>
+              <label className={styles.fullField}>
+                {number === 1 ? "Progress signals — one per line" : "Progress signals — one per line (optional)"}
+                <textarea
+                  name={`phase${number}ProgressSignals`}
+                  required={number === 1}
+                  maxLength={2_400}
+                  placeholder={number === 1 ? "A repeatable observable signal\nA coach-reviewed on-course signal" : undefined}
+                />
+                <small>Use observable signals, not guaranteed outcomes or fixed timelines.</small>
               </label>
             </div>
           ))}
@@ -237,4 +279,11 @@ export function NewGolferForm({ packages }: { packages: PackageOption[] }) {
       </div>
     </form>
   );
+}
+
+function lineItems(value: FormDataEntryValue | null): string[] {
+  return String(value ?? "")
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 }

@@ -5,7 +5,7 @@ export type PlanViewModel = {
     contactEmail?: string | null;
     accentColor?: string | null;
   };
-  golfer: { displayName: string };
+  golfer: { displayName: string; status?: string };
   plan: {
     id: string;
     title: string;
@@ -22,6 +22,7 @@ export type PlanViewModel = {
   assessment: {
     summary: string;
     strengths?: string | null;
+    primaryPattern?: string | null;
     limitations: string;
   };
   priority?: {
@@ -33,6 +34,10 @@ export type PlanViewModel = {
     number: number;
     title: string;
     purpose: string;
+    rationale?: string | null;
+    progressSignals: string[];
+    expectations?: string | null;
+    estimatedDuration?: string | null;
     status: string;
   }>;
   lessons: Array<{
@@ -56,14 +61,23 @@ export type PlanViewModel = {
     id: string;
     title: string;
     summary: string;
+    sourceLabel: string;
     sourceType: string;
+    contextType: string;
+    maturity: string;
     limitations?: string | null;
+    nextEvidenceNeeded?: string | null;
     observedAt?: number | null;
   }>;
   phaseReview?: {
     summary: string;
+    originalPurpose: string;
     evidenceSummary?: string | null;
+    reliabilityLabel: string;
     limitations?: string | null;
+    golferContribution?: string | null;
+    coachConclusion: string;
+    remainingOpportunity?: string | null;
     nextRecommendation?: string | null;
     decisionStatus?: string | null;
   } | null;
@@ -74,6 +88,10 @@ export type PlanViewModel = {
     currency?: string | null;
     currentDetailsText?: string | null;
     terms?: string | null;
+    inclusions: string[];
+    cadence?: string | null;
+    practiceExpectation?: string | null;
+    evaluationDescription?: string | null;
     externalActionUrl: string;
   } | null;
   access?: {

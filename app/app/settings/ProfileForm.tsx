@@ -33,10 +33,21 @@ export function ProfileForm(props: {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const result = (await response.json()) as { error?: { message?: string } };
+      const result = (await response.json()) as {
+        publicationImpact?: {
+          invalidated?: boolean;
+          affectedPlans?: number;
+          revokedShareLinks?: number;
+        };
+        error?: { message?: string };
+      };
       if (!response.ok) throw new Error(result.error?.message || "Your profile could not be saved.");
       setState("saved");
-      setMessage("Coach identity saved.");
+      setMessage(
+        result.publicationImpact?.invalidated
+          ? "Coach identity saved. Any existing private access was revoked. Review the affected golfer plans before publishing or sharing again."
+          : "Coach identity saved.",
+      );
       router.refresh();
     } catch (error) {
       setState("error");

@@ -20,6 +20,7 @@ import {
 } from "@/db/schema";
 import type { PlanViewModel } from "@/components/plan/types";
 import { RequestError } from "./http";
+import { assertPublicationReady } from "./publication-readiness";
 import {
   createShareSessionToken,
   createShareToken,
@@ -192,6 +193,12 @@ export async function publishPlanAndCreateShare(input: {
       "This exact revision already has a sharing record. Create a new plan revision before publishing again.",
     );
   }
+
+  const publishModel = await assemblePlanView(input.accountId, plan);
+  if (!publishModel) {
+    throw new RequestError(409, "plan_not_ready", "The complete golfer view could not be prepared.");
+  }
+  assertPublicationReady(publishModel);
 
   const days = input.expiresInDays ?? DEFAULT_SHARE_DAYS;
   if (![1, 7, 30, 90].includes(days)) {
@@ -886,7 +893,10 @@ async function assemblePlanView(
       contactEmail: profile.contactEmail,
       accentColor: profile.accentColor,
     },
-    golfer: { displayName: golfer.preferredName || golfer.displayName },
+    golfer: {
+      displayName: golfer.preferredName || golfer.displayName,
+      status: golfer.status,
+    },
     plan: {
       id: plan.id,
       title: plan.title,
@@ -903,8 +913,11 @@ async function assemblePlanView(
     assessment: {
       summary: assessment.startingPoint,
       strengths: assessment.strengthSummary,
-      limitations:
-        assessment.limitations || "No evidence limitations have been recorded yet.",
+      primaryPattern: assessment.primaryPattern,
+      // Keep missing stored content visible to the server-side publication
+      // readiness guard. The coach preview may explain the empty state, but a
+      // display fallback must never make an incomplete plan publishable.
+      limitations: assessment.limitations ?? "",
     },
     priority: priority
       ? { title: priority.title, rationale: priority.rationale || priority.description }
@@ -914,6 +927,10 @@ async function assemblePlanView(
       number: phase.sequence,
       title: phase.title,
       purpose: phase.purpose,
+      rationale: phase.rationale,
+      progressSignals: phase.progressSignals,
+      expectations: phase.expectations,
+      estimatedDuration: phase.estimatedDuration,
       status: phase.status,
     })),
     lessons: lessonRows.map((lesson) => ({
@@ -938,15 +955,24 @@ async function assemblePlanView(
       title: item.title,
       summary:
         item.interpretation || item.claim || "Evidence recorded without an interpretation.",
+      sourceLabel: item.sourceLabel,
       sourceType: item.sourceType,
+      contextType: item.contextType,
+      maturity: item.maturity,
       limitations: item.limitation,
+      nextEvidenceNeeded: item.nextEvidenceNeeded,
       observedAt: toMillis(item.observedAt),
     })),
     phaseReview: review
       ? {
           summary: review.changeSummary || review.coachConclusion,
+          originalPurpose: review.originalPurpose,
           evidenceSummary: review.workCompleted,
+          reliabilityLabel: review.reliabilityLabel,
           limitations: review.limitations,
+          golferContribution: review.golferContribution,
+          coachConclusion: review.coachConclusion,
+          remainingOpportunity: review.remainingOpportunity,
           nextRecommendation: review.nextPhaseRationale || review.independentPracticeAlternative,
           decisionStatus: review.outcome,
         }
@@ -959,6 +985,10 @@ async function assemblePlanView(
           currency: packageRow.currency,
           currentDetailsText: packageRow.currentDetailsText,
           terms: packageRow.termsSummary,
+          inclusions: packageRow.inclusions,
+          cadence: packageRow.cadence,
+          practiceExpectation: packageRow.practiceExpectation,
+          evaluationDescription: packageRow.evaluationDescription,
           externalActionUrl: packageRow.externalActionUrl,
         }
       : null,

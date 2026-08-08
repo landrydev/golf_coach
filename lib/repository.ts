@@ -1,4 +1,15 @@
-import { and, count, desc, eq, inArray, ne, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  inArray,
+  isNull,
+  ne,
+  or,
+  sql,
+} from "drizzle-orm";
 import { getDb } from "@/db";
 import {
   accounts,
@@ -15,6 +26,7 @@ import {
   planPhases,
   planPriorities,
   shareLinks,
+  shareSessions,
 } from "@/db/schema";
 import { RequestError } from "@/lib/http";
 import type { RequestIdentity } from "@/lib/identity";
@@ -37,6 +49,30 @@ export type ProfileView = {
   accentColor: string | null;
   setupCompletedAt: number | null;
   updatedAt: number;
+};
+
+export type SaveProfileInput = {
+  displayName: string;
+  businessName: string | null;
+  professionalTitle: string | null;
+  philosophy: string | null;
+  contactEmail: string;
+  contactPhone: string | null;
+  websiteUrl: string | null;
+  provinceOrTerritory: string | null;
+  city: string | null;
+  accentColor: string | null;
+};
+
+export type ProfileSaveResult = {
+  profile: ProfileView;
+  changedFields: Array<keyof SaveProfileInput>;
+  publicationImpact: {
+    invalidated: boolean;
+    affectedPlans: number;
+    revokedShareLinks: number;
+    revokedShareSessions: number;
+  };
 };
 
 export type PackageView = {
@@ -79,6 +115,7 @@ export type GolferListItem = {
     title: string;
     status: "draft" | "preview_ready" | "published" | "paused" | "completed" | "archived";
     updatedAt: number;
+    authoringComplete: boolean;
   } | null;
 };
 
@@ -88,6 +125,89 @@ export type WorkspaceSummary = {
   plansAwaitingReview: number;
   activePackages: number;
   profileComplete: boolean;
+};
+
+export type StagedGolferWorkspaceView = {
+  golfer: {
+    id: string;
+    displayName: string;
+    preferredName: string | null;
+    contactEmail: string | null;
+    status: "active" | "inactive" | "archived" | "deletion_pending" | "deleted";
+    eligibilityStatus: "unconfirmed" | "adult_confirmed" | "ineligible";
+  };
+  plan: {
+    id: string;
+    title: string;
+    status: "draft" | "preview_ready" | "published" | "paused" | "completed" | "archived";
+    revision: number;
+    approvedRevision: number | null;
+    publishedRevision: number | null;
+  };
+  goal: {
+    id: string;
+    desiredOutcome: string;
+    whyItMatters: string | null;
+    context: string | null;
+  } | null;
+  authoringState: "staged" | "complete" | "invalid";
+};
+
+export type CreateStagedGolferWorkspaceInput = {
+  displayName: string;
+  preferredName: string | null;
+  contactEmail: string | null;
+  planTitle: string;
+  goal: {
+    desiredOutcome: string;
+    whyItMatters: string | null;
+    context: string | null;
+  };
+};
+
+export type StagedGolferWorkspaceSubmission = {
+  workspace: StagedGolferWorkspaceView;
+  created: boolean;
+};
+
+export type CompleteStagedGolferWorkspaceInput = {
+  accountId: string;
+  golferId: string;
+  expectedPlanId: string;
+  expectedRevision: number;
+  assessment: {
+    startingPoint: string;
+    strengthSummary: string;
+    primaryPattern: string;
+    limitations: string;
+  };
+  priority: {
+    title: string;
+    rationale: string;
+  };
+  phases: Array<{
+    sequence: number;
+    title: string;
+    purpose: string;
+    rationale: string | null;
+    progressSignals: string[];
+  }>;
+  firstPhasePackageId: string | null;
+  requestId?: string | null;
+};
+
+export type CompletedStagedGolferWorkspace = {
+  golfer: { id: string; displayName: string };
+  plan: { id: string; title: string; status: "draft"; revision: number };
+  assessment: { id: string };
+  priority: { id: string };
+  phases: Array<{
+    id: string;
+    number: number;
+    title: string;
+    purpose: string;
+    status: "active" | "planned";
+  }>;
 };
 
 /**
@@ -180,37 +300,86 @@ export async function getProfile(accountId: string): Promise<ProfileView | null>
 
 export async function saveProfile(
   accountId: string,
-  input: {
-    displayName: string;
-    businessName: string | null;
-    professionalTitle: string | null;
-    philosophy: string | null;
-    contactEmail: string;
-    contactPhone: string | null;
-    websiteUrl: string | null;
-    provinceOrTerritory: string | null;
-    city: string | null;
-    accentColor: string | null;
-  },
+  input: SaveProfileInput,
   requestId?: string,
-): Promise<ProfileView> {
+): Promise<ProfileSaveResult> {
   const db = getDb();
-  const now = new Date();
-  const values = {
-    accountId,
-    ...input,
-    setupCompletedAt: now,
-    updatedAt: now,
-  };
+  const existing = await getProfile(accountId);
 
-  await db.batch([
-    db
-      .insert(instructorProfiles)
-      .values(values)
-      .onConflictDoUpdate({
-        target: instructorProfiles.accountId,
-        set: {
-          displayName: input.displayName,
+  if (!existing) {
+    const now = new Date();
+    try {
+      await db.batch([
+        db.insert(instructorProfiles).values({
+          accountId,
+          ...input,
+          setupCompletedAt: now,
+          updatedAt: now,
+        }),
+        db.insert(auditEvents).values({
+          id: newId(),
+          accountId,
+          actorType: "account",
+          actorAccountId: accountId,
+          action: "profile.saved",
+          targetType: "instructor_profile",
+          targetId: accountId,
+          outcome: "success",
+          requestId,
+          metadata: {
+            changedFields: [...PROFILE_MUTABLE_FIELDS],
+            initialSetup: true,
+            publicationInvalidated: false,
+          },
+        }),
+      ]);
+    } catch (error) {
+      if (await getProfile(accountId)) {
+        throw new RequestError(
+          409,
+          "stale_profile_update",
+          "The coach profile changed while this save was in progress. Refresh before saving again.",
+        );
+      }
+      throw error;
+    }
+
+    const profile = await getProfile(accountId);
+    if (!profile) throw new Error("The saved profile could not be loaded.");
+    return {
+      profile,
+      changedFields: [...PROFILE_MUTABLE_FIELDS],
+      publicationImpact: emptyProfilePublicationImpact(false),
+    };
+  }
+
+  const changedFields = PROFILE_MUTABLE_FIELDS.filter(
+    (field) => existing[field] !== input[field],
+  );
+  if (changedFields.length === 0) {
+    return {
+      profile: existing,
+      changedFields,
+      publicationImpact: emptyProfilePublicationImpact(false),
+    };
+  }
+
+  const impact = await getProfilePublicationImpact(accountId);
+  const now = new Date(Math.max(Date.now(), existing.updatedAt + 1));
+  const affectedPlanPredicate = and(
+    eq(developmentPlans.accountId, accountId),
+    ne(developmentPlans.status, "archived"),
+  );
+
+  try {
+    await db.batch([
+      db
+        .update(instructorProfiles)
+        .set({
+          // Make the observed profile timestamp a transactional compare-and-swap
+          // sentinel. A lost race writes NULL to a NOT NULL field, aborting the
+          // entire batch before any capability or plan can be left half-reset.
+          displayName: sql<string>`case when ${instructorProfiles.updatedAt} = ${existing.updatedAt} then ${input.displayName} else null end`,
           businessName: input.businessName,
           professionalTitle: input.professionalTitle,
           philosophy: input.philosophy,
@@ -222,38 +391,163 @@ export async function saveProfile(
           accentColor: input.accentColor,
           setupCompletedAt: sql`coalesce(${instructorProfiles.setupCompletedAt}, ${now.getTime()})`,
           updatedAt: now,
+        })
+        .where(eq(instructorProfiles.accountId, accountId)),
+      db
+        .update(shareSessions)
+        .set({
+          revokedAt: now,
+          revokeReason: PROFILE_SHARE_REVOKE_REASON,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(shareSessions.accountId, accountId),
+            isNull(shareSessions.revokedAt),
+          ),
+        ),
+      db
+        .update(shareLinks)
+        .set({
+          status: "revoked",
+          revokedAt: now,
+          revokeReason: PROFILE_SHARE_REVOKE_REASON,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(shareLinks.accountId, accountId),
+            eq(shareLinks.status, "active"),
+          ),
+        ),
+      db
+        .update(developmentPlans)
+        .set({
+          // Profile content is assembled before the publish batch. Bump every
+          // non-archived plan, including drafts, so a publish that assembled
+          // the old profile cannot win later with its stale expected revision.
+          // Paused/completed lifecycle status remains truthful while approval
+          // and publication markers are cleared for deliberate review.
+          status: sql`case when ${developmentPlans.status} in ('published', 'preview_ready') then 'draft' else ${developmentPlans.status} end`,
+          revision: sql`${developmentPlans.revision} + 1`,
+          approvedRevision: null,
+          publishedRevision: null,
+          coachApprovedAt: null,
+          previewedAt: null,
+          publishedAt: null,
+          lastSharedAt: null,
+          updatedAt: now,
+        })
+        .where(affectedPlanPredicate),
+      db.insert(auditEvents).values({
+        id: newId(),
+        accountId,
+        actorType: "account",
+        actorAccountId: accountId,
+        action: "profile.saved",
+        targetType: "instructor_profile",
+        targetId: accountId,
+        outcome: "success",
+        requestId,
+        metadata: {
+          changedFields,
+          publicationInvalidated: true,
+          revocationScope: "all_active_account_shares_and_sessions",
+          shareRevokeReason: PROFILE_SHARE_REVOKE_REASON,
+          affectedPlansObservedBeforeCommit: impact.affectedPlans,
+          activeShareLinksObservedBeforeCommit: impact.revokedShareLinks,
+          activeShareSessionsObservedBeforeCommit: impact.revokedShareSessions,
+          planReviewRequired: impact.affectedPlans > 0,
+          stalePublicationFenced: true,
         },
       }),
-    db.insert(auditEvents).values({
-      id: newId(),
-      accountId,
-      actorType: "account",
-      actorAccountId: accountId,
-      action: "profile.saved",
-      targetType: "instructor_profile",
-      targetId: accountId,
-      outcome: "success",
-      requestId,
-      metadata: {
-        changedFields: [
-          "displayName",
-          "businessName",
-          "professionalTitle",
-          "philosophy",
-          "contactEmail",
-          "contactPhone",
-          "websiteUrl",
-          "provinceOrTerritory",
-          "city",
-          "accentColor",
-        ],
-      },
-    }),
-  ]);
+    ]);
+  } catch (error) {
+    const current = await getProfile(accountId);
+    if (!current || current.updatedAt !== existing.updatedAt) {
+      throw new RequestError(
+        409,
+        "stale_profile_update",
+        "The coach profile changed while this save was in progress. Refresh before saving again.",
+      );
+    }
+    throw error;
+  }
 
   const profile = await getProfile(accountId);
   if (!profile) throw new Error("The saved profile could not be loaded.");
-  return profile;
+  return {
+    profile,
+    changedFields,
+    publicationImpact: {
+      invalidated: true,
+      ...impact,
+    },
+  };
+}
+
+const PROFILE_MUTABLE_FIELDS = [
+  "displayName",
+  "businessName",
+  "professionalTitle",
+  "philosophy",
+  "contactEmail",
+  "contactPhone",
+  "websiteUrl",
+  "provinceOrTerritory",
+  "city",
+  "accentColor",
+] as const satisfies ReadonlyArray<keyof SaveProfileInput>;
+
+const PROFILE_SHARE_REVOKE_REASON = "coach profile updated";
+
+function emptyProfilePublicationImpact(
+  invalidated: boolean,
+): ProfileSaveResult["publicationImpact"] {
+  return {
+    invalidated,
+    affectedPlans: 0,
+    revokedShareLinks: 0,
+    revokedShareSessions: 0,
+  };
+}
+
+async function getProfilePublicationImpact(accountId: string) {
+  const db = getDb();
+  const [planRows, shareRows, sessionRows] = await Promise.all([
+    db
+      .select({ value: count() })
+      .from(developmentPlans)
+      .where(
+        and(
+          eq(developmentPlans.accountId, accountId),
+          ne(developmentPlans.status, "archived"),
+        ),
+      ),
+    db
+      .select({ value: count() })
+      .from(shareLinks)
+      .where(
+        and(
+          eq(shareLinks.accountId, accountId),
+          eq(shareLinks.status, "active"),
+        ),
+      ),
+    db
+      .select({ value: count() })
+      .from(shareSessions)
+      .where(
+        and(
+          eq(shareSessions.accountId, accountId),
+          isNull(shareSessions.revokedAt),
+        ),
+      ),
+  ]);
+  return {
+    affectedPlans: planRows[0]?.value ?? 0,
+    revokedShareLinks: shareRows[0]?.value ?? 0,
+    revokedShareSessions: sessionRows[0]?.value ?? 0,
+  };
 }
 
 export async function listPackages(accountId: string): Promise<PackageView[]> {
@@ -659,7 +953,13 @@ function linkedNonArchivedPlanPredicate(accountId: string, packageId: string) {
 
 export async function listGolfers(accountId: string): Promise<GolferListItem[]> {
   const db = getDb();
-  const [golferRows, planRows] = await Promise.all([
+  const [
+    golferRows,
+    planRows,
+    assessmentPlanRows,
+    priorityPlanRows,
+    phasePlanRows,
+  ] = await Promise.all([
     db
       .select()
       .from(golfers)
@@ -681,6 +981,18 @@ export async function listGolfers(accountId: string): Promise<GolferListItem[]> 
       .from(developmentPlans)
       .where(eq(developmentPlans.accountId, accountId))
       .orderBy(desc(developmentPlans.updatedAt)),
+    db
+      .select({ planId: assessments.planId })
+      .from(assessments)
+      .where(eq(assessments.accountId, accountId)),
+    db
+      .select({ planId: planPriorities.planId })
+      .from(planPriorities)
+      .where(eq(planPriorities.accountId, accountId)),
+    db
+      .select({ planId: planPhases.planId })
+      .from(planPhases)
+      .where(eq(planPhases.accountId, accountId)),
   ]);
 
   const latestPlanByGolfer = new Map<string, (typeof planRows)[number]>();
@@ -688,6 +1000,15 @@ export async function listGolfers(accountId: string): Promise<GolferListItem[]> 
     if (!latestPlanByGolfer.has(plan.golferId)) {
       latestPlanByGolfer.set(plan.golferId, plan);
     }
+  }
+  const plansWithAssessment = new Set(assessmentPlanRows.map((row) => row.planId));
+  const plansWithPriority = new Set(priorityPlanRows.map((row) => row.planId));
+  const phaseCountByPlan = new Map<string, number>();
+  for (const phase of phasePlanRows) {
+    phaseCountByPlan.set(
+      phase.planId,
+      (phaseCountByPlan.get(phase.planId) ?? 0) + 1,
+    );
   }
 
   return golferRows
@@ -712,6 +1033,10 @@ export async function listGolfers(accountId: string): Promise<GolferListItem[]> 
               title: plan.title,
               status: plan.status,
               updatedAt: planUpdatedAt!,
+              authoringComplete:
+                plansWithAssessment.has(plan.id) &&
+                plansWithPriority.has(plan.id) &&
+                [3, 4].includes(phaseCountByPlan.get(plan.id) ?? 0),
             }
           : null,
       };
@@ -772,6 +1097,555 @@ export async function getWorkspaceSummary(
     activePackages: activePackageRows[0]?.value ?? 0,
     profileComplete: profileRows.length === 1,
   };
+}
+
+export async function createStagedGolferWorkspace(
+  accountId: string,
+  input: CreateStagedGolferWorkspaceInput,
+  idempotencyKey: string,
+): Promise<StagedGolferWorkspaceSubmission> {
+  const db = getDb();
+  const existing = await getStagedWorkspaceByIdempotencyKey(
+    accountId,
+    idempotencyKey,
+  );
+  if (existing) {
+    assertMatchingStagedRetry(existing, input);
+    return { workspace: existing, created: false };
+  }
+
+  const now = new Date();
+  const golferId = newId();
+  const planId = newId();
+  const goalId = newId();
+
+  try {
+    await db.batch([
+      db
+        .update(accounts)
+        .set({
+          // D1 batches serialize on this tenant row. The first request inserts
+          // the canonical audit key; a concurrent retry then violates this
+          // non-null sentinel and rolls its duplicate golfer, plan, and goal
+          // back with no schema migration.
+          normalizedEmail: sql<string>`case when not exists (
+            select 1 from ${auditEvents}
+            where ${auditEvents.accountId} = ${accountId}
+              and ${auditEvents.action} = 'golfer_workspace.staged'
+              and ${auditEvents.outcome} = 'success'
+              and ${auditEvents.requestId} = ${idempotencyKey}
+          ) then ${accounts.normalizedEmail} else null end`,
+        })
+        .where(eq(accounts.id, accountId)),
+      db.insert(golfers).values({
+        id: golferId,
+        accountId,
+        displayName: input.displayName,
+        preferredName: input.preferredName,
+        contactEmail: input.contactEmail,
+        status: "active",
+        eligibilityStatus: "adult_confirmed",
+        eligibilityConfirmedAt: now,
+        lastActivityAt: now,
+      }),
+      db.insert(developmentPlans).values({
+        id: planId,
+        accountId,
+        golferId,
+        title: input.planTitle,
+        status: "draft",
+        revision: 1,
+      }),
+      db.insert(golferGoals).values({
+        id: goalId,
+        accountId,
+        golferId,
+        planId,
+        desiredOutcome: input.goal.desiredOutcome,
+        whyItMatters: input.goal.whyItMatters,
+        context: input.goal.context,
+        status: "active",
+        isPrimary: true,
+      }),
+      db.insert(auditEvents).values({
+        id: newId(),
+        accountId,
+        actorType: "account",
+        actorAccountId: accountId,
+        action: "golfer_workspace.staged",
+        targetType: "golfer",
+        targetId: golferId,
+        outcome: "success",
+        requestId: idempotencyKey,
+        metadata: {
+          planId,
+          eligibilityStatus: "adult_confirmed",
+          coachingContentStored: false,
+        },
+      }),
+    ]);
+  } catch (error) {
+    const raced = await getStagedWorkspaceByIdempotencyKey(
+      accountId,
+      idempotencyKey,
+    );
+    if (!raced) throw error;
+    assertMatchingStagedRetry(raced, input);
+    return { workspace: raced, created: false };
+  }
+
+  const workspace: StagedGolferWorkspaceView = {
+    golfer: {
+      id: golferId,
+      displayName: input.displayName,
+      preferredName: input.preferredName,
+      contactEmail: input.contactEmail,
+      status: "active",
+      eligibilityStatus: "adult_confirmed",
+    },
+    plan: {
+      id: planId,
+      title: input.planTitle,
+      status: "draft",
+      revision: 1,
+      approvedRevision: null,
+      publishedRevision: null,
+    },
+    goal: {
+      id: goalId,
+      desiredOutcome: input.goal.desiredOutcome,
+      whyItMatters: input.goal.whyItMatters,
+      context: input.goal.context,
+    },
+    authoringState: "staged",
+  };
+  return { workspace, created: true };
+}
+
+export async function getStagedGolferWorkspace(
+  accountId: string,
+  golferId: string,
+): Promise<StagedGolferWorkspaceView | null> {
+  const db = getDb();
+  const [golfer] = await db
+    .select()
+    .from(golfers)
+    .where(and(eq(golfers.accountId, accountId), eq(golfers.id, golferId)))
+    .limit(1);
+  if (!golfer) return null;
+
+  const [plan] = await db
+    .select()
+    .from(developmentPlans)
+    .where(
+      and(
+        eq(developmentPlans.accountId, accountId),
+        eq(developmentPlans.golferId, golferId),
+      ),
+    )
+    .orderBy(desc(developmentPlans.updatedAt))
+    .limit(1);
+  if (!plan) return null;
+
+  const [goalRows, assessmentRows, priorityRows, phaseRows] = await Promise.all([
+    db
+      .select()
+      .from(golferGoals)
+      .where(
+        and(
+          eq(golferGoals.accountId, accountId),
+          eq(golferGoals.planId, plan.id),
+          eq(golferGoals.isPrimary, true),
+          eq(golferGoals.status, "active"),
+        ),
+      )
+      .orderBy(desc(golferGoals.updatedAt))
+      .limit(1),
+    db
+      .select({ id: assessments.id })
+      .from(assessments)
+      .where(
+        and(
+          eq(assessments.accountId, accountId),
+          eq(assessments.planId, plan.id),
+        ),
+      ),
+    db
+      .select({ id: planPriorities.id })
+      .from(planPriorities)
+      .where(
+        and(
+          eq(planPriorities.accountId, accountId),
+          eq(planPriorities.planId, plan.id),
+        ),
+      ),
+    db
+      .select({ id: planPhases.id })
+      .from(planPhases)
+      .where(
+        and(
+          eq(planPhases.accountId, accountId),
+          eq(planPhases.planId, plan.id),
+        ),
+      ),
+  ]);
+
+  const hasCompleteContent =
+    assessmentRows.length > 0 &&
+    priorityRows.length > 0 &&
+    [3, 4].includes(phaseRows.length);
+  const hasNoCompletionContent =
+    assessmentRows.length === 0 &&
+    priorityRows.length === 0 &&
+    phaseRows.length === 0;
+  const goal = goalRows[0];
+
+  return {
+    golfer: {
+      id: golfer.id,
+      displayName: golfer.displayName,
+      preferredName: golfer.preferredName,
+      contactEmail: golfer.contactEmail,
+      status: golfer.status,
+      eligibilityStatus: golfer.eligibilityStatus,
+    },
+    plan: {
+      id: plan.id,
+      title: plan.title,
+      status: plan.status,
+      revision: plan.revision,
+      approvedRevision: plan.approvedRevision,
+      publishedRevision: plan.publishedRevision,
+    },
+    goal: goal
+      ? {
+          id: goal.id,
+          desiredOutcome: goal.desiredOutcome,
+          whyItMatters: goal.whyItMatters,
+          context: goal.context,
+        }
+      : null,
+    authoringState:
+      goal && hasCompleteContent
+        ? "complete"
+        : goal && hasNoCompletionContent
+          ? "staged"
+          : "invalid",
+  };
+}
+
+async function getStagedWorkspaceByIdempotencyKey(
+  accountId: string,
+  idempotencyKey: string,
+): Promise<StagedGolferWorkspaceView | null> {
+  const db = getDb();
+  const [event] = await db
+    .select({ golferId: auditEvents.targetId })
+    .from(auditEvents)
+    .where(
+      and(
+        eq(auditEvents.accountId, accountId),
+        eq(auditEvents.action, "golfer_workspace.staged"),
+        eq(auditEvents.outcome, "success"),
+        eq(auditEvents.requestId, idempotencyKey),
+        eq(auditEvents.targetType, "golfer"),
+      ),
+    )
+    .orderBy(asc(auditEvents.occurredAt))
+    .limit(1);
+  return event?.golferId
+    ? getStagedGolferWorkspace(accountId, event.golferId)
+    : null;
+}
+
+function assertMatchingStagedRetry(
+  existing: StagedGolferWorkspaceView,
+  input: CreateStagedGolferWorkspaceInput,
+): void {
+  const goal = existing.goal;
+  const matches =
+    existing.golfer.displayName === input.displayName &&
+    existing.golfer.preferredName === input.preferredName &&
+    existing.golfer.contactEmail === input.contactEmail &&
+    existing.golfer.eligibilityStatus === "adult_confirmed" &&
+    existing.plan.title === input.planTitle &&
+    goal !== null &&
+    goal.desiredOutcome === input.goal.desiredOutcome &&
+    goal.whyItMatters === input.goal.whyItMatters &&
+    goal.context === input.goal.context;
+  if (!matches) {
+    throw new RequestError(
+      409,
+      "idempotency_key_reused",
+      "This save key was already used for different golfer details. Reload and try again.",
+    );
+  }
+}
+
+export async function completeStagedGolferWorkspace(
+  input: CompleteStagedGolferWorkspaceInput,
+): Promise<CompletedStagedGolferWorkspace> {
+  const db = getDb();
+  const staged = await getStagedGolferWorkspace(input.accountId, input.golferId);
+  assertStagedCompletionState(staged, input);
+
+  if (input.firstPhasePackageId) {
+    const coachingPackage = await getPackageById(
+      input.accountId,
+      input.firstPhasePackageId,
+    );
+    if (!coachingPackage || coachingPackage.status !== "active") {
+      throw new RequestError(
+        409,
+        "invalid_package",
+        "The selected coaching package is no longer available.",
+      );
+    }
+  }
+
+  const now = new Date();
+  const assessmentId = newId();
+  const priorityId = newId();
+  const phaseIds = input.phases.map(() => newId());
+  const phaseRows = input.phases.map((phase, index) => ({
+    id: phaseIds[index],
+    accountId: input.accountId,
+    planId: input.expectedPlanId,
+    coachingPackageId: index === 0 ? input.firstPhasePackageId : null,
+    sequence: phase.sequence,
+    title: phase.title,
+    purpose: phase.purpose,
+    rationale: phase.rationale,
+    progressSignals: phase.progressSignals,
+    status: index === 0 ? ("active" as const) : ("planned" as const),
+    isRecommended: index === 0,
+  }));
+  const packageGuard = input.firstPhasePackageId
+    ? sql`exists (
+        select 1 from ${coachingPackages}
+        where ${coachingPackages.accountId} = ${input.accountId}
+          and ${coachingPackages.id} = ${input.firstPhasePackageId}
+          and ${coachingPackages.status} = 'active'
+      )`
+    : sql`1 = 1`;
+
+  try {
+    await db.batch([
+      db
+        .update(developmentPlans)
+        .set({
+          // The non-null title is the transactional CAS sentinel. Any stale,
+          // duplicate, ineligible, cross-tenant, or partially completed state
+          // makes this statement fail and rolls back every following insert.
+          title: sql<string>`case when
+            ${developmentPlans.revision} = ${input.expectedRevision}
+            and ${developmentPlans.status} = 'draft'
+            and ${developmentPlans.approvedRevision} is null
+            and ${developmentPlans.publishedRevision} is null
+            and exists (
+              select 1 from ${golfers}
+              where ${golfers.accountId} = ${input.accountId}
+                and ${golfers.id} = ${input.golferId}
+                and ${golfers.status} = 'active'
+                and ${golfers.eligibilityStatus} = 'adult_confirmed'
+            )
+            and exists (
+              select 1 from ${golferGoals}
+              where ${golferGoals.accountId} = ${input.accountId}
+                and ${golferGoals.planId} = ${input.expectedPlanId}
+                and ${golferGoals.golferId} = ${input.golferId}
+                and ${golferGoals.status} = 'active'
+                and ${golferGoals.isPrimary} = 1
+            )
+            and not exists (
+              select 1 from ${assessments}
+              where ${assessments.accountId} = ${input.accountId}
+                and ${assessments.planId} = ${input.expectedPlanId}
+            )
+            and not exists (
+              select 1 from ${planPriorities}
+              where ${planPriorities.accountId} = ${input.accountId}
+                and ${planPriorities.planId} = ${input.expectedPlanId}
+            )
+            and not exists (
+              select 1 from ${planPhases}
+              where ${planPhases.accountId} = ${input.accountId}
+                and ${planPhases.planId} = ${input.expectedPlanId}
+            )
+            and ${packageGuard}
+          then ${developmentPlans.title} else null end`,
+          revision: sql`${developmentPlans.revision} + 1`,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(developmentPlans.accountId, input.accountId),
+            eq(developmentPlans.id, input.expectedPlanId),
+            eq(developmentPlans.golferId, input.golferId),
+          ),
+        ),
+      db
+        .update(golfers)
+        .set({ lastActivityAt: now, updatedAt: now })
+        .where(
+          and(
+            eq(golfers.accountId, input.accountId),
+            eq(golfers.id, input.golferId),
+          ),
+        ),
+      db.insert(assessments).values({
+        id: assessmentId,
+        accountId: input.accountId,
+        planId: input.expectedPlanId,
+        title: "Starting assessment",
+        status: "draft",
+        assessedAt: now,
+        startingPoint: input.assessment.startingPoint,
+        strengthSummary: input.assessment.strengthSummary,
+        primaryPattern: input.assessment.primaryPattern,
+        limitations: input.assessment.limitations,
+      }),
+      db.insert(planPriorities).values({
+        id: priorityId,
+        accountId: input.accountId,
+        planId: input.expectedPlanId,
+        assessmentId,
+        title: input.priority.title,
+        description: input.priority.rationale,
+        rationale: input.priority.rationale,
+        status: "active",
+        sortOrder: 0,
+        isCurrent: true,
+      }),
+      db.insert(planPhases).values(phaseRows),
+      db.insert(phasePriorities).values({
+        accountId: input.accountId,
+        phaseId: phaseIds[0],
+        priorityId,
+        sortOrder: 0,
+      }),
+      db.insert(auditEvents).values({
+        id: newId(),
+        accountId: input.accountId,
+        actorType: "account",
+        actorAccountId: input.accountId,
+        action: "golfer_workspace.authoring_completed",
+        targetType: "development_plan",
+        targetId: input.expectedPlanId,
+        outcome: "success",
+        requestId: input.requestId ?? null,
+        metadata: {
+          previousRevision: input.expectedRevision,
+          completedRevision: input.expectedRevision + 1,
+          phaseCount: phaseRows.length,
+          packageAttached: input.firstPhasePackageId !== null,
+        },
+      }),
+    ]);
+  } catch (error) {
+    await rethrowStagedCompletionConflict(input, error);
+  }
+
+  return {
+    golfer: {
+      id: input.golferId,
+      displayName: staged.golfer.displayName,
+    },
+    plan: {
+      id: input.expectedPlanId,
+      title: staged.plan.title,
+      status: "draft",
+      revision: input.expectedRevision + 1,
+    },
+    assessment: { id: assessmentId },
+    priority: { id: priorityId },
+    phases: phaseRows.map((phase) => ({
+      id: phase.id,
+      number: phase.sequence,
+      title: phase.title,
+      purpose: phase.purpose,
+      status: phase.status,
+    })),
+  };
+}
+
+function assertStagedCompletionState(
+  staged: StagedGolferWorkspaceView | null,
+  input: Pick<
+    CompleteStagedGolferWorkspaceInput,
+    "expectedPlanId" | "expectedRevision"
+  >,
+): asserts staged is StagedGolferWorkspaceView {
+  if (!staged) {
+    throw new RequestError(404, "golfer_not_found", "Golfer not found.");
+  }
+  if (staged.plan.id !== input.expectedPlanId) {
+    throw new RequestError(
+      409,
+      "stale_staged_workspace",
+      "This golfer's staged roadmap changed. Refresh before completing it.",
+    );
+  }
+  if (staged.authoringState === "complete") {
+    throw new RequestError(
+      409,
+      "authoring_already_completed",
+      "This staged roadmap was already completed. Open the current draft instead.",
+    );
+  }
+  if (staged.authoringState !== "staged" || !staged.goal) {
+    throw new RequestError(
+      409,
+      "staged_workspace_not_completable",
+      "This roadmap is not in a safe resumable authoring state.",
+    );
+  }
+  if (staged.plan.revision !== input.expectedRevision) {
+    throw new RequestError(
+      409,
+      "stale_plan_revision",
+      "This staged roadmap changed after the page loaded. Refresh before completing it.",
+    );
+  }
+  if (
+    staged.golfer.status !== "active" ||
+    staged.golfer.eligibilityStatus !== "adult_confirmed" ||
+    staged.plan.status !== "draft" ||
+    staged.plan.approvedRevision !== null ||
+    staged.plan.publishedRevision !== null
+  ) {
+    throw new RequestError(
+      409,
+      "staged_workspace_not_completable",
+      "This roadmap is not in a safe resumable authoring state.",
+    );
+  }
+}
+
+async function rethrowStagedCompletionConflict(
+  input: CompleteStagedGolferWorkspaceInput,
+  error: unknown,
+): Promise<never> {
+  const latest = await getStagedGolferWorkspace(input.accountId, input.golferId);
+  try {
+    assertStagedCompletionState(latest, input);
+  } catch (conflict) {
+    throw conflict;
+  }
+  if (input.firstPhasePackageId) {
+    const coachingPackage = await getPackageById(
+      input.accountId,
+      input.firstPhasePackageId,
+    );
+    if (!coachingPackage || coachingPackage.status !== "active") {
+      throw new RequestError(
+        409,
+        "invalid_package",
+        "The selected coaching package is no longer available.",
+      );
+    }
+  }
+  throw error;
 }
 
 export type CreateGolferWorkspaceInput = {
@@ -957,15 +1831,17 @@ export async function createGolferWorkspace(
   };
 }
 
+export type AccountDataRequestType =
+  | "access"
+  | "export"
+  | "correction"
+  | "deletion"
+  | "restriction"
+  | "consent_withdrawal";
+
 export type AccountDataRequestView = {
   id: string;
-  type:
-    | "access"
-    | "export"
-    | "correction"
-    | "deletion"
-    | "restriction"
-    | "consent_withdrawal";
+  type: AccountDataRequestType;
   status:
     | "submitted"
     | "identity_verification_required"
@@ -1019,7 +1895,7 @@ export async function listAccountDataRequests(
 
 export async function createAccountDataRequest(
   accountId: string,
-  input: { type: "export" | "deletion"; details: string | null },
+  input: { type: AccountDataRequestType; details: string | null },
   requestId?: string,
 ): Promise<AccountDataRequestSubmission> {
   const db = getDb();

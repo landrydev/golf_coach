@@ -228,6 +228,7 @@ async function createWorkspace(worker, label) {
     assessment: {
       summary: "Contact changes when transition speed increases.",
       strengths: "Clear strike awareness.",
+      primaryPattern: "Start direction changes as transition speed increases.",
       limitations: "Start direction varies under representative pressure.",
     },
     priority: {
@@ -238,6 +239,8 @@ async function createWorkspace(worker, label) {
       number,
       title: `Initial phase ${number}`,
       purpose: `Initial purpose ${number}.`,
+      rationale: number === 1 ? "Establish the observed start-direction baseline first." : null,
+      progressSignals: number === 1 ? ["Start direction repeats in a coach-reviewed set."] : [],
     })),
   });
   assert.equal(response.status, 201);
@@ -256,6 +259,7 @@ function planEditPayload(expectedRevision, label) {
     assessment: {
       summary: `${label} assessment`,
       strengths: `${label} strengths`,
+      primaryPattern: `${label} primary pattern`,
       limitations: `${label} limitations`,
     },
     priority: {
@@ -266,6 +270,8 @@ function planEditPayload(expectedRevision, label) {
       number,
       title: `${label} phase ${number}`,
       purpose: `${label} phase purpose ${number}`,
+      rationale: number === 1 ? `${label} first phase rationale` : null,
+      progressSignals: number === 1 ? [`${label} observable signal`] : [],
     })),
   };
 }

@@ -7,6 +7,7 @@ import {
 } from "@/lib/http";
 import { requireApiIdentity } from "@/lib/identity";
 import {
+  type AccountDataRequestType,
   createAccountDataRequest,
   getOrCreateAccountForIdentity,
   listAccountDataRequests,
@@ -38,14 +39,14 @@ export async function POST(request: Request): Promise<Response> {
     const payload = asObject(await readJson<unknown>(request));
     rejectClientAccountId(payload);
 
-    if (payload.type !== "export" && payload.type !== "deletion") {
+    if (!isAccountDataRequestType(payload.type)) {
       throw new RequestError(
         400,
         "invalid_field",
-        "type must be export or deletion.",
+        "type must be access, export, correction, deletion, restriction, or consent_withdrawal.",
       );
     }
-    const details = optionalText(payload, "details", 1_000);
+    const details = requestDetails(payload, payload.type);
     const submission = await createAccountDataRequest(
       account.id,
       { type: payload.type, details: details || null },
@@ -71,17 +72,46 @@ function asObject(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
-function optionalText(
+function requestDetails(
   payload: Record<string, unknown>,
-  field: string,
-  max: number,
+  type: AccountDataRequestType,
 ): string {
+  const field = "details";
   const value = payload[field];
-  if (value === undefined || value === null || value === "") return "";
+  const requiresDetails =
+    type === "access" ||
+    type === "correction" ||
+    type === "restriction" ||
+    type === "consent_withdrawal";
+  if (value === undefined || value === null || value === "") {
+    if (requiresDetails) {
+      throw new RequestError(
+        400,
+        "invalid_field",
+        "details is required for this request type.",
+      );
+    }
+    return "";
+  }
   if (typeof value !== "string") {
     throw new RequestError(400, "invalid_field", `${field} must be text.`);
   }
-  return cleanText(value, field, { max });
+  const details = cleanText(value, field, { required: requiresDetails, max: 1_000 });
+  if (requiresDetails && !details) {
+    throw new RequestError(400, "invalid_field", "details is required for this request type.");
+  }
+  return details;
+}
+
+function isAccountDataRequestType(value: unknown): value is AccountDataRequestType {
+  return (
+    value === "access" ||
+    value === "export" ||
+    value === "correction" ||
+    value === "deletion" ||
+    value === "restriction" ||
+    value === "consent_withdrawal"
+  );
 }
 
 function rejectClientAccountId(payload: Record<string, unknown>): void {

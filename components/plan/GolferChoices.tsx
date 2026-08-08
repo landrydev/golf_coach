@@ -8,6 +8,7 @@ type ChoiceProps = {
   coachName: string;
   coachEmail?: string | null;
   externalActionUrl?: string | null;
+  preview?: boolean;
 };
 
 const CONFIRMATIONS: Record<GolferResponseType, string> = {
@@ -28,12 +29,14 @@ export function GolferChoices({
   coachName,
   coachEmail,
   externalActionUrl,
+  preview = false,
 }: ChoiceProps) {
   const [saving, setSaving] = useState<GolferResponseType | null>(null);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
 
   async function choose(responseType: GolferResponseType) {
+    if (preview) return;
     setSaving(responseType);
     setMessage("");
     setIsError(false);
@@ -74,7 +77,7 @@ export function GolferChoices({
     }
   }
 
-  const disabled = saving !== null;
+  const disabled = preview || saving !== null;
 
   return (
     <div className={styles.choicePanel} aria-labelledby="golfer-choice-heading">
@@ -82,8 +85,9 @@ export function GolferChoices({
         <span>Choose without pressure</span>
         <h3 id="golfer-choice-heading">What would you like to do next?</h3>
         <p>
-          Roadmap records only the choice below for {coachName} to review. It does not send a
-          message or treat an external visit as a sale.
+          {preview
+            ? `Preview only: these are the choices the golfer will receive. Controls are disabled and nothing is recorded for ${coachName}.`
+            : `Roadmap records only the choice below for ${coachName} to review. It does not send a message or treat an external visit as a sale.`}
         </p>
       </div>
       <div className={styles.choiceButtons}>

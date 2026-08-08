@@ -7,6 +7,7 @@ import {
 } from "@/lib/repository";
 import styles from "../../workspace.module.css";
 import { NewGolferForm } from "./NewGolferForm";
+import { StagedGolferForm } from "./StagedGolferForm";
 
 export const dynamic = "force-dynamic";
 
@@ -46,10 +47,11 @@ export default async function NewGolferPage() {
       <header className={styles.pageHeader}>
         <div>
           <span className={styles.eyebrow}>New golfer roadmap</span>
-          <h1>Capture the coaching judgment that makes the sequence credible.</h1>
+          <h1>Start with the facts you know, then finish the coaching judgment.</h1>
           <p>
-            Save a private draft first. You will preview the exact golfer experience and
-            create a revocable share link only after review.
+            Save the golfer, plan title, and primary goal now, then resume the assessment
+            and phase sequence without losing the record. Nothing can be published until
+            that real coaching content is complete.
           </p>
         </div>
         <Link className={styles.secondaryButton} href="/app/golfers">
@@ -61,6 +63,14 @@ export default async function NewGolferPage() {
         <span>
           Do not add medical details, payment information, or unrelated personal history.
           Media is optional and requires a suitable consent basis.
+        </span>
+      </div>
+      <StagedGolferForm />
+      <div className={styles.notice} role="note">
+        <strong>Prefer one complete authoring session?</strong>
+        <span>
+          The full-create form below remains available when you already have the complete
+          assessment, current priority, and phase sequence.
         </span>
       </div>
       <NewGolferForm packages={packages} />

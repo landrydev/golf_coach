@@ -341,6 +341,39 @@
   display: block;
 }
 
+.phases .phaseDetail {
+  color: #425f55;
+}
+
+.phaseSignals {
+  margin-top: 0.8rem;
+  color: #425f55;
+}
+
+.phaseSignals > b,
+.phaseMeta {
+  color: #315247;
+  font-size: 0.78rem;
+}
+
+.phaseSignals ul,
+.packageDetails ul {
+  margin: 0.45rem 0 0;
+  padding-left: 1.2rem;
+  line-height: 1.55;
+}
+
+.phaseSignals li {
+  display: list-item;
+  border: 0;
+  padding: 0.1rem 0;
+}
+
+.phaseMeta {
+  margin-top: 0.7rem;
+  text-transform: none;
+}
+
 .phases small {
   color: var(--coach-accent);
   font-size: 0.68rem;
@@ -537,6 +570,14 @@
 
 .packageCard .externalNote {
   font-size: 0.72rem;
+}
+
+.packageDetails {
+  margin: 1rem 0;
+}
+
+.packageDetails > strong {
+  color: #fff;
 }
 
 .choiceCard,

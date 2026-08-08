@@ -27,7 +27,7 @@ operating dependencies are recorded in
 - 256-bit, HMAC-fingerprinted, revision-scoped golfer capability links
 - Stripe-hosted Checkout and Customer Portal for the Roadmap SaaS subscription,
   with signed-webhook projection, authenticated read-only account refresh, and
-  bounded scheduled recovery of existing provider-backed work
+  a packaged, locally exercised scheduled-recovery handler for existing provider-backed work
 
 No application password, card number, raw Stripe webhook payload, or raw share
 token is stored in D1. Media upload remains disabled until its exact consent,
@@ -100,11 +100,14 @@ In `subscription_required`, billing, settings/profile, export, and privacy-data
 request controls remain reachable; other instructor surfaces require a fresh
 provider-authoritative subscription status and Price to be explicitly allowed.
 That projection can be applied from a signed webhook or an explicit, read-only
-refresh of the authenticated account's existing Stripe references. A five-minute
+refresh of the authenticated account's existing Stripe references. A packaged five-minute
 scheduled handler retries failed or abandoned provider-backed reconciliation with
-bounded backoff and no Stripe object creation. It safely performs no provider work
-when Stripe credentials or the complete billing policy are absent. Health, Stripe's signed webhook,
-and golfer capability endpoints remain separate.
+bounded backoff and no Stripe object creation. It records a privacy-safe D1 heartbeat
+for owner-operator health checks and safely performs no provider work when Stripe
+credentials or the complete billing policy are absent. The handler is locally exercised;
+hosted Sites trigger provisioning/invocation remains unproven and must not be relied on
+for paid operation until independently observed. Health, Stripe's signed webhook, and
+golfer capability endpoints remain separate.
 
 ## Verification
 
@@ -120,8 +123,10 @@ requires the production-like journey, accessibility, billing test-mode,
 backup/restore, alert, and live smoke evidence described in
 [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
 
-The current candidate passes 112/112 automated tests. Exact-release
-automated, hosted, and still-missing manual/operational evidence is recorded in
+Run `npm run verify` against the exact source commit and record its emitted test
+count with the release; this README intentionally does not freeze a count that
+can become stale as coverage grows. Exact-release automated, hosted, and
+still-missing manual/operational evidence is recorded in
 [`docs/RELEASE_EVIDENCE.md`](docs/RELEASE_EVIDENCE.md).
 
 ## Database migrations

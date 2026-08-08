@@ -270,7 +270,10 @@ test(
     );
     assert.equal(archivedCoachView.status, 200);
     const archivedCoachHtml = await archivedCoachView.text();
-    assert.match(archivedCoachHtml, /This plan is[^<]*archived/i);
+    assert.match(
+      archivedCoachHtml,
+      /This golfer record is archived|This plan is[^<]*archived/i,
+    );
     assert.match(archivedCoachHtml, /read-only/i);
     assert.doesNotMatch(archivedCoachHtml, /Edit core roadmap/);
     assert.doesNotMatch(archivedCoachHtml, /Publish and create private link/);
@@ -471,6 +474,7 @@ async function createGolfer(worker, identity, displayName, packageId) {
       assessment: {
         summary: "Contact changes when transition speed increases.",
         strengths: "Clear strike awareness.",
+        primaryPattern: "Start direction changes as transition speed increases.",
         limitations: "Start direction varies under representative pressure.",
       },
       priority: {
@@ -478,7 +482,13 @@ async function createGolfer(worker, identity, displayName, packageId) {
         rationale: "A stable window supports target decisions.",
       },
       phases: [
-        { number: 1, title: "Calibrate", purpose: "Establish the baseline window." },
+        {
+          number: 1,
+          title: "Calibrate",
+          purpose: "Establish the baseline window.",
+          rationale: "A trustworthy baseline must lead the roadmap.",
+          progressSignals: ["The window repeats in a coach-reviewed set."],
+        },
         { number: 2, title: "Build", purpose: "Repeat the window with changing clubs." },
         { number: 3, title: "Transfer", purpose: "Use the window for target decisions." },
         { number: 4, title: "Retain", purpose: "Verify the pattern under constraints." },
@@ -525,6 +535,7 @@ function planEditPayload(expectedRevision) {
     assessment: {
       summary: "Archived assessment.",
       strengths: "Retained history.",
+      primaryPattern: "Retained archived pattern.",
       limitations: "No mutation allowed.",
     },
     priority: {
@@ -535,6 +546,8 @@ function planEditPayload(expectedRevision) {
       number,
       title: `Archived phase ${number}`,
       purpose: "This content must not be persisted.",
+      rationale: number === 1 ? "Archived first-phase rationale." : null,
+      progressSignals: number === 1 ? ["Archived signal."] : [],
     })),
   };
 }

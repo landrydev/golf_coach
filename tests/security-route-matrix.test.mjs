@@ -133,6 +133,7 @@ test("Worker access classification covers every instructor page, RSC request, an
     "/api/billing/checkout",
     "/api/billing/portal",
     "/api/billing/reconcile",
+    "/api/operations/health",
   ]);
   const apiRoutes = routes.filter(
     ({ filename, routePath }) =>
@@ -435,6 +436,7 @@ async function createGolfer(worker, identity, displayName) {
       assessment: {
         summary: "Contact changes when transition speed increases.",
         strengths: "Clear strike awareness.",
+        primaryPattern: "Start direction changes as transition speed increases.",
         limitations: "Start direction varies under pressure.",
       },
       priority: {
@@ -445,6 +447,8 @@ async function createGolfer(worker, identity, displayName) {
         number,
         title: `Phase ${number}`,
         purpose: `Synthetic purpose ${number}.`,
+        rationale: number === 1 ? "Establish the observed start-direction baseline first." : null,
+        progressSignals: number === 1 ? ["Start direction repeats in a coach-reviewed set."] : [],
       })),
     },
   );

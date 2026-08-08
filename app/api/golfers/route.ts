@@ -52,11 +52,14 @@ export async function POST(request: Request): Promise<Response> {
       max: 1_500,
     });
 
-    if (!Array.isArray(payload.phases) || payload.phases.length !== 4) {
+    if (
+      !Array.isArray(payload.phases) ||
+      ![3, 4].includes(payload.phases.length)
+    ) {
       throw new RequestError(
         400,
         "invalid_field",
-        "phases must contain exactly four ordered phases.",
+        "phases must contain three or four ordered phases.",
       );
     }
     const phases = payload.phases.map((value, index) => {
@@ -79,6 +82,26 @@ export async function POST(request: Request): Promise<Response> {
         );
       }
       const rationale = optionalText(phase, "rationale", 1_500);
+      const progressSignals = textArray(
+        phase.progressSignals,
+        `phases[${index}].progressSignals`,
+        10,
+        240,
+      );
+      if (index === 0 && !rationale) {
+        throw new RequestError(
+          400,
+          "invalid_field",
+          "phases[0].rationale is required for the first phase.",
+        );
+      }
+      if (index === 0 && progressSignals.length === 0) {
+        throw new RequestError(
+          400,
+          "invalid_field",
+          "phases[0].progressSignals must contain at least one observable signal.",
+        );
+      }
       return {
         sequence: expectedNumber,
         title: cleanText(phase.title, `phases[${index}].title`, {
@@ -89,13 +112,8 @@ export async function POST(request: Request): Promise<Response> {
           required: true,
           max: 700,
         }),
-        rationale: rationale || (index === 0 ? priorityRationale : null),
-        progressSignals: textArray(
-          phase.progressSignals,
-          `phases[${index}].progressSignals`,
-          10,
-          240,
-        ),
+        rationale: rationale || null,
+        progressSignals,
         expectations: optionalText(phase, "expectations", 1_000) || null,
         estimatedDuration:
           optionalText(phase, "estimatedDuration", 120) || null,
@@ -130,9 +148,16 @@ export async function POST(request: Request): Promise<Response> {
       "assessment.summary",
       { required: true, max: 2_000 },
     );
-    const assessmentStrengths = optionalText(assessment, "strengths", 1_500) ||
-      optionalText(assessment, "strengthSummary", 1_500);
-    const assessmentPattern = optionalText(assessment, "primaryPattern", 2_000);
+    const assessmentStrengths = cleanText(
+      assessment.strengths ?? assessment.strengthSummary,
+      "assessment.strengths",
+      { required: true, max: 1_500 },
+    );
+    const assessmentPattern = cleanText(
+      assessment.primaryPattern,
+      "assessment.primaryPattern",
+      { required: true, max: 2_000 },
+    );
     const input: CreateGolferWorkspaceInput = {
       displayName: cleanText(payload.displayName, "displayName", {
         required: true,
@@ -164,7 +189,7 @@ export async function POST(request: Request): Promise<Response> {
         context: optionalText(assessment, "context", 1_000) || null,
         startingPoint: assessmentSummary,
         strengthSummary: assessmentStrengths,
-        primaryPattern: assessmentPattern || assessmentSummary,
+        primaryPattern: assessmentPattern,
         limitations: cleanText(assessment.limitations, "assessment.limitations", {
           required: true,
           max: 1_500,

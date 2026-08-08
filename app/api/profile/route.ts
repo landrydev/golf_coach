@@ -100,7 +100,7 @@ export async function PUT(request: Request): Promise<Response> {
       );
     }
 
-    const profile = await saveProfile(
+    const result = await saveProfile(
       account.id,
       {
         displayName,
@@ -117,7 +117,7 @@ export async function PUT(request: Request): Promise<Response> {
       requestId,
     );
 
-    return json({ profile }, { status: 200, requestId });
+    return json(result, { status: 200, requestId });
   } catch (error) {
     return noStore(errorResponse(error), requestId);
   }

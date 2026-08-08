@@ -6,6 +6,12 @@ import {
   productAccessDeniedResponse,
 } from "../lib/product-access";
 import { runBillingReconciliationSweep } from "../lib/billing-reconciliation-sweep";
+import {
+  beginBillingSchedulerAttempt,
+  completeBillingSchedulerAttempt,
+  failBillingSchedulerAttempt,
+  schedulerFailureCode,
+} from "../lib/scheduler-heartbeat";
 
 interface Env {
   ASSETS: Fetcher;
@@ -19,6 +25,7 @@ interface Env {
   STRIPE_RECOGNIZED_PRICE_IDS?: string;
   SUBSCRIPTION_ENTITLEMENT_PRICE_IDS?: string;
   SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS?: string;
+  RELEASE_ID?: string;
 }
 
 interface ExecutionContext {
@@ -48,11 +55,40 @@ const worker = {
     const response = await handler.fetch(request, env, ctx);
     return withSecurityHeaders(response, request);
   },
-  async scheduled(controller: ScheduledController): Promise<void> {
-    const result = await runBillingReconciliationSweep({
-      now: new Date(controller.scheduledTime),
+  async scheduled(controller: ScheduledController, env: Env): Promise<void> {
+    const attempt = await beginBillingSchedulerAttempt({
+      database: env.DB,
+      releaseId: env.RELEASE_ID,
     });
-    console.log("Scheduled billing reconciliation sweep completed", result);
+
+    try {
+      const result = await runBillingReconciliationSweep({
+        now: new Date(controller.scheduledTime),
+      });
+      await completeBillingSchedulerAttempt({
+        database: env.DB,
+        attempt,
+        result,
+      });
+      console.log("Scheduled billing reconciliation sweep completed", result);
+    } catch (error) {
+      const failureCode = schedulerFailureCode(error);
+      try {
+        await failBillingSchedulerAttempt({
+          database: env.DB,
+          attempt,
+          failureCode,
+        });
+      } catch {
+        console.error("Scheduler failure heartbeat could not be persisted", {
+          errorCode: "scheduler_heartbeat_persistence_failed",
+        });
+      }
+      console.error("Scheduled billing reconciliation sweep failed", {
+        errorCode: failureCode,
+      });
+      throw error;
+    }
   },
 };
 
@@ -66,6 +102,7 @@ function withSecurityHeaders(response: Response, request: Request): Response {
   const isGolferPath =
     applicationPath === "/r" || applicationPath.startsWith("/r/");
   const isBillingPage = applicationPath === "/app/billing";
+  const isOperationalHealth = applicationPath === "/api/operations/health";
 
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -83,7 +120,7 @@ function withSecurityHeaders(response: Response, request: Request): Response {
     headers.set("Cache-Control", "private, no-store, max-age=0");
   }
 
-  if (isInstructorPath || isGolferPath) {
+  if (isInstructorPath || isGolferPath || isOperationalHealth) {
     headers.set("Cache-Control", "private, no-store, max-age=0");
     headers.set("Pragma", "no-cache");
     headers.set("Referrer-Policy", "no-referrer");

@@ -140,11 +140,108 @@ test(
   },
 );
 
+test(
+  "authenticated accounts can record each non-destructive data-rights review without mutating data",
+  { timeout: 90_000 },
+  async (context) => {
+    const worker = await startD1Worker();
+    context.after(() => worker.dispose());
+
+    const submissions = [
+      ["access", "Please review access to all profile and coaching-plan records."],
+      ["correction", "Please review the spelling of my business name."],
+      ["restriction", "Please review restricting use of the listed contact number."],
+      ["consent_withdrawal", "Please review withdrawal of optional product messaging consent."],
+    ];
+
+    for (const [type, details] of submissions) {
+      const result = await submitDataReview(worker, coachA, type, details);
+      assert.equal(result.response.status, 201);
+      assert.equal(result.body.existing, false);
+      assert.equal(result.body.request.type, type);
+      assert.equal(result.body.request.status, "submitted");
+    }
+
+    const missingDetails = await submitDataReview(worker, coachA, "correction", "");
+    assert.equal(missingDetails.response.status, 400);
+    assert.equal(missingDetails.body.error.code, "invalid_field");
+    assert.match(missingDetails.body.error.message, /details is required/i);
+
+    const unsupported = await submitDataReview(
+      worker,
+      coachA,
+      "automated_erasure",
+      "Do something unsupported.",
+    );
+    assert.equal(unsupported.response.status, 400);
+    assert.equal(unsupported.body.error.code, "invalid_field");
+
+    const [coachAList, coachBList] = await Promise.all([
+      listRequests(worker, coachA),
+      listRequests(worker, coachB),
+    ]);
+    assert.equal(coachAList.response.status, 200);
+    assert.deepEqual(
+      new Set(coachAList.body.requests.map((request) => request.type)),
+      new Set(submissions.map(([type]) => type)),
+    );
+    assert.deepEqual(coachBList.body.requests, []);
+
+    const inspection = await worker.inspect([
+      {
+        sql: `select request_type, status, details,
+                     identity_verified_at, deletion_scheduled_at, fulfilled_at
+                from data_requests
+               where account_id = (select id from accounts where normalized_email = ?)
+               order by request_type`,
+        params: [coachA.email],
+      },
+      {
+        sql: `select count(*) as count
+                from audit_events
+               where account_id = (select id from accounts where normalized_email = ?)
+                 and action = 'data_request.submitted'`,
+        params: [coachA.email],
+      },
+    ]);
+    assert.equal(inspection[0].results.length, 4);
+    for (const row of inspection[0].results) {
+      assert.equal(row.status, "submitted");
+      assert.ok(row.details.length > 0);
+      assert.equal(row.identity_verified_at, null);
+      assert.equal(row.deletion_scheduled_at, null);
+      assert.equal(row.fulfilled_at, null);
+    }
+    assert.deepEqual(inspection[1].results, [{ count: 4 }]);
+
+    const page = await worker.dispatch("/app/settings/data", {
+      headers: {
+        ...identityHeaders(coachA.email, coachA.name),
+        accept: "text/html",
+      },
+    });
+    assert.equal(page.status, 200);
+    const html = await page.text();
+    assert.match(html, /Request a data-rights review/);
+    assert.match(html, /Processing-restriction review/);
+    assert.match(html, /no outcome or deadline is claimed/i);
+  },
+);
+
 async function submitDeletionReview(worker, identity) {
   const response = await worker.dispatch("/api/data-requests", {
     method: "POST",
     headers: writeHeaders(identity.email, identity.name),
     body: JSON.stringify({ type: "deletion" }),
+  });
+  return { response, body: await response.json() };
+}
+
+async function submitDataReview(worker, identity, type, details) {
+  const response = await worker.dispatch("/api/data-requests", {
+    method: "POST",
+    headers: writeHeaders(identity.email, identity.name),
+    body: JSON.stringify({ type, details }),
   });
   return { response, body: await response.json() };
 }

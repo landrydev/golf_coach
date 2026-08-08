@@ -156,9 +156,11 @@ an explicit operation, not routine redeployment behavior.
   owner smoke test. Log retention, access, export, and alert routing remain unverified.
 - The version-5 archive contains the `*/5 * * * *` trigger, the built Worker exports
   `scheduled`, and local Miniflare invokes that handler in the scheduler regression
-  suite. No scheduled event surfaced in Sites logs across the first two five-minute
-  boundaries after deployment, so hosted cron invocation is not claimed or relied on
-  for this billing-disabled owner-only release.
+  suite. A later read-only log observation covered four five-minute boundaries after
+  deployment and still surfaced no scheduled event or completion log. Sites may not
+  have provisioned the trigger, or its log connector may omit scheduled events; neither
+  possibility proves execution. Hosted cron invocation is not claimed or relied on for
+  this billing-disabled owner-only release.
 
 The in-app browser backend was unavailable and the SIWC bypass token-generation tool
 was not invoked. The unexpectedly disclosed existing bypass credential was not used.

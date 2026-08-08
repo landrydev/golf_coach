@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
+import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
 import type { PlanViewModel } from "@/components/plan/types";
 import styles from "../../../workspace.module.css";
 
@@ -15,6 +16,8 @@ type EditResponse = {
   error?: { message?: string };
 };
 
+const ERROR_SUMMARY_ID = "plan-editor-form-error-summary";
+
 export function PlanEditorForm({
   golferId,
   model,
@@ -23,22 +26,26 @@ export function PlanEditorForm({
   model: PlanViewModel;
 }) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const [state, setState] = useState<"idle" | "saving" | "error">("idle");
   const [message, setMessage] = useState("");
-  const orderedPhases = [1, 2, 3, 4].map((number) =>
+  const orderedPhases = Array.from(
+    { length: model.phases.length },
+    (_, index) => index + 1,
+  ).map((number) =>
     model.phases.find((phase) => phase.number === number),
   );
 
   if (
     !model.priority ||
-    model.phases.length !== 4 ||
+    ![3, 4].includes(model.phases.length) ||
     orderedPhases.some((phase) => phase === undefined)
   ) {
     return (
       <section className={styles.formCard} aria-labelledby="structure-error-heading">
         <div className={styles.errorStatus} role="alert">
           <strong id="structure-error-heading">This plan cannot be edited here yet.</strong>{" "}
-          Its stored roadmap must contain one phase numbered 1 through 4. No changes were made.
+          Its stored roadmap must contain three or four consecutively numbered phases. No changes were made.
         </div>
       </section>
     );
@@ -63,6 +70,7 @@ export function PlanEditorForm({
       assessment: {
         summary: form.get("assessmentSummary"),
         strengths: form.get("assessmentStrengths"),
+        primaryPattern: form.get("assessmentPrimaryPattern"),
         limitations: form.get("assessmentLimitations"),
       },
       priority: {
@@ -73,6 +81,10 @@ export function PlanEditorForm({
         number: phase.number,
         title: form.get(`phase${phase.number}Title`),
         purpose: form.get(`phase${phase.number}Purpose`),
+        rationale: form.get(`phase${phase.number}Rationale`),
+        progressSignals: lineItems(
+          form.get(`phase${phase.number}ProgressSignals`),
+        ),
       })),
     };
 
@@ -103,7 +115,12 @@ export function PlanEditorForm({
   }
 
   return (
-    <form className={styles.form} onSubmit={handleSubmit}>
+    <form
+      ref={formRef}
+      className={styles.form}
+      aria-describedby={ERROR_SUMMARY_ID}
+      onSubmit={handleSubmit}
+    >
       <section className={styles.formCard}>
         <fieldset className={styles.formSection} disabled={state === "saving"}>
           <legend>Plan and primary goal</legend>
@@ -172,11 +189,21 @@ export function PlanEditorForm({
               </small>
             </label>
             <label className={styles.fullField}>
-              Strengths to preserve (optional)
+              Strengths to preserve
               <textarea
                 name="assessmentStrengths"
                 defaultValue={model.assessment.strengths ?? ""}
+                required
                 maxLength={1_500}
+              />
+            </label>
+            <label className={styles.fullField}>
+              Primary pattern
+              <textarea
+                name="assessmentPrimaryPattern"
+                defaultValue={model.assessment.primaryPattern ?? ""}
+                required
+                maxLength={2_000}
               />
             </label>
             <label className={styles.fullField}>
@@ -200,7 +227,7 @@ export function PlanEditorForm({
           <legend>Current priority</legend>
           <div className={styles.fieldGrid}>
             <label className={styles.field}>
-              Priority title
+              Primary priority barrier
               <input
                 name="priorityTitle"
                 defaultValue={model.priority?.title ?? ""}
@@ -223,10 +250,9 @@ export function PlanEditorForm({
 
       <section className={styles.formCard}>
         <fieldset className={styles.formSection} disabled={state === "saving"}>
-          <legend>Four directional development phases</legend>
+          <legend>{phases.length} directional development phases</legend>
           <p className={styles.muted}>
-            Keep all four phases. Later phases are direction and may change as new evidence
-            develops.
+            Keep the existing {phases.length}-phase structure. Later phases are direction and may change as new evidence develops.
           </p>
           {phases.map((phase) => (
             <div className={styles.fieldGrid} key={phase.id}>
@@ -248,16 +274,40 @@ export function PlanEditorForm({
                   maxLength={700}
                 />
               </label>
+              <label className={styles.fullField}>
+                {phase.number === 1
+                  ? "Why this phase leads"
+                  : `Why Phase ${phase.number} follows (optional)`}
+                <textarea
+                  name={`phase${phase.number}Rationale`}
+                  defaultValue={phase.rationale ?? ""}
+                  required={phase.number === 1}
+                  maxLength={1_500}
+                />
+              </label>
+              <label className={styles.fullField}>
+                {phase.number === 1
+                  ? "Progress signals — one per line"
+                  : "Progress signals — one per line (optional)"}
+                <textarea
+                  name={`phase${phase.number}ProgressSignals`}
+                  defaultValue={phase.progressSignals.join("\n")}
+                  required={phase.number === 1}
+                  maxLength={2_400}
+                />
+                <small>Use observable signals, not guaranteed outcomes or fixed timelines.</small>
+              </label>
             </div>
           ))}
         </fieldset>
       </section>
 
-      {state === "error" ? (
-        <div className={styles.errorStatus} role="alert">
-          {message}
-        </div>
-      ) : null}
+      <FormErrorSummary
+        id={ERROR_SUMMARY_ID}
+        message={state === "error" ? message : ""}
+        formRef={formRef}
+        className={styles.errorStatus}
+      />
       <div className={styles.notice} role="note">
         <strong>This save revokes current private links.</strong>
         <span>
@@ -283,4 +333,11 @@ export function PlanEditorForm({
       </div>
     </form>
   );
+}
+
+function lineItems(value: FormDataEntryValue | null): string[] {
+  return String(value ?? "")
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 }

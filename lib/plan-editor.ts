@@ -23,6 +23,7 @@ export type CorePlanEditInput = {
   assessment: {
     summary: string;
     strengths: string;
+    primaryPattern: string;
     limitations: string;
   };
   priority: {
@@ -33,6 +34,8 @@ export type CorePlanEditInput = {
     number: number;
     title: string;
     purpose: string;
+    rationale: string | null;
+    progressSignals: string[];
   }>;
 };
 
@@ -91,13 +94,13 @@ export async function editCorePlan(input: {
     );
   }
   if (
-    input.changes.phases.length !== 4 ||
+    ![3, 4].includes(input.changes.phases.length) ||
     input.changes.phases.some((phase, index) => phase.number !== index + 1)
   ) {
     throw new RequestError(
       400,
       "invalid_phases",
-      "The plan must contain exactly four ordered phases.",
+      "The plan must contain three or four ordered phases.",
     );
   }
 
@@ -205,13 +208,14 @@ export async function editCorePlan(input: {
     !assessment ||
     ["superseded", "archived"].includes(assessment.status) ||
     !priority ||
-    phaseRows.length !== 4 ||
+    ![3, 4].includes(phaseRows.length) ||
+    phaseRows.length !== input.changes.phases.length ||
     phaseRows.some((phase, index) => phase.sequence !== index + 1)
   ) {
     throw new RequestError(
       409,
       "plan_structure_incomplete",
-      "This plan does not have the four-part editable structure required by the editor.",
+      "This plan does not have the three- or four-phase editable structure required by the editor.",
     );
   }
 
@@ -222,6 +226,8 @@ export async function editCorePlan(input: {
       .set({
         title: input.changes.phases[index].title,
         purpose: input.changes.phases[index].purpose,
+        rationale: input.changes.phases[index].rationale,
+        progressSignals: input.changes.phases[index].progressSignals,
         coachApprovedAt: null,
         revisedAt: now,
         updatedAt: now,
@@ -294,7 +300,7 @@ export async function editCorePlan(input: {
         status: "draft",
         startingPoint: input.changes.assessment.summary,
         strengthSummary: input.changes.assessment.strengths,
-        primaryPattern: input.changes.assessment.summary,
+        primaryPattern: input.changes.assessment.primaryPattern,
         limitations: input.changes.assessment.limitations,
         coachApprovedAt: null,
         updatedAt: now,
