@@ -1,4 +1,7 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+import { ConsentPurposeControl } from "@/components/consent/ConsentPurposeControl";
+import { listConsentCurrentState } from "@/lib/consent-repository";
 import { requirePageIdentity } from "@/lib/identity";
 import {
   getOrCreateAccountForIdentity,
@@ -9,11 +12,22 @@ import styles from "../../workspace.module.css";
 import { NewGolferForm } from "./NewGolferForm";
 import { StagedGolferForm } from "./StagedGolferForm";
 
+export const metadata: Metadata = {
+  title: "Add a golfer | Roadmap",
+};
+
 export const dynamic = "force-dynamic";
 
 export default async function NewGolferPage() {
   const identity = await requirePageIdentity("/app/golfers/new");
   const account = await getOrCreateAccountForIdentity(identity);
+  const consentStates = await listConsentCurrentState(account.id, {
+    type: "account",
+    golferId: null,
+  });
+  const golferRecordConsent = consentStates.find(
+    (state) => state.purpose === "golfer_record",
+  )!;
   const profile = await getProfile(account.id);
   if (!profile) {
     return (
@@ -64,6 +78,21 @@ export default async function NewGolferPage() {
           Media is optional and requires a suitable consent basis.
         </span>
       </div>
+      <ConsentPurposeControl
+        heading="Golfer record processing"
+        state={golferRecordConsent}
+        subjectType="account"
+      />
+      {!golferRecordConsent.effectiveGranted ? (
+        <div className={styles.emptyState}>
+          <h2>Golfer collection is disabled.</h2>
+          <p>
+            Record the configured authorization above before entering or saving any golfer
+            information.
+          </p>
+        </div>
+      ) : (
+        <>
       <StagedGolferForm />
       {packagePage.hasMore ? (
         <div className={styles.notice} role="note">
@@ -83,6 +112,8 @@ export default async function NewGolferPage() {
         </span>
       </div>
       <NewGolferForm packages={packages} />
+        </>
+      )}
     </div>
   );
 }

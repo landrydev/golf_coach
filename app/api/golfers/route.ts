@@ -1,4 +1,5 @@
 import {
+  assertExactObjectKeys,
   assertSameOrigin,
   cleanEmail,
   cleanText,
@@ -7,6 +8,7 @@ import {
   readJson,
 } from "@/lib/http";
 import { requireApiIdentity } from "@/lib/identity";
+import { requireGolferRecordProcessingConsent } from "@/lib/consent-enforcement";
 import {
   createGolferWorkspace,
   getOrCreateAccountForIdentity,
@@ -18,13 +20,60 @@ import {
   offsetPaginationMetadata,
   requestOffsetPage,
 } from "@/lib/pagination";
-import { newId } from "@/lib/tokens";
+import { requestCorrelationId } from "@/lib/request-correlation";
+
+const GOLFER_FIELDS = [
+  "adultEligibilityConfirmed",
+  "displayName",
+  "preferredName",
+  "email",
+  "externalReference",
+  "planTitle",
+  "goal",
+  "assessment",
+  "priority",
+  "phases",
+  "coachingPackageId",
+  "firstPhasePackageId",
+] as const;
+const GOAL_FIELDS = [
+  "statement",
+  "desiredOutcome",
+  "why",
+  "whyItMatters",
+  "context",
+  "constraints",
+  "scoreOrHandicapContext",
+] as const;
+const ASSESSMENT_FIELDS = [
+  "title",
+  "context",
+  "summary",
+  "startingPoint",
+  "strengths",
+  "strengthSummary",
+  "primaryPattern",
+  "limitations",
+] as const;
+const PRIORITY_FIELDS = ["title", "description", "rationale"] as const;
+const PHASE_FIELDS = [
+  "number",
+  "sequence",
+  "status",
+  "title",
+  "purpose",
+  "rationale",
+  "progressSignals",
+  "expectations",
+  "estimatedDuration",
+] as const;
 
 export async function GET(request: Request): Promise<Response> {
   try {
     const auth = await requireApiIdentity();
     if (auth.response) return noStore(auth.response);
     const account = await getOrCreateAccountForIdentity(auth.identity);
+    await requireGolferRecordProcessingConsent(account.id);
     const page = await listGolfersPage(account.id, requestOffsetPage(request));
     return json({
       golfers: page.items,
@@ -36,7 +85,7 @@ export async function GET(request: Request): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  const requestId = newId();
+  const requestId = requestCorrelationId(request);
   try {
     assertSameOrigin(request);
     const auth = await requireApiIdentity();
@@ -44,6 +93,7 @@ export async function POST(request: Request): Promise<Response> {
     const idempotencyKey = validatedIdempotencyKey(request);
     const payload = asObject(await readJson<unknown>(request));
     rejectClientAccountId(payload);
+    assertExactObjectKeys(payload, GOLFER_FIELDS);
     if (payload.adultEligibilityConfirmed !== true) {
       throw new RequestError(
         400,
@@ -53,8 +103,11 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     const goal = nestedObject(payload.goal, "goal");
+    assertExactObjectKeys(goal, GOAL_FIELDS, "goal");
     const assessment = nestedObject(payload.assessment, "assessment");
+    assertExactObjectKeys(assessment, ASSESSMENT_FIELDS, "assessment");
     const priority = nestedObject(payload.priority, "priority");
+    assertExactObjectKeys(priority, PRIORITY_FIELDS, "priority");
     const priorityRationale = cleanText(priority.rationale, "priority.rationale", {
       required: true,
       max: 1_500,
@@ -72,6 +125,7 @@ export async function POST(request: Request): Promise<Response> {
     }
     const phases = payload.phases.map((value, index) => {
       const phase = nestedObject(value, `phases[${index}]`);
+      assertExactObjectKeys(phase, PHASE_FIELDS, `phases[${index}]`);
       const expectedNumber = index + 1;
       const suppliedNumber = phase.number ?? phase.sequence ?? expectedNumber;
       if (suppliedNumber !== expectedNumber) {
@@ -209,6 +263,7 @@ export async function POST(request: Request): Promise<Response> {
       account.id,
       input,
       idempotencyKey,
+      requestId,
     );
     return json(
       {

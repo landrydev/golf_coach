@@ -1,18 +1,28 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import {
   chatGPTSignInPath,
   getChatGPTUser,
   type ChatGPTUser,
 } from "@/app/chatgpt-auth";
+import {
+  INTERNAL_REQUEST_ID_HEADER,
+  safeRequestCorrelationId,
+} from "@/lib/request-correlation";
 
 export type RequestIdentity = ChatGPTUser & {
   source: "siwc" | "development";
+  requestId: string;
 };
 
 export async function getRequestIdentity(): Promise<RequestIdentity | null> {
+  const requestHeaders = await headers();
+  const requestId = safeRequestCorrelationId(
+    requestHeaders.get(INTERNAL_REQUEST_ID_HEADER),
+  );
   const signedInUser = await getChatGPTUser();
   if (signedInUser) {
-    return { ...signedInUser, source: "siwc" };
+    return { ...signedInUser, source: "siwc", requestId };
   }
 
   if (process.env.NODE_ENV !== "production") {
@@ -23,6 +33,7 @@ export async function getRequestIdentity(): Promise<RequestIdentity | null> {
       email,
       fullName,
       source: "development",
+      requestId,
     };
   }
 

@@ -71,6 +71,17 @@ Public, non-secret variables:
 - `STRIPE_CHECKOUT_SESSION_LIFETIME_SECONDS`: explicit Checkout lifetime from
   1860 through 86400 seconds; the application selects no default
 - `BILLING_CHECKOUT_ENABLED`: fail-closed `true` only after exact price/policy approval
+- `DATA_REQUEST_OPERATOR_EMAIL_DIGESTS`: nonempty comma-separated, unique
+  HMAC-SHA-256 digests of trimmed, lowercased operator SIWC emails; never
+  plaintext emails
+- `CONSENT_POLICY_REGISTRY_JSON`: strict owner-supplied mapping of approved
+  purpose versions, exact descriptions, and permitted account/golfer subject
+  types. Missing, invalid, stale, or unlisted configuration grants nothing;
+  configuration records choices but does not enable optional processing. The
+  V1 fails closed unless `golfer_record` is configured for `account` subjects
+  and `roadmap_sharing` is configured for `golfer` subjects; real processing
+  still requires a matching current grant, and exact wording changes require a
+  new version
 
 Hosted secrets:
 
@@ -79,6 +90,8 @@ Hosted secrets:
 - `ABUSE_LIMIT_PEPPER`: separate random secret used for non-reversible abuse-counter subject HMACs
 - `OWNER_PRIVATE_ACCESS_PEPPER`: third independent random secret, at least 32
   characters, used only for the owner-private email allowlist
+- `DATA_REQUEST_OPERATOR_ACCESS_PEPPER`: separate random secret of at least 32
+  characters, used only for the privacy-operator email allowlist
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 
@@ -93,13 +106,16 @@ is an intentionally shallow liveness probe: it reports only `live` plus the
 immutable release identifier and does not touch D1 or R2. The owner-only
 `/api/operations/health` endpoint performs the deeper D1, R2, origin,
 share-token-pepper, abuse-limit-pepper, explicit Checkout-policy, selected
-instructor-access-policy, and scheduler-readiness checks. It exposes only safe
-readiness statuses, never an access mode, allowlist, digest, pepper, or email.
+instructor-access-policy, required consent-policy coverage, privacy-operator
+access configuration, and scheduler-readiness checks. Missing or invalid
+consent or operator configuration degrades readiness. The response exposes
+only safe boolean statuses, never policy text or versions, an access mode,
+allowlist, digest, pepper, or email.
 
 The Worker applies this policy to instructor HTML, Vinext `.rsc` navigation,
 and APIs. `owner_private` covers every `/app` route and every non-public API.
-In `subscription_required`, billing, settings/profile, export, and privacy-data
-request controls remain reachable; other instructor surfaces require a fresh
+In `subscription_required`, billing, settings/profile, export, privacy-data
+request, and consent current-state/withdrawal controls remain reachable; other instructor surfaces require a fresh
 provider-authoritative subscription status and Price to be explicitly allowed.
 That projection can be applied from a signed webhook or an explicit, read-only
 refresh of the authenticated account's existing Stripe references. A packaged five-minute

@@ -1,6 +1,7 @@
 import { getOrCreateAccountForIdentity } from "@/lib/repository";
 import { requireApiIdentity } from "@/lib/identity";
 import {
+  assertExactObjectKeys,
   assertSameOrigin,
   cleanText,
   errorResponse,
@@ -15,33 +16,109 @@ import {
   withdrawPlanContent,
   type WithdrawablePlanContentKind,
 } from "@/lib/plan-content";
+import { requestCorrelationId } from "@/lib/request-correlation";
+import { requireGolferRecordProcessingConsent } from "@/lib/consent-enforcement";
 
-type ContentPayload = Record<string, unknown> & { kind?: unknown; phaseId?: unknown };
+const LESSON_FIELDS = [
+  "kind",
+  "phaseId",
+  "expectedRevision",
+  "title",
+  "purpose",
+  "coachObservation",
+  "takeaway",
+  "nextCheck",
+  "phaseConnection",
+  "occurredAt",
+] as const;
+const PRACTICE_FIELDS = [
+  "kind",
+  "phaseId",
+  "expectedRevision",
+  "title",
+  "objective",
+  "rationale",
+  "instructions",
+  "timeOrCadence",
+  "successCheck",
+  "commonMistake",
+  "stopOrAskRule",
+  "constraintNote",
+] as const;
+const EVIDENCE_FIELDS = [
+  "kind",
+  "phaseId",
+  "expectedRevision",
+  "evidenceType",
+  "contextType",
+  "sourceType",
+  "maturity",
+  "title",
+  "claim",
+  "sourceLabel",
+  "observedAt",
+  "interpretation",
+  "limitation",
+  "nextEvidenceNeeded",
+] as const;
+const REVIEW_FIELDS = [
+  "kind",
+  "phaseId",
+  "expectedRevision",
+  "transition",
+  "outcome",
+  "originalPurpose",
+  "baselineSummary",
+  "workCompleted",
+  "changeSummary",
+  "reliabilityLabel",
+  "limitations",
+  "golferContribution",
+  "coachConclusion",
+  "remainingOpportunity",
+  "nextPhaseRationale",
+  "independentPracticeAlternative",
+  "nextPhaseId",
+  "nextPriorityTitle",
+  "nextPriorityRationale",
+] as const;
+const WITHDRAW_FIELDS = [
+  "kind",
+  "itemId",
+  "expectedRevision",
+  "confirmation",
+] as const;
 
 export async function POST(
   request: Request,
   context: { params: Promise<{ planId: string }> },
 ) {
+  const requestId = requestCorrelationId(request);
   try {
     assertSameOrigin(request);
     const authentication = await requireApiIdentity();
     if (authentication.response) return authentication.response;
     const account = await getOrCreateAccountForIdentity(authentication.identity);
     const { planId } = await context.params;
-    const payload = await readJson<ContentPayload>(request);
+    const payload = asObject(await readJson<unknown>(request));
     const kind = cleanText(payload.kind, "kind", { required: true, max: 40 });
     const phaseId = cleanText(payload.phaseId, "phaseId", { required: true, max: 80 });
     const expectedRevision = positiveInteger(payload.expectedRevision, "expectedRevision");
+    const consentRequirements = await requireGolferRecordProcessingConsent(
+      account.id,
+    );
     const mutationContext = {
       accountId: account.id,
       planId,
       expectedRevision,
-      requestId: request.headers.get("cf-ray") ?? crypto.randomUUID(),
+      consentRequirements,
+      requestId,
     };
     let id: string;
     let planStatus: "draft" | "paused" | "completed" | null = null;
 
     if (kind === "lesson") {
+      assertExactObjectKeys(payload, LESSON_FIELDS);
       id = await addCompletedLesson(mutationContext, {
         phaseId,
         title: required(payload.title, "title", 160),
@@ -53,6 +130,7 @@ export async function POST(
         occurredAt: parseDate(payload.occurredAt, "occurredAt", true)!,
       });
     } else if (kind === "practice") {
+      assertExactObjectKeys(payload, PRACTICE_FIELDS);
       const instructionsText = required(payload.instructions, "instructions", 4_000);
       const instructions = instructionsText
         .split(/\n+/)
@@ -74,6 +152,7 @@ export async function POST(
         constraintNote: optional(payload.constraintNote, "constraintNote", 1_000),
       });
     } else if (kind === "evidence") {
+      assertExactObjectKeys(payload, EVIDENCE_FIELDS);
       const evidenceType = enumValue(payload.evidenceType, "evidenceType", [
         "coach_observation",
         "golfer_report",
@@ -119,6 +198,7 @@ export async function POST(
         nextEvidenceNeeded: optional(payload.nextEvidenceNeeded, "nextEvidenceNeeded", 1_000),
       });
     } else if (kind === "review") {
+      assertExactObjectKeys(payload, REVIEW_FIELDS);
       const transition = enumValue(payload.transition, "transition", [
         "continue",
         "pause",
@@ -174,10 +254,10 @@ export async function POST(
           ...(planStatus ? { status: planStatus } : {}),
         },
       },
-      { status: 201 },
+      { status: 201, headers: { "X-Request-ID": requestId } },
     );
   } catch (error) {
-    return errorResponse(error);
+    return withRequestId(errorResponse(error), requestId);
   }
 }
 
@@ -185,13 +265,15 @@ export async function DELETE(
   request: Request,
   context: { params: Promise<{ planId: string }> },
 ) {
+  const requestId = requestCorrelationId(request);
   try {
     assertSameOrigin(request);
     const authentication = await requireApiIdentity();
     if (authentication.response) return authentication.response;
     const account = await getOrCreateAccountForIdentity(authentication.identity);
     const { planId } = await context.params;
-    const payload = await readJson<Record<string, unknown>>(request);
+    const payload = asObject(await readJson<unknown>(request));
+    assertExactObjectKeys(payload, WITHDRAW_FIELDS);
     const kind = enumValue(payload.kind, "kind", [
       "lesson",
       "practice",
@@ -209,33 +291,41 @@ export async function DELETE(
         "Confirm that this item should be removed from the golfer view.",
       );
     }
-    const allowed = ["kind", "itemId", "expectedRevision", "confirmation"];
-    const unexpected = Object.keys(payload).find((field) => !allowed.includes(field));
-    if (unexpected) {
-      throw new RequestError(
-        400,
-        "unexpected_field",
-        `Unsupported field: ${unexpected}.`,
-      );
-    }
-
     await withdrawPlanContent(
       {
         accountId: account.id,
         planId,
         expectedRevision,
-        requestId: request.headers.get("cf-ray") ?? crypto.randomUUID(),
+        consentRequirements: await requireGolferRecordProcessingConsent(
+          account.id,
+        ),
+        requestId,
       },
       { kind, itemId },
     );
-    return Response.json({
-      withdrawn: true,
-      item: { id: itemId, kind },
-      plan: { revision: expectedRevision + 1 },
-    });
+    return Response.json(
+      {
+        withdrawn: true,
+        item: { id: itemId, kind },
+        plan: { revision: expectedRevision + 1 },
+      },
+      { headers: { "X-Request-ID": requestId } },
+    );
   } catch (error) {
-    return errorResponse(error);
+    return withRequestId(errorResponse(error), requestId);
   }
+}
+
+function asObject(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new RequestError(400, "invalid_body", "Request body must be a JSON object.");
+  }
+  return value as Record<string, unknown>;
+}
+
+function withRequestId(response: Response, requestId: string): Response {
+  response.headers.set("X-Request-ID", requestId);
+  return response;
 }
 
 function positiveInteger(value: unknown, field: string): number {

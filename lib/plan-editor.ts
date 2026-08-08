@@ -12,6 +12,8 @@ import {
 } from "@/db/schema";
 import { RequestError } from "@/lib/http";
 import { newId } from "@/lib/tokens";
+import { requireGolferRecordProcessingConsent } from "@/lib/consent-enforcement";
+import { consentGrantTransactionGuard } from "@/lib/consent-repository";
 
 export type CorePlanEditInput = {
   title: string;
@@ -64,6 +66,9 @@ export async function editCorePlan(input: {
   changes: CorePlanEditInput;
   requestId?: string | null;
 }): Promise<CorePlanEditResult> {
+  const consentRequirements = await requireGolferRecordProcessingConsent(
+    input.accountId,
+  );
   const db = getDb();
   const [plan] = await db
     .select()
@@ -244,6 +249,10 @@ export async function editCorePlan(input: {
 
   try {
     await db.batch([
+      consentGrantTransactionGuard(
+        input.accountId,
+        consentRequirements,
+      ),
       db
         .update(developmentPlans)
         .set({
@@ -371,6 +380,7 @@ export async function editCorePlan(input: {
       }),
     ]);
   } catch (error) {
+    await requireGolferRecordProcessingConsent(input.accountId);
     await rethrowCorePlanConflict(input, error);
   }
 

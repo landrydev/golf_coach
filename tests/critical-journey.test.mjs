@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 import { test } from "node:test";
 import {
+  grantSyntheticGolferRecordConsent,
+  grantSyntheticRoadmapSharingConsent,
   identityHeaders,
   startD1Worker,
   testOrigin,
@@ -60,6 +62,8 @@ test(
     const profile = (await profileResponse.json()).profile;
     assert.equal(profile.displayName, "Coach Avery");
     assert.equal(profile.location, "Calgary, Alberta");
+    await grantSyntheticGolferRecordConsent(worker, coachA);
+    await grantSyntheticGolferRecordConsent(worker, coachB);
 
     const packageResponse = await jsonWrite(
       worker,
@@ -139,6 +143,7 @@ test(
     assert.equal(createdResponse.status, 201);
     assertPrivateApiResponse(createdResponse);
     const workspace = await createdResponse.json();
+    await grantSyntheticRoadmapSharingConsent(worker, coachA, workspace.golfer.id);
     assert.equal(workspace.plan.revision, 1);
     assert.equal(workspace.phases.length, 4);
 

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  grantSyntheticGolferRecordConsent,
   identityHeaders,
   startD1Worker,
   writeHeaders,
@@ -22,6 +23,7 @@ test(
         contactEmail: identity.email,
       });
       assert.equal(profile.status, 200);
+      await grantSyntheticGolferRecordConsent(worker, identity);
     }
 
     const workspaceResponse = await jsonWrite(
@@ -274,6 +276,7 @@ test(
       contactEmail: coachA.email,
     });
     assert.equal(profile.status, 200);
+    await grantSyntheticGolferRecordConsent(worker, coachA);
 
     const workspaceResponse = await jsonWrite(
       worker,

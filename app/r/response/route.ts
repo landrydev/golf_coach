@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import {
+  assertExactObjectKeys,
   assertSameOrigin,
   errorResponse,
   readJson,
@@ -14,6 +15,7 @@ import {
   clientNetworkSubject,
   enforceAbuseLimit,
 } from "@/lib/rate-limit";
+import { requestCorrelationId } from "@/lib/request-correlation";
 
 const SHARE_COOKIE = "roadmap_share";
 const RESPONSE_TYPES = new Set<GolferResponseType>([
@@ -26,6 +28,7 @@ const RESPONSE_TYPES = new Set<GolferResponseType>([
 ]);
 
 export async function POST(request: Request): Promise<Response> {
+  const requestId = requestCorrelationId(request);
   try {
     assertSameOrigin(request);
     await enforceAbuseLimit(
@@ -36,7 +39,8 @@ export async function POST(request: Request): Promise<Response> {
     if (!value || typeof value !== "object" || Array.isArray(value)) {
       throw new RequestError(400, "invalid_body", "Request body must be a JSON object.");
     }
-    const payload = value as { responseType?: unknown };
+    const payload = value as Record<string, unknown>;
+    assertExactObjectKeys(payload, ["responseType"]);
     if (
       typeof payload.responseType !== "string" ||
       !RESPONSE_TYPES.has(payload.responseType as GolferResponseType)
@@ -61,17 +65,22 @@ export async function POST(request: Request): Promise<Response> {
     const response = await recordGolferResponse({
       rawSessionToken,
       responseType: payload.responseType as GolferResponseType,
-      requestId: request.headers.get("cf-ray") ?? crypto.randomUUID(),
+      requestId,
     });
 
     return Response.json(
       { response },
       {
         status: 201,
-        headers: { "Cache-Control": "private, no-store, max-age=0" },
+        headers: {
+          "Cache-Control": "private, no-store, max-age=0",
+          "X-Request-ID": requestId,
+        },
       },
     );
   } catch (error) {
-    return errorResponse(error);
+    const response = errorResponse(error);
+    response.headers.set("X-Request-ID", requestId);
+    return response;
   }
 }

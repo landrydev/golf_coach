@@ -1,4 +1,7 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+import { ConsentPurposeControl } from "@/components/consent/ConsentPurposeControl";
+import { listConsentCurrentState } from "@/lib/consent-repository";
 import { requirePageIdentity } from "@/lib/identity";
 import {
   getOrCreateAccountForIdentity,
@@ -7,12 +10,22 @@ import {
 import styles from "../../workspace.module.css";
 import { DataRequestControls } from "./DataRequestControls";
 
+export const metadata: Metadata = {
+  title: "Data and privacy requests | Roadmap",
+};
+
 export const dynamic = "force-dynamic";
 
 export default async function DataSettingsPage() {
   const identity = await requirePageIdentity("/app/settings/data");
   const account = await getOrCreateAccountForIdentity(identity);
-  const requests = await listAccountDataRequests(account.id);
+  const [requests, consentStates] = await Promise.all([
+    listAccountDataRequests(account.id),
+    listConsentCurrentState(account.id, { type: "account", golferId: null }),
+  ]);
+  const golferRecordConsent = consentStates.find(
+    (state) => state.purpose === "golfer_record",
+  )!;
 
   return (
     <div className={styles.page}>
@@ -30,6 +43,12 @@ export default async function DataSettingsPage() {
           Back to settings
         </Link>
       </header>
+      <ConsentPurposeControl
+        heading="Golfer record processing"
+        state={golferRecordConsent}
+        subjectType="account"
+      />
+      <div style={{ height: "1rem" }} />
       <DataRequestControls initialRequests={requests} />
     </div>
   );

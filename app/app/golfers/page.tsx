@@ -1,4 +1,7 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+import { GolferRecordAccessBlocked } from "@/components/consent/GolferRecordAccessBlocked";
+import { golferRecordProcessingConsentCurrent } from "@/lib/consent-enforcement";
 import { requirePageIdentity } from "@/lib/identity";
 import {
   getOrCreateAccountForIdentity,
@@ -7,6 +10,10 @@ import {
 import { workspaceNextAction } from "@/lib/workspace-next-action";
 import { canAdvanceOffsetPage, MAX_PAGE_OFFSET } from "@/lib/pagination";
 import styles from "../workspace.module.css";
+
+export const metadata: Metadata = {
+  title: "Golfers | Roadmap",
+};
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +26,9 @@ export default async function GolfersPage({
 }) {
   const identity = await requirePageIdentity("/app/golfers");
   const account = await getOrCreateAccountForIdentity(identity);
+  if (!(await golferRecordProcessingConsentCurrent(account.id))) {
+    return <GolferRecordAccessBlocked />;
+  }
   const pageNumber = safePageNumber((await searchParams).page);
   const page = await listGolfersPage(account.id, {
     limit: PAGE_SIZE,

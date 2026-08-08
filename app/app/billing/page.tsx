@@ -3,10 +3,15 @@ import {
   isOpenSubscription,
   type SubscriptionStatus,
 } from "@/lib/billing-repository";
+import type { Metadata } from "next";
 import { requirePageIdentity } from "@/lib/identity";
 import { getOrCreateAccountForIdentity } from "@/lib/repository";
 import { billingConfigured, checkoutEnabled } from "@/lib/stripe";
 import styles from "../workspace.module.css";
+
+export const metadata: Metadata = {
+  title: "Plan and billing | Roadmap",
+};
 
 export const dynamic = "force-dynamic";
 

@@ -1,4 +1,5 @@
 import {
+  assertExactObjectKeys,
   assertSameOrigin,
   cleanText,
   errorResponse,
@@ -12,19 +13,19 @@ import {
   getPackageById,
   type CompleteStagedGolferWorkspaceInput,
 } from "@/lib/repository";
-import { newId } from "@/lib/tokens";
+import { requestCorrelationId } from "@/lib/request-correlation";
 
 export async function POST(
   request: Request,
   context: { params: Promise<{ golferId: string }> },
 ): Promise<Response> {
-  const requestId = newId();
+  const requestId = requestCorrelationId(request);
   try {
     assertSameOrigin(request);
     const auth = await requireApiIdentity();
     if (auth.response) return noStore(auth.response, requestId);
     const body = objectBody(await readJson<unknown>(request));
-    rejectUnexpected(body, [
+    assertExactObjectKeys(body, [
       "expectedPlanId",
       "expectedRevision",
       "assessment",
@@ -44,14 +45,14 @@ export async function POST(
     }
 
     const assessment = objectField(body.assessment, "assessment");
-    rejectUnexpected(assessment, [
+    assertExactObjectKeys(assessment, [
       "summary",
       "strengths",
       "primaryPattern",
       "limitations",
-    ]);
+    ], "assessment");
     const priority = objectField(body.priority, "priority");
-    rejectUnexpected(priority, ["title", "rationale"]);
+    assertExactObjectKeys(priority, ["title", "rationale"], "priority");
     const phases = parsePhases(body.phases);
     const packageId = optionalText(
       body.firstPhasePackageId,
@@ -139,13 +140,13 @@ function parsePhases(value: unknown): CompleteStagedGolferWorkspaceInput["phases
   }
   return value.map((rawPhase, index) => {
     const phase = objectField(rawPhase, `phases[${index}]`);
-    rejectUnexpected(phase, [
+    assertExactObjectKeys(phase, [
       "number",
       "title",
       "purpose",
       "rationale",
       "progressSignals",
-    ]);
+    ], `phases[${index}]`);
     const sequence = index + 1;
     if (phase.number !== sequence) {
       throw new RequestError(
@@ -212,13 +213,6 @@ function objectField(value: unknown, field: string): Record<string, unknown> {
     throw new RequestError(400, "invalid_field", `${field} must be an object.`);
   }
   return value as Record<string, unknown>;
-}
-
-function rejectUnexpected(value: Record<string, unknown>, allowed: string[]): void {
-  const unexpected = Object.keys(value).find((key) => !allowed.includes(key));
-  if (unexpected) {
-    throw new RequestError(400, "unexpected_field", `Unsupported field: ${unexpected}.`);
-  }
 }
 
 function optionalText(value: unknown, field: string, max: number): string {

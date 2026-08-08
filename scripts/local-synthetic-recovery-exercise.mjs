@@ -19,8 +19,88 @@ const wranglerEntry = resolve(
   "node_modules/wrangler/bin/wrangler.js",
 );
 const evidenceLabel =
-  "LOCAL SYNTHETIC EVIDENCE — NOT HOSTED BACKUP/RESTORE EVIDENCE";
+  "LOCAL SYNTHETIC EVIDENCE \u2014 NOT HOSTED BACKUP/RESTORE EVIDENCE";
 const baseTimestamp = 1_786_000_000_000;
+const recoveryNormalizationTimestamp = baseTimestamp + 500_000;
+const authoritativeLifecycleTables = [
+  "accounts",
+  "assessments",
+  "audit_events",
+  "billing_checkout_attempts",
+  "billing_customers",
+  "billing_events",
+  "billing_reconciliation_targets",
+  "billing_subscription_projection_generations",
+  "coaching_packages",
+  "consent_records",
+  "data_requests",
+  "development_plans",
+  "evidence_items",
+  "golfer_goals",
+  "golfer_plan_responses",
+  "golfers",
+  "instructor_profiles",
+  "lessons",
+  "media_assets",
+  "phase_priorities",
+  "phase_review_evidence",
+  "phase_reviews",
+  "plan_phases",
+  "plan_priorities",
+  "practice_items",
+  "share_links",
+  "share_sessions",
+  "subscriptions",
+];
+const operationalStateTables = [
+  "abuse_rate_limits",
+  "billing_account_operation_leases",
+  "scheduler_heartbeat",
+];
+const coveredSchemaTables = [
+  ...authoritativeLifecycleTables,
+  ...operationalStateTables,
+].sort();
+const recoveryMutatedTables = new Set([
+  "abuse_rate_limits",
+  "billing_account_operation_leases",
+  "billing_events",
+  "billing_reconciliation_targets",
+  "scheduler_heartbeat",
+]);
+const expectedTableRowCounts = {
+  abuse_rate_limits: 2,
+  accounts: 2,
+  assessments: 2,
+  audit_events: 4,
+  billing_account_operation_leases: 2,
+  billing_checkout_attempts: 2,
+  billing_customers: 2,
+  billing_events: 2,
+  billing_reconciliation_targets: 2,
+  billing_subscription_projection_generations: 2,
+  coaching_packages: 2,
+  consent_records: 2,
+  data_requests: 2,
+  development_plans: 2,
+  evidence_items: 2,
+  golfer_goals: 2,
+  golfer_plan_responses: 2,
+  golfers: 2,
+  instructor_profiles: 2,
+  lessons: 2,
+  media_assets: 2,
+  phase_priorities: 2,
+  phase_review_evidence: 1,
+  phase_reviews: 1,
+  plan_phases: 3,
+  plan_priorities: 2,
+  practice_items: 2,
+  scheduler_heartbeat: 1,
+  share_links: 3,
+  share_sessions: 3,
+  subscriptions: 2,
+};
 const WRANGLER_PARENT_ENV_ALLOWLIST =
   process.platform === "win32" ? ["SystemRoot", "WINDIR"] : [];
 const SECRET_ENVIRONMENT_PROBES = [
@@ -73,7 +153,7 @@ const objectFixtures = [
   sha256: sha256(fixture.body),
 }));
 
-const verificationStatements = [
+const baseVerificationStatements = [
   "pragma foreign_key_check",
   `select
      (select count(*) from accounts) as accounts,
@@ -154,6 +234,7 @@ const verificationStatements = [
 let workDirectory;
 let sourceR2;
 let restoredR2;
+const exerciseStartedAt = Date.now();
 
 try {
   workDirectory = await mkdtemp(join(tmpdir(), "roadmap-recovery-exercise-"));
@@ -163,6 +244,10 @@ try {
   const restoredConfigPath = join(restoredProject, "wrangler.jsonc");
   const snapshotPath = join(workDirectory, "d1-logical-snapshot.sql");
   const fixtureSqlPath = join(workDirectory, "synthetic-fixture.sql");
+  const normalizationSqlPath = join(
+    workDirectory,
+    "post-restore-normalization.sql",
+  );
 
   await Promise.all([
     mkdir(sourceProject, { recursive: true }),
@@ -172,34 +257,23 @@ try {
     mkdir(join(workDirectory, "xdg-config"), { recursive: true }),
   ]);
   await assertWranglerEnvironmentIsolation(workDirectory);
-  const localConfig = `${JSON.stringify(
-    {
-      name: "roadmap-local-synthetic-recovery",
-      compatibility_date: "2026-08-07",
-      d1_databases: [
-        {
-          binding: "DB",
-          database_name: "roadmap-local-synthetic-recovery",
-          database_id: "00000000-0000-4000-8000-000000000001",
-        },
-      ],
-    },
-    null,
-    2,
-  )}\n`;
+  const localConfig = buildLocalConfig();
   await Promise.all([
     writeFile(sourceConfigPath, localConfig, "utf8"),
     writeFile(restoredConfigPath, localConfig, "utf8"),
   ]);
 
-  const migrationPaths = await readMigrationPaths();
-  for (const migrationPath of migrationPaths) {
+  const migrationPlan = await readMigrationPlan();
+  for (const migrationPath of migrationPlan.paths) {
     await executeD1File(sourceConfigPath, migrationPath);
   }
 
   await writeFile(fixtureSqlPath, buildFixtureSql(), "utf8");
   await executeD1File(sourceConfigPath, fixtureSqlPath);
-  const sourceState = await inspectD1(sourceConfigPath);
+  const sourceState = await inspectD1(
+    sourceConfigPath,
+    migrationPlan.schemaTables,
+  );
   assertRepresentativeState(sourceState);
 
   await runWrangler(
@@ -221,11 +295,14 @@ try {
   const snapshot = await readFile(snapshotPath);
   assert.ok(snapshot.byteLength > 1_000, "D1 logical snapshot is unexpectedly small");
 
-  for (const migrationPath of migrationPaths) {
+  for (const migrationPath of migrationPlan.paths) {
     await executeD1File(restoredConfigPath, migrationPath);
   }
   await executeD1File(restoredConfigPath, snapshotPath);
-  const restoredState = await inspectD1(restoredConfigPath);
+  const restoredState = await inspectD1(
+    restoredConfigPath,
+    migrationPlan.schemaTables,
+  );
   assertRepresentativeState(restoredState);
   assert.deepEqual(
     restoredState,
@@ -233,24 +310,64 @@ try {
     "restored D1 invariants differ from the synthetic source",
   );
 
+  const d1NegativeScenarios = await exerciseModifiedSnapshotDetection(
+    workDirectory,
+    migrationPlan,
+    snapshot,
+    sourceState,
+  );
   const r2Result = await exerciseR2(workDirectory, restoredState);
+
+  await writeFile(
+    normalizationSqlPath,
+    buildRecoveryNormalizationSql(),
+    "utf8",
+  );
+  await executeD1File(restoredConfigPath, normalizationSqlPath);
+  const normalizedState = await inspectD1(
+    restoredConfigPath,
+    migrationPlan.schemaTables,
+  );
+  assertRepresentativeState(normalizedState, { recoveryNormalized: true });
+  assertNormalizationWasBounded(restoredState, normalizedState);
+
+  const runtimeVersions = await readRuntimeVersions();
+  const evidenceRecord = buildEvidenceRecord({
+    durationMs: Date.now() - exerciseStartedAt,
+    migrationPlan,
+    negativeScenarios: [
+      ...d1NegativeScenarios,
+      ...r2Result.negativeScenarios,
+    ],
+    r2Result,
+    runtimeVersions,
+    snapshot,
+  });
+  assertPrivacySafeEvidenceRecord(evidenceRecord);
 
   console.log(evidenceLabel);
   console.log(
-    `PASS D1: ${migrationPaths.length} migrations applied to each isolated database, ${sourceState[1][0].accounts} tenants, data snapshot ${snapshot.byteLength} bytes (${sha256(snapshot)}).`,
+    `PASS D1: ${migrationPlan.paths.length} migrations applied to each isolated database, ${expectedTableRowCounts.accounts} tenants, ${coveredSchemaTables.length}/${migrationPlan.schemaTables.length} application tables covered, data snapshot ${snapshot.byteLength} bytes (${sha256(snapshot)}).`,
   );
   console.log(
-    "PASS D1 invariants: tenant ownership, published plans, active/revoked capabilities and sessions, audit order, data-request state, and billing projections survived restore.",
+    "PASS D1 invariants: every column of every populated application table, foreign keys, tenant ownership, lifecycle state, audit order, data-request state, and billing projections survived restore.",
+  );
+  console.log(
+    "PASS post-restore normalization: in-flight account/event/reconciliation leases and the running scheduler were made retry-safe; expired rate-limit state was removed and the active window was preserved.",
   );
   console.log(
     `PASS local R2-compatible restore: ${r2Result.objectCount} private synthetic objects, ${r2Result.totalBytes} bytes, inventory and SHA-256 checks match D1 metadata.`,
   );
   console.log(
+    `PASS negative integrity checks: ${evidenceRecord.negativeIntegrityScenarios.length} modified-snapshot, missing-object, and checksum-mismatch scenarios were detected.`,
+  );
+  console.log(
     `PASS subprocess isolation: Wrangler received generated HOME/config/temp values and only the ${WRANGLER_PARENT_ENV_ALLOWLIST.length ? WRANGLER_PARENT_ENV_ALLOWLIST.join("/") : "empty"} non-secret parent allowlist; secret-shaped probe variables were absent.`,
   );
   console.log(
-    "Temporary exercise data was isolated from hosted resources and removed. No RPO, RTO, hosted backup, or production restore claim is established.",
+    "Temporary exercise data remained isolated from hosted resources and is removed on exit. No RPO, RTO, hosted backup, or production restore claim is established.",
   );
+  console.log(`RECOVERY_EVIDENCE_JSON ${JSON.stringify(evidenceRecord)}`);
 } finally {
   await Promise.allSettled([sourceR2?.dispose(), restoredR2?.dispose()]);
   if (workDirectory) {
@@ -258,7 +375,7 @@ try {
   }
 }
 
-async function readMigrationPaths() {
+async function readMigrationPlan() {
   const journal = JSON.parse(
     await readFile(resolve(projectRoot, "drizzle/meta/_journal.json"), "utf8"),
   );
@@ -267,9 +384,73 @@ async function readMigrationPaths() {
   entries.forEach((entry, index) => {
     assert.equal(entry.idx, index, "migration journal indexes must be contiguous");
   });
-  return entries.map((entry) =>
-    resolve(projectRoot, "drizzle", `${entry.tag}.sql`),
+  const lastEntry = entries.at(-1);
+  const snapshotName = `${lastEntry.tag.split("_", 1)[0]}_snapshot.json`;
+  const snapshotModel = JSON.parse(
+    await readFile(
+      resolve(projectRoot, "drizzle/meta", snapshotName),
+      "utf8",
+    ),
   );
+  const schemaTables = Object.values(snapshotModel.tables)
+    .map((table) => {
+      const columns = Object.values(table.columns).map((column) => ({
+        name: column.name,
+        primaryKey: column.primaryKey === true,
+      }));
+      const compositePrimaryKeyColumns = Object.values(
+        table.compositePrimaryKeys ?? {},
+      ).flatMap((primaryKey) => primaryKey.columns);
+      const orderColumns = [
+        ...new Set([
+          ...columns
+            .filter((column) => column.primaryKey)
+            .map((column) => column.name),
+          ...compositePrimaryKeyColumns,
+        ]),
+      ];
+      return {
+        columns: columns.map((column) => column.name),
+        name: table.name,
+        orderColumns:
+          orderColumns.length > 0
+            ? orderColumns
+            : columns.map((column) => column.name),
+      };
+    })
+    .sort((left, right) => left.name.localeCompare(right.name));
+  assert.deepEqual(
+    schemaTables.map((table) => table.name),
+    coveredSchemaTables,
+    "every application schema table must be explicitly classified for recovery",
+  );
+  return {
+    journalVersion: String(journal.version),
+    lastMigrationTag: lastEntry.tag,
+    paths: entries.map((entry) =>
+      resolve(projectRoot, "drizzle", `${entry.tag}.sql`),
+    ),
+    schemaSnapshot: snapshotName,
+    schemaTables,
+  };
+}
+
+function buildLocalConfig() {
+  return `${JSON.stringify(
+    {
+      name: "roadmap-local-synthetic-recovery",
+      compatibility_date: "2026-08-07",
+      d1_databases: [
+        {
+          binding: "DB",
+          database_name: "roadmap-local-synthetic-recovery",
+          database_id: "00000000-0000-4000-8000-000000000001",
+        },
+      ],
+    },
+    null,
+    2,
+  )}\n`;
 }
 
 async function executeD1File(configPath, filePath) {
@@ -296,8 +477,12 @@ async function executeD1File(configPath, filePath) {
   }
 }
 
-async function inspectD1(configPath) {
+async function inspectD1(configPath, schemaTables) {
   const operations = [];
+  const verificationStatements = [
+    ...baseVerificationStatements,
+    ...buildCanonicalTableStateQueries(schemaTables),
+  ];
   // Execute each read independently because Wrangler's local JSON output may
   // elide result sets from a multi-statement command.
   for (const statement of verificationStatements) {
@@ -325,7 +510,47 @@ async function inspectD1(configPath) {
   return operations.map((operation) => operation.results);
 }
 
-function assertRepresentativeState(state) {
+function buildCanonicalTableStateQueries(schemaTables) {
+  const tableBatches = [];
+  for (let index = 0; index < schemaTables.length; index += 4) {
+    tableBatches.push(schemaTables.slice(index, index + 4));
+  }
+  return tableBatches.map((tableBatch) =>
+    buildCanonicalTableStateQuery(tableBatch),
+  );
+}
+
+function buildCanonicalTableStateQuery(schemaTables) {
+  return `${schemaTables
+    .map((table) => {
+      const tableIdentifier = sqlIdentifier(table.name);
+      const rowExpression = `json_object(${table.columns
+        .flatMap((column) => [sqlValue(column), sqlIdentifier(column)])
+        .join(", ")})`;
+      const orderExpression = table.orderColumns
+        .map((column) => sqlIdentifier(column))
+        .join(", ");
+      return `select ${sqlValue(table.name)} as table_name,
+        (select json_group_array(json(row_json))
+           from (
+             select ${rowExpression} as row_json
+               from ${tableIdentifier}
+              order by ${orderExpression}
+           )) as rows_json`;
+    })
+    .join("\nunion all\n")}
+order by table_name`;
+}
+
+function sqlIdentifier(identifier) {
+  assert.match(identifier, /^[a-z][a-z0-9_]*$/u, "unsafe SQL identifier");
+  return `"${identifier}"`;
+}
+
+function assertRepresentativeState(
+  state,
+  { recoveryNormalized = false } = {},
+) {
   assert.deepEqual(state[0], [], "D1 foreign-key integrity check failed");
   assert.deepEqual(state[1], [
     {
@@ -476,6 +701,398 @@ function assertRepresentativeState(state) {
   );
   assert.deepEqual(state[8], [{ violation_count: 0 }]);
   assert.equal(state[9].length, 2);
+
+  const rowsByTable = canonicalRowsByTable(state);
+  assert.deepEqual(
+    [...rowsByTable.keys()].sort(),
+    coveredSchemaTables,
+    "canonical restore inspection did not return every covered table",
+  );
+  for (const [tableName, expectedCount] of Object.entries(
+    expectedTableRowCounts,
+  )) {
+    const normalizedExpectedCount =
+      recoveryNormalized && tableName === "abuse_rate_limits"
+        ? 1
+        : expectedCount;
+    assert.equal(
+      rowsByTable.get(tableName).length,
+      normalizedExpectedCount,
+      `unexpected representative row count for ${tableName}`,
+    );
+  }
+
+  const betaLease = findCanonicalRow(
+    rowsByTable,
+    "billing_account_operation_leases",
+    "account_id",
+    "acct-beta",
+  );
+  const betaEvent = findCanonicalRow(
+    rowsByTable,
+    "billing_events",
+    "id",
+    "billing-event-beta-processing",
+  );
+  const betaReconciliation = findCanonicalRow(
+    rowsByTable,
+    "billing_reconciliation_targets",
+    "id",
+    "reconciliation-beta-processing",
+  );
+  const scheduler = rowsByTable.get("scheduler_heartbeat")[0];
+  const rateLimits = rowsByTable.get("abuse_rate_limits");
+
+  if (!recoveryNormalized) {
+    assert.equal(betaLease.state, "held");
+    assert.equal(betaLease.operation, "reconciliation");
+    assert.ok(betaLease.lease_token);
+    assert.ok(betaLease.lease_expires_at);
+    assert.equal(betaEvent.status, "processing");
+    assert.ok(betaEvent.lease_token);
+    assert.ok(betaEvent.lease_expires_at);
+    assert.equal(betaReconciliation.state, "processing");
+    assert.ok(betaReconciliation.lease_token);
+    assert.ok(betaReconciliation.lease_expires_at);
+    assert.equal(scheduler.state, "running");
+    assert.equal(scheduler.completed_at, null);
+    assert.equal(rateLimits.length, 2);
+    return;
+  }
+
+  assert.deepEqual(
+    {
+      lastReleasedAt: betaLease.last_released_at,
+      leaseExpiresAt: betaLease.lease_expires_at,
+      leaseToken: betaLease.lease_token,
+      operation: betaLease.operation,
+      state: betaLease.state,
+    },
+    {
+      lastReleasedAt: recoveryNormalizationTimestamp,
+      leaseExpiresAt: null,
+      leaseToken: null,
+      operation: null,
+      state: "idle",
+    },
+  );
+  assert.deepEqual(
+    {
+      errorCode: betaEvent.last_error_code,
+      leaseExpiresAt: betaEvent.lease_expires_at,
+      leaseToken: betaEvent.lease_token,
+      status: betaEvent.status,
+    },
+    {
+      errorCode: "restore_recovered_inflight",
+      leaseExpiresAt: null,
+      leaseToken: null,
+      status: "failed",
+    },
+  );
+  assert.deepEqual(
+    {
+      errorCode: betaReconciliation.last_error_code,
+      lastCompletedAt: betaReconciliation.last_completed_at,
+      leaseExpiresAt: betaReconciliation.lease_expires_at,
+      leaseToken: betaReconciliation.lease_token,
+      nextAttemptAt: betaReconciliation.next_automatic_attempt_at,
+      state: betaReconciliation.state,
+    },
+    {
+      errorCode: "restore_recovered_inflight",
+      lastCompletedAt: recoveryNormalizationTimestamp,
+      leaseExpiresAt: null,
+      leaseToken: null,
+      nextAttemptAt: recoveryNormalizationTimestamp,
+      state: "failed",
+    },
+  );
+  assert.deepEqual(
+    {
+      completedAt: scheduler.completed_at,
+      failureCode: scheduler.last_failure_code,
+      state: scheduler.state,
+    },
+    {
+      completedAt: recoveryNormalizationTimestamp,
+      failureCode: "restore_inflight_interrupted",
+      state: "failed",
+    },
+  );
+  assert.equal(rateLimits.length, 1);
+  assert.equal(rateLimits[0].scope, "billing_portal_account");
+  assert.ok(
+    rateLimits[0].window_expires_at > recoveryNormalizationTimestamp,
+    "the active rate-limit window was not preserved",
+  );
+}
+
+function canonicalRowsByTable(state) {
+  const canonicalState = state.slice(baseVerificationStatements.length).flat();
+  assert.equal(
+    canonicalState.length,
+    coveredSchemaTables.length,
+    "canonical table-state result count changed",
+  );
+  return new Map(
+    canonicalState.map(({ rows_json, table_name: tableName }) => {
+      const rows = JSON.parse(rows_json);
+      assert.ok(Array.isArray(rows), `canonical state is not an array: ${tableName}`);
+      return [tableName, rows];
+    }),
+  );
+}
+
+function findCanonicalRow(rowsByTable, tableName, columnName, value) {
+  const row = rowsByTable
+    .get(tableName)
+    .find((candidate) => candidate[columnName] === value);
+  assert.ok(row, `missing representative ${tableName} row`);
+  return row;
+}
+
+function assertNormalizationWasBounded(rawState, normalizedState) {
+  const rawRows = canonicalRowsByTable(rawState);
+  const normalizedRows = canonicalRowsByTable(normalizedState);
+  for (const tableName of coveredSchemaTables) {
+    if (recoveryMutatedTables.has(tableName)) continue;
+    assert.deepEqual(
+      normalizedRows.get(tableName),
+      rawRows.get(tableName),
+      `post-restore normalization unexpectedly changed ${tableName}`,
+    );
+  }
+}
+
+async function exerciseModifiedSnapshotDetection(
+  root,
+  migrationPlan,
+  snapshot,
+  sourceState,
+) {
+  const projectPath = join(root, "d1-modified-snapshot");
+  const configPath = join(projectPath, "wrangler.jsonc");
+  const modifiedSnapshotPath = join(projectPath, "modified-snapshot.sql");
+  await mkdir(projectPath, { recursive: true });
+  await Promise.all([
+    writeFile(configPath, buildLocalConfig(), "utf8"),
+    writeFile(
+      modifiedSnapshotPath,
+      `${snapshot.toString("utf8")}\nupdate development_plans
+          set revision = revision + 1
+        where id = 'plan-beta';\n`,
+      "utf8",
+    ),
+  ]);
+  for (const migrationPath of migrationPlan.paths) {
+    await executeD1File(configPath, migrationPath);
+  }
+  await executeD1File(configPath, modifiedSnapshotPath);
+  const modifiedState = await inspectD1(configPath, migrationPlan.schemaTables);
+  assert.deepEqual(
+    modifiedState[0],
+    [],
+    "modified-snapshot fixture unexpectedly broke foreign keys",
+  );
+  assert.throws(
+    () =>
+      assert.deepEqual(
+        modifiedState,
+        sourceState,
+        "modified D1 snapshot was not detected",
+      ),
+    { name: "AssertionError" },
+  );
+  assert.throws(
+    () => assertRepresentativeState(modifiedState),
+    { name: "AssertionError" },
+    "representative invariant checks accepted a modified snapshot",
+  );
+  return [
+    {
+      id: "d1_modified_snapshot_detected",
+      passed: true,
+    },
+  ];
+}
+
+function buildRecoveryNormalizationSql() {
+  return `
+update billing_account_operation_leases
+   set state = 'idle',
+       operation = null,
+       lease_token = null,
+       lease_expires_at = null,
+       last_released_at = ${recoveryNormalizationTimestamp},
+       updated_at = ${recoveryNormalizationTimestamp}
+ where state = 'held';
+
+update billing_events
+   set status = 'failed',
+       lease_token = null,
+       lease_expires_at = null,
+       last_error_code = 'restore_recovered_inflight',
+       last_error_message = 'Synthetic restore interrupted in-flight processing; retry required.',
+       updated_at = ${recoveryNormalizationTimestamp}
+ where status = 'processing';
+
+update billing_reconciliation_targets
+   set state = 'failed',
+       lease_token = null,
+       lease_expires_at = null,
+       automatic_failure_count = max(automatic_failure_count, 1),
+       next_automatic_attempt_at = ${recoveryNormalizationTimestamp},
+       automatic_dead_lettered_at = null,
+       last_error_code = 'restore_recovered_inflight',
+       last_error_message = 'Synthetic restore interrupted in-flight reconciliation; retry required.',
+       last_completed_at = ${recoveryNormalizationTimestamp},
+       updated_at = ${recoveryNormalizationTimestamp}
+ where state = 'processing';
+
+update scheduler_heartbeat
+   set state = 'failed',
+       completed_at = ${recoveryNormalizationTimestamp},
+       billing_configured = null,
+       considered_count = null,
+       attempted_count = null,
+       succeeded_count = null,
+       failed_count = null,
+       dead_letter_count = null,
+       last_failure_code = 'restore_inflight_interrupted',
+       updated_at = ${recoveryNormalizationTimestamp}
+ where state = 'running';
+
+delete from abuse_rate_limits
+ where window_expires_at <= ${recoveryNormalizationTimestamp};
+`;
+}
+
+async function readRuntimeVersions() {
+  const [applicationPackage, miniflarePackage, wranglerPackage] =
+    await Promise.all([
+      readJson(resolve(projectRoot, "package.json")),
+      readJson(resolve(projectRoot, "node_modules/miniflare/package.json")),
+      readJson(resolve(projectRoot, "node_modules/wrangler/package.json")),
+    ]);
+  assert.equal(
+    miniflarePackage.version,
+    applicationPackage.devDependencies.miniflare,
+    "installed Miniflare version differs from the exact declaration",
+  );
+  assert.equal(
+    wranglerPackage.version,
+    applicationPackage.devDependencies.wrangler,
+    "installed Wrangler version differs from the exact declaration",
+  );
+  return {
+    application: applicationPackage.version,
+    miniflare: miniflarePackage.version,
+    node: process.version,
+    wrangler: wranglerPackage.version,
+  };
+}
+
+async function readJson(path) {
+  return JSON.parse(await readFile(path, "utf8"));
+}
+
+function buildEvidenceRecord({
+  durationMs,
+  migrationPlan,
+  negativeScenarios,
+  r2Result,
+  runtimeVersions,
+  snapshot,
+}) {
+  assert.ok(
+    negativeScenarios.length >= 3 &&
+      negativeScenarios.every((scenario) => scenario.passed === true),
+    "all negative integrity scenarios must be detected before evidence is emitted",
+  );
+  const schemaTableNames = migrationPlan.schemaTables.map((table) => table.name);
+  const intentionallyExcludedSchemaTables = schemaTableNames.filter(
+    (tableName) => !coveredSchemaTables.includes(tableName),
+  );
+  assert.deepEqual(intentionallyExcludedSchemaTables, []);
+  return {
+    evidenceClass: evidenceLabel,
+    status: "pass",
+    versions: {
+      ...runtimeVersions,
+      migrationCount: migrationPlan.paths.length,
+      migrationJournal: migrationPlan.journalVersion,
+      migrationTip: migrationPlan.lastMigrationTag,
+      schemaSnapshot: migrationPlan.schemaSnapshot,
+    },
+    duration: {
+      localExerciseWallClockMs: durationMs,
+      interpretation: "Local wall-clock observation only; not an RTO measurement.",
+    },
+    relationalCoverage: {
+      authoritativeLifecycleTables,
+      coveredSchemaTableCount: coveredSchemaTables.length,
+      intentionallyExcludedSchemaTables,
+      operationalStateTables,
+      populatedSchemaTableCount: Object.values(expectedTableRowCounts).filter(
+        (count) => count > 0,
+      ).length,
+      schemaTableCount: schemaTableNames.length,
+    },
+    postRestoreNormalization: {
+      activeRateLimitWindowsPreserved: true,
+      expiredRateLimitWindowsRemoved: true,
+      inFlightAccountLeasesReleased: true,
+      inFlightBillingEventLeasesClearedForRetry: true,
+      inFlightReconciliationLeasesClearedForRetry: true,
+      runningSchedulerMarkedInterrupted: true,
+    },
+    objectCoverage: {
+      checksumAlgorithm: "sha256",
+      objectCount: r2Result.objectCount,
+      totalBytes: r2Result.totalBytes,
+    },
+    snapshot: {
+      byteSize: snapshot.byteLength,
+      checksumAlgorithm: "sha256",
+      sha256: sha256(snapshot),
+    },
+    negativeIntegrityScenarios: negativeScenarios.map(({ id, passed }) => ({
+      id,
+      passed,
+    })),
+    subprocessIsolation: {
+      parentEnvironmentAllowlist: WRANGLER_PARENT_ENV_ALLOWLIST,
+      secretShapedVariablesForwarded: false,
+    },
+    limitations: [
+      "Local synthetic data and local compatible runtimes only.",
+      "No Sites, hosted D1, hosted R2, provider-native restore, production data, or customer data was exercised.",
+      "No backup retention, deletion recovery, operator readiness, alert delivery, or successful hosted restore evidence is established.",
+      "The observed duration is not an RTO measurement or commitment.",
+      "The synthetic snapshot age is not an RPO measurement or commitment.",
+    ],
+  };
+}
+
+function assertPrivacySafeEvidenceRecord(evidenceRecord) {
+  const serialized = JSON.stringify(evidenceRecord);
+  const forbiddenFixtureValues = [
+    ...new Set(
+      objectFixtures.flatMap((fixture) => [fixture.accountId, fixture.key]),
+    ),
+    "alpha@synthetic.invalid",
+    "beta@synthetic.invalid",
+    "lease-synthetic",
+    "request-alpha-export",
+  ];
+  for (const forbiddenValue of forbiddenFixtureValues) {
+    assert.equal(
+      serialized.includes(forbiddenValue),
+      false,
+      "JSON evidence contains a fixture identifier or private-object location",
+    );
+  }
 }
 
 async function exerciseR2(root, restoredState) {
@@ -505,10 +1122,26 @@ async function exerciseR2(root, restoredState) {
   );
   const storedManifest = JSON.parse(await readFile(manifestPath, "utf8"));
 
+  assert.throws(
+    () => assertR2InventoryMatches(sourceInventory.slice(1), sourceInventory),
+    { name: "AssertionError" },
+    "missing-object inventory fixture was not detected",
+  );
+  const checksumFixture = await readFile(
+    safeObjectPath(backupRoot, storedManifest[0].key),
+  );
+  const corruptedChecksumFixture = Buffer.from(checksumFixture);
+  corruptedChecksumFixture[0] ^= 0xff;
+  assert.throws(
+    () => assertObjectChecksum(corruptedChecksumFixture, storedManifest[0]),
+    { name: "AssertionError" },
+    "checksum-mismatch fixture was not detected",
+  );
+
   for (const item of storedManifest) {
     const backupPath = safeObjectPath(backupRoot, item.key);
     const body = await readFile(backupPath);
-    assert.equal(sha256(body), item.sha256, `backup checksum mismatch: ${item.key}`);
+    assertObjectChecksum(body, item);
     await restoredBucket.put(item.key, body, {
       customMetadata: item.customMetadata,
       httpMetadata: item.httpMetadata,
@@ -516,11 +1149,7 @@ async function exerciseR2(root, restoredState) {
   }
 
   const restoredInventory = await inventoryR2(restoredBucket);
-  assert.deepEqual(
-    restoredInventory,
-    sourceInventory,
-    "restored R2-compatible inventory differs from source",
-  );
+  assertR2InventoryMatches(restoredInventory, sourceInventory);
 
   const expectedD1Objects = [
     ...restoredState[9].map((asset) => ({
@@ -559,9 +1188,25 @@ async function exerciseR2(root, restoredState) {
   );
 
   return {
+    negativeScenarios: [
+      { id: "r2_missing_object_detected", passed: true },
+      { id: "r2_checksum_mismatch_detected", passed: true },
+    ],
     objectCount: restoredInventory.length,
     totalBytes: restoredInventory.reduce((total, item) => total + item.size, 0),
   };
+}
+
+function assertR2InventoryMatches(actual, expected) {
+  assert.deepEqual(
+    actual,
+    expected,
+    "restored R2-compatible inventory differs from source",
+  );
+}
+
+function assertObjectChecksum(body, item) {
+  assert.equal(sha256(body), item.sha256, `backup checksum mismatch: ${item.key}`);
 }
 
 function createR2(persistencePath, bucketName) {
@@ -799,6 +1444,23 @@ values
    ${baseTimestamp + 12}, ${baseTimestamp + 13}, ${baseTimestamp + 11},
    ${baseTimestamp + 13});
 
+insert into instructor_profiles
+  (account_id, display_name, business_name, professional_title, philosophy,
+   contact_email, province_or_territory, city, accent_color,
+   logo_media_asset_id, profile_photo_media_asset_id, setup_completed_at,
+   created_at, updated_at)
+values
+  ('acct-alpha', 'Synthetic Instructor Alpha', 'Synthetic Alpha Coaching',
+   'Golf instructor', 'Synthetic evidence-led coaching.',
+   'coach-alpha@synthetic.invalid', 'AB', 'Calgary', '#1A6B4A',
+   'media-alpha', null, ${baseTimestamp + 14}, ${baseTimestamp + 14},
+   ${baseTimestamp + 14}),
+  ('acct-beta', 'Synthetic Instructor Beta', 'Synthetic Beta Coaching',
+   'Golf instructor', 'Synthetic practice-led coaching.',
+   'coach-beta@synthetic.invalid', 'ON', 'Ottawa', '#315A9A', null,
+   'media-beta', ${baseTimestamp + 15}, ${baseTimestamp + 15},
+   ${baseTimestamp + 15});
+
 insert into golfers
   (id, account_id, display_name, status, eligibility_status,
    eligibility_confirmed_at, created_at, updated_at)
@@ -809,6 +1471,21 @@ values
   ('golfer-beta', 'acct-beta', 'Synthetic Golfer Beta', 'active',
    'adult_confirmed', ${baseTimestamp + 21}, ${baseTimestamp + 21},
    ${baseTimestamp + 21});
+
+insert into consent_records
+  (id, account_id, golfer_id, subject_type, scope, status, policy_version,
+   purpose_description, capture_method, evidence_reference,
+   recorded_by_account_id, granted_at, created_at)
+values
+  ('consent-alpha-account', 'acct-alpha', null, 'account', 'terms',
+   'granted', 'synthetic-v1', 'Synthetic terms acceptance evidence.',
+   'self_service', 'synthetic-terms-check', 'acct-alpha',
+   ${baseTimestamp + 22}, ${baseTimestamp + 22}),
+  ('consent-beta-golfer', 'acct-beta', 'golfer-beta', 'golfer',
+   'roadmap_sharing', 'granted', 'synthetic-v1',
+   'Synthetic roadmap-sharing evidence.', 'instructor_attested',
+   'synthetic-sharing-check', 'acct-beta', ${baseTimestamp + 23},
+   ${baseTimestamp + 23});
 
 insert into development_plans
   (id, account_id, golfer_id, title, status, revision, approved_revision,
@@ -823,6 +1500,211 @@ values
    'published', 2, 2, 2, 'Private synthetic coaching roadmap',
    ${baseTimestamp + 34}, ${baseTimestamp + 35}, ${baseTimestamp + 36},
    ${baseTimestamp + 37}, ${baseTimestamp + 26}, ${baseTimestamp + 37});
+
+insert into coaching_packages
+  (id, account_id, name, purpose, fit_description, status, currency,
+   price_amount_minor, current_details_text, inclusions, cadence,
+   practice_expectation, evaluation_description, terms_summary,
+   external_action_type, external_action_label, external_action_url,
+   external_action_verified_at, is_default, created_at, updated_at)
+values
+  ('package-alpha', 'acct-alpha', 'Synthetic Alpha Series',
+   'Build a repeatable synthetic routine.',
+   'For the synthetic alpha roadmap.', 'active', 'CAD', 7500, null,
+   '["Two synthetic lessons","One synthetic review"]', 'Biweekly',
+   'Two short synthetic practices weekly.', 'Synthetic phase review.',
+   'Synthetic terms only.', 'booking', 'Book synthetic follow-up',
+   'https://synthetic.invalid/alpha-booking', ${baseTimestamp + 38}, 1,
+   ${baseTimestamp + 38}, ${baseTimestamp + 38}),
+  ('package-beta', 'acct-beta', 'Synthetic Beta Check-in',
+   'Review synthetic tempo work.', 'For the synthetic beta roadmap.',
+   'active', null, null, 'Contact the synthetic instructor for current details.',
+   '["One synthetic check-in"]', 'Monthly',
+   'Three synthetic rehearsals weekly.', 'Synthetic progress check.',
+   'Synthetic terms only.', 'contact', 'Contact synthetic instructor',
+   'https://synthetic.invalid/beta-contact', ${baseTimestamp + 39}, 1,
+   ${baseTimestamp + 39}, ${baseTimestamp + 39});
+
+insert into golfer_goals
+  (id, account_id, golfer_id, plan_id, desired_outcome, why_it_matters,
+   context, constraints, target_date, status, is_primary,
+   confirmed_by_golfer_at, coach_approved_at, created_at, updated_at)
+values
+  ('goal-alpha', 'acct-alpha', 'golfer-alpha', 'plan-alpha',
+   'Build a repeatable synthetic start line.',
+   'Supports the synthetic alpha roadmap.', 'Synthetic practice context.',
+   'Synthetic time constraint.', ${baseTimestamp + 5_000_000}, 'active', 1,
+   ${baseTimestamp + 40}, ${baseTimestamp + 41}, ${baseTimestamp + 40},
+   ${baseTimestamp + 41}),
+  ('goal-beta', 'acct-beta', 'golfer-beta', 'plan-beta',
+   'Build a repeatable synthetic tempo.',
+   'Supports the synthetic beta roadmap.', 'Synthetic practice context.',
+   null, ${baseTimestamp + 6_000_000}, 'active', 1,
+   ${baseTimestamp + 42}, ${baseTimestamp + 43}, ${baseTimestamp + 42},
+   ${baseTimestamp + 43});
+
+insert into assessments
+  (id, account_id, plan_id, title, status, assessed_at, context,
+   starting_point, strength_summary, primary_pattern, limitations,
+   coach_approved_at, created_at, updated_at)
+values
+  ('assessment-alpha', 'acct-alpha', 'plan-alpha',
+   'Synthetic Alpha Baseline', 'confirmed', ${baseTimestamp + 44},
+   'Synthetic assessment context.', 'Synthetic start-line baseline.',
+   'Consistent synthetic setup.', 'Synthetic face-to-path pattern.',
+   'Synthetic observations only.', ${baseTimestamp + 45},
+   ${baseTimestamp + 44}, ${baseTimestamp + 45}),
+  ('assessment-beta', 'acct-beta', 'plan-beta',
+   'Synthetic Beta Baseline', 'confirmed', ${baseTimestamp + 46},
+   'Synthetic assessment context.', 'Synthetic tempo baseline.',
+   'Consistent synthetic finish.', 'Synthetic transition pattern.',
+   'Synthetic observations only.', ${baseTimestamp + 47},
+   ${baseTimestamp + 46}, ${baseTimestamp + 47});
+
+insert into plan_priorities
+  (id, account_id, plan_id, assessment_id, title, description, rationale,
+   status, sort_order, is_current, coach_approved_at, created_at, updated_at)
+values
+  ('priority-alpha', 'acct-alpha', 'plan-alpha', 'assessment-alpha',
+   'Synthetic start line', 'Train a synthetic start-line routine.',
+   'Selected from the synthetic baseline.', 'active', 0, 1,
+   ${baseTimestamp + 48}, ${baseTimestamp + 48}, ${baseTimestamp + 48}),
+  ('priority-beta', 'acct-beta', 'plan-beta', 'assessment-beta',
+   'Synthetic tempo', 'Train a synthetic tempo routine.',
+   'Selected from the synthetic baseline.', 'active', 0, 1,
+   ${baseTimestamp + 49}, ${baseTimestamp + 49}, ${baseTimestamp + 49});
+
+insert into plan_phases
+  (id, account_id, plan_id, coaching_package_id, sequence, title, purpose,
+   rationale, progress_signals, expectations, estimated_duration, status,
+   is_recommended, coach_approved_at, started_at, completed_at,
+   created_at, updated_at)
+values
+  ('phase-alpha-one', 'acct-alpha', 'plan-alpha', 'package-alpha', 1,
+   'Synthetic Alpha Foundation', 'Establish the synthetic routine.',
+   'First synthetic phase.', '["Repeatable setup","Stable start line"]',
+   'Complete two synthetic practices.', 'Two weeks', 'complete', 1,
+   ${baseTimestamp + 50}, ${baseTimestamp + 51}, ${baseTimestamp + 60},
+   ${baseTimestamp + 50}, ${baseTimestamp + 60}),
+  ('phase-alpha-two', 'acct-alpha', 'plan-alpha', 'package-alpha', 2,
+   'Synthetic Alpha Transfer', 'Transfer the synthetic routine.',
+   'Second synthetic phase.', '["On-course synthetic observation"]',
+   'Complete one synthetic transfer check.', 'Two weeks', 'active', 1,
+   ${baseTimestamp + 52}, ${baseTimestamp + 61}, null,
+   ${baseTimestamp + 52}, ${baseTimestamp + 61}),
+  ('phase-beta-one', 'acct-beta', 'plan-beta', 'package-beta', 1,
+   'Synthetic Beta Foundation', 'Establish synthetic tempo.',
+   'First synthetic phase.', '["Stable synthetic tempo"]',
+   'Complete three synthetic rehearsals.', 'Three weeks', 'active', 1,
+   ${baseTimestamp + 53}, ${baseTimestamp + 54}, null,
+   ${baseTimestamp + 53}, ${baseTimestamp + 54});
+
+insert into phase_priorities
+  (account_id, phase_id, priority_id, sort_order, created_at)
+values
+  ('acct-alpha', 'phase-alpha-one', 'priority-alpha', 0,
+   ${baseTimestamp + 54}),
+  ('acct-beta', 'phase-beta-one', 'priority-beta', 0,
+   ${baseTimestamp + 55});
+
+insert into lessons
+  (id, account_id, plan_id, phase_id, sequence, title, status, purpose,
+   coach_observation, golfer_learning, takeaway, next_check,
+   phase_connection, scheduled_at, occurred_at, coach_approved_at,
+   completed_at, created_at, updated_at)
+values
+  ('lesson-alpha', 'acct-alpha', 'plan-alpha', 'phase-alpha-one', 1,
+   'Synthetic Alpha Lesson', 'completed', 'Observe synthetic start line.',
+   'Synthetic setup remained stable.', 'Synthetic routine felt repeatable.',
+   'Keep the synthetic cue short.', 'Review after two practices.',
+   'Supports the synthetic foundation phase.', ${baseTimestamp + 55},
+   ${baseTimestamp + 56}, ${baseTimestamp + 57}, ${baseTimestamp + 57},
+   ${baseTimestamp + 55}, ${baseTimestamp + 57}),
+  ('lesson-beta', 'acct-beta', 'plan-beta', 'phase-beta-one', 1,
+   'Synthetic Beta Lesson', 'planned', 'Observe synthetic tempo.', null,
+   null, null, 'Review at the synthetic check-in.',
+   'Supports the synthetic tempo phase.', ${baseTimestamp + 70}, null,
+   ${baseTimestamp + 58}, null, ${baseTimestamp + 58},
+   ${baseTimestamp + 58});
+
+insert into practice_items
+  (id, account_id, plan_id, phase_id, lesson_id, title, status, objective,
+   rationale, instructions, time_or_cadence, success_check, common_mistake,
+   stop_or_ask_rule, constraint_note, starts_at, due_at, coach_approved_at,
+   completed_at, created_at, updated_at)
+values
+  ('practice-alpha', 'acct-alpha', 'plan-alpha', 'phase-alpha-one',
+   'lesson-alpha', 'Synthetic Alpha Start-Line Check', 'completed',
+   'Repeat the synthetic setup.', 'Reinforces the synthetic priority.',
+   '["Place a synthetic marker","Complete five rehearsals"]',
+   'Twice weekly', 'Four of five synthetic starts match.',
+   'Adding extra synthetic cues.', 'Stop if synthetic discomfort appears.',
+   'Synthetic exercise only.', ${baseTimestamp + 58},
+   ${baseTimestamp + 68}, ${baseTimestamp + 59}, ${baseTimestamp + 67},
+   ${baseTimestamp + 58}, ${baseTimestamp + 67}),
+  ('practice-beta', 'acct-beta', 'plan-beta', 'phase-beta-one',
+   'lesson-beta', 'Synthetic Beta Tempo Check', 'active',
+   'Repeat the synthetic tempo.', 'Reinforces the synthetic priority.',
+   '["Count a synthetic cadence","Complete three rehearsals"]',
+   'Three times weekly', 'Three synthetic rehearsals feel consistent.',
+   'Rushing the synthetic transition.', 'Stop if synthetic discomfort appears.',
+   null, ${baseTimestamp + 60}, ${baseTimestamp + 80},
+   ${baseTimestamp + 61}, null, ${baseTimestamp + 60},
+   ${baseTimestamp + 61});
+
+insert into evidence_items
+  (id, account_id, plan_id, assessment_id, phase_id, lesson_id,
+   practice_item_id, media_asset_id, status, evidence_type, context_type,
+   title, claim, source_label, source_type, observed_at, comparison_role,
+   metric_name, metric_value, metric_unit, interpretation, limitation,
+   maturity, next_evidence_needed, is_representative, coach_approved_at,
+   created_at, updated_at)
+values
+  ('evidence-alpha', 'acct-alpha', 'plan-alpha', 'assessment-alpha',
+   'phase-alpha-one', 'lesson-alpha', 'practice-alpha', 'media-alpha',
+   'published', 'media', 'lesson', 'Synthetic Alpha Observation',
+   'Synthetic start-line routine was repeated.', 'Synthetic coach note',
+   'document', ${baseTimestamp + 62}, 'standalone', null, null, null,
+   'Supports a synthetic early indication.', 'One synthetic observation only.',
+   'early_indication', 'Observe a synthetic transfer attempt.', 1,
+   ${baseTimestamp + 63}, ${baseTimestamp + 62}, ${baseTimestamp + 63}),
+  ('evidence-beta', 'acct-beta', 'plan-beta', 'assessment-beta',
+   'phase-beta-one', 'lesson-beta', 'practice-beta', null, 'published',
+   'measurement', 'practice', 'Synthetic Beta Measurement',
+   'Three synthetic rehearsals were recorded.', 'Synthetic golfer report',
+   'golfer_reported', ${baseTimestamp + 64}, 'baseline',
+   'synthetic_repetitions', 3, 'count',
+   'Establishes a synthetic baseline.', 'Self-reported synthetic value.',
+   'single_observation', 'Repeat the synthetic measurement.', 1,
+   ${baseTimestamp + 65}, ${baseTimestamp + 64}, ${baseTimestamp + 65});
+
+insert into phase_reviews
+  (id, account_id, plan_id, phase_id, next_phase_id,
+   recommended_package_id, status, outcome, original_purpose,
+   baseline_summary, work_completed, change_summary, reliability_label,
+   limitations, golfer_contribution, coach_conclusion,
+   remaining_opportunity, next_phase_rationale,
+   independent_practice_alternative, confirmed_at, shared_at,
+   created_at, updated_at)
+values
+  ('review-alpha', 'acct-alpha', 'plan-alpha', 'phase-alpha-one',
+   'phase-alpha-two', 'package-alpha', 'shared', 'complete',
+   'Establish the synthetic routine.', 'Synthetic baseline was recorded.',
+   'Synthetic lesson and practice completed.',
+   'Synthetic routine became more repeatable.', 'Early synthetic indication.',
+   'Only synthetic evidence was used.', 'Synthetic golfer note recorded.',
+   'Advance to the synthetic transfer phase.',
+   'Observe a synthetic on-course attempt.',
+   'The next synthetic phase tests transfer.',
+   'Continue the synthetic practice independently.',
+   ${baseTimestamp + 66}, ${baseTimestamp + 67},
+   ${baseTimestamp + 66}, ${baseTimestamp + 67});
+
+insert into phase_review_evidence
+  (account_id, phase_review_id, evidence_item_id, sort_order, created_at)
+values
+  ('acct-alpha', 'review-alpha', 'evidence-alpha', 0,
+   ${baseTimestamp + 68});
 
 insert into share_links
   (id, account_id, plan_id, token_hash, token_hash_algorithm, status, scope,
@@ -858,6 +1740,17 @@ values
    ${value(token("f"))}, 'hmac-sha256-session-v1', ${baseTimestamp + 700000},
    1, null, null, ${baseTimestamp + 63}, ${baseTimestamp + 64});
 
+insert into golfer_plan_responses
+  (id, account_id, plan_id, share_link_id, response_type, note,
+   external_outcome_observed, occurred_at, created_at)
+values
+  ('response-alpha', 'acct-alpha', 'plan-alpha', 'share-alpha-active',
+   'ask_question', 'Synthetic clarification requested.', 0,
+   ${baseTimestamp + 71}, ${baseTimestamp + 71}),
+  ('response-beta', 'acct-beta', 'plan-beta', 'share-beta-active',
+   'independent_practice', 'Synthetic independent practice selected.', 0,
+   ${baseTimestamp + 72}, ${baseTimestamp + 72});
+
 insert into data_requests
   (id, account_id, golfer_id, request_type, requested_by_type,
    requester_contact_hash, status, identity_verified_at, due_at,
@@ -881,6 +1774,25 @@ values
    ${baseTimestamp + 90}),
   ('stripe', 'cus_synthetic_beta', 'acct-beta', ${baseTimestamp + 91},
    ${baseTimestamp + 91});
+
+insert into billing_checkout_attempts
+  (id, account_id, provider, state, request_version, idempotency_key,
+   provider_price_id, application_origin, provider_customer_id,
+   customer_email, provider_session_id, provider_created_at,
+   provider_expires_at, completed_at, created_at, updated_at)
+values
+  ('checkout-alpha-completed', 'acct-alpha', 'stripe', 'completed', 1,
+   'synthetic-checkout-alpha', 'price_synthetic_alpha',
+   'https://synthetic.invalid', 'cus_synthetic_alpha',
+   'alpha@synthetic.invalid', 'cs_synthetic_alpha', ${baseTimestamp + 92},
+   ${baseTimestamp + 900_000}, ${baseTimestamp + 95},
+   ${baseTimestamp + 92}, ${baseTimestamp + 95}),
+  ('checkout-beta-open', 'acct-beta', 'stripe', 'open', 1,
+   'synthetic-checkout-beta', 'price_synthetic_beta',
+   'https://synthetic.invalid', 'cus_synthetic_beta',
+   'beta@synthetic.invalid', 'cs_synthetic_beta', ${baseTimestamp + 93},
+   ${baseTimestamp + 900_001}, null, ${baseTimestamp + 93},
+   ${baseTimestamp + 94});
 
 insert into billing_subscription_projection_generations
   (provider, provider_subscription_id, generation, created_at, updated_at)
@@ -907,6 +1819,79 @@ values
    'paused', 'month', 'cad', 2222, ${baseTimestamp + 91},
    ${baseTimestamp + 2592000001}, 0, ${baseTimestamp + 97},
    ${baseTimestamp + 99}, 7, ${baseTimestamp + 91}, ${baseTimestamp + 99});
+
+insert into billing_events
+  (id, account_id, subscription_id, provider, provider_event_id,
+   provider_event_type, status, payload_sha256, provider_invoice_id,
+   amount_minor, currency, event_occurred_at, received_at, processed_at,
+   lease_token, lease_expires_at, last_attempt_at, processing_attempts,
+   last_error_code, last_error_message, created_at, updated_at)
+values
+  ('billing-event-alpha-processed', 'acct-alpha', 'subscription-alpha',
+   'stripe', 'evt_synthetic_alpha', 'customer.subscription.updated',
+   'processed', ${value(token("7"))}, 'in_synthetic_alpha', 1111, 'cad',
+   ${baseTimestamp + 100}, ${baseTimestamp + 101}, ${baseTimestamp + 103},
+   null, null, ${baseTimestamp + 102}, 1, null, null,
+   ${baseTimestamp + 101}, ${baseTimestamp + 103}),
+  ('billing-event-beta-processing', 'acct-beta', 'subscription-beta',
+   'stripe', 'evt_synthetic_beta', 'customer.subscription.updated',
+   'processing', ${value(token("8"))}, 'in_synthetic_beta', 2222, 'cad',
+   ${baseTimestamp + 104}, ${baseTimestamp + 105}, null,
+   'lease-synthetic-event-beta', ${baseTimestamp + 900_000},
+   ${baseTimestamp + 106}, 2, null, null,
+   ${baseTimestamp + 105}, ${baseTimestamp + 106});
+
+insert into billing_reconciliation_targets
+  (id, account_id, provider, subscription_id, checkout_attempt_id, state,
+   lease_token, lease_expires_at, last_attempt_at, processing_attempts,
+   automatic_failure_count, next_automatic_attempt_at,
+   automatic_dead_lettered_at, last_error_code, last_error_message,
+   last_completed_at, last_succeeded_at, created_at, updated_at)
+values
+  ('reconciliation-alpha-succeeded', 'acct-alpha', 'stripe',
+   'subscription-alpha', null, 'succeeded', null, null,
+   ${baseTimestamp + 107}, 1, 0, null, null, null, null,
+   ${baseTimestamp + 108}, ${baseTimestamp + 108},
+   ${baseTimestamp + 107}, ${baseTimestamp + 108}),
+  ('reconciliation-beta-processing', 'acct-beta', 'stripe', null,
+   'checkout-beta-open', 'processing', 'lease-synthetic-reconcile-beta',
+   ${baseTimestamp + 900_000}, ${baseTimestamp + 109}, 2, 0, null, null,
+   null, null, null, null, ${baseTimestamp + 109},
+   ${baseTimestamp + 109});
+
+insert into billing_account_operation_leases
+  (account_id, provider, state, operation, lease_token, lease_generation,
+   lease_expires_at, last_acquired_at, last_released_at, created_at,
+   updated_at)
+values
+  ('acct-alpha', 'stripe', 'idle', null, null, 2, null,
+   ${baseTimestamp + 110}, ${baseTimestamp + 111}, ${baseTimestamp + 110},
+   ${baseTimestamp + 111}),
+  ('acct-beta', 'stripe', 'held', 'reconciliation',
+   'lease-synthetic-account-beta', 3, ${baseTimestamp + 900_000},
+   ${baseTimestamp + 112}, null, ${baseTimestamp + 111},
+   ${baseTimestamp + 112});
+
+insert into scheduler_heartbeat
+  (scheduler_key, attempt_token, release_id, state, started_at,
+   completed_at, billing_configured, considered_count, attempted_count,
+   succeeded_count, failed_count, dead_letter_count, last_failure_code,
+   updated_at)
+values
+  ('billing_reconciliation', 'attempt.synthetic.restore',
+   'release.synthetic.restore', 'running', ${baseTimestamp + 113}, null,
+   null, null, null, null, null, null, null, ${baseTimestamp + 113});
+
+insert into abuse_rate_limits
+  (scope, subject_key_hash, window_started_at, window_expires_at,
+   request_count, last_request_at)
+values
+  ('share_exchange_network', ${value(token("3"))},
+   ${baseTimestamp + 100}, ${baseTimestamp + 200}, 4,
+   ${baseTimestamp + 150}),
+  ('billing_portal_account', ${value(token("4"))},
+   ${baseTimestamp + 400_000}, ${baseTimestamp + 900_000}, 2,
+   ${baseTimestamp + 450_000});
 
 insert into audit_events
   (id, account_id, actor_type, actor_account_id, actor_reference, action,

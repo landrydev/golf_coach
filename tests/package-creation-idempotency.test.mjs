@@ -45,6 +45,9 @@ test(
       [first.status, racingRetry.status].sort((left, right) => left - right),
       [200, 201],
     );
+    const createdRequestId = (first.status === 201 ? first : racingRetry).headers.get(
+      "x-request-id",
+    );
 
     const [firstBody, retryBody] = await Promise.all([
       first.json(),
@@ -95,6 +98,7 @@ test(
       payload,
     );
     assert.equal(sameKeyOtherTenant.status, 201);
+    const otherTenantRequestId = sameKeyOtherTenant.headers.get("x-request-id");
     const tenantBBody = await sameKeyOtherTenant.json();
     assert.equal(tenantBBody.idempotentReplay, false);
     assert.notEqual(tenantBBody.package.id, firstBody.package.id);
@@ -116,14 +120,14 @@ test(
         params: [firstBody.package.id],
       },
       {
-        sql: `select request_id, metadata from audit_events
+        sql: `select id, request_id, metadata from audit_events
           where account_id = (select id from accounts where normalized_email = ?)
             and action = 'coaching_package.created'
             and target_type = 'coaching_package'`,
         params: [coachA.email],
       },
       {
-        sql: `select request_id, metadata from audit_events
+        sql: `select id, request_id, metadata from audit_events
           where account_id = (select id from accounts where normalized_email = ?)
             and action = 'coaching_package.created'
             and target_type = 'coaching_package'`,
@@ -139,9 +143,13 @@ test(
     const receipt = inspection[3].results[0];
     const otherTenantReceipt = inspection[4].results[0];
     assert.notEqual(receipt.request_id, idempotencyKey);
-    assert.match(receipt.request_id, /^[a-f0-9]{64}$/);
-    assert.match(otherTenantReceipt.request_id, /^[a-f0-9]{64}$/);
-    assert.notEqual(otherTenantReceipt.request_id, receipt.request_id);
+    assert.match(receipt.id, /^[a-f0-9]{64}$/);
+    assert.match(otherTenantReceipt.id, /^[a-f0-9]{64}$/);
+    assert.notEqual(otherTenantReceipt.id, receipt.id);
+    assert.match(receipt.request_id, /^[0-9a-f-]{36}$/i);
+    assert.match(otherTenantReceipt.request_id, /^[0-9a-f-]{36}$/i);
+    assert.equal(receipt.request_id, createdRequestId);
+    assert.equal(otherTenantReceipt.request_id, otherTenantRequestId);
     const metadata = JSON.parse(receipt.metadata);
     assert.match(metadata.inputFingerprint, /^[a-f0-9]{64}$/);
     assert.equal(metadata.status, "active");
@@ -149,6 +157,8 @@ test(
     assert.equal(metadata.externalActionType, "booking");
     assert.equal(Object.hasOwn(metadata, "name"), false);
     assert.equal(Object.hasOwn(metadata, "externalActionUrl"), false);
+    assert.equal(Object.hasOwn(metadata, "requestCorrelationId"), false);
+    assert.equal(JSON.stringify([receipt, otherTenantReceipt]).includes(idempotencyKey), false);
   },
 );
 

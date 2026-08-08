@@ -20,6 +20,30 @@ const TEST_OWNER_EMAIL_DIGESTS = [
   "0b7bb0ebde3cf931a8c2c76cbce9b1ab5f66415d13dae9531b7c7114862abd75",
   "176319de4f95385464e1be770e0cf0368734c1cfc74a02e3db0d775a97192d88",
 ];
+const TEST_DATA_REQUEST_OPERATOR_ACCESS_PEPPER =
+  "synthetic-data-request-operator-pepper-tests-2026-08-08";
+const TEST_DATA_REQUEST_OPERATOR_EMAIL_DIGESTS = [
+  // HMAC-SHA-256 of `coach.a@example.test` with the synthetic pepper above.
+  "ad983660ee984c51d7ff905082da25469c8a35d3c0998e7cfe5d410d62c2c22a",
+];
+export const SYNTHETIC_CONSENT_POLICY_VERSIONS = Object.freeze({
+  golferRecord: "synthetic-golfer-record-v1",
+  roadmapSharing: "synthetic-roadmap-sharing-v1",
+});
+const TEST_CONSENT_POLICY_REGISTRY = JSON.stringify({
+  golfer_record: {
+    version: SYNTHETIC_CONSENT_POLICY_VERSIONS.golferRecord,
+    purposeDescription:
+      "Synthetic authorization for test-only golfer records; no real person is represented.",
+    subjectTypes: ["account"],
+  },
+  roadmap_sharing: {
+    version: SYNTHETIC_CONSENT_POLICY_VERSIONS.roadmapSharing,
+    purposeDescription:
+      "Synthetic authorization for test-only private roadmap sharing; no real person is represented.",
+    subjectTypes: ["golfer"],
+  },
+});
 
 export async function startD1Worker(bindingOverrides = {}, runtimeOptions = {}) {
   const common = {
@@ -34,8 +58,27 @@ export async function startD1Worker(bindingOverrides = {}, runtimeOptions = {}) 
       INSTRUCTOR_ACCESS_MODE: "owner_private",
       OWNER_PRIVATE_ACCESS_PEPPER: TEST_OWNER_ACCESS_PEPPER,
       OWNER_PRIVATE_EMAIL_DIGESTS: TEST_OWNER_EMAIL_DIGESTS.join(","),
+      DATA_REQUEST_OPERATOR_ACCESS_PEPPER:
+        TEST_DATA_REQUEST_OPERATOR_ACCESS_PEPPER,
+      DATA_REQUEST_OPERATOR_EMAIL_DIGESTS:
+        TEST_DATA_REQUEST_OPERATOR_EMAIL_DIGESTS.join(","),
+      CONSENT_POLICY_REGISTRY_JSON: TEST_CONSENT_POLICY_REGISTRY,
+      ...(runtimeOptions.concurrencyBarrier
+        ? {
+            SYNTHETIC_CONCURRENCY_BARRIER_MODE:
+              "local-miniflare-race-tests-v1",
+          }
+        : {}),
       ...bindingOverrides,
     },
+    ...(runtimeOptions.concurrencyBarrier
+      ? {
+          serviceBindings: {
+            SYNTHETIC_CONCURRENCY_BARRIER:
+              runtimeOptions.concurrencyBarrier,
+          },
+        }
+      : {}),
     d1Databases: { DB: "roadmap-critical-journey" },
     r2Buckets: { MEDIA: "roadmap-critical-journey-media" },
     ...(runtimeOptions.outboundService
@@ -202,4 +245,61 @@ export function writeHeaders(email, fullName) {
     origin: testOrigin,
     "sec-fetch-site": "same-origin",
   };
+}
+
+export async function grantSyntheticGolferRecordConsent(worker, identity) {
+  return grantSyntheticConsent(worker, identity, {
+    purpose: "golfer_record",
+    policyVersion: SYNTHETIC_CONSENT_POLICY_VERSIONS.golferRecord,
+    subjectType: "account",
+    golferId: null,
+  });
+}
+
+export async function grantSyntheticRoadmapSharingConsent(
+  worker,
+  identity,
+  golferId,
+) {
+  return grantSyntheticConsent(worker, identity, {
+    purpose: "roadmap_sharing",
+    policyVersion: SYNTHETIC_CONSENT_POLICY_VERSIONS.roadmapSharing,
+    subjectType: "golfer",
+    golferId,
+  });
+}
+
+async function grantSyntheticConsent(worker, identity, input) {
+  const query = new URLSearchParams({ subjectType: input.subjectType });
+  if (input.golferId) query.set("golferId", input.golferId);
+  const currentResponse = await worker.dispatch(`/api/consents?${query}`, {
+    headers: identityHeaders(identity.email, identity.name),
+  });
+  if (!currentResponse.ok) {
+    throw new Error(`Synthetic consent state failed: ${await currentResponse.text()}`);
+  }
+  const current = await currentResponse.json();
+  const state = current.consents.find((item) => item.purpose === input.purpose);
+  if (!state?.policy.configured) {
+    throw new Error(`Synthetic ${input.purpose} policy is not configured.`);
+  }
+  if (state.effectiveGranted) return state.currentRecord;
+
+  const response = await worker.dispatch("/api/consents", {
+    method: "POST",
+    headers: writeHeaders(identity.email, identity.name),
+    body: JSON.stringify({
+      action: "grant",
+      purpose: input.purpose,
+      policyVersion: input.policyVersion,
+      subjectType: input.subjectType,
+      golferId: input.golferId,
+      expectedCurrentRecordId: state.currentRecord?.id ?? null,
+      evidenceReference: "synthetic-test-fixture",
+    }),
+  });
+  if (!response.ok) {
+    throw new Error(`Synthetic ${input.purpose} grant failed: ${await response.text()}`);
+  }
+  return (await response.json()).record;
 }

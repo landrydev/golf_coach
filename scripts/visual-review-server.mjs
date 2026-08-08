@@ -2,7 +2,13 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { dirname, extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { startD1Worker, testOrigin, writeHeaders } from "../tests/support/d1-worker.mjs";
+import {
+  grantSyntheticGolferRecordConsent,
+  grantSyntheticRoadmapSharingConsent,
+  startD1Worker,
+  testOrigin,
+  writeHeaders,
+} from "../tests/support/d1-worker.mjs";
 
 const host = "127.0.0.1";
 const port = Number(process.env.VISUAL_REVIEW_PORT || 4175);
@@ -96,6 +102,7 @@ async function createSyntheticFixture(reviewWorker) {
     accentColor: "#176b55",
   });
   assertStatus(profile, 200, "profile fixture");
+  await grantSyntheticGolferRecordConsent(reviewWorker, identity);
 
   const packageResponse = await jsonWrite(reviewWorker, "/api/packages", "POST", {
     title: "Four-session development phase",
@@ -147,6 +154,11 @@ async function createSyntheticFixture(reviewWorker) {
   });
   assertStatus(golferResponse, 201, "golfer fixture");
   const golfer = await golferResponse.json();
+  await grantSyntheticRoadmapSharingConsent(
+    reviewWorker,
+    identity,
+    golfer.golfer.id,
+  );
 
   const publishResponse = await jsonWrite(
     reviewWorker,

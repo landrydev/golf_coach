@@ -1,9 +1,13 @@
+import { requiredConsentPolicyConfigurationReady } from "@/lib/consent-repository";
+import { dataRequestOperatorAccessConfigurationReady } from "@/lib/data-request-operator-access";
 import { productAccessConfigurationReady } from "@/lib/product-access";
 import {
   billingConfigured,
   checkoutConfiguration,
 } from "@/lib/stripe";
 import { shareTokenPepperConfigurationReady } from "@/lib/tokens";
+
+export const READINESS_DEPENDENCY_TIMEOUT_MS = 2_000;
 
 export type ApplicationReadiness = Readonly<{
   status: "ready" | "degraded";
@@ -15,12 +19,15 @@ export type ApplicationReadiness = Readonly<{
     abuseProtection: boolean;
     billingCheckoutPolicy: boolean;
     instructorAccessPolicy: boolean;
+    consentPolicy: boolean;
+    dataRequestOperatorAccessPolicy: boolean;
   }>;
 }>;
 
 export async function loadApplicationReadiness(input: {
   database: D1Database;
   media: R2Bucket;
+  dependencyTimeoutMs?: number;
 }): Promise<ApplicationReadiness> {
   const checks = {
     database: false,
@@ -43,30 +50,62 @@ export async function loadApplicationReadiness(input: {
       SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS:
         process.env.SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS,
     }),
+    consentPolicy: requiredConsentPolicyConfigurationReady(
+      process.env.CONSENT_POLICY_REGISTRY_JSON,
+    ),
+    dataRequestOperatorAccessPolicy:
+      dataRequestOperatorAccessConfigurationReady({
+        DATA_REQUEST_OPERATOR_ACCESS_PEPPER:
+          process.env.DATA_REQUEST_OPERATOR_ACCESS_PEPPER,
+        DATA_REQUEST_OPERATOR_EMAIL_DIGESTS:
+          process.env.DATA_REQUEST_OPERATOR_EMAIL_DIGESTS,
+      }),
   };
 
-  try {
-    const result = await input.database
-      .prepare("SELECT 1 AS healthy")
-      .first<{ healthy: number }>();
-    checks.database = result?.healthy === 1;
-  } catch {
-    checks.database = false;
-  }
+  const dependencyTimeoutMs =
+    typeof input.dependencyTimeoutMs === "number" &&
+    Number.isFinite(input.dependencyTimeoutMs) &&
+    input.dependencyTimeoutMs > 0
+      ? input.dependencyTimeoutMs
+      : READINESS_DEPENDENCY_TIMEOUT_MS;
 
-  try {
-    // A missing sentinel is normal. Completing this private HEAD proves the
-    // configured R2 binding is reachable without reading customer objects.
-    await input.media.head("__roadmap_healthcheck__");
-    checks.media = true;
-  } catch {
-    checks.media = false;
-  }
+  [checks.database, checks.media] = await Promise.all([
+    boundedDependencyCheck(async () => {
+      const result = await input.database
+        .prepare("SELECT 1 AS healthy")
+        .first<{ healthy: number }>();
+      return result?.healthy === 1;
+    }, dependencyTimeoutMs),
+    boundedDependencyCheck(async () => {
+      // A missing sentinel is normal. Completing this private HEAD proves the
+      // configured R2 binding is reachable without reading customer objects.
+      await input.media.head("__roadmap_healthcheck__");
+      return true;
+    }, dependencyTimeoutMs),
+  ]);
 
   return {
     status: Object.values(checks).every(Boolean) ? "ready" : "degraded",
     checks,
   };
+}
+
+async function boundedDependencyCheck(
+  operation: () => Promise<boolean>,
+  timeoutMs: number,
+): Promise<boolean> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const completed = Promise.resolve()
+    .then(operation)
+    .then(Boolean, () => false);
+  const deadline = new Promise<false>((resolve) => {
+    timeout = setTimeout(() => resolve(false), timeoutMs);
+  });
+  try {
+    return await Promise.race([completed, deadline]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
 }
 
 function billingCheckoutPolicyReady(): boolean {

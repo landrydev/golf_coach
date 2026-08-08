@@ -14,11 +14,17 @@ import {
 } from "@/db/schema";
 import { RequestError } from "./http";
 import { newId } from "./tokens";
+import {
+  consentGrantRequirementsCurrent,
+  consentGrantTransactionGuard,
+  type ConsentGrantRequirement,
+} from "./consent-repository";
 
 type MutationContext = {
   accountId: string;
   planId: string;
   expectedRevision: number;
+  consentRequirements: readonly ConsentGrantRequirement[];
   requestId?: string | null;
 };
 
@@ -64,6 +70,10 @@ export async function addCompletedLesson(
   const lessonId = newId();
   const now = new Date();
   await db.batch([
+    consentGrantTransactionGuard(
+      context.accountId,
+      context.consentRequirements,
+    ),
     db.insert(lessons).values({
       id: lessonId,
       accountId: context.accountId,
@@ -121,6 +131,10 @@ export async function addPracticeItem(
 
   try {
     await db.batch([
+      consentGrantTransactionGuard(
+        context.accountId,
+        context.consentRequirements,
+      ),
       replacementRetirementAuditStatement(context, itemId, now),
       db
         .update(practiceItems)
@@ -182,6 +196,10 @@ export async function addEvidenceItem(
   const evidenceId = newId();
   const now = new Date();
   await db.batch([
+    consentGrantTransactionGuard(
+      context.accountId,
+      context.consentRequirements,
+    ),
     db.insert(evidenceItems).values({
       id: evidenceId,
       accountId: context.accountId,
@@ -240,6 +258,10 @@ export async function withdrawPlanContent(
     if (item.status === "archived") throw contentAlreadyWithdrawn();
     try {
       await db.batch([
+        consentGrantTransactionGuard(
+          context.accountId,
+          context.consentRequirements,
+        ),
         db
           .update(lessons)
           .set({
@@ -279,6 +301,10 @@ export async function withdrawPlanContent(
     if (item.status === "retired") throw contentAlreadyWithdrawn();
     try {
       await db.batch([
+        consentGrantTransactionGuard(
+          context.accountId,
+          context.consentRequirements,
+        ),
         db
           .update(practiceItems)
           .set({
@@ -325,6 +351,10 @@ export async function withdrawPlanContent(
   }
   try {
     await db.batch([
+      consentGrantTransactionGuard(
+        context.accountId,
+        context.consentRequirements,
+      ),
       db
         .update(evidenceItems)
         .set({
@@ -479,6 +509,10 @@ async function transitionPhaseReview(
   try {
     if (input.transition === "continue") {
       await db.batch([
+        consentGrantTransactionGuard(
+          context.accountId,
+          context.consentRequirements,
+        ),
         supersedeReview,
         insertReview,
         db
@@ -505,6 +539,10 @@ async function transitionPhaseReview(
       ]);
     } else if (input.transition === "pause") {
       await db.batch([
+        consentGrantTransactionGuard(
+          context.accountId,
+          context.consentRequirements,
+        ),
         supersedeReview,
         insertReview,
         db
@@ -524,6 +562,10 @@ async function transitionPhaseReview(
       ]);
     } else if (input.transition === "advance") {
       await db.batch([
+        consentGrantTransactionGuard(
+          context.accountId,
+          context.consentRequirements,
+        ),
         supersedeReview,
         insertReview,
         db
@@ -583,6 +625,10 @@ async function transitionPhaseReview(
       ]);
     } else {
       await db.batch([
+        consentGrantTransactionGuard(
+          context.accountId,
+          context.consentRequirements,
+        ),
         supersedeReview,
         insertReview,
         db
@@ -822,6 +868,18 @@ function currentPlanRevisionExists(context: MutationContext) {
 }
 
 async function rethrowStaleRevision(context: MutationContext, error: unknown): Promise<never> {
+  if (
+    !(await consentGrantRequirementsCurrent(
+      context.accountId,
+      context.consentRequirements,
+    ))
+  ) {
+    throw new RequestError(
+      409,
+      "current_consent_required",
+      "A current configured authorization is required for this action.",
+    );
+  }
   const [plan] = await getDb()
     .select({ revision: developmentPlans.revision })
     .from(developmentPlans)

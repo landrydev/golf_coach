@@ -54,6 +54,8 @@ const ACCOUNT_API_PATHS = new Set([
   "/api/profile",
   "/api/data-export",
   "/api/data-requests",
+  "/api/consents",
+  "/api/operations/data-requests",
   "/api/billing/checkout",
   "/api/billing/portal",
   "/api/billing/reconcile",
@@ -85,7 +87,12 @@ export function instructorAccessScopeForPath(
 
   if (!pathname.startsWith("/api/")) return null;
   if (PUBLIC_API_PATHS.has(pathname)) return null;
-  if (ACCOUNT_API_PATHS.has(pathname)) return "account";
+  if (
+    ACCOUNT_API_PATHS.has(pathname) ||
+    pathname.startsWith("/api/operations/data-requests/")
+  ) {
+    return "account";
+  }
   return "core";
 }
 
@@ -397,7 +404,15 @@ export function normalizeApplicationPath(pathname: string): string {
   if (!normalized.startsWith("/")) return "/api/__invalid_path__";
 
   if (normalized.endsWith(".rsc")) {
-    return normalized.slice(0, -4) || "/";
+    normalized = normalized.slice(0, -4) || "/";
+  }
+
+  // Reject dot-segment aliases after every decoding, separator, and framework
+  // suffix normalization pass. Routers and URL implementations can collapse
+  // these segments at different stages; classifying the ambiguous spelling as
+  // an account-control route could otherwise weaken the default core boundary.
+  if (normalized.split("/").some((segment) => segment === "." || segment === "..")) {
+    return "/api/__invalid_path__";
   }
   return normalized;
 }

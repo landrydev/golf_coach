@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  grantSyntheticGolferRecordConsent,
   identityHeaders,
   startD1Worker,
   writeHeaders,
@@ -49,6 +50,7 @@ test(
       }),
     });
     assert.equal(profile.status, 200);
+    await grantSyntheticGolferRecordConsent(worker, coach);
 
     await worker.inspect([
       {

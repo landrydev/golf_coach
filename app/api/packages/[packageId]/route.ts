@@ -1,4 +1,5 @@
 import {
+  assertExactObjectKeys,
   assertSameOrigin,
   cleanText,
   errorResponse,
@@ -12,13 +13,13 @@ import {
   getOrCreateAccountForIdentity,
   updateCoachingPackage,
 } from "@/lib/repository";
-import { newId } from "@/lib/tokens";
+import { requestCorrelationId } from "@/lib/request-correlation";
 
 export async function PUT(
   request: Request,
   context: { params: Promise<{ packageId: string }> },
 ): Promise<Response> {
-  const requestId = newId();
+  const requestId = requestCorrelationId(request);
   try {
     assertSameOrigin(request);
     const auth = await requireApiIdentity();
@@ -45,14 +46,14 @@ export async function DELETE(
   request: Request,
   context: { params: Promise<{ packageId: string }> },
 ): Promise<Response> {
-  const requestId = newId();
+  const requestId = requestCorrelationId(request);
   try {
     assertSameOrigin(request);
     const auth = await requireApiIdentity();
     if (auth.response) return noStore(auth.response, requestId);
     const payload = asObject(await readJson<unknown>(request));
     rejectClientAccountId(payload);
-    assertOnlyFields(payload, ["confirmation"]);
+    assertExactObjectKeys(payload, ["confirmation"]);
     if (payload.confirmation !== "archive_package") {
       throw new RequestError(
         400,
@@ -90,20 +91,6 @@ function asObject(value: unknown): Record<string, unknown> {
     );
   }
   return value as Record<string, unknown>;
-}
-
-function assertOnlyFields(
-  payload: Record<string, unknown>,
-  allowed: readonly string[],
-): void {
-  const unexpected = Object.keys(payload).filter((key) => !allowed.includes(key));
-  if (unexpected.length > 0) {
-    throw new RequestError(
-      400,
-      "unexpected_field",
-      `Request contains unsupported field${unexpected.length === 1 ? "" : "s"}: ${unexpected.join(", ")}.`,
-    );
-  }
 }
 
 function rejectClientAccountId(payload: Record<string, unknown>): void {

@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  grantSyntheticGolferRecordConsent,
+  grantSyntheticRoadmapSharingConsent,
   startD1Worker,
   writeHeaders,
 } from "./support/d1-worker.mjs";
@@ -18,6 +20,7 @@ test(
     context.after(() => worker.dispose());
 
     await createProfile(worker);
+    await grantSyntheticGolferRecordConsent(worker, coach);
 
     const coreWorkspace = await createWorkspace(worker, "Core Race");
     const coreLabels = ["Alpha", "Bravo"];
@@ -244,7 +247,9 @@ async function createWorkspace(worker, label) {
     })),
   });
   assert.equal(response.status, 201);
-  return response.json();
+  const workspace = await response.json();
+  await grantSyntheticRoadmapSharingConsent(worker, coach, workspace.golfer.id);
+  return workspace;
 }
 
 function planEditPayload(expectedRevision, label) {

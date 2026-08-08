@@ -24,6 +24,11 @@ export function DataRequestControls({
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const summaryOnlyRef = useRef<HTMLFormElement>(null);
+  const deletionIdempotencyKeyRef = useRef("");
+  const manualReviewIdempotencyRef = useRef<{
+    key: string;
+    intent: string;
+  } | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState(false);
   const [errorFocus, setErrorFocus] = useState<"form" | "summary">("summary");
@@ -145,23 +150,32 @@ export function DataRequestControls({
     setBusy("deletion");
     setMessage("");
     setError(false);
+    let definitiveOutcome = false;
     try {
+      if (!deletionIdempotencyKeyRef.current) {
+        deletionIdempotencyKeyRef.current = crypto.randomUUID();
+      }
       const response = await fetch("/api/data-requests", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": deletionIdempotencyKeyRef.current,
+        },
         body: JSON.stringify({ type: "deletion" }),
       });
       const result = (await response.json()) as {
         error?: { message?: string };
         existing?: boolean;
         request?: AccountDataRequestView;
-      };
+      } | null;
       if (!response.ok) {
-        throw new Error(result.error?.message || "The request could not be queued.");
+        definitiveOutcome = true;
+        throw new Error(result?.error?.message || "The request could not be queued.");
       }
-      if (!result.request) {
+      if (!result?.request) {
         throw new Error("The request was accepted without a readable status record.");
       }
+      definitiveOutcome = true;
       setRequests((current) => mergeRequest(current, result.request!));
       setMessage(
         result.existing
@@ -176,6 +190,7 @@ export function DataRequestControls({
           : "The request could not be queued.",
       );
     } finally {
+      if (definitiveOutcome) deletionIdempotencyKeyRef.current = "";
       setBusy(null);
     }
   }
@@ -194,22 +209,35 @@ export function DataRequestControls({
     setReviewDetailsInvalid(false);
     setMessage("");
     setError(false);
+    const intent = JSON.stringify([reviewType, details]);
+    if (manualReviewIdempotencyRef.current?.intent !== intent) {
+      manualReviewIdempotencyRef.current = {
+        key: crypto.randomUUID(),
+        intent,
+      };
+    }
+    let definitiveOutcome = false;
     try {
       const response = await fetch("/api/data-requests", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": manualReviewIdempotencyRef.current.key,
+        },
         body: JSON.stringify({ type: reviewType, details }),
       });
       const result = (await response.json()) as {
         error?: { message?: string };
         request?: AccountDataRequestView;
-      };
+      } | null;
       if (!response.ok) {
-        throw new Error(result.error?.message || "The request could not be queued.");
+        definitiveOutcome = true;
+        throw new Error(result?.error?.message || "The request could not be queued.");
       }
-      if (!result.request) {
+      if (!result?.request) {
         throw new Error("The request was accepted without a readable status record.");
       }
+      definitiveOutcome = true;
       setRequests((current) => mergeRequest(current, result.request!));
       setReviewDetails("");
       setMessage(
@@ -224,6 +252,7 @@ export function DataRequestControls({
           : "The request could not be queued.",
       );
     } finally {
+      if (definitiveOutcome) manualReviewIdempotencyRef.current = null;
       setBusy(null);
     }
   }

@@ -8,6 +8,8 @@ import {
 } from "@/db/schema";
 import { RequestError } from "@/lib/http";
 import { newId } from "@/lib/tokens";
+import { requireGolferRecordProcessingConsent } from "@/lib/consent-enforcement";
+import { consentGrantTransactionGuard } from "@/lib/consent-repository";
 
 export type CoachGolferRecord = {
   id: string;
@@ -21,6 +23,7 @@ export async function getCoachGolferRecord(
   accountId: string,
   golferId: string,
 ): Promise<CoachGolferRecord | null> {
+  await requireGolferRecordProcessingConsent(accountId);
   const db = getDb();
   const [golfer] = await db
     .select({
@@ -46,6 +49,9 @@ export async function updateGolferIdentity(input: {
   contactEmail: string | null;
   requestId?: string | null;
 }): Promise<void> {
+  const consentRequirements = await requireGolferRecordProcessingConsent(
+    input.accountId,
+  );
   const db = getDb();
   const [golfer, planRows] = await Promise.all([
     getCoachGolferRecord(input.accountId, input.golferId),
@@ -86,6 +92,10 @@ export async function updateGolferIdentity(input: {
   const now = new Date();
   try {
     await db.batch([
+      consentGrantTransactionGuard(
+        input.accountId,
+        consentRequirements,
+      ),
       db
         .update(golfers)
         .set({
@@ -160,6 +170,7 @@ export async function updateGolferIdentity(input: {
       }),
     ]);
   } catch (error) {
+    await requireGolferRecordProcessingConsent(input.accountId);
     await rethrowGolferIdentityConflict(input, error);
   }
 }
@@ -224,7 +235,19 @@ export async function archiveGolfer(input: {
   requestId?: string | null;
 }): Promise<void> {
   const db = getDb();
-  const golfer = await getCoachGolferRecord(input.accountId, input.golferId);
+  // Archival is a one-way restriction action, not an ordinary instructor read.
+  // Read only the lifecycle fields required to make that privacy control work
+  // after processing authorization has been withdrawn.
+  const [golfer] = await db
+    .select({ id: golfers.id, status: golfers.status })
+    .from(golfers)
+    .where(
+      and(
+        eq(golfers.accountId, input.accountId),
+        eq(golfers.id, input.golferId),
+      ),
+    )
+    .limit(1);
   if (!golfer) throw new RequestError(404, "golfer_not_found", "Golfer not found.");
   if (golfer.status === "deleted" || golfer.status === "deletion_pending") {
     throw new RequestError(409, "golfer_not_archivable", "This golfer cannot be archived.");

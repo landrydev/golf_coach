@@ -1,6 +1,7 @@
 .page {
   width: min(100%, 76rem);
   margin: 0 auto;
+  overflow-wrap: anywhere;
 }
 
 .pageHeader {

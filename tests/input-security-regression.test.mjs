@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
+import { readdir, readFile } from "node:fs/promises";
 import { register } from "node:module";
+import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import {
+  grantSyntheticGolferRecordConsent,
   identityHeaders,
   startD1Worker,
   writeHeaders,
@@ -14,6 +18,38 @@ const coach = {
   name: "Coach Avery",
 };
 
+test("every JSON mutation route uses the shared exact-object key boundary", async () => {
+  const appRoot = fileURLToPath(new URL("../app", import.meta.url));
+  const routeFiles = [
+    ...(await collectRouteFiles(path.join(appRoot, "api"))),
+    ...(await collectRouteFiles(path.join(appRoot, "r"))),
+  ];
+  const jsonMutationRoutes = [];
+  const violations = [];
+
+  for (const routeFile of routeFiles) {
+    const source = await readFile(routeFile, "utf8");
+    if (!source.includes("readJson")) continue;
+    const relative = path.relative(appRoot, routeFile).replaceAll("\\", "/");
+    jsonMutationRoutes.push(relative);
+    if (
+      !source.includes("assertExactObjectKeys(") &&
+      !source.includes("parsePackageInput(")
+    ) {
+      violations.push(relative);
+    }
+  }
+
+  assert.ok(jsonMutationRoutes.length > 0, "no JSON mutation routes were discovered");
+  assert.deepEqual(violations, []);
+
+  const packageInput = await readFile(
+    fileURLToPath(new URL("../lib/package-input.ts", import.meta.url)),
+    "utf8",
+  );
+  assert.match(packageInput, /assertExactObjectKeys\(payload, PACKAGE_FIELDS\)/);
+});
+
 test(
   "route-level CSP, injection, canonicalization, and overposting regression corpus",
   { timeout: 90_000 },
@@ -24,6 +60,7 @@ test(
     } = await import("../lib/product-access.ts");
     const worker = await startD1Worker();
     context.after(() => worker.dispose());
+    await grantSyntheticGolferRecordConsent(worker, coach);
 
     await context.test("CSP blocks attribute, base, frame, plugin, and worker escalation", async () => {
       const responses = await Promise.all([
@@ -157,6 +194,13 @@ test(
           code: "unexpected_field",
         },
         {
+          label: "profile privilege field",
+          path: "/api/profile",
+          method: "PUT",
+          body: JSON.stringify({ isAdmin: true }),
+          code: "unexpected_field",
+        },
+        {
           label: "empty export constructor key",
           path: "/api/data-export",
           method: "POST",
@@ -164,10 +208,41 @@ test(
           code: "unexpected_field",
         },
         {
+          label: "data request privilege field",
+          path: "/api/data-requests",
+          method: "POST",
+          body: JSON.stringify({ type: "deletion", operatorApproved: true }),
+          code: "unexpected_field",
+        },
+        {
+          label: "full golfer privilege field",
+          path: "/api/golfers",
+          method: "POST",
+          body: JSON.stringify({ adultEligibilityConfirmed: true, isAdmin: true }),
+          code: "unexpected_field",
+        },
+        {
+          label: "full golfer nested goal privilege field",
+          path: "/api/golfers",
+          method: "POST",
+          body: JSON.stringify({
+            adultEligibilityConfirmed: true,
+            goal: { statement: "A bounded goal.", ownerOverride: true },
+          }),
+          code: "unexpected_field",
+        },
+        {
           label: "staged golfer privilege field",
           path: "/api/golfers/staged",
           method: "POST",
           body: JSON.stringify({ adultEligibilityConfirmed: true, isAdmin: true }),
+          code: "unexpected_field",
+        },
+        {
+          label: "staged completion privilege field",
+          path: "/api/golfers/not-a-golfer/complete",
+          method: "POST",
+          body: JSON.stringify({ isAdmin: true }),
           code: "unexpected_field",
         },
         {
@@ -223,6 +298,46 @@ test(
           code: "unexpected_field",
         },
         {
+          label: "living-content kind-specific privilege field",
+          path: "/api/plans/not-a-plan/content",
+          method: "POST",
+          body: JSON.stringify({
+            kind: "lesson",
+            phaseId: "not-a-phase",
+            expectedRevision: 1,
+            objective: "A practice-only field must not be accepted for a lesson.",
+          }),
+          code: "unexpected_field",
+        },
+        {
+          label: "plan publish privilege field",
+          path: "/api/plans/not-a-plan/publish",
+          method: "POST",
+          body: JSON.stringify({ role: "owner" }),
+          code: "unexpected_field",
+        },
+        {
+          label: "share revoke privilege field",
+          path: "/api/shares/not-a-share",
+          method: "DELETE",
+          body: JSON.stringify({ reason: "Synthetic rejection.", isAdmin: true }),
+          code: "unexpected_field",
+        },
+        {
+          label: "share session privilege field",
+          path: "/r/session",
+          method: "POST",
+          body: JSON.stringify({ token: "synthetic-token", isAdmin: true }),
+          code: "unexpected_field",
+        },
+        {
+          label: "share response privilege field",
+          path: "/r/response",
+          method: "POST",
+          body: JSON.stringify({ responseType: "acknowledged", isAdmin: true }),
+          code: "unexpected_field",
+        },
+        {
           label: "explicit account ownership field",
           path: "/api/data-export",
           method: "POST",
@@ -255,6 +370,32 @@ test(
         ["/%61pi/profile", "/api/profile", "account"],
         ["/%2561pi/future-mutation", "/api/future-mutation", "core"],
         ["/%61pi%2Fbilling%2Fwebhook%2Freplay", "/api/billing/webhook/replay", "core"],
+        [
+          "/api/operations/data-requests%2F..%2Fgolfers",
+          "/api/__invalid_path__",
+          "core",
+        ],
+        [
+          "/api/operations/data-requests%252F%252E%252E%255Cgolfers",
+          "/api/__invalid_path__",
+          "core",
+        ],
+        [
+          "/api/operations/data-requests/%2e%2e.rsc",
+          "/api/__invalid_path__",
+          "core",
+        ],
+        [
+          "/api/operations/data-requests%2F%2e%2e.rsc",
+          "/api/__invalid_path__",
+          "core",
+        ],
+        [
+          "/api/operations/data-requests%252F%252e%252e.rsc",
+          "/api/__invalid_path__",
+          "core",
+        ],
+        ["/app/%2e/settings", "/api/__invalid_path__", "core"],
         ["/app%3Fpublic", "/api/__invalid_path__", "core"],
         ["/%", "/api/__invalid_path__", "core"],
         ["/%72/plan", "/r/plan", null],
@@ -338,4 +479,17 @@ function assertSecureCsp(response) {
   assert.deepEqual(policy.get("object-src"), ["'none'"]);
   assert.deepEqual(policy.get("frame-src"), ["'none'"]);
   assert.deepEqual(policy.get("frame-ancestors"), ["'none'"]);
+}
+
+async function collectRouteFiles(directory) {
+  const files = [];
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const candidate = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...(await collectRouteFiles(candidate)));
+    } else if (entry.isFile() && entry.name === "route.ts") {
+      files.push(candidate);
+    }
+  }
+  return files;
 }

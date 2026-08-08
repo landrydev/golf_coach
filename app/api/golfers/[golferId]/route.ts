@@ -1,5 +1,6 @@
 import { archiveGolfer, updateGolferIdentity } from "@/lib/golfer-lifecycle";
 import {
+  assertExactObjectKeys,
   assertSameOrigin,
   cleanEmail,
   cleanText,
@@ -9,19 +10,19 @@ import {
 } from "@/lib/http";
 import { requireApiIdentity } from "@/lib/identity";
 import { getOrCreateAccountForIdentity } from "@/lib/repository";
-import { newId } from "@/lib/tokens";
+import { requestCorrelationId } from "@/lib/request-correlation";
 
 export async function PUT(
   request: Request,
   context: { params: Promise<{ golferId: string }> },
 ) {
-  const requestId = newId();
+  const requestId = requestCorrelationId(request);
   try {
     assertSameOrigin(request);
     const auth = await requireApiIdentity();
     if (auth.response) return auth.response;
     const body = objectBody(await readJson<unknown>(request));
-    rejectUnexpected(body, [
+    assertExactObjectKeys(body, [
       "displayName",
       "preferredName",
       "contactEmail",
@@ -49,7 +50,7 @@ export async function PUT(
       { headers: { "Cache-Control": "private, no-store", "X-Request-ID": requestId } },
     );
   } catch (error) {
-    return errorResponse(error);
+    return withRequestId(errorResponse(error), requestId);
   }
 }
 
@@ -57,13 +58,13 @@ export async function DELETE(
   request: Request,
   context: { params: Promise<{ golferId: string }> },
 ) {
-  const requestId = newId();
+  const requestId = requestCorrelationId(request);
   try {
     assertSameOrigin(request);
     const auth = await requireApiIdentity();
     if (auth.response) return auth.response;
     const body = objectBody(await readJson<unknown>(request));
-    rejectUnexpected(body, ["confirmation"]);
+    assertExactObjectKeys(body, ["confirmation"]);
     if (body.confirmation !== "archive_golfer_and_revoke_access") {
       throw new RequestError(400, "confirmation_required", "Confirm golfer archival and access revocation.");
     }
@@ -79,7 +80,7 @@ export async function DELETE(
       headers: { "Cache-Control": "private, no-store", "X-Request-ID": requestId },
     });
   } catch (error) {
-    return errorResponse(error);
+    return withRequestId(errorResponse(error), requestId);
   }
 }
 
@@ -93,14 +94,12 @@ function objectBody(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
-function rejectUnexpected(value: Record<string, unknown>, allowed: string[]) {
-  const unexpected = Object.keys(value).filter((key) => !allowed.includes(key));
-  if (unexpected.length) {
-    throw new RequestError(400, "unexpected_field", `Unsupported field: ${unexpected[0]}.`);
-  }
-}
-
 function optionalText(value: unknown, field: string, max: number): string {
   if (value === undefined || value === null || value === "") return "";
   return cleanText(value, field, { max });
+}
+
+function withRequestId(response: Response, requestId: string): Response {
+  response.headers.set("X-Request-ID", requestId);
+  return response;
 }

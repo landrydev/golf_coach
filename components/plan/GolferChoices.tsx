@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import { attemptExternalHandoffRecord } from "@/lib/client-recovery";
+import { buildCoachContactMailtoUri } from "@/lib/mailto";
 import type { GolferResponseType } from "@/lib/plans";
 import styles from "./plan.module.css";
 
@@ -36,6 +37,7 @@ export function GolferChoices({
   const [saving, setSaving] = useState<RecordedChoice | null>(null);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
+  const coachMailtoUri = buildCoachContactMailtoUri(coachEmail);
 
   async function choose(responseType: RecordedChoice) {
     if (preview) return;
@@ -60,9 +62,8 @@ export function GolferChoices({
 
       setMessage(CONFIRMATIONS[responseType]);
 
-      if (responseType === "ask_question" && coachEmail) {
-        const subject = encodeURIComponent("Question about my Roadmap coaching plan");
-        window.location.assign(`mailto:${coachEmail}?subject=${subject}`);
+      if (responseType === "ask_question" && coachMailtoUri) {
+        window.location.assign(coachMailtoUri);
       }
     } catch (error) {
       setIsError(true);
@@ -110,7 +111,7 @@ export function GolferChoices({
             Continue to the coach’s external page
           </a>
         ) : null}
-        {coachEmail ? (
+        {coachMailtoUri ? (
           <button
             type="button"
             disabled={disabled}

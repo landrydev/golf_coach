@@ -1,5 +1,6 @@
 /** Cloudflare Worker entry point for the Roadmap application. */
 import handler from "vinext/server/app-router-entry";
+import { evaluateCanonicalRequest } from "../lib/canonical-origin";
 import {
   evaluateInstructorRequestAccess,
   normalizeApplicationPath,
@@ -16,14 +17,20 @@ import {
   buildRequestTelemetry,
   shouldLogRequestTelemetry,
 } from "../lib/request-telemetry";
+import { safeErrorType } from "../lib/log-safety";
+import { withTrustedRequestCorrelation } from "../lib/request-correlation";
 
 interface Env {
   ASSETS: Fetcher;
   DB: D1Database;
   MEDIA: R2Bucket;
+  APP_URL?: string;
   INSTRUCTOR_ACCESS_MODE?: string;
   OWNER_PRIVATE_ACCESS_PEPPER?: string;
   OWNER_PRIVATE_EMAIL_DIGESTS?: string;
+  DATA_REQUEST_OPERATOR_ACCESS_PEPPER?: string;
+  DATA_REQUEST_OPERATOR_EMAIL_DIGESTS?: string;
+  CONSENT_POLICY_REGISTRY_JSON?: string;
   SUBSCRIPTION_ACCESS_STATUSES?: string;
   STRIPE_CHECKOUT_PRICE_ID?: string;
   STRIPE_RECOGNIZED_PRICE_IDS?: string;
@@ -42,8 +49,58 @@ const worker = {
     const requestId = crypto.randomUUID();
     const startedAt = performance.now();
     const url = new URL(request.url);
+    const applicationPath = normalizeApplicationPath(url.pathname);
 
     try {
+      // Vinext's build-only prerender namespace must never be reachable from
+      // the deployed Worker. Keep this application-owned deny rule ahead of
+      // canonical-origin, product-access, and framework routing so a future
+      // environment/configuration mistake cannot enable the upstream handler.
+      if (
+        applicationPath === "/__vinext/prerender" ||
+        applicationPath.startsWith("/__vinext/prerender/")
+      ) {
+        const response = withSecurityHeaders(
+          new Response("Not Found", {
+            status: 404,
+            headers: {
+              "Cache-Control": "private, no-store, max-age=0",
+              Pragma: "no-cache",
+              "X-Robots-Tag": "noindex, nofollow, noarchive",
+            },
+          }),
+          request,
+          requestId,
+        );
+        emitRequestTelemetry({
+          request,
+          requestId,
+          status: response.status,
+          startedAt,
+        });
+        return response;
+      }
+
+      const canonicalDecision = evaluateCanonicalRequest(
+        request,
+        env.APP_URL,
+        applicationPath,
+      );
+      if (canonicalDecision.action !== "allow") {
+        const response = withSecurityHeaders(
+          canonicalRequestResponse(canonicalDecision),
+          request,
+          requestId,
+        );
+        emitRequestTelemetry({
+          request,
+          requestId,
+          status: response.status,
+          startedAt,
+        });
+        return response;
+      }
+
       const accessDecision = await evaluateInstructorRequestAccess({
         pathname: url.pathname,
         authenticatedEmail: request.headers.get("oai-authenticated-user-email"),
@@ -67,8 +124,9 @@ const worker = {
         return response;
       }
 
+      const trustedRequest = withTrustedRequestCorrelation(request, requestId);
       const response = withSecurityHeaders(
-        await handler.fetch(request, env, ctx),
+        await handler.fetch(trustedRequest, env, ctx),
         request,
         requestId,
       );
@@ -80,13 +138,37 @@ const worker = {
       });
       return response;
     } catch (error) {
+      const response = withSecurityHeaders(
+        Response.json(
+          {
+            error: {
+              code: "internal_error",
+              message: "The request could not be completed.",
+            },
+          },
+          {
+            status: 500,
+            headers: {
+              "Cache-Control": "private, no-store, max-age=0",
+              Pragma: "no-cache",
+              "X-Robots-Tag": "noindex, nofollow, noarchive",
+            },
+          },
+        ),
+        request,
+        requestId,
+      );
+      console.error("Worker request failed", {
+        errorType: safeErrorType(error),
+        requestId,
+      });
       emitRequestTelemetry({
         request,
         requestId,
-        status: 500,
+        status: response.status,
         startedAt,
       });
-      throw error;
+      return response;
     }
   },
   async scheduled(controller: ScheduledController, env: Env): Promise<void> {
@@ -125,6 +207,40 @@ const worker = {
     }
   },
 };
+
+function canonicalRequestResponse(
+  decision: Exclude<ReturnType<typeof evaluateCanonicalRequest>, { action: "allow" }>,
+): Response {
+  if (decision.action === "redirect") {
+    return new Response(null, {
+      status: 308,
+      headers: {
+        Location: decision.location,
+        "Cache-Control": "private, no-store, max-age=0",
+      },
+    });
+  }
+
+  return Response.json(
+    {
+      error: {
+        code: decision.code,
+        message:
+          decision.status === 503
+            ? "The application origin is unavailable."
+            : "This request did not use the canonical application origin.",
+      },
+    },
+    {
+      status: decision.status,
+      headers: {
+        "Cache-Control": "private, no-store, max-age=0",
+        Pragma: "no-cache",
+        "X-Robots-Tag": "noindex, nofollow, noarchive",
+      },
+    },
+  );
+}
 
 function withSecurityHeaders(
   response: Response,

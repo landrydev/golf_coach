@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  grantSyntheticGolferRecordConsent,
+  grantSyntheticRoadmapSharingConsent,
   startD1Worker,
   writeHeaders,
 } from "./support/d1-worker.mjs";
@@ -495,6 +497,7 @@ async function createWorkspace(worker, golferName) {
     accentColor: "#176b55",
   });
   assert.equal(profile.status, 200);
+  await grantSyntheticGolferRecordConsent(worker, coach);
 
   const response = await jsonWrite(worker, "/api/golfers", "POST", {
     adultEligibilityConfirmed: true,
@@ -529,7 +532,9 @@ async function createWorkspace(worker, golferName) {
     ],
   });
   assert.equal(response.status, 201);
-  return response.json();
+  const workspace = await response.json();
+  await grantSyntheticRoadmapSharingConsent(worker, coach, workspace.golfer.id);
+  return workspace;
 }
 
 function reviewPayload(phaseId, expectedRevision, transition, outcome, overrides = {}) {

@@ -1,6 +1,7 @@
 import { getOrCreateAccountForIdentity } from "@/lib/repository";
 import { requireApiIdentity } from "@/lib/identity";
 import {
+  assertExactObjectKeys,
   assertSameOrigin,
   cleanText,
   errorResponse,
@@ -9,18 +10,20 @@ import {
 } from "@/lib/http";
 import { publishPlanAndCreateShare } from "@/lib/plans";
 import { ABUSE_LIMITS, enforceAbuseLimit } from "@/lib/rate-limit";
+import { requestCorrelationId } from "@/lib/request-correlation";
 
-type PublishPayload = {
-  intendedRecipientContext?: unknown;
-  expiresInDays?: unknown;
-  expectedRevision?: unknown;
-  confirmation?: unknown;
-};
+const PUBLISH_FIELDS = [
+  "intendedRecipientContext",
+  "expiresInDays",
+  "expectedRevision",
+  "confirmation",
+] as const;
 
 export async function POST(
   request: Request,
   context: { params: Promise<{ planId: string }> },
 ) {
+  const requestId = requestCorrelationId(request);
   try {
     assertSameOrigin(request);
     const authentication = await requireApiIdentity();
@@ -28,7 +31,8 @@ export async function POST(
     const account = await getOrCreateAccountForIdentity(authentication.identity);
     const { planId } = await context.params;
     await enforceAbuseLimit(ABUSE_LIMITS.planPublishAccount, account.id);
-    const payload = await readJson<PublishPayload>(request);
+    const payload = asObject(await readJson<unknown>(request));
+    assertExactObjectKeys(payload, PUBLISH_FIELDS);
     if (payload.confirmation !== "reviewed_exact_golfer_view") {
       throw new RequestError(
         400,
@@ -49,7 +53,6 @@ export async function POST(
         "The reviewed plan revision is required before publishing.",
       );
     }
-    const requestId = request.headers.get("cf-ray") ?? crypto.randomUUID();
     const result = await publishPlanAndCreateShare({
       accountId: account.id,
       planId,
@@ -71,12 +74,27 @@ export async function POST(
       },
       {
         status: 201,
-        headers: { "Cache-Control": "no-store" },
+        headers: {
+          "Cache-Control": "no-store",
+          "X-Request-ID": requestId,
+        },
       },
     );
   } catch (error) {
-    return errorResponse(error);
+    return withRequestId(errorResponse(error), requestId);
   }
+}
+
+function asObject(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new RequestError(400, "invalid_body", "Request body must be a JSON object.");
+  }
+  return value as Record<string, unknown>;
+}
+
+function withRequestId(response: Response, requestId: string): Response {
+  response.headers.set("X-Request-ID", requestId);
+  return response;
 }
 
 function shareOrigin(request: Request): string {

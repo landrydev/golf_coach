@@ -6,6 +6,8 @@ import {
   INVALID_FORM_CONTROL_SELECTOR,
 } from "../components/forms/form-error-focus.ts";
 import {
+  grantSyntheticGolferRecordConsent,
+  grantSyntheticRoadmapSharingConsent,
   identityHeaders,
   startD1Worker,
   writeHeaders,
@@ -60,6 +62,22 @@ test("client error summary runs the shared focus policy when a message appears",
   assert.match(source, /role="alert"/);
   assert.match(source, /aria-atomic="true"/);
   assert.match(source, /tabIndex=\{-1\}/);
+});
+
+test("long content can reflow and mobile focus targets clear the fixed workspace navigation", async () => {
+  const [globalStyles, workspaceStyles, planStyles] = await Promise.all([
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/app/workspace.module.css", import.meta.url), "utf8"),
+    readFile(new URL("../components/plan/plan.module.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(globalStyles, /body\s*\{[^}]*overflow-wrap:\s*anywhere;/s);
+  assert.match(workspaceStyles, /(?:^|\n)\.page\s*\{[^}]*overflow-wrap:\s*anywhere;/s);
+  assert.match(planStyles, /(?:^|\n)\.plan\s*\{[^}]*overflow-wrap:\s*anywhere;/s);
+  assert.match(
+    globalStyles,
+    /@media \(max-width: 800px\)\s*\{\s*html\s*\{[^}]*scroll-padding-bottom:\s*4\.75rem;/s,
+  );
 });
 
 test("first-party instructor mutation surfaces use the shared error summary without weakening success announcements", async () => {
@@ -177,6 +195,7 @@ test(
       }),
     });
     assert.equal(profileResponse.status, 200);
+    await grantSyntheticGolferRecordConsent(worker, coach);
 
     const packageResponse = await worker.dispatch("/api/packages", {
       method: "POST",
@@ -231,6 +250,7 @@ test(
     });
     assert.equal(golferResponse.status, 201);
     const workspace = await golferResponse.json();
+    await grantSyntheticRoadmapSharingConsent(worker, coach, workspace.golfer.id);
     assert.ok(workspace.golfer?.id);
 
     const stagedResponse = await worker.dispatch("/api/golfers/staged", {
@@ -257,18 +277,35 @@ test(
 
     const golferPath = `/app/golfers/${workspace.golfer.id}`;
     for (const page of [
-      { path: "/app/golfers/new", summaries: [["new-golfer-form-error-summary", 1]] },
-      { path: "/app/settings", summaries: [["profile-form-error-summary", 1]] },
+      { path: "/app", title: "Coach overview | Roadmap", summaries: [] },
+      { path: "/app/golfers", title: "Golfers | Roadmap", summaries: [] },
+      {
+        path: "/app/golfers/new",
+        title: "Add a golfer | Roadmap",
+        summaries: [["new-golfer-form-error-summary", 1]],
+      },
+      {
+        path: "/app/settings",
+        title: "Coach settings | Roadmap",
+        summaries: [["profile-form-error-summary", 1]],
+      },
       {
         path: "/app/packages",
+        title: "Coaching packages | Roadmap",
         summaries: [
           ["package-form-error-summary", 1],
           [`package-${coachingPackage.id}-lifecycle-error-summary`, 1],
         ],
       },
-      { path: "/app/settings/data", summaries: [["data-request-controls-error-summary", 1]] },
+      { path: "/app/billing", title: "Plan and billing | Roadmap", summaries: [] },
+      {
+        path: "/app/settings/data",
+        title: "Data and privacy requests | Roadmap",
+        summaries: [["data-request-controls-error-summary", 1]],
+      },
       {
         path: golferPath,
+        title: "Golfer plan | Roadmap",
         summaries: [
           ["living-plan-forms-error-summary", 4],
           ["publish-controls-error-summary", 1],
@@ -276,20 +313,28 @@ test(
       },
       {
         path: `${golferPath}/edit`,
+        title: "Edit golfer roadmap | Roadmap",
         summaries: [["plan-editor-form-error-summary", 1]],
       },
       {
         path: `${golferPath}/settings`,
+        title: "Golfer settings | Roadmap",
         summaries: [["golfer-settings-form-error-summary", 1]],
       },
       {
         path: `/app/golfers/${staged.golfer.id}/complete`,
+        title: "Complete golfer roadmap | Roadmap",
         summaries: [["staged-completion-form-error-summary", 1]],
       },
     ]) {
       const response = await worker.dispatch(page.path, { headers });
       assert.equal(response.status, 200, page.path);
       const html = await response.text();
+      assert.match(
+        html,
+        new RegExp(`<title>${escapeRegExp(page.title)}</title>`, "i"),
+        `${page.path}: document title`,
+      );
       for (const [summaryId, associationCount] of page.summaries) {
         const associatedForms = html.match(
           new RegExp(`<form(?=[^>]*aria-describedby="${escapeRegExp(summaryId)}")[^>]*>`, "gi"),

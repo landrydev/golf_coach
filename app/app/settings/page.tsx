@@ -1,7 +1,12 @@
 import { requirePageIdentity } from "@/lib/identity";
+import type { Metadata } from "next";
 import { getOrCreateAccountForIdentity, getProfile } from "@/lib/repository";
 import styles from "../workspace.module.css";
 import { ProfileForm } from "./ProfileForm";
+
+export const metadata: Metadata = {
+  title: "Coach settings | Roadmap",
+};
 
 export const dynamic = "force-dynamic";
 

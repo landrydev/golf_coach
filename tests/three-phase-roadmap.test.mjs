@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  grantSyntheticGolferRecordConsent,
+  grantSyntheticRoadmapSharingConsent,
   identityHeaders,
   startD1Worker,
   writeHeaders,
@@ -28,6 +30,7 @@ test(
       }),
     });
     assert.equal(profile.status, 200);
+    await grantSyntheticGolferRecordConsent(worker, coach);
 
     const create = await worker.dispatch("/api/golfers", {
       method: "POST",
@@ -73,6 +76,7 @@ test(
     });
     assert.equal(create.status, 201);
     const workspace = await create.json();
+    await grantSyntheticRoadmapSharingConsent(worker, coach, workspace.golfer.id);
     assert.equal(workspace.phases.length, 3);
 
     const edit = await worker.dispatch(`/api/plans/${workspace.plan.id}`, {

@@ -1,5 +1,6 @@
 import { createInstructorDataExport } from "@/lib/data-export";
 import {
+  assertExactObjectKeys,
   assertSameOrigin,
   errorResponse,
   readJson,
@@ -8,10 +9,10 @@ import {
 import { requireApiIdentity } from "@/lib/identity";
 import { getOrCreateAccountForIdentity } from "@/lib/repository";
 import { ABUSE_LIMITS, enforceAbuseLimit } from "@/lib/rate-limit";
-import { newId } from "@/lib/tokens";
+import { requestCorrelationId } from "@/lib/request-correlation";
 
 export async function POST(request: Request): Promise<Response> {
-  const requestId = newId();
+  const requestId = requestCorrelationId(request);
 
   try {
     assertSameOrigin(request);
@@ -20,6 +21,7 @@ export async function POST(request: Request): Promise<Response> {
 
     const payload = asObject(await readJson<unknown>(request));
     rejectClientAccountId(payload);
+    assertExactObjectKeys(payload, []);
     const account = await getOrCreateAccountForIdentity(auth.identity);
     await enforceAbuseLimit(ABUSE_LIMITS.dataExportAccount, account.id);
     const dataExport = await createInstructorDataExport({
@@ -85,14 +87,6 @@ function rejectClientAccountId(payload: Record<string, unknown>): void {
       400,
       "client_account_id_not_allowed",
       "accountId is assigned from the authenticated session.",
-    );
-  }
-  const unexpected = Object.keys(payload);
-  if (unexpected.length > 0) {
-    throw new RequestError(
-      400,
-      "unexpected_field",
-      `Request contains unsupported field${unexpected.length === 1 ? "" : "s"}: ${unexpected.join(", ")}.`,
     );
   }
 }

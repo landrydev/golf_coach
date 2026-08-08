@@ -10,8 +10,11 @@ const SKIPPED_DIRECTORIES = new Set([
   ".git",
   ".next",
   ".wrangler",
+  "coverage",
   "dist",
   "node_modules",
+  "outputs",
+  "work",
 ]);
 const TEXT_EXTENSIONS = new Set([
   ".css",
@@ -64,7 +67,7 @@ if (findings.length > 0) {
 } else {
   const lockHash = await sha256File(path.join(APP_ROOT, "package-lock.json"));
   console.log("Release integrity check passed", {
-    scannedTextFiles: textFiles.length,
+    scannedSourceTextFiles: textFiles.length,
     secretFindings: 0,
     businessPlanV1Preserved: true,
     packageLockSha256: lockHash,

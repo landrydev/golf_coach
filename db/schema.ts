@@ -179,6 +179,8 @@ export const abuseLimitScopes = [
   "billing_reconcile_account",
   "data_export_account",
   "data_request_account",
+  "data_request_operator_network",
+  "data_request_operator_identity",
 ] as const;
 
 export const accounts = sqliteTable(
@@ -1937,6 +1939,38 @@ export const consentRecords = sqliteTable(
       "consent_records_capture_method_check",
       sql`${table.captureMethod} in ('self_service', 'instructor_attested', 'support_assisted', 'imported')`,
     ),
+    check(
+      "consent_records_status_timestamp_consistency_check",
+      sql`(
+        ${table.status} = 'granted'
+        and ${table.grantedAt} is not null
+        and ${table.grantedAt} <= ${table.createdAt}
+        and ${table.declinedAt} is null
+        and ${table.withdrawnAt} is null
+        and (${table.expiresAt} is null or ${table.expiresAt} > ${table.grantedAt})
+      ) or (
+        ${table.status} = 'declined'
+        and ${table.grantedAt} is null
+        and ${table.declinedAt} is not null
+        and ${table.declinedAt} <= ${table.createdAt}
+        and ${table.withdrawnAt} is null
+        and ${table.expiresAt} is null
+      ) or (
+        ${table.status} = 'withdrawn'
+        and ${table.grantedAt} is null
+        and ${table.declinedAt} is null
+        and ${table.withdrawnAt} is not null
+        and ${table.withdrawnAt} <= ${table.createdAt}
+        and ${table.expiresAt} is null
+      ) or (
+        ${table.status} = 'expired'
+        and ${table.grantedAt} is null
+        and ${table.declinedAt} is null
+        and ${table.withdrawnAt} is null
+        and ${table.expiresAt} is not null
+        and ${table.expiresAt} <= ${table.createdAt}
+      )`,
+    ),
   ],
 );
 
@@ -2090,7 +2124,7 @@ export const abuseRateLimits = sqliteTable(
     index("abuse_rate_limits_expires_idx").on(table.windowExpiresAt),
     check(
       "abuse_rate_limits_scope_check",
-      sql`${table.scope} in ('share_exchange_network', 'share_exchange_capability', 'share_response_network', 'share_response_capability', 'plan_publish_account', 'share_revoke_account', 'billing_checkout_account', 'billing_portal_account', 'billing_reconcile_account', 'data_export_account', 'data_request_account')`,
+      sql`${table.scope} in ('share_exchange_network', 'share_exchange_capability', 'share_response_network', 'share_response_capability', 'plan_publish_account', 'share_revoke_account', 'billing_checkout_account', 'billing_portal_account', 'billing_reconcile_account', 'data_export_account', 'data_request_account', 'data_request_operator_network', 'data_request_operator_identity')`,
     ),
     check(
       "abuse_rate_limits_hash_check",

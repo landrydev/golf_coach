@@ -5,6 +5,7 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import {
+  grantSyntheticGolferRecordConsent,
   startD1Worker,
   writeHeaders,
 } from "./support/d1-worker.mjs";
@@ -130,6 +131,9 @@ test("Worker access classification covers every instructor page, RSC request, an
     "/api/profile",
     "/api/data-export",
     "/api/data-requests",
+    "/api/consents",
+    "/api/operations/data-requests",
+    "/api/operations/data-requests/[requestId]",
     "/api/billing/checkout",
     "/api/billing/portal",
     "/api/billing/reconcile",
@@ -211,6 +215,7 @@ test(
     const coachB = { email: "coach.b@example.test", name: "Coach Bailey" };
 
     await createProfile(worker, coachA);
+    await grantSyntheticGolferRecordConsent(worker, coachB);
     const firstWorkspace = await createGolfer(worker, coachA, "Matrix One");
     const secondWorkspace = await createGolfer(worker, coachA, "Matrix Two");
     const firstPhaseId = firstWorkspace.phases[0].id;
@@ -416,6 +421,7 @@ async function createProfile(worker, identity) {
     accentColor: "#176b55",
   });
   assert.equal(response.status, 200);
+  await grantSyntheticGolferRecordConsent(worker, identity);
 }
 
 async function createGolfer(worker, identity, displayName) {

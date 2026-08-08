@@ -1,4 +1,5 @@
 import { RequestError } from "@/lib/http";
+import { requestCorrelationId } from "@/lib/request-correlation";
 
 export function applicationOrigin(request: Request): string {
   const configured = process.env.APP_URL?.trim();
@@ -84,5 +85,5 @@ export function billingRedirect(location: string): Response {
 }
 
 export function requestId(request: Request): string {
-  return request.headers.get("cf-ray") ?? crypto.randomUUID();
+  return requestCorrelationId(request);
 }

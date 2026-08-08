@@ -31,6 +31,16 @@ import {
 import { RequestError } from "@/lib/http";
 import type { RequestIdentity } from "@/lib/identity";
 import { newId } from "@/lib/tokens";
+import {
+  configuredGolferRecordProcessingRequirement,
+  requireGolferRecordProcessingConsent,
+} from "@/lib/consent-enforcement";
+import {
+  consentGrantTransactionGuard,
+  currentConsentGrantsCondition,
+  type ConsentGrantRequirement,
+} from "@/lib/consent-repository";
+import { pauseAtSyntheticConcurrencyBarrier } from "@/lib/synthetic-concurrency-barrier";
 
 export type AccountRecord = typeof accounts.$inferSelect;
 
@@ -229,7 +239,12 @@ export async function getOrCreateAccountForIdentity(
     .limit(1);
 
   if (existing) {
-    return reconcileExistingAccount(existing, provider, identity.email.trim());
+    return reconcileExistingAccount(
+      existing,
+      provider,
+      identity.email.trim(),
+      identity.requestId,
+    );
   }
 
   const accountId = newId();
@@ -257,6 +272,7 @@ export async function getOrCreateAccountForIdentity(
         targetType: "account",
         targetId: accountId,
         outcome: "success",
+        requestId: identity.requestId,
         metadata: { identityProvider: provider },
       }),
     ]);
@@ -273,6 +289,7 @@ export async function getOrCreateAccountForIdentity(
       racedAccount,
       provider,
       identity.email.trim(),
+      identity.requestId,
     );
   }
 
@@ -365,6 +382,10 @@ export async function saveProfile(
   }
 
   const impact = await getProfilePublicationImpact(accountId);
+  await pauseAtSyntheticConcurrencyBarrier("profile-after-impact-preflight");
+  const consentRequirements = impact.affectedPlans > 0
+    ? await requireGolferRecordProcessingConsent(accountId)
+    : configuredGolferRecordRequirementOrNull();
   const now = new Date(Math.max(Date.now(), existing.updatedAt + 1));
   const affectedPlanPredicate = and(
     eq(developmentPlans.accountId, accountId),
@@ -373,6 +394,11 @@ export async function saveProfile(
 
   try {
     await db.batch([
+      linkedPlanMutationConsentGuard(
+        accountId,
+        consentRequirements,
+        affectedPlanPredicate!,
+      ),
       db
         .update(instructorProfiles)
         .set({
@@ -463,6 +489,10 @@ export async function saveProfile(
       }),
     ]);
   } catch (error) {
+    const currentImpact = await getProfilePublicationImpact(accountId);
+    if (currentImpact.affectedPlans > 0) {
+      await requireGolferRecordProcessingConsent(accountId);
+    }
     const current = await getProfile(accountId);
     if (!current || current.updatedAt !== existing.updatedAt) {
       throw new RequestError(
@@ -548,6 +578,42 @@ async function getProfilePublicationImpact(accountId: string) {
     revokedShareLinks: shareRows[0]?.value ?? 0,
     revokedShareSessions: sessionRows[0]?.value ?? 0,
   };
+}
+
+function linkedPlanMutationConsentGuard(
+  accountId: string,
+  requirements: readonly ConsentGrantRequirement[] | null,
+  relevantPlanCondition: NonNullable<ReturnType<typeof and>>,
+) {
+  const consentCurrent = requirements
+    ? currentConsentGrantsCondition(accountId, requirements)
+    : sql`0 = 1`;
+  // The account-row sentinel makes the preflight count informational only.
+  // At commit time the batch may proceed iff no relevant live plan exists or
+  // the exact configured golfer-record grant is still current. This preserves
+  // zero-link setup while fencing a concurrent first plan plus withdrawal.
+  return getDb()
+    .update(accounts)
+    .set({
+      normalizedEmail: sql<string>`case when
+        not exists (
+          select 1 from ${developmentPlans}
+          where ${relevantPlanCondition}
+        )
+        or ${consentCurrent}
+        then ${accounts.normalizedEmail}
+        else null
+      end`,
+    })
+    .where(eq(accounts.id, accountId));
+}
+
+function configuredGolferRecordRequirementOrNull(): readonly ConsentGrantRequirement[] | null {
+  try {
+    return [configuredGolferRecordProcessingRequirement()];
+  } catch {
+    return null;
+  }
 }
 
 export type OffsetPage<T> = {
@@ -714,7 +780,7 @@ export async function createCoachingPackage(
         where ${auditEvents.accountId} = ${accountId}
           and ${auditEvents.action} = 'coaching_package.created'
           and ${auditEvents.outcome} = 'success'
-          and ${auditEvents.requestId} = ${receiptKey}
+          and ${auditEvents.id} = ${receiptKey}
           and ${auditEvents.targetType} = 'coaching_package'
       ) then ${accounts.normalizedEmail} else null end`,
     })
@@ -728,7 +794,7 @@ export async function createCoachingPackage(
     updatedAt: now,
   });
   const audit = db.insert(auditEvents).values({
-    id: newId(),
+    id: receiptKey,
     accountId,
     actorType: "account",
     actorAccountId: accountId,
@@ -736,13 +802,12 @@ export async function createCoachingPackage(
     targetType: "coaching_package",
     targetId: id,
     outcome: "success",
-    requestId: receiptKey,
+    requestId: requestId ?? null,
     metadata: {
       inputFingerprint,
       status: input.status,
       hasPrice: input.priceAmountMinor !== null,
       externalActionType: input.externalActionType,
-      ...(requestId ? { requestCorrelationId: requestId } : {}),
     },
   });
 
@@ -791,9 +856,9 @@ async function getCoachingPackageCreationReceipt(
     .where(
       and(
         eq(auditEvents.accountId, accountId),
+        eq(auditEvents.id, receiptKey),
         eq(auditEvents.action, "coaching_package.created"),
         eq(auditEvents.outcome, "success"),
-        eq(auditEvents.requestId, receiptKey),
         eq(auditEvents.targetType, "coaching_package"),
       ),
     )
@@ -919,6 +984,14 @@ export async function updateCoachingPackage(
   const db = getDb();
   const now = new Date();
   const impact = await getPackagePlanImpact(accountId, packageId);
+  await pauseAtSyntheticConcurrencyBarrier("package-update-after-impact-preflight");
+  const consentRequirements = impact.affectedPlans > 0
+    ? await requireGolferRecordProcessingConsent(accountId)
+    : configuredGolferRecordRequirementOrNull();
+  const relevantPlanCondition = linkedNonArchivedPlanPredicate(
+    accountId,
+    packageId,
+  );
   const invalidation = packageInvalidationStatements(
     accountId,
     packageId,
@@ -972,30 +1045,38 @@ export async function updateCoachingPackage(
     },
   });
 
-  if (input.isDefault) {
+  try {
     await db.batch([
-      db
-        .update(coachingPackages)
-        .set({ isDefault: false, updatedAt: now })
-        .where(
-          and(
-            eq(coachingPackages.accountId, accountId),
-            eq(coachingPackages.isDefault, true),
-            ne(coachingPackages.id, packageId),
-          ),
-        ),
+      linkedPlanMutationConsentGuard(
+        accountId,
+        consentRequirements,
+        relevantPlanCondition!,
+      ),
+      ...(input.isDefault
+        ? [
+            db
+              .update(coachingPackages)
+              .set({ isDefault: false, updatedAt: now })
+              .where(
+                and(
+                  eq(coachingPackages.accountId, accountId),
+                  eq(coachingPackages.isDefault, true),
+                  ne(coachingPackages.id, packageId),
+                ),
+              ),
+          ]
+        : []),
       update,
       invalidation.revokeShares,
       invalidation.withdrawPlans,
       audit,
     ]);
-  } else {
-    await db.batch([
-      update,
-      invalidation.revokeShares,
-      invalidation.withdrawPlans,
-      audit,
-    ]);
+  } catch (error) {
+    const currentImpact = await getPackagePlanImpact(accountId, packageId);
+    if (currentImpact.affectedPlans > 0) {
+      await requireGolferRecordProcessingConsent(accountId);
+    }
+    throw error;
   }
 
   const updated = await getPackageById(accountId, packageId);
@@ -1023,6 +1104,14 @@ export async function archiveCoachingPackage(
   const db = getDb();
   const now = new Date();
   const impact = await getPackagePlanImpact(accountId, packageId);
+  await pauseAtSyntheticConcurrencyBarrier("package-archive-after-impact-preflight");
+  const consentRequirements = impact.affectedPlans > 0
+    ? await requireGolferRecordProcessingConsent(accountId)
+    : configuredGolferRecordRequirementOrNull();
+  const relevantPlanCondition = linkedNonArchivedPlanPredicate(
+    accountId,
+    packageId,
+  );
   const invalidation = packageInvalidationStatements(
     accountId,
     packageId,
@@ -1030,26 +1119,32 @@ export async function archiveCoachingPackage(
     now,
   );
 
-  await db.batch([
-    db
-      .update(coachingPackages)
-      .set({
-        status: "archived",
-        isDefault: false,
-        externalActionVerifiedAt: null,
-        archivedAt: now,
-        updatedAt: now,
-      })
-      .where(
-        and(
-          eq(coachingPackages.accountId, accountId),
-          eq(coachingPackages.id, packageId),
-          ne(coachingPackages.status, "archived"),
-        ),
+  try {
+    await db.batch([
+      linkedPlanMutationConsentGuard(
+        accountId,
+        consentRequirements,
+        relevantPlanCondition!,
       ),
-    invalidation.revokeShares,
-    invalidation.withdrawPlans,
-    db.insert(auditEvents).values({
+      db
+        .update(coachingPackages)
+        .set({
+          status: "archived",
+          isDefault: false,
+          externalActionVerifiedAt: null,
+          archivedAt: now,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(coachingPackages.accountId, accountId),
+            eq(coachingPackages.id, packageId),
+            ne(coachingPackages.status, "archived"),
+          ),
+        ),
+      invalidation.revokeShares,
+      invalidation.withdrawPlans,
+      db.insert(auditEvents).values({
       id: newId(),
       accountId,
       actorType: "account",
@@ -1067,8 +1162,15 @@ export async function archiveCoachingPackage(
         planReviewRequired: impact.affectedPlans > 0,
         externalActionMadeUnavailable: true,
       },
-    }),
-  ]);
+      }),
+    ]);
+  } catch (error) {
+    const currentImpact = await getPackagePlanImpact(accountId, packageId);
+    if (currentImpact.affectedPlans > 0) {
+      await requireGolferRecordProcessingConsent(accountId);
+    }
+    throw error;
+  }
 
   const archived = await getPackageById(accountId, packageId);
   if (!archived) throw new Error("The archived coaching package could not be loaded.");
@@ -1198,6 +1300,7 @@ export async function listGolfersPage(
   accountId: string,
   options: OffsetPageOptions = {},
 ): Promise<OffsetPage<GolferListItem>> {
+  await requireGolferRecordProcessingConsent(accountId);
   const { limit, offset } = boundedPageOptions(options);
   const visibleStatus = options.includeArchived === false
     ? inArray(golfers.status, ["active", "inactive", "deletion_pending"])
@@ -1383,6 +1486,7 @@ function boundedPageOptions(options: OffsetPageOptions): {
 export async function getWorkspaceSummary(
   accountId: string,
 ): Promise<WorkspaceSummary> {
+  await requireGolferRecordProcessingConsent(accountId);
   const db = getDb();
   const [activeGolferRows, publishedPlanRows, reviewPlanRows, activePackageRows, profileRows] =
     await Promise.all([
@@ -1439,11 +1543,17 @@ export async function createStagedGolferWorkspace(
   accountId: string,
   input: CreateStagedGolferWorkspaceInput,
   idempotencyKey: string,
+  requestId?: string,
 ): Promise<StagedGolferWorkspaceSubmission> {
+  const consentRequirements = await requireGolferRecordProcessingConsent(accountId);
   const db = getDb();
-  const existing = await getStagedWorkspaceByIdempotencyKey(
+  const receiptKey = await stagedGolferWorkspaceReceiptKey(
     accountId,
     idempotencyKey,
+  );
+  const existing = await getStagedWorkspaceByReceiptKey(
+    accountId,
+    receiptKey,
   );
   if (existing) {
     assertMatchingStagedRetry(existing, input);
@@ -1457,6 +1567,7 @@ export async function createStagedGolferWorkspace(
 
   try {
     await db.batch([
+      consentGrantTransactionGuard(accountId, consentRequirements),
       db
         .update(accounts)
         .set({
@@ -1469,7 +1580,7 @@ export async function createStagedGolferWorkspace(
             where ${auditEvents.accountId} = ${accountId}
               and ${auditEvents.action} = 'golfer_workspace.staged'
               and ${auditEvents.outcome} = 'success'
-              and ${auditEvents.requestId} = ${idempotencyKey}
+              and ${auditEvents.id} = ${receiptKey}
           ) then ${accounts.normalizedEmail} else null end`,
         })
         .where(eq(accounts.id, accountId)),
@@ -1504,7 +1615,7 @@ export async function createStagedGolferWorkspace(
         isPrimary: true,
       }),
       db.insert(auditEvents).values({
-        id: newId(),
+        id: receiptKey,
         accountId,
         actorType: "account",
         actorAccountId: accountId,
@@ -1512,7 +1623,7 @@ export async function createStagedGolferWorkspace(
         targetType: "golfer",
         targetId: golferId,
         outcome: "success",
-        requestId: idempotencyKey,
+        requestId: requestId ?? null,
         metadata: {
           planId,
           eligibilityStatus: "adult_confirmed",
@@ -1521,9 +1632,9 @@ export async function createStagedGolferWorkspace(
       }),
     ]);
   } catch (error) {
-    const raced = await getStagedWorkspaceByIdempotencyKey(
+    const raced = await getStagedWorkspaceByReceiptKey(
       accountId,
-      idempotencyKey,
+      receiptKey,
     );
     if (!raced) throw error;
     assertMatchingStagedRetry(raced, input);
@@ -1562,6 +1673,7 @@ export async function getStagedGolferWorkspace(
   accountId: string,
   golferId: string,
 ): Promise<StagedGolferWorkspaceView | null> {
+  await requireGolferRecordProcessingConsent(accountId);
   const db = getDb();
   const [golfer] = await db
     .select()
@@ -1670,9 +1782,9 @@ export async function getStagedGolferWorkspace(
   };
 }
 
-async function getStagedWorkspaceByIdempotencyKey(
+async function getStagedWorkspaceByReceiptKey(
   accountId: string,
-  idempotencyKey: string,
+  receiptKey: string,
 ): Promise<StagedGolferWorkspaceView | null> {
   const db = getDb();
   const [event] = await db
@@ -1681,9 +1793,9 @@ async function getStagedWorkspaceByIdempotencyKey(
     .where(
       and(
         eq(auditEvents.accountId, accountId),
+        eq(auditEvents.id, receiptKey),
         eq(auditEvents.action, "golfer_workspace.staged"),
         eq(auditEvents.outcome, "success"),
-        eq(auditEvents.requestId, idempotencyKey),
         eq(auditEvents.targetType, "golfer"),
       ),
     )
@@ -1692,6 +1804,19 @@ async function getStagedWorkspaceByIdempotencyKey(
   return event?.golferId
     ? getStagedGolferWorkspace(accountId, event.golferId)
     : null;
+}
+
+async function stagedGolferWorkspaceReceiptKey(
+  accountId: string,
+  idempotencyKey: string,
+): Promise<string> {
+  return sha256Hex(
+    JSON.stringify([
+      "golfer_workspace.stage.receipt.v1",
+      accountId,
+      idempotencyKey,
+    ]),
+  );
 }
 
 function assertMatchingStagedRetry(
@@ -1721,6 +1846,9 @@ function assertMatchingStagedRetry(
 export async function completeStagedGolferWorkspace(
   input: CompleteStagedGolferWorkspaceInput,
 ): Promise<CompletedStagedGolferWorkspace> {
+  const consentRequirements = await requireGolferRecordProcessingConsent(
+    input.accountId,
+  );
   const db = getDb();
   const staged = await getStagedGolferWorkspace(input.accountId, input.golferId);
   assertStagedCompletionState(staged, input);
@@ -1767,6 +1895,10 @@ export async function completeStagedGolferWorkspace(
 
   try {
     await db.batch([
+      consentGrantTransactionGuard(
+        input.accountId,
+        consentRequirements,
+      ),
       db
         .update(developmentPlans)
         .set({
@@ -2060,7 +2192,9 @@ export async function createGolferWorkspace(
   accountId: string,
   input: CreateGolferWorkspaceInput,
   idempotencyKey: string,
+  requestId?: string,
 ): Promise<CreatedGolferWorkspaceSubmission> {
+  const consentRequirements = await requireGolferRecordProcessingConsent(accountId);
   const db = getDb();
   const receiptKey = await golferWorkspaceReceiptKey(accountId, idempotencyKey);
   const inputFingerprint = await golferWorkspaceInputFingerprint(accountId, input);
@@ -2111,6 +2245,7 @@ export async function createGolferWorkspace(
 
   try {
     await db.batch([
+      consentGrantTransactionGuard(accountId, consentRequirements),
       db
         .update(accounts)
         .set({
@@ -2122,7 +2257,7 @@ export async function createGolferWorkspace(
             where ${auditEvents.accountId} = ${accountId}
               and ${auditEvents.action} = 'golfer_workspace.created'
               and ${auditEvents.outcome} = 'success'
-              and ${auditEvents.requestId} = ${receiptKey}
+              and ${auditEvents.id} = ${receiptKey}
           ) and ${packageGuard} then ${accounts.normalizedEmail} else null end`,
         })
         .where(eq(accounts.id, accountId)),
@@ -2192,7 +2327,7 @@ export async function createGolferWorkspace(
       sortOrder: 0,
     }),
       db.insert(auditEvents).values({
-      id: newId(),
+      id: receiptKey,
       accountId,
       actorType: "account",
       actorAccountId: accountId,
@@ -2200,7 +2335,7 @@ export async function createGolferWorkspace(
       targetType: "golfer",
       targetId: golferId,
       outcome: "success",
-      requestId: receiptKey,
+      requestId: requestId ?? null,
       metadata: {
         planId,
         goalId,
@@ -2254,9 +2389,9 @@ async function getGolferWorkspaceCreationReceipt(
     .where(
       and(
         eq(auditEvents.accountId, accountId),
+        eq(auditEvents.id, receiptKey),
         eq(auditEvents.action, "golfer_workspace.created"),
         eq(auditEvents.outcome, "success"),
-        eq(auditEvents.requestId, receiptKey),
         eq(auditEvents.targetType, "golfer"),
       ),
     )
@@ -2415,6 +2550,21 @@ export type AccountDataRequestSubmission = {
   created: boolean;
 };
 
+type AccountDataRequestInput = {
+  type: AccountDataRequestType;
+  details: string | null;
+};
+
+type AccountDataRequestReceipt = {
+  dataRequestId: string;
+  inputFingerprint: string;
+};
+
+const accountDataRequestReceiptActions = [
+  "data_request.submitted",
+  "data_request.idempotency_alias",
+] as const;
+
 const openAccountDeletionStatuses = [
   "submitted",
   "identity_verification_required",
@@ -2450,82 +2600,296 @@ export async function listAccountDataRequests(
 
 export async function createAccountDataRequest(
   accountId: string,
-  input: { type: AccountDataRequestType; details: string | null },
+  input: AccountDataRequestInput,
+  idempotencyKey: string,
+  requestId?: string,
+): Promise<AccountDataRequestSubmission> {
+  const receiptKey = await accountDataRequestReceiptKey(
+    accountId,
+    idempotencyKey,
+  );
+  const inputFingerprint = await accountDataRequestInputFingerprint(
+    accountId,
+    input,
+  );
+  const existingReceipt = await getAccountDataRequestReceipt(
+    accountId,
+    receiptKey,
+  );
+  if (existingReceipt) {
+    return replayAccountDataRequest(
+      accountId,
+      existingReceipt,
+      inputFingerprint,
+    );
+  }
+
+  // Deletion has a second, independent idempotency boundary: only one open
+  // account deletion review may exist. A bounded retry loop lets a losing
+  // concurrent creator persist its own key as an alias to that canonical
+  // request, while still binding the key to this exact normalized payload.
+  let lastError: unknown;
+  const attempts = input.type === "deletion" ? 3 : 1;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    if (input.type === "deletion") {
+      const openDeletion = await getOpenAccountDeletionRequest(accountId);
+      if (openDeletion) {
+        try {
+          await persistAccountDeletionIdempotencyAlias(
+            accountId,
+            openDeletion,
+            receiptKey,
+            inputFingerprint,
+            requestId,
+          );
+          return { request: openDeletion, created: false };
+        } catch (error) {
+          lastError = error;
+          const racedReceipt = await getAccountDataRequestReceipt(
+            accountId,
+            receiptKey,
+          );
+          if (racedReceipt) {
+            return replayAccountDataRequest(
+              accountId,
+              racedReceipt,
+              inputFingerprint,
+            );
+          }
+          continue;
+        }
+      }
+    }
+
+    try {
+      return await persistNewAccountDataRequest(
+        accountId,
+        input,
+        receiptKey,
+        inputFingerprint,
+        requestId,
+      );
+    } catch (error) {
+      lastError = error;
+      const racedReceipt = await getAccountDataRequestReceipt(
+        accountId,
+        receiptKey,
+      );
+      if (racedReceipt) {
+        return replayAccountDataRequest(
+          accountId,
+          racedReceipt,
+          inputFingerprint,
+        );
+      }
+      if (input.type !== "deletion") throw error;
+    }
+  }
+
+  if (lastError) throw lastError;
+  throw new Error("The submitted data request could not be persisted.");
+}
+
+async function persistNewAccountDataRequest(
+  accountId: string,
+  input: AccountDataRequestInput,
+  receiptKey: string,
+  inputFingerprint: string,
   requestId?: string,
 ): Promise<AccountDataRequestSubmission> {
   const db = getDb();
-
-  if (input.type === "deletion") {
-    const existing = await getOpenAccountDeletionRequest(accountId);
-    if (existing) return { request: existing, created: false };
-  }
-
-  const id = newId();
   const status =
     input.type === "deletion"
       ? ("identity_verification_required" as const)
       : ("submitted" as const);
+  const noReceipt = sql`not exists (
+    select 1 from ${auditEvents}
+    where ${auditEvents.id} = ${receiptKey}
+  )`;
+  const creationAllowed =
+    input.type === "deletion"
+      ? sql`${noReceipt} and not exists (
+          select 1 from ${dataRequests}
+          where ${dataRequests.accountId} = ${accountId}
+            and ${dataRequests.requestType} = 'deletion'
+            and ${dataRequests.requestedByType} = 'account'
+            and ${dataRequests.status} in ('submitted', 'identity_verification_required', 'verified', 'in_progress')
+        )`
+      : noReceipt;
 
-  const requestInsert = db.insert(dataRequests).values({
-    id,
-    accountId,
-    golferId: null,
-    requestType: input.type,
-    requestedByType: "account",
-    status,
-    details: input.details,
-  });
-  const auditInsert = db.insert(auditEvents).values({
-    id: newId(),
-    accountId,
-    actorType: "account",
-    actorAccountId: accountId,
-    action: "data_request.submitted",
-    targetType: "data_request",
-    targetId: id,
-    outcome: "success",
-    requestId,
-    metadata: { requestType: input.type, status },
-  });
+  await db.batch([
+    db
+      .update(accounts)
+      .set({
+        // Every account data-request creation serializes on the tenant row.
+        // The NOT NULL sentinel aborts the complete batch when another request
+        // has already committed this receipt (or an open deletion exists).
+        normalizedEmail: sql<string>`case when ${creationAllowed}
+          then ${accounts.normalizedEmail} else null end`,
+      })
+      .where(eq(accounts.id, accountId)),
+    db.insert(dataRequests).values({
+      // The receipt hash is tenant-scoped and deterministic, so the primary
+      // key supplies an additional race boundary without exposing the raw key.
+      id: receiptKey,
+      accountId,
+      golferId: null,
+      requestType: input.type,
+      requestedByType: "account",
+      status,
+      details: input.details,
+    }),
+    db.insert(auditEvents).values({
+      // The audit primary key is the durable receipt identity. requestId stays
+      // reserved for the actual HTTP correlation identifier.
+      id: receiptKey,
+      accountId,
+      actorType: "account",
+      actorAccountId: accountId,
+      action: "data_request.submitted",
+      targetType: "data_request",
+      targetId: receiptKey,
+      outcome: "success",
+      requestId,
+      metadata: {
+        inputFingerprint,
+        requestType: input.type,
+        status,
+        ...(requestId ? { requestCorrelationId: requestId } : {}),
+      },
+    }),
+  ]);
 
-  try {
-    if (input.type === "deletion") {
-      await db.batch([
-        db
-          .update(accounts)
-          .set({
-            // Use the account's non-null normalized email as a transactional
-            // sentinel. Concurrent D1 batches serialize: the first inserts the
-            // open request; a loser then observes it, violates NOT NULL, and
-            // rolls back its request and audit without requiring a migration
-            // that could fail on historical duplicate rows.
-            normalizedEmail: sql<string>`case when not exists (
-              select 1 from ${dataRequests}
-              where ${dataRequests.accountId} = ${accountId}
-                and ${dataRequests.requestType} = 'deletion'
-                and ${dataRequests.requestedByType} = 'account'
-                and ${dataRequests.status} in ('submitted', 'identity_verification_required', 'verified', 'in_progress')
-            ) then ${accounts.normalizedEmail} else null end`,
-          })
-          .where(eq(accounts.id, accountId)),
-        requestInsert,
-        auditInsert,
-      ]);
-    } else {
-      await db.batch([requestInsert, auditInsert]);
-    }
-  } catch (error) {
-    // The account-row sentinel is the concurrency boundary. If two retries
-    // race, return the canonical open request created by the winner. D1 batch
-    // atomicity ensures the losing request did not leave a duplicate audit.
-    if (input.type === "deletion") {
-      const existing = await getOpenAccountDeletionRequest(accountId);
-      if (existing) return { request: existing, created: false };
-    }
-    throw error;
+  const created = await getAccountDataRequestById(accountId, receiptKey);
+  if (!created) {
+    throw new Error("The submitted data request could not be loaded.");
+  }
+  return { request: created, created: true };
+}
+
+async function persistAccountDeletionIdempotencyAlias(
+  accountId: string,
+  openDeletion: AccountDataRequestView,
+  receiptKey: string,
+  inputFingerprint: string,
+  requestId?: string,
+): Promise<void> {
+  const db = getDb();
+  await db.batch([
+    db
+      .update(accounts)
+      .set({
+        // Confirm the canonical deletion is still open and serialize the alias
+        // receipt against every other use of this idempotency key.
+        normalizedEmail: sql<string>`case when not exists (
+          select 1 from ${auditEvents}
+          where ${auditEvents.id} = ${receiptKey}
+        ) and exists (
+          select 1 from ${dataRequests}
+          where ${dataRequests.accountId} = ${accountId}
+            and ${dataRequests.id} = ${openDeletion.id}
+            and ${dataRequests.requestType} = 'deletion'
+            and ${dataRequests.requestedByType} = 'account'
+            and ${dataRequests.status} in ('submitted', 'identity_verification_required', 'verified', 'in_progress')
+        ) then ${accounts.normalizedEmail} else null end`,
+      })
+      .where(eq(accounts.id, accountId)),
+    db.insert(auditEvents).values({
+      // One deterministic, minimized technical receipt preserves payload-bound
+      // replay for a distinct key that aliases the already-open deletion.
+      id: receiptKey,
+      accountId,
+      actorType: "account",
+      actorAccountId: accountId,
+      action: "data_request.idempotency_alias",
+      targetType: "data_request",
+      targetId: openDeletion.id,
+      outcome: "success",
+      requestId,
+      metadata: {
+        inputFingerprint,
+        requestType: "deletion",
+        receiptKind: "open_deletion_alias",
+        ...(requestId ? { requestCorrelationId: requestId } : {}),
+      },
+    }),
+  ]);
+}
+
+async function getAccountDataRequestReceipt(
+  accountId: string,
+  receiptKey: string,
+): Promise<AccountDataRequestReceipt | null> {
+  const db = getDb();
+  const [event] = await db
+    .select({
+      accountId: auditEvents.accountId,
+      action: auditEvents.action,
+      targetType: auditEvents.targetType,
+      targetId: auditEvents.targetId,
+      outcome: auditEvents.outcome,
+      metadata: auditEvents.metadata,
+    })
+    .from(auditEvents)
+    .where(eq(auditEvents.id, receiptKey))
+    .limit(1);
+  if (!event) return null;
+
+  if (
+    event.accountId !== accountId ||
+    !accountDataRequestReceiptActions.includes(
+      event.action as (typeof accountDataRequestReceiptActions)[number],
+    ) ||
+    event.outcome !== "success" ||
+    event.targetType !== "data_request" ||
+    typeof event.targetId !== "string" ||
+    typeof event.metadata?.inputFingerprint !== "string"
+  ) {
+    throw new RequestError(
+      409,
+      "idempotency_record_incomplete",
+      "This data-request key has already been used, but its original result cannot be replayed safely.",
+    );
+  }
+  return {
+    dataRequestId: event.targetId,
+    inputFingerprint: event.metadata.inputFingerprint,
+  };
+}
+
+async function replayAccountDataRequest(
+  accountId: string,
+  receipt: AccountDataRequestReceipt,
+  inputFingerprint: string,
+): Promise<AccountDataRequestSubmission> {
+  if (receipt.inputFingerprint !== inputFingerprint) {
+    throw new RequestError(
+      409,
+      "idempotency_key_reused",
+      "This submission key was already used for a different data request. Review status and try again with a new key.",
+    );
   }
 
-  const [created] = await db
+  const request = await getAccountDataRequestById(
+    accountId,
+    receipt.dataRequestId,
+  );
+  if (!request) {
+    throw new RequestError(
+      409,
+      "idempotency_record_incomplete",
+      "This data-request key has already been used, but its original result cannot be replayed safely.",
+    );
+  }
+  return { request, created: false };
+}
+
+async function getAccountDataRequestById(
+  accountId: string,
+  dataRequestId: string,
+): Promise<AccountDataRequestView | null> {
+  const db = getDb();
+  const [row] = await db
     .select({
       id: dataRequests.id,
       requestType: dataRequests.requestType,
@@ -2534,13 +2898,41 @@ export async function createAccountDataRequest(
       updatedAt: dataRequests.updatedAt,
     })
     .from(dataRequests)
-    .where(and(eq(dataRequests.accountId, accountId), eq(dataRequests.id, id)))
+    .where(
+      and(
+        eq(dataRequests.accountId, accountId),
+        eq(dataRequests.id, dataRequestId),
+      ),
+    )
     .limit(1);
-  if (!created) {
-    throw new Error("The submitted data request could not be loaded.");
-  }
+  return row ? mapAccountDataRequest(row) : null;
+}
 
-  return { request: mapAccountDataRequest(created), created: true };
+async function accountDataRequestReceiptKey(
+  accountId: string,
+  idempotencyKey: string,
+): Promise<string> {
+  return sha256Hex(
+    JSON.stringify([
+      "account_data_request.create.receipt.v1",
+      accountId,
+      idempotencyKey,
+    ]),
+  );
+}
+
+async function accountDataRequestInputFingerprint(
+  accountId: string,
+  input: AccountDataRequestInput,
+): Promise<string> {
+  return sha256Hex(
+    JSON.stringify([
+      "account_data_request.create.payload.v1",
+      accountId,
+      input.type,
+      input.details,
+    ]),
+  );
 }
 
 async function getOpenAccountDeletionRequest(
@@ -2574,6 +2966,7 @@ async function reconcileExistingAccount(
   account: AccountRecord,
   provider: "siwc" | "development",
   primaryEmail: string,
+  requestId: string,
 ): Promise<AccountRecord> {
   if (["suspended", "deletion_pending", "deleted"].includes(account.status)) {
     throw new RequestError(
@@ -2614,6 +3007,7 @@ async function reconcileExistingAccount(
       targetType: "account",
       targetId: account.id,
       outcome: "success",
+      requestId,
       metadata: { identityProvider: provider },
     }),
   ]);

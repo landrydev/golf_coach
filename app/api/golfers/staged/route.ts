@@ -1,4 +1,5 @@
 import {
+  assertExactObjectKeys,
   assertSameOrigin,
   cleanEmail,
   cleanText,
@@ -13,17 +14,17 @@ import {
   getProfile,
   type CreateStagedGolferWorkspaceInput,
 } from "@/lib/repository";
-import { newId } from "@/lib/tokens";
+import { requestCorrelationId } from "@/lib/request-correlation";
 
 export async function POST(request: Request): Promise<Response> {
-  const requestId = newId();
+  const requestId = requestCorrelationId(request);
   try {
     assertSameOrigin(request);
     const auth = await requireApiIdentity();
     if (auth.response) return noStore(auth.response, requestId);
     const idempotencyKey = validatedIdempotencyKey(request);
     const payload = objectBody(await readJson<unknown>(request));
-    rejectUnexpected(payload, [
+    assertExactObjectKeys(payload, [
       "adultEligibilityConfirmed",
       "displayName",
       "preferredName",
@@ -40,7 +41,7 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     const goal = objectField(payload.goal, "goal");
-    rejectUnexpected(goal, ["statement", "why", "context"]);
+    assertExactObjectKeys(goal, ["statement", "why", "context"], "goal");
     const account = await getOrCreateAccountForIdentity(auth.identity);
     if (!(await getProfile(account.id))) {
       throw new RequestError(
@@ -76,6 +77,7 @@ export async function POST(request: Request): Promise<Response> {
       account.id,
       input,
       idempotencyKey,
+      requestId,
     );
     const staged = submission.workspace;
     return json(
@@ -123,13 +125,6 @@ function objectField(value: unknown, field: string): Record<string, unknown> {
     throw new RequestError(400, "invalid_field", `${field} must be an object.`);
   }
   return value as Record<string, unknown>;
-}
-
-function rejectUnexpected(value: Record<string, unknown>, allowed: string[]): void {
-  const unexpected = Object.keys(value).find((key) => !allowed.includes(key));
-  if (unexpected) {
-    throw new RequestError(400, "unexpected_field", `Unsupported field: ${unexpected}.`);
-  }
 }
 
 function optionalText(value: unknown, field: string, max: number): string {

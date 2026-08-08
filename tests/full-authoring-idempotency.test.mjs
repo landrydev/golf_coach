@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
+  grantSyntheticGolferRecordConsent,
   startD1Worker,
   writeHeaders,
 } from "./support/d1-worker.mjs";
@@ -22,6 +23,7 @@ test(
         contactEmail: identity.email,
       });
       assert.equal(profile.status, 200);
+      await grantSyntheticGolferRecordConsent(worker, identity);
     }
 
     const missingKeyHeaders = writeHeaders(coachA.email, coachA.name);
@@ -43,6 +45,9 @@ test(
     assert.deepEqual(
       [first.status, racingRetry.status].sort((left, right) => left - right),
       [200, 201],
+    );
+    const createdRequestId = (first.status === 201 ? first : racingRetry).headers.get(
+      "x-request-id",
     );
     const [firstBody, retryBody] = await Promise.all([
       first.json(),
@@ -119,17 +124,20 @@ test(
 
     const [receiptResult] = await worker.inspect([
       {
-        sql: "select request_id, metadata from audit_events where action = 'golfer_workspace.created' and target_id = ?",
+        sql: "select id, request_id, metadata from audit_events where action = 'golfer_workspace.created' and target_id = ?",
         params: [firstBody.golfer.id],
       },
     ]);
     assert.equal(receiptResult.results.length, 1);
     const receipt = receiptResult.results[0];
-    assert.match(receipt.request_id, /^[a-f0-9]{64}$/);
+    assert.match(receipt.id, /^[a-f0-9]{64}$/);
+    assert.match(receipt.request_id, /^[0-9a-f-]{36}$/i);
+    assert.equal(receipt.request_id, createdRequestId);
     assert.notEqual(receipt.request_id, idempotencyKey);
     const receiptMetadata = JSON.parse(receipt.metadata);
     assert.match(receiptMetadata.inputFingerprint, /^[a-f0-9]{64}$/);
     assert.doesNotMatch(receipt.metadata, /Jordan Retry Safe/i);
+    assert.equal(JSON.stringify(receipt).includes(idempotencyKey), false);
 
     const packageResponse = await jsonWrite(
       worker,

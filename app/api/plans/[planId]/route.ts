@@ -1,4 +1,5 @@
 import {
+  assertExactObjectKeys,
   assertSameOrigin,
   cleanText,
   errorResponse,
@@ -11,7 +12,7 @@ import {
   type CorePlanEditInput,
 } from "@/lib/plan-editor";
 import { getOrCreateAccountForIdentity } from "@/lib/repository";
-import { newId } from "@/lib/tokens";
+import { requestCorrelationId } from "@/lib/request-correlation";
 
 const BODY_FIELDS = [
   "expectedRevision",
@@ -41,7 +42,7 @@ export async function PUT(
   request: Request,
   context: { params: Promise<{ planId: string }> },
 ): Promise<Response> {
-  const requestId = newId();
+  const requestId = requestCorrelationId(request);
 
   try {
     assertSameOrigin(request);
@@ -50,7 +51,7 @@ export async function PUT(
 
     const payload = asObject(await readJson<unknown>(request), "body");
     rejectClientAccountId(payload);
-    assertOnlyFields(payload, "body", BODY_FIELDS);
+    assertExactObjectKeys(payload, BODY_FIELDS, "body");
 
     const changes = parseChanges(payload);
     const expectedRevision = integerValue(
@@ -97,13 +98,13 @@ function integerValue(
 
 function parseChanges(payload: Record<string, unknown>): CorePlanEditInput {
   const goal = asObject(payload.goal, "goal");
-  assertOnlyFields(goal, "goal", GOAL_FIELDS);
+  assertExactObjectKeys(goal, GOAL_FIELDS, "goal");
 
   const assessment = asObject(payload.assessment, "assessment");
-  assertOnlyFields(assessment, "assessment", ASSESSMENT_FIELDS);
+  assertExactObjectKeys(assessment, ASSESSMENT_FIELDS, "assessment");
 
   const priority = asObject(payload.priority, "priority");
-  assertOnlyFields(priority, "priority", PRIORITY_FIELDS);
+  assertExactObjectKeys(priority, PRIORITY_FIELDS, "priority");
 
   if (!Array.isArray(payload.phases) || ![3, 4].includes(payload.phases.length)) {
     throw new RequestError(
@@ -116,7 +117,7 @@ function parseChanges(payload: Record<string, unknown>): CorePlanEditInput {
   const phases = payload.phases.map((value, index) => {
     const field = `phases[${index}]`;
     const phase = asObject(value, field);
-    assertOnlyFields(phase, field, PHASE_FIELDS);
+    assertExactObjectKeys(phase, PHASE_FIELDS, field);
     const expectedNumber = index + 1;
     if (phase.number !== expectedNumber) {
       throw new RequestError(
@@ -221,21 +222,6 @@ function asObject(value: unknown, field: string): Record<string, unknown> {
     );
   }
   return value as Record<string, unknown>;
-}
-
-function assertOnlyFields(
-  value: Record<string, unknown>,
-  field: string,
-  allowed: readonly string[],
-): void {
-  const unexpected = Object.keys(value).filter((key) => !allowed.includes(key));
-  if (unexpected.length > 0) {
-    throw new RequestError(
-      400,
-      "unexpected_field",
-      `${field} contains unsupported field${unexpected.length === 1 ? "" : "s"}: ${unexpected.join(", ")}.`,
-    );
-  }
 }
 
 function optionalText(value: unknown, field: string, max: number): string {

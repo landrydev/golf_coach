@@ -1,0 +1,67 @@
+{
+  "evidenceType": "isolated-clean-install-and-build-rehearsal",
+  "releaseId": "ROADMAP-SITES-V7-2026-08-08",
+  "sourceCommit": "7ed01ec822fdb5c2bfbe6db7e3c99bcba126ac17",
+  "observedOn": "2026-08-08",
+  "observedTimePrecision": "date-only; an exact command timestamp was not captured",
+  "environment": {
+    "node": "24.18.0",
+    "npm": "12.0.1",
+    "platform": "Windows NT 10.0.26200.0"
+  },
+  "sourceArchive": {
+    "format": "git archive tar from the exact runtime source commit",
+    "sha256": "d859a471c040106c9e034d460bad53de56e4e1eea224d6fd22455ac84a6eadf6",
+    "sizeBytes": 6860800,
+    "retention": "The temporary archive and extracted clean-install worktree were removed after evidence capture."
+  },
+  "install": {
+    "command": "npm ci",
+    "status": "passed",
+    "packagesAdded": 501,
+    "packagesAudited": 502,
+    "reportedVulnerabilities": 0,
+    "networkIsolation": false,
+    "warnings": [
+      "npm reported deprecated @esbuild-kit packages in the locked build graph.",
+      "npm 12 reported blocked install scripts for three esbuild package locations, unrs-resolver 1.11.1, and workerd 1.20260801.1. The subsequent production build and complete verification still passed."
+    ]
+  },
+  "verification": {
+    "npmRunVerify": {
+      "status": "passed",
+      "tests": 163,
+      "failures": 0,
+      "skipped": 0,
+      "todos": 0
+    },
+    "releaseIntegrity": {
+      "status": "passed",
+      "scannedSourceTextFiles": 204,
+      "secretFindings": 0,
+      "businessPlanV1Preserved": true,
+      "packageLockSha256": "a29e63ce73d1de9f40d54ebc615982686af6c53084c107f84e35d1316ba425d1"
+    },
+    "dependencyTree": {
+      "command": "npm ls --all --json",
+      "status": "passed",
+      "exitCode": 0
+    },
+    "schemaGeneration": {
+      "status": "passed",
+      "result": "No schema changes, nothing to migrate"
+    },
+    "syntheticRecovery": {
+      "status": "passed",
+      "migrationCount": 8,
+      "syntheticTenantCount": 2,
+      "snapshotSha256": "ebbba2d865090457ef567a1d15658cad0457e4e7d89c2c1975ec45ce944887c5"
+    }
+  },
+  "limitations": [
+    "This was an isolated clean install and production-bundle rehearsal, not a bit-for-bit reproducible-build claim.",
+    "The install was not network-isolated and does not establish registry availability, package provenance, or malicious-package absence.",
+    "A successful build after blocked dependency install scripts does not establish that every optional platform path was exercised.",
+    "The result does not replace hosted identity, D1/R2, billing, recovery, browser, accessibility, load, legal, or real-user evidence."
+  ]
+}

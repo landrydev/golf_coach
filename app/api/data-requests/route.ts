@@ -1,4 +1,5 @@
 import {
+  assertExactObjectKeys,
   assertSameOrigin,
   cleanText,
   errorResponse,
@@ -13,10 +14,10 @@ import {
   listAccountDataRequests,
 } from "@/lib/repository";
 import { ABUSE_LIMITS, enforceAbuseLimit } from "@/lib/rate-limit";
-import { newId } from "@/lib/tokens";
+import { requestCorrelationId } from "@/lib/request-correlation";
 
-export async function GET(): Promise<Response> {
-  const requestId = newId();
+export async function GET(request: Request): Promise<Response> {
+  const requestId = requestCorrelationId(request);
   try {
     const auth = await requireApiIdentity();
     if (auth.response) return noStore(auth.response, requestId);
@@ -29,15 +30,17 @@ export async function GET(): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  const requestId = newId();
+  const requestId = requestCorrelationId(request);
   try {
     assertSameOrigin(request);
     const auth = await requireApiIdentity();
     if (auth.response) return noStore(auth.response, requestId);
+    const idempotencyKey = validatedIdempotencyKey(request);
     const account = await getOrCreateAccountForIdentity(auth.identity);
     await enforceAbuseLimit(ABUSE_LIMITS.dataRequestAccount, account.id);
     const payload = asObject(await readJson<unknown>(request));
     rejectClientAccountId(payload);
+    assertExactObjectKeys(payload, ["type", "details"]);
 
     if (!isAccountDataRequestType(payload.type)) {
       throw new RequestError(
@@ -50,6 +53,7 @@ export async function POST(request: Request): Promise<Response> {
     const submission = await createAccountDataRequest(
       account.id,
       { type: payload.type, details: details || null },
+      idempotencyKey,
       requestId,
     );
 
@@ -63,6 +67,18 @@ export async function POST(request: Request): Promise<Response> {
   } catch (error) {
     return noStore(errorResponse(error), requestId);
   }
+}
+
+function validatedIdempotencyKey(request: Request): string {
+  const value = request.headers.get("idempotency-key")?.trim() ?? "";
+  if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{19,127}$/.test(value)) {
+    throw new RequestError(
+      400,
+      "idempotency_key_required",
+      "Provide a stable Idempotency-Key of 20 to 128 safe characters.",
+    );
+  }
+  return value;
 }
 
 function asObject(value: unknown): Record<string, unknown> {

@@ -106,6 +106,79 @@ identity, status-list, digest, or secret detail.
 - Account and billing state gates affected writes server-side; the exact grace/pause/cancel consequences follow approved policy.
 - Operator access, if later required, must be separately authenticated, least-privileged, time-bounded where possible, and audited. There is no implicit support back door.
 
+### Policy-versioned consent-record plumbing
+
+The implementation exposes an authenticated, account-derived `/api/consents`
+boundary for current-state reads and immutable `grant` or `withdraw`
+transitions. It does not ship consent wording, choose a legal basis, enable an
+optional processing purpose, or establish Canadian legal compliance.
+
+- The existing D1 vocabulary is explicit: purposes are `terms`,
+  `privacy_notice`, `golfer_record`, `roadmap_sharing`, `media_use`,
+  `service_email`, and `optional_analytics`; persisted statuses are `granted`,
+  `declined`, `withdrawn`, and `expired`. The public mutation surface currently
+  creates only `granted` and `withdrawn` history rows.
+- `CONSENT_POLICY_REGISTRY_JSON` is strict owner-supplied configuration. Each
+  configured purpose has exact `version`, `purposeDescription`, and allowed
+  `subjectTypes`. Any wording change requires a new version. Code supplies no
+  substantive defaults.
+- Missing, malformed, unlisted, subject-inapplicable, or stale registry state
+  makes the effective-grant helper return false and blocks a new grant. An
+  empty valid registry still grants nothing. Removing configuration never
+  erases history and never prevents withdrawal of the current recorded grant.
+  Both the version and exact configured description must match the immutable
+  grant, so changing wording without changing the version also fails closed.
+- Account identity and ownership are derived from the trusted SIWC boundary.
+  Account IDs are not accepted from JSON. A golfer subject is resolved through
+  the authenticated account in both the read and the atomic write guard; a
+  cross-tenant or absent golfer receives the same bounded not-found result.
+- Every transition requires a stable idempotency key, exact JSON keys, the
+  expected current record ID, and the relevant policy version. D1 serializes an
+  account-row compare-and-swap guard with the append-only consent and audit
+  inserts, so a stale or concurrent loser cannot leave partial state.
+- Replacement and withdrawal append records; they do not update or relabel a
+  prior grant. The tenant data export already includes the complete consent
+  record history.
+- The production V1 has two policy-neutral technical mappings. A current
+  account-scoped `golfer_record` grant is required for golfer creation,
+  ordinary instructor list/detail/page/API reads, golfer and plan-content
+  changes, and profile/package changes that would revise linked golfer plans.
+  A current golfer-scoped `roadmap_sharing` grant, together with the account
+  grant, is required to publish, exchange a share token, resolve every live
+  share session, and record a golfer response. These names do not choose or
+  establish their legal meaning.
+- Sensitive writes use a D1-side current-grant guard in the same transaction.
+  Version, exact description, internally consistent timestamps, status, and
+  expiry are checked against the D1 clock. Sharing withdrawal atomically
+  revokes affected links and live sessions; account golfer-record withdrawal
+  does so across the tenant. Subsequent capability reads return only the
+  neutral unavailable state.
+- Self-serve controls render only the configured/stored owner text and version.
+  Account golfer-record grant/withdrawal is available before collection and in
+  data settings; golfer roadmap-sharing grant/withdrawal is available on the
+  plan and golfer-settings surfaces. Missing configuration is shown honestly
+  and cannot create a grant, while a still-current persisted grant remains
+  withdrawable after configuration removal.
+- Narrow post-withdrawal exceptions are intentional: authenticated tenant
+  export, data/privacy requests, operator fulfillment, consent-state controls,
+  share/session cleanup, and one-way golfer archival remain available. They do
+  not restore ordinary instructor disclosure or content mutation.
+- Audit stores the action, opaque transition target, authenticated actor,
+  trusted request-correlation ID, and only a SHA-256 input fingerprint. Policy
+  text, evidence references, raw idempotency keys, emails, and golfer IDs are
+  not copied into audit metadata.
+
+`[OWNER INPUT REQUIRED]` The exact registry entries, notices, roles, evidence
+requirements, collection moments, retention/expiry rules, and legal meaning of
+the two implemented technical mappings require Aaron's recorded decision and
+qualified review. Other downstream purposes remain unmapped and disabled.
+`[REAL-WORLD VALIDATION REQUIRED]` Before real-user operation, each approved
+purpose mapping must be reviewed against every actual collection, use, and
+disclosure path, and the deployed text, withdrawal behavior, data export,
+operator workflow, and user comprehension must be verified. Media, marketing,
+research, and optional analytics remain disabled/unimplemented; a consent
+record by itself does not activate them.
+
 ### Golfer capability controls
 
 - Generate at least 256 bits of entropy with a cryptographically secure generator.
@@ -176,6 +249,8 @@ entitlements, package quotas, sales policy, or a substitute for edge controls.
 | Stripe billing reconciliation, per instructor account digest | 6 | 15 minutes |
 | Immediate data export, per instructor account digest | 3 | 1 hour |
 | Privacy/data request submission, per instructor account digest | 10 | 1 hour |
+| Data-request operator API, per trusted network digest | 60 | 5 minutes |
+| Data-request operator API, per authorized operator digest | 30 | 5 minutes |
 
 D1 increments each counter with one atomic `INSERT ... ON CONFLICT DO UPDATE ...
 RETURNING` statement. The key is an HMAC-SHA-256 digest under the separate
@@ -252,6 +327,24 @@ The application writes append-oriented D1 audit events for security- and privacy
 - minimal before/after state labels when necessary.
 
 Required event families include authentication mapping, account lifecycle, coach/package changes, golfer/roadmap create/update, publish/unpublish, capability create/exchange/revoke/rotate, media lifecycle, export/correction/deletion request, subscription-event processing, entitlement change, and authorized operator access.
+
+### Privacy-operator boundary
+
+The [data-request operator workflow](DATA_REQUEST_OPERATOR_WORKFLOW.md) requires
+dispatch-owned SIWC plus an independent HMAC-SHA-256 email-digest allowlist.
+Owner-private product access and subscription entitlement never grant this role.
+Configuration uncertainty returns `503`; a known non-member returns `403`.
+Queue/detail output omits emails, contact hashes, request text, provider IDs,
+object keys, and record content. Status compare-and-swap and its audit receipt
+commit in one D1 batch. Queue traversal is newest-first strict keyset
+pagination; null-tenant and future-dated active rows are excluded with safe
+counts rather than identifiers. Existing identity-verification-required,
+verified, in-progress, and terminal history is read-only. The only mutation is
+the non-attesting `submitted` -> `identity_verification_required` marker; it
+does not write `identity_verified_at`. Verification, processing, denial,
+cancellation, fulfillment, and deletion have no mutation transition. Network
+and authorized-operator controls run before queue audit, inventory, or PATCH
+work, and their D1 subjects are separately scoped/windowed HMAC digests.
 
 Audit events never contain raw identity headers, raw capabilities, full email addresses unless separately justified and protected, coach/golfer narrative, media URLs, package-payment details, Stripe webhook payloads, or secrets. Audit writes for high-impact mutations must be coupled transactionally where D1 permits or reconciled through a durable outbox pattern.
 

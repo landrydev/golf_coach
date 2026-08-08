@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
+  identityHeaders,
   startD1Worker,
   testOrigin,
   writeHeaders,
@@ -121,6 +122,154 @@ test(
   },
 );
 
+test(
+  "operator reads are independently bounded by pseudonymous identity and network",
+  { timeout: 120_000 },
+  async (context) => {
+    const identityWorker = await startD1Worker();
+    context.after(() => identityWorker.dispose());
+    const operatorEmail = "coach.a@example.test";
+    const identityResponses = [];
+    for (let index = 1; index <= 31; index += 1) {
+      identityResponses.push(
+        await identityWorker.dispatch("/api/operations/data-requests", {
+          headers: {
+            ...identityHeaders(operatorEmail, "Coach Avery"),
+            "cf-connecting-ip": `192.0.2.${index}`,
+          },
+        }),
+      );
+    }
+    assert.deepEqual(
+      identityResponses.map((response) => response.status),
+      [...Array.from({ length: 30 }, () => 200), 429],
+    );
+    assert.equal(
+      (await identityResponses[30].json()).error.code,
+      "rate_limit_exceeded",
+    );
+    assert.ok(Number(identityResponses[30].headers.get("retry-after")) >= 1);
+
+    const identityInspection = await identityWorker.inspect([
+      {
+        sql: `select scope, subject_key_hash, request_count
+                from abuse_rate_limits
+               where scope in ('data_request_operator_identity',
+                               'data_request_operator_network')
+               order by scope, subject_key_hash`,
+      },
+      {
+        sql: `select actor_reference, metadata
+                from audit_events
+               where action = 'data_request.operator_queue_viewed'`,
+      },
+    ]);
+    const identityRows = identityInspection[0].results.filter(
+      (row) => row.scope === "data_request_operator_identity",
+    );
+    const identityNetworkRows = identityInspection[0].results.filter(
+      (row) => row.scope === "data_request_operator_network",
+    );
+    assert.deepEqual(
+      identityRows.map((row) => row.request_count),
+      [31],
+    );
+    assert.equal(identityNetworkRows.length, 31);
+    assert.equal(
+      identityNetworkRows.every((row) => row.request_count === 1),
+      true,
+    );
+    assert.equal(identityInspection[1].results.length, 30);
+    assertPseudonymousOperatorEvidence(
+      identityInspection,
+      [
+        operatorEmail,
+        ...Array.from({ length: 31 }, (_, index) => `192.0.2.${index + 1}`),
+      ],
+    );
+
+    const operatorDigests = [
+      "ad983660ee984c51d7ff905082da25469c8a35d3c0998e7cfe5d410d62c2c22a",
+      "93b6a4dfd63a6d88f7be18eb5e5fd2528af444e19d1dac773cb9e2e703a123d7",
+      "3e19832424e8ae1fc4cac11ca9f4d6c8971f36b118ba047c94127b3c3b2e2a11",
+    ];
+    const networkWorker = await startD1Worker({
+      DATA_REQUEST_OPERATOR_EMAIL_DIGESTS: operatorDigests.join(","),
+    });
+    context.after(() => networkWorker.dispose());
+    const identities = [
+      ["coach.a@example.test", "Coach Avery"],
+      ["coach.b@example.test", "Coach Blair"],
+      ["atomic.coach@example.test", "Atomic Coach"],
+    ];
+    const sharedAddress = "198.51.100.77";
+    const networkResponses = [];
+    for (let round = 0; round < 20; round += 1) {
+      for (const [email, name] of identities) {
+        networkResponses.push(
+          await networkWorker.dispatch("/api/operations/data-requests", {
+            headers: {
+              ...identityHeaders(email, name),
+              "cf-connecting-ip": sharedAddress,
+            },
+          }),
+        );
+      }
+    }
+    networkResponses.push(
+      await networkWorker.dispatch("/api/operations/data-requests", {
+        headers: {
+          ...identityHeaders(...identities[0]),
+          "cf-connecting-ip": sharedAddress,
+        },
+      }),
+    );
+    assert.equal(
+      networkResponses.slice(0, 60).every((response) => response.status === 200),
+      true,
+    );
+    assert.equal(networkResponses[60].status, 429);
+    assert.equal(
+      (await networkResponses[60].json()).error.code,
+      "rate_limit_exceeded",
+    );
+
+    const networkInspection = await networkWorker.inspect([
+      {
+        sql: `select scope, subject_key_hash, request_count
+                from abuse_rate_limits
+               where scope in ('data_request_operator_identity',
+                               'data_request_operator_network')
+               order by scope, request_count, subject_key_hash`,
+      },
+      {
+        sql: `select actor_reference, metadata
+                from audit_events
+               where action = 'data_request.operator_queue_viewed'`,
+      },
+    ]);
+    const sharedNetworkRows = networkInspection[0].results.filter(
+      (row) => row.scope === "data_request_operator_network",
+    );
+    const sharedIdentityRows = networkInspection[0].results.filter(
+      (row) => row.scope === "data_request_operator_identity",
+    );
+    assert.deepEqual(
+      sharedNetworkRows.map((row) => row.request_count),
+      [61],
+    );
+    assert.deepEqual(
+      sharedIdentityRows.map((row) => row.request_count),
+      [20, 20, 21],
+    );
+    assert.equal(networkInspection[1].results.length, 60);
+    assertPseudonymousOperatorEvidence(networkInspection, [
+      sharedAddress,
+      ...identities.map(([email]) => email),
+    ]);
+  },
+);
+
 test("every selected high-risk route invokes its dedicated abuse-control scope", async () => {
   const routes = {
     "r/session": "shareExchangeNetwork|shareExchangeCapability",
@@ -145,3 +294,58 @@ test("every selected high-risk route invokes its dedicated abuse-control scope",
     }
   }
 });
+
+test("every operator read and transition is limited before inventory or audit work", async () => {
+  const [queueRoute, detailRoute, sharedRoute] = await Promise.all([
+    readFile(
+      new URL("../app/api/operations/data-requests/route.ts", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL(
+        "../app/api/operations/data-requests/[requestId]/route.ts",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+    readFile(
+      new URL(
+        "../app/api/operations/data-requests/_shared.ts",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  ]);
+
+  assert.match(sharedRoute, /ABUSE_LIMITS\.dataRequestOperatorNetwork/);
+  assert.match(sharedRoute, /ABUSE_LIMITS\.dataRequestOperatorIdentity/);
+  assert.match(sharedRoute, /enforceAbuseLimit\(/);
+  assert.match(
+    queueRoute,
+    /parseDataRequestOperatorPage\(request\)[\s\S]*enforceDataRequestOperatorAbuseLimits\(request, operatorDigest\)[\s\S]*listDataRequestOperatorQueue\(/,
+  );
+  assert.match(
+    detailRoute,
+    /enforceDataRequestOperatorAbuseLimits\(request, operatorDigest\)[\s\S]*getDataRequestOperatorDetail\(/,
+  );
+  const patchSource = detailRoute.slice(
+    detailRoute.indexOf("export async function PATCH"),
+  );
+  assert.match(
+    patchSource,
+    /enforceDataRequestOperatorAbuseLimits\(request, operatorDigest\)[\s\S]*validatedOperatorIdempotencyKey\(request\)[\s\S]*transitionDataRequestOperatorStatus\(/,
+  );
+});
+
+function assertPseudonymousOperatorEvidence(inspection, rawValues) {
+  const serialized = JSON.stringify(inspection);
+  for (const value of rawValues) {
+    assert.equal(serialized.includes(value), false);
+  }
+  for (const row of inspection[0].results) {
+    assert.match(row.subject_key_hash, /^[0-9a-f]{64}$/);
+  }
+  for (const event of inspection[1].results) {
+    assert.match(event.actor_reference, /^[0-9a-f]{64}$/);
+  }
+}

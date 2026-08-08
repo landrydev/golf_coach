@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  grantSyntheticGolferRecordConsent,
+  grantSyntheticRoadmapSharingConsent,
   identityHeaders,
   startD1Worker,
   writeHeaders,
@@ -21,6 +23,8 @@ test(
       contactEmail: coachA.email,
     });
     assert.equal(profile.status, 200);
+    await grantSyntheticGolferRecordConsent(worker, coachA);
+    await grantSyntheticGolferRecordConsent(worker, coachB);
 
     const unattested = await stageGolfer(
       worker,
@@ -40,8 +44,12 @@ test(
       [firstAttempt.status, racingRetry.status].sort((left, right) => left - right),
       [200, 201],
     );
+    const createdRequestId = (
+      firstAttempt.status === 201 ? firstAttempt : racingRetry
+    ).headers.get("x-request-id");
     const firstResult = await firstAttempt.json();
     const retryResult = await racingRetry.json();
+    await grantSyntheticRoadmapSharingConsent(worker, coachA, firstResult.golfer.id);
     assert.equal(firstResult.golfer.id, retryResult.golfer.id);
     assert.equal(firstResult.plan.id, retryResult.plan.id);
     assert.equal(firstResult.goal.id, retryResult.goal.id);
@@ -78,14 +86,27 @@ test(
         params: [firstResult.plan.id],
       },
       {
-        sql: "select count(*) as count from audit_events where account_id is not null and action = 'golfer_workspace.staged' and request_id = ?",
-        params: [idempotencyKey],
+        sql: "select count(*) as count from audit_events where account_id is not null and action = 'golfer_workspace.staged' and target_id = ?",
+        params: [firstResult.golfer.id],
       },
     ]);
     assert.deepEqual(
       stagedCounts.map((result) => result.results[0].count),
       [1, 1, 0, 0, 0, 1],
     );
+
+    const [receiptResult] = await worker.inspect([
+      {
+        sql: "select id, request_id, metadata from audit_events where action = 'golfer_workspace.staged' and target_id = ?",
+        params: [firstResult.golfer.id],
+      },
+    ]);
+    assert.equal(receiptResult.results.length, 1);
+    const receipt = receiptResult.results[0];
+    assert.match(receipt.id, /^[a-f0-9]{64}$/);
+    assert.match(receipt.request_id, /^[0-9a-f-]{36}$/i);
+    assert.equal(receipt.request_id, createdRequestId);
+    assert.equal(JSON.stringify(receipt).includes(idempotencyKey), false);
 
     const resumePath = `/app/golfers/${firstResult.golfer.id}/complete`;
     const resumePage = await worker.dispatch(resumePath, {

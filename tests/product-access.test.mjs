@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  grantSyntheticGolferRecordConsent,
   identityHeaders,
   startD1Worker,
   testOrigin,
@@ -158,6 +159,7 @@ test(
 
     for (const path of [
       "/api/profile",
+      "/api/consents",
       "/app/billing",
       "/app/settings",
       "/app/settings/data.rsc",
@@ -180,6 +182,7 @@ test(
       body: "{}",
     });
     assert.equal(dataExport.status, 200);
+    await grantSyntheticGolferRecordConsent(worker, allowedOwner);
 
     for (const path of ["/api/golfers", "/app", "/app/golfers.rsc"]) {
       const response = await worker.dispatch(path, { headers });
@@ -227,6 +230,7 @@ test(
     const headers = identityHeaders(allowedOwner.email, allowedOwner.name);
 
     await worker.dispatch("/api/profile", { headers });
+    await grantSyntheticGolferRecordConsent(worker, allowedOwner);
     await insertSubscription(worker, "active");
     for (const status of subscriptionStatuses) {
       await setSubscriptionStatus(worker, status);
@@ -252,6 +256,7 @@ test(
     const headers = identityHeaders(allowedOwner.email, allowedOwner.name);
 
     await worker.dispatch("/api/profile", { headers });
+    await grantSyntheticGolferRecordConsent(worker, allowedOwner);
     await insertSubscription(worker, "active");
     assert.equal(
       (await worker.dispatch("/api/golfers", { headers })).status,

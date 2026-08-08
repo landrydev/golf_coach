@@ -1,5 +1,8 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { GolferRecordAccessBlocked } from "@/components/consent/GolferRecordAccessBlocked";
+import { golferRecordProcessingConsentCurrent } from "@/lib/consent-enforcement";
 import { requirePageIdentity } from "@/lib/identity";
 import {
   getOrCreateAccountForIdentity,
@@ -8,6 +11,10 @@ import {
 } from "@/lib/repository";
 import styles from "../../../workspace.module.css";
 import { StagedCompletionForm } from "./StagedCompletionForm";
+
+export const metadata: Metadata = {
+  title: "Complete golfer roadmap | Roadmap",
+};
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +27,9 @@ export default async function CompleteStagedGolferPage({
   const returnTo = `/app/golfers/${encodeURIComponent(golferId)}/complete`;
   const identity = await requirePageIdentity(returnTo);
   const account = await getOrCreateAccountForIdentity(identity);
+  if (!(await golferRecordProcessingConsentCurrent(account.id))) {
+    return <GolferRecordAccessBlocked />;
+  }
   const staged = await getStagedGolferWorkspace(account.id, golferId);
   if (!staged) notFound();
   if (staged.authoringState === "complete") {

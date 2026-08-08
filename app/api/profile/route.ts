@@ -1,4 +1,5 @@
 import {
+  assertExactObjectKeys,
   assertSameOrigin,
   cleanEmail,
   cleanExternalUrl,
@@ -14,7 +15,22 @@ import {
   getProfile,
   saveProfile,
 } from "@/lib/repository";
-import { newId } from "@/lib/tokens";
+import { requestCorrelationId } from "@/lib/request-correlation";
+
+const PROFILE_FIELDS = [
+  "displayName",
+  "businessName",
+  "professionalTitle",
+  "philosophy",
+  "bio",
+  "contactEmail",
+  "contactPhone",
+  "websiteUrl",
+  "city",
+  "provinceOrTerritory",
+  "location",
+  "accentColor",
+] as const;
 
 export async function GET(): Promise<Response> {
   try {
@@ -49,7 +65,7 @@ export async function GET(): Promise<Response> {
 }
 
 export async function PUT(request: Request): Promise<Response> {
-  const requestId = newId();
+  const requestId = requestCorrelationId(request);
   try {
     assertSameOrigin(request);
     const auth = await requireApiIdentity();
@@ -57,6 +73,7 @@ export async function PUT(request: Request): Promise<Response> {
 
     const payload = asObject(await readJson<unknown>(request));
     rejectClientAccountId(payload);
+    assertExactObjectKeys(payload, PROFILE_FIELDS);
     const account = await getOrCreateAccountForIdentity(auth.identity);
 
     const displayName = cleanText(payload.displayName, "displayName", {

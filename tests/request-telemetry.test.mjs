@@ -121,6 +121,8 @@ test("Worker responses and structured logs share a generated safe request ID", a
   const name = "Coach Private Name";
   const suppliedRequestId = "attacker-request-id-containing-private-data";
   const suppliedRay = "attacker-ray-containing-private-data";
+  const suppliedInternalRequestId =
+    "55555555-5555-4555-8555-555555555555";
 
   try {
     const mutationResponse = await invokeWorker(
@@ -131,6 +133,7 @@ test("Worker responses and structured logs share a generated safe request ID", a
         headers: {
           "cf-ray": suppliedRay,
           "content-type": "application/json",
+          "x-roadmap-request-id": suppliedInternalRequestId,
           "x-request-id": suppliedRequestId,
         },
         body: JSON.stringify({ email, name, token: shareToken }),
@@ -162,6 +165,7 @@ test("Worker responses and structured logs share a generated safe request ID", a
     assert.match(failureRequestId ?? "", /^[0-9a-f-]{36}$/i);
     assert.notEqual(mutationRequestId, suppliedRequestId);
     assert.notEqual(mutationRequestId, suppliedRay);
+    assert.notEqual(mutationRequestId, suppliedInternalRequestId);
     assert.notEqual(mutationRequestId, failureRequestId);
 
     assert.equal(logs.length, 2);
@@ -186,6 +190,7 @@ test("Worker responses and structured logs share a generated safe request ID", a
       name,
       suppliedRequestId,
       suppliedRay,
+      suppliedInternalRequestId,
     ]) {
       assert.equal(serializedLogs.includes(secret), false, secret);
       assert.equal(
@@ -198,6 +203,73 @@ test("Worker responses and structured logs share a generated safe request ID", a
     assert.equal(serializedLogs.includes("?"), false);
   } finally {
     console.info = originalInfo;
+  }
+});
+
+test("top-level Worker failures return a private generic response through the security boundary", async () => {
+  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
+  workerUrl.searchParams.set(
+    "top-level-failure-test",
+    `${process.pid}-${Date.now()}-${Math.random()}`,
+  );
+  const { default: worker } = await import(workerUrl.href);
+  const logs = [];
+  const errorLogs = [];
+  const originalInfo = console.info;
+  const originalError = console.error;
+  console.info = (...values) => logs.push(values);
+  console.error = (...values) => errorLogs.push(values);
+
+  try {
+    const response = await worker.fetch(
+      new Request("https://roadmap.example/favicon.svg"),
+      {
+        ASSETS: {
+          fetch: async () => {
+            throw new Error("synthetic private storage detail");
+          },
+        },
+      },
+      {
+        waitUntil() {},
+        passThroughOnException() {},
+      },
+    );
+
+    assert.equal(response.status, 500);
+    assert.deepEqual(await response.json(), {
+      error: {
+        code: "internal_error",
+        message: "The request could not be completed.",
+      },
+    });
+    assert.match(response.headers.get("cache-control") ?? "", /no-store/i);
+    assert.equal(response.headers.get("pragma"), "no-cache");
+    assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+    assert.equal(response.headers.get("x-frame-options"), "DENY");
+    assert.equal(
+      response.headers.get("x-robots-tag"),
+      "noindex, nofollow, noarchive",
+    );
+    assert.match(response.headers.get("x-request-id") ?? "", /^[0-9a-f-]{36}$/i);
+
+    assert.equal(logs.length, 1);
+    assert.equal(logs[0].length, 1);
+    assert.equal(logs[0][0].status, 500);
+    assert.equal(logs[0][0].outcome, "server_error");
+    assert.equal(errorLogs.length, 1);
+    assert.equal(errorLogs[0][0], "Worker request failed");
+    assert.equal(errorLogs[0][1].errorType, "Error");
+    assert.equal(errorLogs[0][1].requestId, response.headers.get("x-request-id"));
+    assert.equal(
+      JSON.stringify([logs, errorLogs]).includes(
+        "synthetic private storage detail",
+      ),
+      false,
+    );
+  } finally {
+    console.info = originalInfo;
+    console.error = originalError;
   }
 });
 

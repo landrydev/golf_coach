@@ -1,10 +1,17 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { GolferRecordAccessBlocked } from "@/components/consent/GolferRecordAccessBlocked";
+import { golferRecordProcessingConsentCurrent } from "@/lib/consent-enforcement";
 import { requirePageIdentity } from "@/lib/identity";
 import { getCoachPlanForGolfer } from "@/lib/plans";
 import { getOrCreateAccountForIdentity } from "@/lib/repository";
 import styles from "../../../workspace.module.css";
 import { PlanEditorForm } from "./PlanEditorForm";
+
+export const metadata: Metadata = {
+  title: "Edit golfer roadmap | Roadmap",
+};
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +24,9 @@ export default async function EditGolferPlanPage({
   const planPath = `/app/golfers/${encodeURIComponent(golferId)}`;
   const identity = await requirePageIdentity(`${planPath}/edit`);
   const account = await getOrCreateAccountForIdentity(identity);
+  if (!(await golferRecordProcessingConsentCurrent(account.id))) {
+    return <GolferRecordAccessBlocked />;
+  }
   const model = await getCoachPlanForGolfer(account.id, golferId);
   if (!model) notFound();
 

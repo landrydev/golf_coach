@@ -1,4 +1,5 @@
 import { requirePageIdentity } from "@/lib/identity";
+import type { Metadata } from "next";
 import {
   getOrCreateAccountForIdentity,
   listPackagesPage,
@@ -8,6 +9,10 @@ import styles from "../workspace.module.css";
 import { PackageForm } from "./PackageForm";
 import { PackageLifecycleControls } from "./PackageLifecycleControls";
 import { canAdvanceOffsetPage, MAX_PAGE_OFFSET } from "@/lib/pagination";
+
+export const metadata: Metadata = {
+  title: "Coaching packages | Roadmap",
+};
 
 export const dynamic = "force-dynamic";
 

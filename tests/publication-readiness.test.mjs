@@ -5,6 +5,8 @@ import {
   publicationBlockers,
 } from "../lib/publication-readiness.ts";
 import {
+  grantSyntheticGolferRecordConsent,
+  grantSyntheticRoadmapSharingConsent,
   startD1Worker,
   writeHeaders,
 } from "./support/d1-worker.mjs";
@@ -129,6 +131,7 @@ test(
       "PUT",
     );
     assert.equal(profile.status, 200);
+    await grantSyntheticGolferRecordConsent(worker, coach);
 
     const packageResponse = await writeJson(worker, "/api/packages", {
       title: "Publication readiness series",
@@ -186,6 +189,7 @@ test(
     });
     assert.equal(golferResponse.status, 201);
     const workspace = await golferResponse.json();
+    await grantSyntheticRoadmapSharingConsent(worker, coach, workspace.golfer.id);
 
     await worker.inspect([
       {

@@ -57,8 +57,11 @@ The inventory records a name, purpose, environment, provider owner, last rotatio
 | Abuse-limit pepper | Runtime secret | Unique and independent per environment; rotation resets non-reversible short-lived counters and must be correlated with the release |
 | Owner-private access pepper | Runtime secret | At least 32 characters, unique and independent; rotate atomically with every owner-email HMAC digest |
 | Owner-private email digests | Runtime configuration | Comma-separated HMAC-SHA-256 hex digests only; never plaintext email |
+| Data-request operator access pepper | Runtime secret | At least 32 characters and independent from product-access and abuse-control peppers; rotate atomically with every privacy-operator digest |
+| Data-request operator email digests | Runtime configuration | Unique comma-separated HMAC-SHA-256 digests of normalized SIWC email only; missing/invalid configuration fails the operator API closed and never falls back to owner or subscriber status |
 | Subscription access statuses | Runtime configuration | Explicit owner-approved status list; there is no code default |
 | Checkout enabled policy | Runtime configuration | `BILLING_CHECKOUT_ENABLED` must be the exact canonical `true` or `false`; missing or malformed values fail health and keep Checkout unavailable |
+| Consent policy registry | Runtime configuration | `CONSENT_POLICY_REGISTRY_JSON` contains only exact owner-approved purpose versions, descriptions, and subject types. Missing/invalid/unlisted entries grant nothing; a wording change requires a version change. Configuration permits recording choices but does not enable optional processing. |
 | Stripe secret key | Runtime secret | Test/live modes separated; least privilege where provider permits; rotate on suspected exposure |
 | Stripe webhook secret | Runtime secret | Endpoint- and environment-specific; verify against raw body; rotate with overlap/replay plan |
 | Stripe Checkout Price ID | Runtime configuration, not a secret | `STRIPE_CHECKOUT_PRICE_ID` must identify the exact approved product/price; browser values never override it |
@@ -305,6 +308,26 @@ Immediately classify whether the event involves cross-tenant access, raw capabil
 - Never follow or scrape the destination to infer a sale.
 
 ### Data access, correction, export, or deletion request
+
+Use the bounded [data-request operator workflow](DATA_REQUEST_OPERATOR_WORKFLOW.md)
+for queue review, one-request count-only dry-run inventory, and non-destructive
+status changes. Its independent SIWC/HMAC role, exact-version compare-and-swap,
+idempotent receipt, and audit events do not authorize or perform fulfillment,
+export delivery, deletion, account-state changes, or policy decisions.
+
+The queue uses strict newest-first keyset pages (default 50, maximum 100), so
+old in-progress work cannot conceal new submissions. Treat
+`excludedOrphanCount` or `excludedFutureDatedCount` above zero as a data-quality
+signal: preserve safe evidence, investigate through an approved restricted
+path, and do not place excluded request identifiers into routine tickets or
+logs. Identity-verification-required, verified, in-progress, denied, cancelled,
+fulfilled, and failed detail is read-only. The sole marker is `submitted` ->
+`identity_verification_required`; it does not attest verification or write
+verification evidence. Verification, processing, denial, cancellation,
+fulfillment, and deletion remain unavailable until Aaron has approved method,
+policy, evidence, roles, and recovery. Repeated operator calls are bounded at
+60 per trusted network and 30 per authorized operator digest per five minutes
+before queue audit, inventory, or transition work.
 
 - Record the request and verify requester authority through the approved channel.
 - Determine scope across SIWC mapping, D1, R2, share sessions/capabilities, exports, audit/log records, backups, and Stripe-held billing records.

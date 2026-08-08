@@ -9,13 +9,17 @@
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "vinext start",
-    "test": "npm run build && node --experimental-transform-types --test",
+    "test": "npm run build && npm run verify:release-artifacts && node --experimental-transform-types --test",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "typecheck": "tsc --noEmit --pretty false",
     "verify": "npm run lint && npm run typecheck && npm test",
     "audit:production": "npm audit --omit=dev",
     "db:generate": "drizzle-kit generate",
+    "exercise:capacity:local": "npm run build && node scripts/local-synthetic-capacity-exercise.mjs",
     "exercise:recovery:local": "node scripts/local-synthetic-recovery-exercise.mjs",
+    "generate:supply-chain-evidence": "node scripts/generate-supply-chain-evidence.mjs",
+    "verify:release-archive": "node scripts/verify-release-archive.mjs",
+    "verify:release-artifacts": "node scripts/release-artifact-integrity.mjs",
     "verify:release-integrity": "node scripts/release-integrity-check.mjs"
   },
   "dependencies": {

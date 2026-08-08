@@ -3,8 +3,15 @@ import type { PlanViewModel } from "./types";
 import { GolferChoices } from "./GolferChoices";
 import { CloseRoadmap } from "./CloseRoadmap";
 import { safeCoachAccent } from "@/lib/colors";
+import { buildCoachContactMailtoUri } from "@/lib/mailto";
 
-export function PlanView({ model, preview = false }: { model: PlanViewModel; preview?: boolean }) {
+type PlanViewProps = {
+  model: PlanViewModel;
+  preview?: boolean;
+  embedded?: boolean;
+};
+
+export function PlanView({ model, preview = false, embedded = false }: PlanViewProps) {
   const currentPhase =
     model.phases.find((phase) => phase.status === "active") ??
     model.phases.find((phase) => phase.status === "paused") ??
@@ -18,6 +25,9 @@ export function PlanView({ model, preview = false }: { model: PlanViewModel; pre
     (a, b) => (b.happenedAt ?? 0) - (a.happenedAt ?? 0),
   )[0];
   const accent = safeCoachAccent(model.coach.accentColor);
+  const coachMailtoUri = buildCoachContactMailtoUri(model.coach.contactEmail);
+  const ContentElement = embedded ? "div" : "main";
+  const PriorityHeading = embedded ? "h2" : "h1";
 
   return (
     <div className={styles.plan} style={{ "--coach-accent": accent } as React.CSSProperties}>
@@ -52,7 +62,7 @@ export function PlanView({ model, preview = false }: { model: PlanViewModel; pre
         <a href="#review">Phase review</a>
       </nav>
 
-      <main id="plan-content">
+      <ContentElement id="plan-content">
         <section className={`${styles.section} ${styles.now}`} id="now">
           <div className={styles.sectionHeading}>
             <span>
@@ -63,11 +73,13 @@ export function PlanView({ model, preview = false }: { model: PlanViewModel; pre
                   : "Now"}
               {currentPhase ? ` · Phase ${currentPhase.number}` : " · Plan setup"}
             </span>
-            <h1>{model.priority?.title || currentPhase?.title || model.plan.title}</h1>
-              <p>
-                {model.priority?.rationale ||
-                  currentPhase?.rationale ||
-                  currentPhase?.purpose ||
+            <PriorityHeading>
+              {model.priority?.title || currentPhase?.title || model.plan.title}
+            </PriorityHeading>
+            <p>
+              {model.priority?.rationale ||
+                currentPhase?.rationale ||
+                currentPhase?.purpose ||
                 "Your coach is preparing the first clear priority for this plan."}
             </p>
           </div>
@@ -417,9 +429,9 @@ export function PlanView({ model, preview = false }: { model: PlanViewModel; pre
               externalActionUrl={model.coachingPackage?.externalActionUrl}
               preview={preview}
             />
-          ) : model.coach.contactEmail ? (
+          ) : coachMailtoUri ? (
             <div className={styles.choiceLinks}>
-              <a href={`mailto:${model.coach.contactEmail}`}>Ask {model.coach.displayName}</a>
+              <a href={coachMailtoUri}>Ask {model.coach.displayName}</a>
               <span>Review later</span>
               <span>Request reassessment</span>
               <span>Practise independently</span>
@@ -427,7 +439,7 @@ export function PlanView({ model, preview = false }: { model: PlanViewModel; pre
             </div>
           ) : null}
         </section>
-      </main>
+      </ContentElement>
 
       <footer className={styles.footer}>
         <div>

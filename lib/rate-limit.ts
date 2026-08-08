@@ -13,7 +13,9 @@ type AbuseLimit = {
     | "billing_portal_account"
     | "billing_reconcile_account"
     | "data_export_account"
-    | "data_request_account";
+    | "data_request_account"
+    | "data_request_operator_network"
+    | "data_request_operator_identity";
   maximum: number;
   windowSeconds: number;
 };
@@ -33,6 +35,16 @@ export const ABUSE_LIMITS = {
   billingReconcileAccount: limit("billing_reconcile_account", 6, 15 * 60),
   dataExportAccount: limit("data_export_account", 3, 60 * 60),
   dataRequestAccount: limit("data_request_account", 10, 60 * 60),
+  dataRequestOperatorNetwork: limit(
+    "data_request_operator_network",
+    60,
+    5 * 60,
+  ),
+  dataRequestOperatorIdentity: limit(
+    "data_request_operator_identity",
+    30,
+    5 * 60,
+  ),
 } as const satisfies Record<string, AbuseLimit>;
 
 type CounterRow = { request_count: number };

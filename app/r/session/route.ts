@@ -1,5 +1,12 @@
 import { cookies } from "next/headers";
-import { assertSameOrigin, cleanText, errorResponse, readJson, RequestError } from "@/lib/http";
+import {
+  assertExactObjectKeys,
+  assertSameOrigin,
+  cleanText,
+  errorResponse,
+  readJson,
+  RequestError,
+} from "@/lib/http";
 import {
   createShareSession,
   endShareSession,
@@ -10,14 +17,23 @@ import {
   clientNetworkSubject,
   enforceAbuseLimit,
 } from "@/lib/rate-limit";
+import { requestCorrelationId } from "@/lib/request-correlation";
 
 const SHARE_COOKIE = "roadmap_share";
 
 export async function POST(request: Request) {
+  const requestId = requestCorrelationId(request);
   let sameOriginAccepted = false;
   try {
     assertSameOrigin(request);
     sameOriginAccepted = true;
+
+    await enforceAbuseLimit(
+      ABUSE_LIMITS.shareExchangeNetwork,
+      clientNetworkSubject(request),
+    );
+    const payload = asObject(await readJson<unknown>(request));
+    assertExactObjectKeys(payload, ["token"]);
 
     const cookieStore = await cookies();
     const existingSessionToken = cookieStore.get(SHARE_COOKIE)?.value;
@@ -25,15 +41,10 @@ export async function POST(request: Request) {
       await endShareSession(
         existingSessionToken,
         "replaced by a new share exchange",
-        request.headers.get("cf-ray"),
+        requestId,
       );
     }
 
-    await enforceAbuseLimit(
-      ABUSE_LIMITS.shareExchangeNetwork,
-      clientNetworkSubject(request),
-    );
-    const payload = await readJson<{ token?: unknown }>(request);
     const shareVerifier = cleanText(payload.token, "token", {
       required: true,
       max: 96,
@@ -44,7 +55,7 @@ export async function POST(request: Request) {
     );
     const session = await createShareSession(
       shareVerifier,
-      request.headers.get("cf-ray"),
+      requestId,
     );
     if (!session) {
       throw new RequestError(404, "plan_unavailable", "This private plan is unavailable.");
@@ -63,11 +74,13 @@ export async function POST(request: Request) {
         headers: {
           "Cache-Control": "private, no-store, max-age=0",
           "Set-Cookie": sessionCookie(request, session.rawToken, maxAge),
+          "X-Request-ID": requestId,
         },
       },
     );
   } catch (error) {
     const response = errorResponse(error);
+    response.headers.set("X-Request-ID", requestId);
     if (sameOriginAccepted) {
       response.headers.set("Cache-Control", "private, no-store, max-age=0");
       response.headers.set("Set-Cookie", expiredSessionCookie(request));
@@ -77,6 +90,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const requestId = requestCorrelationId(request);
   let sameOriginAccepted = false;
   try {
     assertSameOrigin(request);
@@ -87,7 +101,7 @@ export async function DELETE(request: Request) {
       await endShareSession(
         sessionToken,
         "closed by golfer",
-        request.headers.get("cf-ray"),
+        requestId,
       );
     }
 
@@ -96,16 +110,25 @@ export async function DELETE(request: Request) {
       headers: {
         "Cache-Control": "private, no-store, max-age=0",
         "Set-Cookie": expiredSessionCookie(request),
+        "X-Request-ID": requestId,
       },
     });
   } catch (error) {
     const response = errorResponse(error);
+    response.headers.set("X-Request-ID", requestId);
     if (sameOriginAccepted) {
       response.headers.set("Cache-Control", "private, no-store, max-age=0");
       response.headers.set("Set-Cookie", expiredSessionCookie(request));
     }
     return response;
   }
+}
+
+function asObject(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new RequestError(400, "invalid_body", "Request body must be a JSON object.");
+  }
+  return value as Record<string, unknown>;
 }
 
 function sessionCookie(request: Request, value: string, maxAge: number): string {

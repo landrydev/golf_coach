@@ -1,11 +1,20 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ConsentPurposeControl } from "@/components/consent/ConsentPurposeControl";
+import { GolferRecordAccessBlocked } from "@/components/consent/GolferRecordAccessBlocked";
+import { golferRecordProcessingConsentCurrent } from "@/lib/consent-enforcement";
+import { listConsentCurrentState } from "@/lib/consent-repository";
 import { getCoachGolferRecord } from "@/lib/golfer-lifecycle";
 import { requirePageIdentity } from "@/lib/identity";
 import { getCoachPlanForGolfer } from "@/lib/plans";
 import { getOrCreateAccountForIdentity } from "@/lib/repository";
 import styles from "../../../workspace.module.css";
 import { GolferSettingsForm } from "./GolferSettingsForm";
+
+export const metadata: Metadata = {
+  title: "Golfer settings | Roadmap",
+};
 
 export const dynamic = "force-dynamic";
 
@@ -17,11 +26,18 @@ export default async function GolferSettingsPage({
   const { golferId } = await params;
   const identity = await requirePageIdentity(`/app/golfers/${encodeURIComponent(golferId)}/settings`);
   const account = await getOrCreateAccountForIdentity(identity);
-  const [golfer, plan] = await Promise.all([
+  if (!(await golferRecordProcessingConsentCurrent(account.id))) {
+    return <GolferRecordAccessBlocked />;
+  }
+  const [golfer, plan, consentStates] = await Promise.all([
     getCoachGolferRecord(account.id, golferId),
     getCoachPlanForGolfer(account.id, golferId),
+    listConsentCurrentState(account.id, { type: "golfer", golferId }),
   ]);
   if (!golfer || !plan) notFound();
+  const roadmapSharingConsent = consentStates.find(
+    (state) => state.purpose === "roadmap_sharing",
+  )!;
 
   return (
     <div className={styles.page}>
@@ -35,6 +51,13 @@ export default async function GolferSettingsPage({
           Back to plan
         </Link>
       </header>
+      <ConsentPurposeControl
+        heading="Private roadmap sharing"
+        state={roadmapSharingConsent}
+        subjectType="golfer"
+        golferId={golferId}
+      />
+      <div style={{ height: "1rem" }} />
       <GolferSettingsForm
         golferId={golfer.id}
         planId={plan.plan.id}

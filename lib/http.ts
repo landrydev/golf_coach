@@ -1,4 +1,6 @@
 import { safeErrorType } from "./log-safety.ts";
+import { isSafeMailtoAddress } from "./mailto.ts";
+import { resolveApplicationOrigin } from "./canonical-origin.ts";
 
 const MAX_JSON_BYTES = 64 * 1024;
 
@@ -14,17 +16,33 @@ export class RequestError extends Error {
   }
 }
 
-export function assertSameOrigin(request: Request): void {
+export function assertSameOrigin(
+  request: Request,
+  configuredApplicationUrl = process.env.APP_URL,
+): void {
   const url = new URL(request.url);
   const origin = request.headers.get("origin");
   const fetchSite = request.headers.get("sec-fetch-site");
+  const applicationOrigin = resolveApplicationOrigin(configuredApplicationUrl, url);
+
+  if (!applicationOrigin.ok) {
+    throw new RequestError(
+      503,
+      applicationOrigin.code,
+      "The application origin is unavailable.",
+    );
+  }
 
   // Every browser mutation in this application is initiated by a same-origin
   // form submission or fetch. Failing closed when Origin is absent prevents
   // non-browser clients and legacy form paths from bypassing the CSRF boundary
   // merely by omitting both Fetch Metadata and Origin. Stripe's signed webhook
   // is intentionally the only mutating route that does not call this helper.
-  if (!origin || origin !== url.origin) {
+  if (
+    url.origin !== applicationOrigin.origin ||
+    !origin ||
+    origin !== applicationOrigin.origin
+  ) {
     throw new RequestError(403, "cross_origin_request", "Request origin is not allowed.");
   }
   if (fetchSite && fetchSite !== "same-origin") {
@@ -59,6 +77,22 @@ export async function readJson<T>(request: Request): Promise<T> {
   } catch {
     throw new RequestError(400, "invalid_json", "Request body is not valid JSON.");
   }
+}
+
+export function assertExactObjectKeys(
+  value: Record<string, unknown>,
+  allowed: readonly string[],
+  field = "Request",
+): void {
+  const allowedKeys = new Set(allowed);
+  const unexpected = Object.keys(value).filter((key) => !allowedKeys.has(key));
+  if (unexpected.length === 0) return;
+
+  throw new RequestError(
+    400,
+    "unexpected_field",
+    `${field} contains ${unexpected.length === 1 ? "an unsupported field" : "unsupported fields"}.`,
+  );
 }
 
 async function readLimitedUtf8(request: Request, maximumBytes: number): Promise<string> {
@@ -121,7 +155,7 @@ export function cleanText(
 
 export function cleanEmail(value: unknown, field = "email"): string {
   const email = cleanText(value, field, { required: true, max: 254 }).toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (!isSafeMailtoAddress(email)) {
     throw new RequestError(400, "invalid_field", `${field} must be a valid email address.`);
   }
   return email;

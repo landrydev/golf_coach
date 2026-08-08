@@ -1,4 +1,5 @@
 import {
+  assertExactObjectKeys,
   cleanExternalUrl,
   cleanText,
   RequestError,
@@ -38,7 +39,7 @@ export function parsePackageInput(
 ): CreatePackageInput {
   const payload = asObject(value);
   rejectClientAccountId(payload);
-  assertOnlyFields(payload, PACKAGE_FIELDS);
+  assertExactObjectKeys(payload, PACKAGE_FIELDS);
 
   const description = optionalText(payload.description, "description", 1_500);
   const status = enumValue(
@@ -170,20 +171,6 @@ function asObject(value: unknown): Record<string, unknown> {
     );
   }
   return value as Record<string, unknown>;
-}
-
-function assertOnlyFields(
-  payload: Record<string, unknown>,
-  allowed: readonly string[],
-): void {
-  const unexpected = Object.keys(payload).filter((key) => !allowed.includes(key));
-  if (unexpected.length > 0) {
-    throw new RequestError(
-      400,
-      "unexpected_field",
-      `Request contains unsupported field${unexpected.length === 1 ? "" : "s"}: ${unexpected.join(", ")}.`,
-    );
-  }
 }
 
 function optionalText(value: unknown, field: string, max: number): string {

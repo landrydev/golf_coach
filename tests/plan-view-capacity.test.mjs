@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  grantSyntheticGolferRecordConsent,
+  grantSyntheticRoadmapSharingConsent,
   identityHeaders,
   startD1Worker,
   testOrigin,
@@ -23,6 +25,7 @@ test(
         contactEmail: identity.email,
       });
       assert.equal(profile.status, 200);
+      await grantSyntheticGolferRecordConsent(worker, identity);
     }
 
     const createResponse = await jsonWrite(
@@ -34,6 +37,7 @@ test(
     );
     assert.equal(createResponse.status, 201);
     const workspace = await createResponse.json();
+    await grantSyntheticRoadmapSharingConsent(worker, coachA, workspace.golfer.id);
     const [currentPhase, historyPhase] = workspace.phases;
     assert.equal(currentPhase.status, "active");
 
@@ -58,6 +62,7 @@ test(
     assert.equal(coachPage.status, 200);
     const coachHtml = await coachPage.text();
     assertBoundedSnapshot(coachHtml);
+    assertDocumentSemantics(coachHtml, "Golfer plan | Roadmap");
 
     const otherTenantPage = await worker.dispatch(
       `/app/golfers/${workspace.golfer.id}`,
@@ -97,6 +102,7 @@ test(
     assert.equal(golferPage.status, 200);
     const golferHtml = await golferPage.text();
     assertBoundedSnapshot(golferHtml);
+    assertDocumentSemantics(golferHtml, "Private coaching plan | Roadmap");
     assert.doesNotMatch(golferHtml, /Coach Capacity B/);
 
     await insertExcessPhases(worker, {
@@ -150,6 +156,16 @@ function assertBoundedSnapshot(html) {
     "CAP-EVIDENCE-02",
     ...numberedMarkers("EVIDENCE", 5, 22),
   ]);
+}
+
+function assertDocumentSemantics(html, title) {
+  assert.equal(html.match(/<main\b/gi)?.length ?? 0, 1, `${title}: one main landmark`);
+  assert.equal(html.match(/<h1\b/gi)?.length ?? 0, 1, `${title}: one level-one heading`);
+  assert.match(html, new RegExp(`<title>${escapeRegExp(title)}</title>`, "i"));
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function markers(html, kind) {

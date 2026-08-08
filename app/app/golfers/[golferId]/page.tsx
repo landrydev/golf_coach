@@ -1,6 +1,9 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ConsentPurposeControl } from "@/components/consent/ConsentPurposeControl";
 import { PlanView } from "@/components/plan/PlanView";
+import { listConsentCurrentState } from "@/lib/consent-repository";
 import { requirePageIdentity } from "@/lib/identity";
 import {
   getCoachPlanForGolfer,
@@ -11,8 +14,12 @@ import {
 import { publicationBlockers } from "@/lib/publication-readiness";
 import { getOrCreateAccountForIdentity } from "@/lib/repository";
 import styles from "../../workspace.module.css";
-import { PublishControls } from "./PublishControls";
 import { LivingPlanForms } from "./LivingPlanForms";
+import { PublishControls } from "./PublishControls";
+
+export const metadata: Metadata = {
+  title: "Golfer plan | Roadmap",
+};
 
 export const dynamic = "force-dynamic";
 
@@ -24,12 +31,39 @@ export default async function GolferPlanPage({
   const { golferId } = await params;
   const identity = await requirePageIdentity(`/app/golfers/${encodeURIComponent(golferId)}`);
   const account = await getOrCreateAccountForIdentity(identity);
+  const accountConsentStates = await listConsentCurrentState(account.id, {
+    type: "account",
+    golferId: null,
+  });
+  const golferRecordConsent = accountConsentStates.find(
+    (state) => state.purpose === "golfer_record",
+  );
+  if (!golferRecordConsent?.effectiveGranted) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.emptyState}>
+          <h1>Golfer records are unavailable.</h1>
+          <p>
+            A current configured golfer-record authorization is required before ordinary
+            instructor access can resume.
+          </p>
+          <Link className={styles.primaryButton} href="/app/settings/data">
+            Open data controls
+          </Link>
+        </div>
+      </div>
+    );
+  }
   const model = await getCoachPlanForGolfer(account.id, golferId);
   if (!model) notFound();
-  const [shares, responses] = await Promise.all([
+  const [shares, responses, golferConsentStates] = await Promise.all([
     listPlanShares(account.id, model.plan.id),
     listPlanResponses(account.id, model.plan.id),
+    listConsentCurrentState(account.id, { type: "golfer", golferId }),
   ]);
+  const roadmapSharingConsent = golferConsentStates.find(
+    (state) => state.purpose === "roadmap_sharing",
+  )!;
   const golferArchived = model.golfer.status === "archived";
   const editable =
     !golferArchived && !["completed", "archived"].includes(model.plan.status);
@@ -90,7 +124,14 @@ export default async function GolferPlanPage({
             </span>
           </div>
         )}
-        {publishable ? (
+        <div style={{ height: "1rem" }} />
+        <ConsentPurposeControl
+          heading="Private roadmap sharing"
+          state={roadmapSharingConsent}
+          subjectType="golfer"
+          golferId={golferId}
+        />
+        {publishable && roadmapSharingConsent.effectiveGranted ? (
           <>
             <div style={{ height: "1rem" }} />
             <PublishControls
@@ -129,7 +170,7 @@ export default async function GolferPlanPage({
         ) : null}
       </div>
       <div style={{ marginTop: "2rem" }}>
-        <PlanView model={model} preview />
+        <PlanView model={model} preview embedded />
       </div>
     </div>
   );

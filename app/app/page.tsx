@@ -1,4 +1,7 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+import { GolferRecordAccessBlocked } from "@/components/consent/GolferRecordAccessBlocked";
+import { golferRecordProcessingConsentCurrent } from "@/lib/consent-enforcement";
 import { requirePageIdentity } from "@/lib/identity";
 import {
   getOrCreateAccountForIdentity,
@@ -8,12 +11,19 @@ import {
 import { workspaceNextAction } from "@/lib/workspace-next-action";
 import styles from "./workspace.module.css";
 
+export const metadata: Metadata = {
+  title: "Coach overview | Roadmap",
+};
+
 export const dynamic = "force-dynamic";
 
 export default async function WorkspaceOverview() {
   const identity = await requirePageIdentity("/app");
   const firstName = identity.displayName.split(/\s+/)[0] || "Coach";
   const account = await getOrCreateAccountForIdentity(identity);
+  if (!(await golferRecordProcessingConsentCurrent(account.id))) {
+    return <GolferRecordAccessBlocked />;
+  }
   const [summary, recentGolfers] = await Promise.all([
     getWorkspaceSummary(account.id),
     listGolfers(account.id, { limit: 5, includeArchived: false }),

@@ -22,6 +22,18 @@ import type { PlanViewModel } from "@/components/plan/types";
 import { RequestError } from "./http";
 import { assertPublicationReady } from "./publication-readiness";
 import {
+  configuredRoadmapAccessRequirements,
+  requireGolferRecordProcessingConsent,
+  requireRoadmapSharingConsent,
+} from "./consent-enforcement";
+import {
+  currentConsentGrantsCondition,
+  consentGrantRequirementsCurrent,
+  consentGrantTransactionGuard,
+  type ConsentGrantRequirement,
+} from "./consent-repository";
+import { pauseAtSyntheticConcurrencyBarrier } from "./synthetic-concurrency-barrier";
+import {
   createShareSessionToken,
   createShareToken,
   hashShareSessionToken,
@@ -68,6 +80,7 @@ export async function listPlanShares(
   accountId: string,
   planId: string,
 ): Promise<PlanShareSummary[]> {
+  await requireGolferRecordProcessingConsent(accountId);
   const db = getDb();
   const rows = await db
     .select({
@@ -106,6 +119,7 @@ export async function listPlanResponses(
   accountId: string,
   planId: string,
 ): Promise<PlanResponseSummary[]> {
+  await requireGolferRecordProcessingConsent(accountId);
   const db = getDb();
   const rows = await db
     .select({
@@ -134,6 +148,7 @@ export async function getCoachPlan(
   accountId: string,
   planId: string,
 ): Promise<PlanViewModel | null> {
+  await requireGolferRecordProcessingConsent(accountId);
   const db = getDb();
   const [plan] = await db
     .select()
@@ -148,6 +163,7 @@ export async function getCoachPlanForGolfer(
   accountId: string,
   golferId: string,
 ): Promise<PlanViewModel | null> {
+  await requireGolferRecordProcessingConsent(accountId);
   const db = getDb();
   const [plan] = await db
     .select()
@@ -201,6 +217,10 @@ export async function publishPlanAndCreateShare(input: {
       "This exact revision already has a sharing record. Create a new plan revision before publishing again.",
     );
   }
+  const consentRequirements = await requireRoadmapSharingConsent(
+    input.accountId,
+    plan.golferId,
+  );
 
   const publishModel = await assemblePlanView(input.accountId, plan);
   if (!publishModel) {
@@ -235,6 +255,10 @@ export async function publishPlanAndCreateShare(input: {
 
   try {
     await db.batch([
+      consentGrantTransactionGuard(
+        input.accountId,
+        consentRequirements,
+      ),
       db
         .update(shareLinks)
         .set({
@@ -302,6 +326,18 @@ export async function publishPlanAndCreateShare(input: {
       }),
     ]);
   } catch (error) {
+    if (
+      !(await consentGrantRequirementsCurrent(
+        input.accountId,
+        consentRequirements,
+      ))
+    ) {
+      throw new RequestError(
+        409,
+        "current_consent_required",
+        "A current configured authorization is required for this action.",
+      );
+    }
     await rethrowPublishConflict(input, previousLastSharedAt, error);
   }
 
@@ -441,6 +477,7 @@ export async function resolveShareToken(
 ): Promise<{
   model: PlanViewModel;
   accountId: string;
+  golferId: string;
   shareId: string;
   expiresAt: Date | null;
 } | null> {
@@ -474,19 +511,168 @@ export async function resolveShareToken(
     )
     .limit(1);
   if (!plan || plan.publishedRevision !== link.planRevision) return null;
+  const consentRequirements = roadmapAccessRequirementsOrNull(plan.golferId);
+  if (
+    !consentRequirements ||
+    !(await consentRequirementsAreCurrent(link.accountId, consentRequirements))
+  ) {
+    return null;
+  }
 
   const model = await assemblePlanView(link.accountId, plan, {
     expiresAt: toMillis(link.expiresAt),
     sharedAt: toMillis(link.createdAt),
   });
   if (!model) return null;
+  await pauseAtSyntheticConcurrencyBarrier("share-token-after-assembly");
+  if (
+    !(await shareTokenCapabilityCurrent({
+      accountId: link.accountId,
+      golferId: plan.golferId,
+      planId: plan.id,
+      planRevision: link.planRevision,
+      shareId: link.id,
+      tokenHash,
+      requirements: consentRequirements,
+    }))
+  ) {
+    return null;
+  }
 
   return {
     model,
     accountId: link.accountId,
+    golferId: plan.golferId,
     shareId: link.id,
     expiresAt: link.expiresAt,
   };
+}
+
+function roadmapAccessRequirementsOrNull(
+  golferId: string,
+): readonly ConsentGrantRequirement[] | null {
+  try {
+    return configuredRoadmapAccessRequirements(golferId);
+  } catch {
+    return null;
+  }
+}
+
+async function consentRequirementsAreCurrent(
+  accountId: string,
+  requirements: readonly ConsentGrantRequirement[],
+): Promise<boolean> {
+  try {
+    return await consentGrantRequirementsCurrent(accountId, requirements);
+  } catch {
+    return false;
+  }
+}
+
+async function shareTokenCapabilityCurrent(input: {
+  accountId: string;
+  golferId: string;
+  planId: string;
+  planRevision: number;
+  shareId: string;
+  tokenHash: string;
+  requirements: readonly ConsentGrantRequirement[];
+}): Promise<boolean> {
+  const databaseNow = sql`cast((julianday('now') - 2440587.5) * 86400000 as integer)`;
+  const [current] = await getDb()
+    .select({ id: shareLinks.id })
+    .from(shareLinks)
+    .innerJoin(
+      developmentPlans,
+      and(
+        eq(developmentPlans.accountId, shareLinks.accountId),
+        eq(developmentPlans.id, shareLinks.planId),
+      ),
+    )
+    .where(
+      and(
+        eq(shareLinks.accountId, input.accountId),
+        eq(shareLinks.id, input.shareId),
+        eq(shareLinks.planId, input.planId),
+        eq(shareLinks.planRevision, input.planRevision),
+        eq(shareLinks.tokenHash, input.tokenHash),
+        eq(shareLinks.tokenHashAlgorithm, "hmac-sha256-v1"),
+        eq(shareLinks.scope, "golfer_plan_read"),
+        eq(shareLinks.status, "active"),
+        isNull(shareLinks.revokedAt),
+        sql`(${shareLinks.expiresAt} is null or ${shareLinks.expiresAt} > ${databaseNow})`,
+        eq(developmentPlans.accountId, input.accountId),
+        eq(developmentPlans.id, input.planId),
+        eq(developmentPlans.golferId, input.golferId),
+        inArray(developmentPlans.status, ["published", "paused", "completed"]),
+        eq(developmentPlans.publishedRevision, input.planRevision),
+        sql`${developmentPlans.publishedAt} is not null`,
+        currentConsentGrantsCondition(input.accountId, input.requirements),
+      ),
+    )
+    .limit(1);
+  return Boolean(current);
+}
+
+async function shareSessionCapabilityCurrent(input: {
+  accountId: string;
+  golferId: string;
+  planId: string;
+  planRevision: number;
+  shareId: string;
+  linkTokenHash: string;
+  sessionId: string;
+  sessionTokenHash: string;
+  requirements: readonly ConsentGrantRequirement[];
+}): Promise<boolean> {
+  const databaseNow = sql`cast((julianday('now') - 2440587.5) * 86400000 as integer)`;
+  const [current] = await getDb()
+    .select({ id: shareSessions.id })
+    .from(shareSessions)
+    .innerJoin(
+      shareLinks,
+      and(
+        eq(shareLinks.accountId, shareSessions.accountId),
+        eq(shareLinks.id, shareSessions.shareLinkId),
+      ),
+    )
+    .innerJoin(
+      developmentPlans,
+      and(
+        eq(developmentPlans.accountId, shareLinks.accountId),
+        eq(developmentPlans.id, shareLinks.planId),
+      ),
+    )
+    .where(
+      and(
+        eq(shareSessions.accountId, input.accountId),
+        eq(shareSessions.id, input.sessionId),
+        eq(shareSessions.shareLinkId, input.shareId),
+        eq(shareSessions.tokenHash, input.sessionTokenHash),
+        eq(shareSessions.tokenHashAlgorithm, "hmac-sha256-session-v1"),
+        isNull(shareSessions.revokedAt),
+        sql`${shareSessions.expiresAt} > ${databaseNow}`,
+        eq(shareLinks.accountId, input.accountId),
+        eq(shareLinks.id, input.shareId),
+        eq(shareLinks.planId, input.planId),
+        eq(shareLinks.planRevision, input.planRevision),
+        eq(shareLinks.tokenHash, input.linkTokenHash),
+        eq(shareLinks.tokenHashAlgorithm, "hmac-sha256-v1"),
+        eq(shareLinks.scope, "golfer_plan_read"),
+        eq(shareLinks.status, "active"),
+        isNull(shareLinks.revokedAt),
+        sql`(${shareLinks.expiresAt} is null or ${shareLinks.expiresAt} > ${databaseNow})`,
+        eq(developmentPlans.accountId, input.accountId),
+        eq(developmentPlans.id, input.planId),
+        eq(developmentPlans.golferId, input.golferId),
+        inArray(developmentPlans.status, ["published", "paused", "completed"]),
+        eq(developmentPlans.publishedRevision, input.planRevision),
+        sql`${developmentPlans.publishedAt} is not null`,
+        currentConsentGrantsCondition(input.accountId, input.requirements),
+      ),
+    )
+    .limit(1);
+  return Boolean(current);
 }
 
 export async function createShareSession(
@@ -509,8 +695,13 @@ export async function createShareSession(
   const db = getDb();
   const session = await createShareSessionToken();
   const sessionId = newId();
+  const consentRequirements = configuredRoadmapAccessRequirements(resolved.golferId);
   try {
     await db.batch([
+      consentGrantTransactionGuard(
+        resolved.accountId,
+        consentRequirements,
+      ),
       db
       .update(shareLinks)
       .set({
@@ -587,6 +778,7 @@ export async function resolveShareSession(
 ): Promise<{
   model: PlanViewModel;
   accountId: string;
+  golferId: string;
   shareId: string;
   sessionId: string;
   expiresAt: Date;
@@ -636,6 +828,13 @@ export async function resolveShareSession(
     )
     .limit(1);
   if (!plan || plan.publishedRevision !== link.planRevision) return null;
+  const consentRequirements = roadmapAccessRequirementsOrNull(plan.golferId);
+  if (
+    !consentRequirements ||
+    !(await consentRequirementsAreCurrent(link.accountId, consentRequirements))
+  ) {
+    return null;
+  }
 
   const effectiveExpiry = Math.min(
     toMillis(session.expiresAt) ?? now.getTime(),
@@ -646,10 +845,27 @@ export async function resolveShareSession(
     sharedAt: toMillis(link.createdAt),
   });
   if (!model) return null;
+  await pauseAtSyntheticConcurrencyBarrier("share-session-after-assembly");
+  if (
+    !(await shareSessionCapabilityCurrent({
+      accountId: link.accountId,
+      golferId: plan.golferId,
+      planId: plan.id,
+      planRevision: link.planRevision,
+      shareId: link.id,
+      linkTokenHash: link.tokenHash,
+      sessionId: session.id,
+      sessionTokenHash: tokenHash,
+      requirements: consentRequirements,
+    }))
+  ) {
+    return null;
+  }
 
   return {
     model,
     accountId: link.accountId,
+    golferId: plan.golferId,
     shareId: link.id,
     sessionId: session.id,
     expiresAt: session.expiresAt,
@@ -761,8 +977,13 @@ export async function recordGolferResponse(input: {
   const db = getDb();
   const id = newId();
   const occurredAt = new Date();
+  const consentRequirements = configuredRoadmapAccessRequirements(resolved.golferId);
   try {
     await db.batch([
+      consentGrantTransactionGuard(
+        resolved.accountId,
+        consentRequirements,
+      ),
       db
       .update(shareSessions)
       .set({

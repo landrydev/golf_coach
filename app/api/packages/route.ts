@@ -15,7 +15,7 @@ import {
   offsetPaginationMetadata,
   requestOffsetPage,
 } from "@/lib/pagination";
-import { newId } from "@/lib/tokens";
+import { requestCorrelationId } from "@/lib/request-correlation";
 
 export async function GET(request: Request): Promise<Response> {
   try {
@@ -33,7 +33,7 @@ export async function GET(request: Request): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  const requestId = newId();
+  const requestId = requestCorrelationId(request);
   try {
     assertSameOrigin(request);
     const auth = await requireApiIdentity();

@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  grantSyntheticGolferRecordConsent,
+  grantSyntheticRoadmapSharingConsent,
   identityHeaders,
   startD1Worker,
   testOrigin,
@@ -24,6 +26,7 @@ test(
     context.after(() => worker.dispose());
 
     await createProfile(worker, coachA);
+    await grantSyntheticGolferRecordConsent(worker, coachB);
 
     const packageOne = await createPackage(
       worker,
@@ -440,6 +443,7 @@ async function createProfile(worker, identity) {
     accentColor: "#176b55",
   });
   assert.equal(response.status, 200);
+  await grantSyntheticGolferRecordConsent(worker, identity);
 }
 
 async function createPackage(worker, identity, payload) {
@@ -496,7 +500,13 @@ async function createGolfer(worker, identity, displayName, packageId) {
     },
   );
   assert.equal(response.status, 201);
-  return response.json();
+  const workspace = await response.json();
+  await grantSyntheticRoadmapSharingConsent(
+    worker,
+    identity,
+    workspace.golfer.id,
+  );
+  return workspace;
 }
 
 function packagePayload(title, isDefault = true) {

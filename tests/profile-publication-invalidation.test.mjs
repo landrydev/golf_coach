@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  grantSyntheticGolferRecordConsent,
+  grantSyntheticRoadmapSharingConsent,
   identityHeaders,
   startD1Worker,
   testOrigin,
@@ -391,6 +393,7 @@ async function saveProfile(worker, identity, payload) {
     payload,
   );
   assert.equal(response.status, 200);
+  await grantSyntheticGolferRecordConsent(worker, identity);
   return response.json();
 }
 
@@ -441,7 +444,13 @@ async function createGolfer(worker, identity, displayName) {
     },
   );
   assert.equal(response.status, 201);
-  return response.json();
+  const workspace = await response.json();
+  await grantSyntheticRoadmapSharingConsent(
+    worker,
+    identity,
+    workspace.golfer.id,
+  );
+  return workspace;
 }
 
 async function publish(worker, identity, planId, revision, recipient) {
