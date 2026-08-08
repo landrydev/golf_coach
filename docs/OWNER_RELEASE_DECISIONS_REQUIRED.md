@@ -14,7 +14,7 @@ copy does not claim a staffed public service.
 | Decision | Current state | Why |
 |---|---|---|
 | `OWNER-SEC-001` credential containment | **READY FOR DECISION** | Exact contained operation is known; Aaron's explicit authority is required before rotating/revoking the exposed credential |
-| `OWNER-SCOPE-001` product/design/content baseline | **READY FOR REVIEW** | Exact version 5 candidate and residual-risk records exist; Aaron may approve, modify, or reject the bounded baseline |
+| `OWNER-SCOPE-001` product/design/content baseline | **READY FOR REVIEW** | Exact version 6 candidate and residual-risk records exist; Aaron may approve, modify, or reject the bounded baseline |
 | `OWNER-OPS-001` operators and contacts | **PREREQUISITE MISSING** | Names, entity, routes, and public contacts must be supplied |
 | `OWNER-COMM-001` offer and consequences | **PREREQUISITE MISSING** | Exact policy and Stripe Product/Price are not supplied or validated |
 | `OWNER-PRIV-001` privacy and retention | **PREREQUISITE MISSING** | Versioned policy and qualified Canadian review do not exist |
@@ -46,7 +46,7 @@ Owner approval cannot substitute for missing qualified review, hosted authentica
 
 `[REAL-WORLD VALIDATION REQUIRED]` Selecting the bounded release baseline does not validate demand, usability, pricing, accessibility, coaching outcomes, or real-user comprehension.
 
-**Evidence:** exact owner-only candidate `ROADMAP-SITES-V5-2026-08-08` is pinned to source commit `ef258da53e15b2d516e22c65b24a017965f34dd0`, saved Sites version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_6eb13fe073b88191b6c2d5c50c44ae15`, environment revision 7, and the evidence/limitation records linked below. Requirements traceability still identifies engineering and external-evidence gaps, so approval may be conditional or deferred.
+**Evidence:** exact owner-only candidate `ROADMAP-SITES-V6-2026-08-08` is pinned to source commit `e2a6e344d0cccdb73cde4697beca32ad02743f79`, Sites archive content hash `sha256:0b66689cad4d08639783b85faf4cbc76611317864e3bb644143f56708ba762b9`, saved Sites version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_2c09bb4c47b0819192eba33a8e075edc`, deployment `appgdep_6a7714dd7bbc8191a4b2118e22ee8c97`, environment revision 8, and the evidence/limitation records linked below. Requirements traceability still identifies external, hosted, manual, and owner-decision gaps, so approval may be conditional or deferred.
 
 **Viable choices:** approve the exact bounded baseline with recorded conditions, require specified modifications and a new candidate, or defer approval while owner-only engineering continues.
 
@@ -197,8 +197,8 @@ public-auth-suitability, or live-billing claim is made.
 
 ## Decision 7 — exact-release acceptance
 
-This decision is made only after the candidate URL, source commit, saved Sites
-version, deployment/environment revision, migrations, smoke results, restore result,
+This decision is made only after the candidate URL, source commit, archived build,
+saved Sites version, deployment/environment revision, migrations, smoke results, restore result,
 access policy, known limitations, and residual risks are attached to the release
 evidence record.
 
@@ -206,7 +206,7 @@ evidence record.
 
 > `OWNER-ACCEPT-001`: I reviewed Roadmap release **[exact candidate/version and source commit]** at **[exact URL]** on **[date]**. I accept it for **[owner-only / controlled users / public]** operation under configuration **[revision]**, policies **[versions]**, and residual-risk record **[version]**. Approved operators are **[names]**. Stop/revisit triggers are **[exact triggers]**.
 
-The currently evidenced candidate fields are: `ROADMAP-SITES-V5-2026-08-08`, source commit `ef258da53e15b2d516e22c65b24a017965f34dd0`, saved Sites version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_6eb13fe073b88191b6c2d5c50c44ae15`, environment revision 7, and `https://roadmap-golf-coaching.aar-landry.chatgpt.site`. Those fields describe an owner-only candidate, not a pre-approved release; any later source, configuration, or deployment needs a new exact record.
+The currently evidenced candidate fields are: `ROADMAP-SITES-V6-2026-08-08`, source commit `e2a6e344d0cccdb73cde4697beca32ad02743f79`, Sites archive content hash `sha256:0b66689cad4d08639783b85faf4cbc76611317864e3bb644143f56708ba762b9`, saved Sites version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_2c09bb4c47b0819192eba33a8e075edc`, deployment `appgdep_6a7714dd7bbc8191a4b2118e22ee8c97`, environment revision 8, signed-out `401` results for `/`, `/app`, and `/api/operations/health`, zero events in the immediate error-only Worker-log query, and `https://roadmap-golf-coaching.aar-landry.chatgpt.site`. Those fields describe an owner-only candidate, not a pre-approved release; any later source, configuration, or deployment needs a new exact record.
 
 **Consequence of deferral:** deployment and technical verification remain useful
 evidence, but the production-completion goal remains active and no accepted-live-V1
