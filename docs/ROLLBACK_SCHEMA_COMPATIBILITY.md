@@ -19,22 +19,22 @@ or restore an exposed secret.
 
 | Field | Exact recorded value / status |
 |---|---|
-| Record ID | `RB-CANDIDATE-009` |
-| Candidate | `ROADMAP-SITES-V9-2026-08-08` |
-| Source and runtime release ID | `6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d` |
-| Local source package | `outputs/roadmap-sites-v9-6b48fae.tar.gz`; gzip SHA-256 `8b3d0b13f03f0b13cd10602d24af09bf17c34afdcb4cf73518b2b0d857d59e22`; 2,965,984 bytes; 61 tar entries/49 files; the release-time exact-build comparison passed and found all 10 migrations. A later isolated clean build passed behavior but did not byte-match this archive, so deterministic rebuilding remains unproved for version 9. |
-| Sites archive content | `sha256:0b3986dc73b1d06539dc85900dfd959549d92bcceb812c231a418766d29411fb`; 49 files; 6,737,920 bytes |
-| Saved Sites version | `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_58bb67e8e23c8191a584540a09e363c5` |
-| Successful deployment | `appgdep_6a7768f92c588191934eda8abea6d6b4`; final status `succeeded`, provider `updated_at` `2026-08-08T17:36:53.329945+00:00` |
-| Environment revision used by that deployment | `11` |
+| Record ID | `RB-CANDIDATE-010` |
+| Candidate | `ROADMAP-SITES-V10-2026-08-08` |
+| Source and runtime release ID | `ae35ef25ed46563f6b8f09f5c22dc12581eff8b1` |
+| Local source package | Submitted archive; gzip SHA-256 `5d67423e253009714bebe85bba118ded922c9f6b30b926f2af7bd0e3d05cd953`; 2,965,930 bytes; 61 tar entries/49 files; all 10 migrations |
+| Sites archive content | `sha256:0534d35af6fcdd8a0f104c5bb21fab5edd0641ec952bd32ae7a3f9c024c62033`; 49 files; 6,737,920 bytes |
+| Saved Sites version | `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_1007b9b4ea8c8191968d55991abf374c` |
+| Successful deployment | `appgdep_6a779cabaec4819191b0cf1e815ce2e5`; deployment action succeeded at approximately `2026-08-08T21:16:38Z`; final status remained `succeeded`, provider `updated_at` `2026-08-08T21:17:13.525116+00:00` |
+| Environment revision used by that deployment | `12` |
 | Access boundary | Owner-only at `https://roadmap-golf-coaching.aar-landry.chatgpt.site` |
-| Schema journal | `0000` through `0009`; no additional SQL migration appears in the version-9 package relative to version 8; version 7 does not enforce the consent requirements introduced in version 8 and retained by the current candidate |
+| Schema journal | `0000` through `0009`; no additional SQL migration or application/runtime source change appears relative to version 9; version 7 does not enforce the consent requirements introduced in version 8 and retained by the current candidate |
 | Package-lock SHA-256 | `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d` |
-| Hosted containment/log continuity | HTTP `/` redirected to HTTPS; four signed-out HTTPS probes returned `401` with `no-store`/`no-referrer`. A pre-v9 24-event sanitized log sample contained only `fetch`/`ok` events (23 `200`, one handled `403`) and no scheduled event. Post-v9 bounded queries found zero error-level/exception/crash events, one handled `403` in the broad error filter, and no scheduled event. None of this is rollback, authenticated-health, scheduler, or completeness evidence. |
-| Local recovery observation | The exact-version-9 exercise applied all 10 migrations, restored 2 synthetic tenants and 3 private synthetic objects, enforced child-process secret isolation, and matched snapshot SHA-256 `34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54`. This is local D1/R2-compatible evidence, not hosted/provider-native recovery. |
+| Hosted containment/log continuity | Four post-v10 signed-out HTTPS probes returned `401` with `no-store`/`no-referrer`. The final 30-minute query at `2026-08-08T21:31:05.892Z`, after three expected five-minute boundaries, returned zero events and zero scheduled events. This strengthens the suspected scheduler gap but remains inconclusive because completeness and scheduled-event visibility are unconfirmed. Predecessor v9/v8 samples remain historical; none of this is rollback, authenticated-health, or redaction evidence. |
+| Local recovery observation | The post-deployment exact-version-10 runtime exercise applied all 10 migrations, covered 31/31 application tables, restored 2 synthetic tenants and 3 private synthetic objects, enforced child-process secret isolation, and matched snapshot SHA-256 `34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54`. This remains local synthetic evidence, not hosted/provider-native recovery. |
 | Exercise status | **IMMUTABLE CANDIDATE REGISTERED; NOT ROLLBACK- OR HOSTED-RESTORE-TESTED** |
 
-### Undeployed successor-source build observation
+### Prospective supply-control lineage
 
 Commit `66f5203a913f01c8da20555feebdbb99152c052c` was checked in two independently
 created detached clean worktrees. Each `npm ci --no-audit` installed 501 locked
@@ -47,27 +47,41 @@ manifest pairs;
 zero differences remained after normalization. This is normalized reproducibility,
 not byte identity. See the [successor reproducibility record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md).
 
-The successor commit is not saved or deployed in Sites, has no registered runtime
-or environment revision, has not been exercised against hosted state, and is not a
-rollback target. It does not alter any version-9 identifier, the version-9 failed
-byte-identity result, or the hosted owner-only status.
+Exact commit `66f5203a...` remains unsaved and undeployed and is not a rollback
+target. Current version 10 is a later descendant that contains the comparator and LF
+control, but the exact-commit exercise does not become an independent two-build
+comparison of `ae35ef25...`. It does not alter the historical version-9 failed
+byte-identity result or prove hosted rollback/restore.
 
 ### Immediate historical predecessor and potential rollback baseline
 
 | Field | Exact recorded value / status |
 |---|---|
-| Record ID | `RB-BASE-008` |
-| Candidate | `ROADMAP-SITES-V8-2026-08-08` |
-| Source and runtime release ID | `cf117fef8ea42272d0b7e2358fe4197c024f86a7` |
-| Local source package | Gzip SHA-256 `99d615410c2e145e77938f0c5df4449ab8aeb4a544a5c5949fcdafa56a8e1378`; 2,963,266 bytes; 61 tar entries; exact archive verifier passed with 10 migrations |
-| Sites archive content hash | `sha256:9a4119ea60dd64d2a0bf14a55c7e2d27fb3e8ea250f0d064e8bc5a79fb34a87c`; 49 files; 6,737,920 bytes |
-| Saved Sites version | `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_01ba2d860b508191b4d104339921606d` |
-| Successful deployment | `appgdep_6a775b172534819196391fd626e95aa3`; succeeded `2026-08-08T16:36:50.529785+00:00` |
-| Environment revision used by that deployment | `10` |
+| Record ID | `RB-BASE-009` |
+| Candidate | `ROADMAP-SITES-V9-2026-08-08` |
+| Source and runtime release ID | `6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d` |
+| Local source package | `outputs/roadmap-sites-v9-6b48fae.tar.gz`; gzip SHA-256 `8b3d0b13f03f0b13cd10602d24af09bf17c34afdcb4cf73518b2b0d857d59e22`; 2,965,984 bytes; 61 tar entries/49 files; all 10 migrations. The historical clean rebuild passed behavior but did not byte-match this archive. |
+| Sites archive content hash | `sha256:0b3986dc73b1d06539dc85900dfd959549d92bcceb812c231a418766d29411fb`; 49 files; 6,737,920 bytes |
+| Saved Sites version | `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_58bb67e8e23c8191a584540a09e363c5` |
+| Successful deployment | `appgdep_6a7768f92c588191934eda8abea6d6b4`; final status `succeeded`, provider `updated_at` `2026-08-08T17:36:53.329945+00:00` |
+| Environment revision used by that deployment | `11` |
 | Access boundary | Owner-only at `https://roadmap-golf-coaching.aar-landry.chatgpt.site` |
 | Schema journal | `0000` through `0009` |
 | Package-lock SHA-256 | `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d` |
-| Exercise status | **SUPERSEDED SUCCESSFUL DEPLOYMENT; SAME SCHEMA JOURNAL, BUT NOT A TESTED OR APPROVED VERSION-9 ROLLBACK TARGET** |
+| Exercise status | **SUPERSEDED SUCCESSFUL DEPLOYMENT; APPLICATION/SCHEMA CLASS `N` FROM V10, BUT NOT A TESTED OR APPROVED ROLLBACK TARGET** |
+
+### Earlier version-8 predecessor
+
+`RB-BASE-008` remains immutable historical evidence at commit
+`cf117fef8ea42272d0b7e2358fe4197c024f86a7`, local archive gzip SHA-256
+`99d615410c2e145e77938f0c5df4449ab8aeb4a544a5c5949fcdafa56a8e1378`
+(2,963,266 bytes; 61 entries), Sites content hash
+`sha256:9a4119ea60dd64d2a0bf14a55c7e2d27fb3e8ea250f0d064e8bc5a79fb34a87c`
+(49 files; 6,737,920 bytes), saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_01ba2d860b508191b4d104339921606d`,
+deployment `appgdep_6a775b172534819196391fd626e95aa3`, environment revision
+10, and journal `0000` through `0009`. It is not the immediate v10 rollback target
+and remains unexercised for that purpose.
 
 ### Older privacy-incompatible predecessor
 
@@ -82,31 +96,40 @@ the Sites content hash is
 It is privacy-behaviorally forbidden as an ordinary target after version-8-or-later
 consent-governed use.
 
-The version-9 identifiers bind the current candidate. Version 8 is the immediate
-historical predecessor; versions 7 and 6 are older predecessor evidence. No older
+The version-10 identifiers bind the current candidate. Version 9 is the immediate
+historical predecessor; versions 8, 7, and 6 are older predecessor evidence. No older
 version is a presumed safe target. These records do not prove that Sites can switch
-versions under environment revision 11, that an older application can safely operate
+versions from environment revision 12, that an older application can safely operate
 on current hosted data/configuration, or that application/data recovery will succeed.
 
 ## Current compatibility observation
 
-**Implemented exact-candidate evidence:** Sites version 9 is immutable at commit
-`6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d` with migration journal `0000`
-through `0009`; the package contains no additional SQL migration relative to version
-8. Migration `0008` rebuilds the abuse-rate-limit table to admit the
+**Implemented exact-candidate evidence:** Sites version 10 is immutable at commit
+`ae35ef25ed46563f6b8f09f5c22dc12581eff8b1` with migration journal `0000`
+through `0009`. Git comparison proves no application/runtime source, package-lock,
+binding, or migration difference from version 9. The v10-to-v9 application/schema
+classification is therefore `N`; the provider switch and exact smoke remain
+unexercised, so this classification is not an approval to roll back. Migration
+`0008` rebuilds the abuse-rate-limit table to admit the
 two privacy-operator scopes; migration `0009` rebuilds the existing consent table
 with timestamp-consistency checks while preserving the column shape and indexes.
 The migration path preserves valid rows and fails atomically rather than replacing
 the original table when a contradictory row violates the new constraint.
 
-Version 8 has the same schema journal, but neither source/configuration equivalence
-nor a hosted version switch has been exercised, so version-9 to version-8 rollback
-remains unclassified. Those SQL structures are also backward-readable by version 7,
+Version 9 has the same application/runtime source, package lock, bindings, runtime
+configuration contract, and schema journal. A controlled rollback must preserve the
+current secret values, owner-only access, and `BILLING_CHECKOUT_ENABLED=false`, and
+change only `RELEASE_ID` to
+`6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d`; do not restore environment revision 11
+wholesale. Application rollback is not D1/R2 data restore and does not undo or
+repeat the project-level `OWNER-SEC-001` SIWC credential rotation.
+
+The SQL structures are also backward-readable by version 7,
 but structural
 readability is not sufficient for a safe application rollback. Version 7 lacks the
 version-8 account `golfer_record` and golfer `roadmap_sharing` enforcement on
 ordinary reads, mutations, publication, token exchange, live sessions, and golfer
-responses. Once version 8 or 9 has governed any real data or disclosure through those
+responses. Once version 8, 9, or 10 has governed any real data or disclosure through those
 controls, selecting version 7 would remove a mandatory privacy/authorization
 boundary. The overall rollback is therefore class `B` behaviorally: ordinary
 rollback is forbidden; stop affected writes and use a tested forward fix or
@@ -114,10 +137,11 @@ controlled recovery. No hosted version switch or recovery exercise has been run.
 
 | From state | To target | Schema class | Current conclusion |
 |---|---|---|---|
-| Immutable Sites version 9 | Same saved version 9 | `N` | Existing successful private deployment proves deployability at that time, not rollback or restore |
-| Sites version 9 | `RB-BASE-008` / Sites version 8 | `U` pending exact behavior/configuration classification | Same schema journal alone is insufficient. Do not select until the source/configuration delta and an exact rollback drill prove safety. |
-| Sites version 9 after any version-8-or-later consent-governed use | `RB-BASE-007` / Sites version 7 | `B` (behavioral; SQL structures are backward-readable) | **Ordinary rollback forbidden.** Version 7 lacks the required consent enforcement; use a tested forward fix or controlled recovery. |
-| Sites version 9 | Version 6 or any older predecessor | `B` / unsupported | Multiple behavior and evidence deltas are not an approved rollback path. Use a forward fix or tested recovery. |
+| Immutable Sites version 10 | Same saved version 10 | `N` | Existing successful private deployment proves deployability at that time, not rollback or restore |
+| Sites version 10 | `RB-BASE-009` / Sites version 9 | `N` application/schema; operationally unexercised | Application/runtime source, package lock, bindings, runtime configuration contract, and migration journal are unchanged. Preserve current secrets, owner-only access, and Checkout-off; change only `RELEASE_ID` to the exact v9 commit and run the complete smoke. **Not yet a tested or approved rollback target.** |
+| Sites version 10 | `RB-BASE-008` / Sites version 8 | `U` pending exact behavior/configuration classification | Version 8 is not the immediate baseline. Do not select it merely because the journal matches. |
+| Sites version 10 after any version-8-or-later consent-governed use | `RB-BASE-007` / Sites version 7 | `B` (behavioral; SQL structures are backward-readable) | **Ordinary rollback forbidden.** Version 7 lacks the required consent enforcement; use a tested forward fix or controlled recovery. |
+| Sites version 10 | Version 6 or any older predecessor | `B` / unsupported | Multiple behavior and evidence deltas are not an approved rollback path. Use a forward fix or tested recovery. |
 | Undeployed successor source `66f5203a913f01c8da20555feebdbb99152c052c` | Any deployed version | Not applicable | Normalized build reproducibility alone does not create a saved runtime or rollback target. Do not use this source as a rollback action. |
 | Any future release with migration/configuration changes | Any predecessor | Unclassified | **Do not roll back** until the per-release matrix below is completed and exercised. |
 
@@ -185,7 +209,7 @@ a migration is partially applied, tenant ownership/integrity is uncertain, conse
 or sharing enforcement would regress, capability/secret exposure exists, audit writes
 fail, deletion/export work is in flight without a safe state, Stripe events are
 unresolved, or the target/configuration hashes do not match. In particular, do not
-select version 7 after version 8 or 9 has governed real records or disclosure; preserve
+select version 7 after version 8, 9, or 10 has governed real records or disclosure; preserve
 the current state and use a tested forward fix or recovery path.
 
 `[REAL-WORLD VALIDATION REQUIRED]` No hosted rollback, D1 Time Travel restore, R2

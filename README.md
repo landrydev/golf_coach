@@ -10,20 +10,24 @@ security, privacy, and operational decisions are documented in [`docs/`](docs/).
 
 ## Current private release
 
-Sites version 9 is deployed owner-only at
+Sites version 10 is deployed owner-only at
 <https://roadmap-golf-coaching.aar-landry.chatgpt.site> from release commit
-`6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d`, saved version
-`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_58bb67e8e23c8191a584540a09e363c5`,
-deployment `appgdep_6a7768f92c588191934eda8abea6d6b4`, and environment revision 11.
+`ae35ef25ed46563f6b8f09f5c22dc12581eff8b1`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_1007b9b4ea8c8191968d55991abf374c`,
+deployment `appgdep_6a779cabaec4819191b0cf1e815ce2e5`, and environment revision 12.
 The outer Sites policy allows only the owner; Stripe Checkout remains disabled. This is a production deployment, not
 a public launch or accepted real-user release. Exact evidence and unresolved
 operating dependencies are recorded in
 [`docs/RELEASE_EVIDENCE.md`](docs/RELEASE_EVIDENCE.md).
 
-Exact-commit local synthetic browser evidence records nine Chrome 151 captures of
+The latest exact application-runtime local synthetic browser evidence records nine Chrome 151 captures of
 the landing page, instructor workspace, and golfer plan at 320, 390, and 1440 CSS
 pixels, with no root/body horizontal overflow. See the
 [`ROADMAP-SITES-V9-2026-08-08` responsive evidence](docs/release-evidence/ROADMAP-SITES-V9-2026-08-08-responsive-evidence.json).
+Version 10 has the same application/runtime source, dependency lock, bindings, and
+migration journal as version 9; its changes are release documentation/tooling and a
+test-fixture clock repair. The version-9 captures therefore remain a source-equivalent
+baseline, but they are not relabelled as exact-version-10 hosted or manual evidence.
 Those captures use the local production Worker bundle, local compatible D1, and
 synthetic adults-only fixtures. They are not hosted journey evidence, manual
 accessibility review, assistive-technology evidence, or owner acceptance.

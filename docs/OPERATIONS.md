@@ -16,41 +16,40 @@ not a public launch or Aaron's acceptance. No successful backup/restore or rollb
 exercise, staffed operating assignment, alert-delivery exercise, live Stripe flow,
 qualified legal/privacy review, or controlled real-user validation is claimed.
 
-The current exact private candidate is Sites version 9 at source/runtime release
-`6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d`, saved version
-`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_58bb67e8e23c8191a584540a09e363c5`,
-deployment `appgdep_6a7768f92c588191934eda8abea6d6b4`, and environment
-revision `11`. Final deployment status is `succeeded` with provider `updated_at`
-`2026-08-08T17:36:53.329945+00:00`.
-The saved Sites archive is `sha256:0b3986dc73b1d06539dc85900dfd959549d92bcceb812c231a418766d29411fb`
-with 49 files and 6,737,920 unpacked bytes. The submitted local archive
-`outputs/roadmap-sites-v9-6b48fae.tar.gz` is 2,965,984 bytes with 61 entries and
-gzip SHA-256 `8b3d0b13f03f0b13cd10602d24af09bf17c34afdcb4cf73518b2b0d857d59e22`.
-The release-time exact-build inspection found all 10 migrations, 23 source-mapped
-files, exactly two expected server-manifest credential files, zero unexpected
-credential copies or paths, and `localBuildCompared: true`. A later retrospective
-inspection re-confirmed the value-safe inventory without comparing the subsequently
-rebuilt working-tree `dist`. Separately, an isolated clean build passed the full
-behavior suite but did not byte-match the archive; deterministic rebuilding remains
-open for version 9.
+The current exact private candidate is Sites version 10 at source/runtime release
+`ae35ef25ed46563f6b8f09f5c22dc12581eff8b1`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_1007b9b4ea8c8191968d55991abf374c`,
+deployment `appgdep_6a779cabaec4819191b0cf1e815ce2e5`, and environment
+revision `12`. The deployment action succeeded at approximately
+`2026-08-08T21:16:38Z`; the final status recheck remained `succeeded` with provider
+`updated_at` `2026-08-08T21:17:13.525116+00:00` and no failure message.
+The saved Sites archive is
+`sha256:0534d35af6fcdd8a0f104c5bb21fab5edd0641ec952bd32ae7a3f9c024c62033`
+with 49 files and 6,737,920 unpacked bytes. The submitted local archive is
+2,965,930 bytes with 61 entries/49 files, all ten migrations, and gzip SHA-256
+`5d67423e253009714bebe85bba118ded922c9f6b30b926f2af7bd0e3d05cd953`.
+Checkout remains disabled and access remains owner-only.
 
-A distinct successor-source exercise at commit
+Git comparison from version 9 commit
+`6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d` to version 10 finds no change in
+application/runtime source, schema/migrations, the package lock, bindings, or the
+runtime configuration contract. The intervening changes add documentation,
+LF/reproducibility controls, verification tooling, and a test-fixture clock
+stabilization. This supports application/schema class `N` for the v10-to-v9
+rollback analysis, but is not a hosted rollback, restore, health, or journey result.
+
+The earlier successor-source exercise at commit
 `66f5203a913f01c8da20555feebdbb99152c052c` used two independently created
 detached clean worktrees. Each `npm ci --no-audit` installed 501 locked packages
 and reported five blocked install scripts; each `npm run verify` passed 234/234
-tests. Both builds contained the same 49 paths. The only three raw differences
-were `server/index.js`, `server/ssr/vinext-server.json`, and
-`server/vinext-server.json`; strict allowlisted validation accepted only the
-framework-generated build identifier and within-build matching prerender-secret
-manifest pairs, and
-zero differences remained after normalization. `npm audit --omit=dev` also
-returned zero known production vulnerabilities for the exact successor lock in
-the time-bounded audit. This is
-normalized reproducibility, not byte-identical output. The [successor record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md)
-does not change the failed version-9 byte comparison. The successor is not saved,
-deployed, or a rollback target and does not change the current hosted status.
+tests. Both builds contained the same 49 paths. Strict allowlisted normalization
+of the framework-generated build identifier and matching prerender-manifest pair
+left zero differences. The [successor record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md)
+is exact to `66f5203a...`; version 10 contains that control, but the earlier exercise
+does not become an independent two-build comparison of `ae35ef25...` and does not
+change the failed historical version-9 byte comparison.
 
-After version 9 deployed, plain HTTP `/` redirected to HTTPS. Signed-out HTTPS
+After version 10 deployed, signed-out HTTPS
 probes to `/`, `/app`, `/api/health`, and `/api/operations/health` each returned
 the owner-only outer-policy `401` with `Cache-Control: no-store` and
 `Referrer-Policy: no-referrer`. These are transport/header/anonymous-containment
@@ -94,6 +93,15 @@ query result count was one rather than zero. A separate bounded post-version-9
 query at `2026-08-08T17:43:15.519Z` requested 15 minutes with limit 100 and
 `errors_only=false`; it returned three `fetch`/`ok` events (two `200`, one `403`)
 and zero scheduled events. These short samples do not prove an error-free release.
+
+The final 30-minute post-version-10 Worker-log query completed at
+`2026-08-08T21:31:05.892Z`, 14 minutes 38 seconds after the final deployment began
+and after the `21:20`, `21:25`, and `21:30` expected five-minute boundaries. It
+returned zero events and zero scheduled events. This strengthens the suspected hosted
+scheduler gap, but remains inconclusive because log completeness and scheduled-event
+visibility are unconfirmed. The empty sample does not establish error-free operation,
+redaction, alert delivery, or authenticated health and adds no closure evidence for
+`SEC-001`, `AUTH-EVID-001`, `OPS-CRON-001`, or `OPS-EVID-002`.
 
 The packaged scheduled handler and local heartbeat evidence exist, but no hosted
 scheduled event has been observed in the bounded log samples. A missing or
@@ -185,7 +193,7 @@ The inventory records a name, purpose, environment, provider owner, last rotatio
 
 Logical D1/R2 declarations live in `.openai/hosting.json`; Sites owns real Cloudflare resource provisioning and deployment wiring. Hosted runtime values are managed through the Sites control plane. No `.env` file, dashboard export, credential screenshot, or copied webhook payload belongs in version control.
 
-For the current private version-9 environment, do not invent consent or
+For the current private version-10 environment, do not invent consent or
 privacy-operator values to make deep health green. `CONSENT_POLICY_REGISTRY_JSON`
 and the independent operator access configuration remain owner/qualified-review
 dependencies. Their absence must continue to fail the affected controls closed and
@@ -294,22 +302,31 @@ Application rollback and data recovery are distinct:
 - If capability or secret exposure is involved, revoke/rotate separately; code rollback does not remove exposed secrets.
 - If a Stripe event processor caused a bad entitlement projection, preserve accepted webhook events and rebuild/reconcile state rather than deleting billing history.
 
-Sites version 9 packages the migration journal through `0009`. Version 8 is the
-immediate deployed predecessor with the same journal, but no hosted version-9 to
-version-8 switch or full behavior/configuration compatibility drill has been run;
-do not presume that matching SQL shape makes it an approved rollback target.
+Sites version 10 packages the migration journal through `0009`. Version 9 is the
+immediate deployed predecessor with the same journal, application/runtime source,
+package lock, bindings, and runtime configuration contract. The v10-to-v9 path is
+therefore application/schema class `N`, but no hosted switch or complete
+behavior/configuration drill has been run; version 9 is not yet an approved rollback
+target. A rollback must preserve the current secret values, owner-only access policy,
+and `BILLING_CHECKOUT_ENABLED=false`, changing only `RELEASE_ID` to the exact v9
+commit before verifying the selected artifact. Do not restore environment revision
+11 wholesale.
+
+Application rollback is not D1/R2 data restore. It also does not restore, revoke, or
+rotate the project-level SIWC bypass credential; the recorded `OWNER-SEC-001`
+rotation remains in force independently of the selected application version.
 Migrations `0008` and `0009` remain structurally backward-readable by version 7,
 but version 7 lacks the consent enforcement introduced in version 8 and retained
 by the current candidate for ordinary instructor reads/writes and golfer sharing.
-After consent-governed real data or disclosure under version 8 or 9, rollback to
+After consent-governed real data or disclosure under version 8, 9, or 10, rollback to
 version 7 is class `B` behaviorally and forbidden as an ordinary code rollback.
 Freeze affected writes and use a tested forward fix or controlled recovery. Do not
 treat SQL shape compatibility as authorization/privacy compatibility.
 
-Undeployed successor source commit
-`66f5203a913f01c8da20555feebdbb99152c052c` has normalized build-reproducibility
-evidence only. It has no saved Sites version or deployment, has not been classified
-against the hosted schema/configuration, and is not a rollback target.
+Exact source commit `66f5203a913f01c8da20555feebdbb99152c052c` remains the
+undeployed exact subject of the normalized reproducibility exercise. Version 10 is a
+later deployed descendant containing that control; the earlier exercise does not
+make commit `66f5203a...` a saved runtime or rollback target.
 
 Every rollback records trigger, decision maker, affected release/migration, customer impact, data-integrity result, verification, and follow-up action.
 

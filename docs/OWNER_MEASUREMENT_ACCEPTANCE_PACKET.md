@@ -15,28 +15,30 @@ or proven by Roadmap.
 
 ## Current candidate boundary
 
-The current recorded candidate is owner-private Sites version 9 at source/runtime
-release `6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d`, saved version
-`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_58bb67e8e23c8191a584540a09e363c5`,
-deployment `appgdep_6a7768f92c588191934eda8abea6d6b4`, and environment
-revision `11`; final deployment status is `succeeded` with provider `updated_at`
-`2026-08-08T17:36:53.329945+00:00`.
-Its local release archive is 2,965,984 bytes with gzip SHA-256
-`8b3d0b13f03f0b13cd10602d24af09bf17c34afdcb4cf73518b2b0d857d59e22`;
+The current recorded candidate is owner-private Sites version 10 at source/runtime
+release `ae35ef25ed46563f6b8f09f5c22dc12581eff8b1`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_1007b9b4ea8c8191968d55991abf374c`,
+deployment `appgdep_6a779cabaec4819191b0cf1e815ce2e5`, and environment
+revision `12`; final deployment status is `succeeded` with provider `updated_at`
+`2026-08-08T21:17:13.525116Z`.
+Its 61-entry local release archive is 2,965,930 bytes with gzip SHA-256
+`5d67423e253009714bebe85bba118ded922c9f6b30b926f2af7bd0e3d05cd953`;
 the Sites content hash is
-`sha256:0b3986dc73b1d06539dc85900dfd959549d92bcceb812c231a418766d29411fb`.
-Sites version 8 is the immediate historical predecessor but is not a tested or
-approved version-9 rollback target. Version 7 remains privacy-behaviorally forbidden
+`sha256:0534d35af6fcdd8a0f104c5bb21fab5edd0641ec952bd32ae7a3f9c024c62033`
+across 49 files and 6,737,920 bytes. Sites version 9 is the immediate historical
+predecessor but is not a tested or approved version-10 rollback target. Version 7 remains privacy-behaviorally forbidden
 as an ordinary target after version-8-or-later consent-governed use.
 
-Exact-version-9 build, lint, strict types, and 229/229 tests passed. Its local
+Exact-version-10 build, lint, strict types, and 234/234 tests passed in three complete
+runs. Its local
 capacity exercise completed 54 synthetic requests with zero failures, and its local
 recovery exercise matched 2 synthetic tenants and 3 objects after all 10 migrations.
 These do not supply an approved SLO, hosted capacity, production recovery, or
-real-user measurement result. After version 9 deployed, plain HTTP `/` redirected
-to HTTPS, while signed-out HTTPS requests to `/`, `/app`,
-`/api/health`, and `/api/operations/health` each returned the outer owner-policy
-`401` with `Cache-Control: no-store` and `Referrer-Policy: no-referrer`.
+real-user measurement result. Historical version-9 smoke recorded plain HTTP `/`
+redirecting to HTTPS. After version 10 deployed, signed-out HTTPS requests to `/`,
+`/app`, `/api/health`, and `/api/operations/health` each returned the outer
+owner-policy `401` with `Cache-Control: no-store` and
+`Referrer-Policy: no-referrer`.
 
 A sanitized version-8-era continuity query started at
 `2026-08-08T17:27:16.287Z`, completed at `2026-08-08T17:27:17.305Z`, requested
@@ -57,6 +59,10 @@ event. The packaged handler exists, but a missing production cron trigger is onl
 working suspicion; provider support and trigger configuration are not confirmed.
 Do not use these samples as an analytics feed or depend on hosted scheduling for
 measurement.
+
+An exact-version-10 bounded provider-log sample returned zero events. It is
+inconclusive and does not supersede the historical version-8/version-9 observations
+or establish logs, scheduling, authenticated success, reliability, or alerting.
 
 No authenticated browser journey, manual accessibility review, authorized real
 instructor/golfer protocol, or real-world measurement exists. Deep readiness remains

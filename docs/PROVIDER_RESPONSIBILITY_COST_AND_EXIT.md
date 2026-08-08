@@ -1,7 +1,7 @@
 # Provider responsibility, cost, portability, and exit record
 
 **Status:** Production implementation record under `AUTH-005`, reconciled to the
-owner-private Sites version-9 candidate; selected architecture and limited provider
+owner-private Sites version-10 candidate; selected architecture and limited provider
 observations, not provider-account approval, budget approval, SLA evidence, public
 operation, or live acceptance
 **Related decisions:** `TECH-001` through `TECH-004` in
@@ -17,40 +17,43 @@ facility administration, native coach-package payment, AI, or hidden concierge w
 
 | Field | Exact recorded observation |
 |---|---|
-| Source/runtime and package | Commit `6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d`; local package `outputs/roadmap-sites-v9-6b48fae.tar.gz`, gzip SHA-256 `8b3d0b13f03f0b13cd10602d24af09bf17c34afdcb4cf73518b2b0d857d59e22` (2,965,984 bytes; 61 entries/49 files); Sites content `sha256:0b3986dc73b1d06539dc85900dfd959549d92bcceb812c231a418766d29411fb` (49 files; 6,737,920 bytes) |
-| Sites identity | Project `appgprj_6a76957326fc819196ebf3a0c95f1ec3`; version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_58bb67e8e23c8191a584540a09e363c5`; deployment `appgdep_6a7768f92c588191934eda8abea6d6b4`; environment revision `11`; final status `succeeded`, provider `updated_at` `2026-08-08T17:36:53.329945+00:00` |
-| Access and safe probes | Owner-only at `https://roadmap-golf-coaching.aar-landry.chatgpt.site`. Plain HTTP `/` redirected to HTTPS. Post-version-9 signed-out HTTPS probes of `/`, `/app`, `/api/health`, and `/api/operations/health` each returned outer-policy `401` with `Cache-Control: no-store` and `Referrer-Policy: no-referrer`. These are anonymous-containment observations, not authenticated application evidence. |
+| Source/runtime and package | Commit `ae35ef25ed46563f6b8f09f5c22dc12581eff8b1`; submitted local archive SHA-256 `5d67423e253009714bebe85bba118ded922c9f6b30b926f2af7bd0e3d05cd953` (2,965,930 bytes; 61 entries/49 files; 10 migrations); Sites content `sha256:0534d35af6fcdd8a0f104c5bb21fab5edd0641ec952bd32ae7a3f9c024c62033` (49 files; 6,737,920 bytes) |
+| Sites identity | Project `appgprj_6a76957326fc819196ebf3a0c95f1ec3`; version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_1007b9b4ea8c8191968d55991abf374c`; deployment `appgdep_6a779cabaec4819191b0cf1e815ce2e5`; environment revision `12`; deployment action succeeded at approximately `2026-08-08T21:16:38Z`; final status remained `succeeded`, provider `updated_at` `2026-08-08T21:17:13.525116+00:00` |
+| Access and safe probes | Owner-only at `https://roadmap-golf-coaching.aar-landry.chatgpt.site`; Checkout remains disabled. Post-version-10 signed-out HTTPS probes of `/`, `/app`, `/api/health`, and `/api/operations/health` each returned outer-policy `401` with `Cache-Control: no-store` and `Referrer-Policy: no-referrer`. These are anonymous-containment observations, not authenticated application evidence. |
 | `OWNER-SEC-001` rotation | Aaron authorized the operation on 2026-08-08. One value-safe Sites rotation succeeded from `2026-08-08T18:32:25.588Z` through `2026-08-08T18:32:31.831Z`; the connector contract immediately invalidated the exposed prior bypass value. The replacement was not displayed, persisted, or used. Access remained `custom` revision 1 with one owner, zero groups, and zero external visitors. Four post-operation signed-out routes again returned `401`/`no-store`/`no-referrer`. A 15-minute Worker query returned zero events and was inconclusive; the original value was not replayed and normal signed-in owner operation remains untested. See the [rotation evidence](release-evidence/ROADMAP-SITES-V9-2026-08-08-sec001-rotation.md). |
 | Sanitized version-8-era log continuity | A read-only query started `2026-08-08T17:27:16.287Z`, completed `2026-08-08T17:27:17.305Z`, and requested 90 minutes from `2026-08-08T15:57:16.287Z`, limit 100, `errors_only=false`. It returned 24 events dated `16:37:26.325Z` through `17:16:40.472Z`: `fetch` 24, outcome `ok` 24, status `200` 23 and handled `403` 1. No scheduled event appeared. Only static route/count metadata was retained; no headers, identities, IPs, IDs, query strings, full URLs, messages, payloads, stacks, or credentials were recorded. This does not prove completeness, health, redaction, alerts, or scheduler operation. |
 | Post-version-9 logs | A 15-minute error-filtered query started `2026-08-08T17:41:24.033Z` and returned one handled `/app.rsc` `403` at level `info`/outcome `ok`, so zero error-level, exception, or crash events but one total filtered record. A separate 15-minute broad query started `2026-08-08T17:43:15.519Z` and returned three `fetch`/`ok` events (two `200`, one `403`) and zero scheduled events. These bounded samples do not prove error-free operation or a missing trigger. |
-| Artifact boundary | The release-time exact-build version-9 archive inspection passed: 61 safe entries/49 files, 23 source-mapped files, all 10 migrations, exactly 2 expected generated credential files, 0 unexpected copies or paths, and `localBuildCompared: true`. A later retrospective inspection also passed its narrower scope; the subsequently rebuilt working-tree `dist` is not treated as the submitted build. An isolated clean-checkout build passed behavior but did not byte-match the archive, so deterministic byte identity remains unproved for version 9. |
-| Automated/local | Exact-version-9 build, lint, strict types, and 229/229 tests passed. The runtime-source integrity scan covered 252 text files with zero secret findings and preserved Business Plan V1; the current expanded evidence tree covers 258 with the same result. Exact-lock production audit reported zero vulnerabilities; schema generation confirmed 31 tables/10 migrations with no change; local capacity completed 54 requests with zero failures; and local recovery matched 2 synthetic tenants/3 objects after all 10 migrations. These are local, not hosted/provider, results. |
-| Not demonstrated | Exact-v9 authenticated browser/manual accessibility journeys, hosted scheduler/trigger provisioning, alert delivery, staffed monitoring, rollback, D1/R2 restore, or measured RPO/RTO. Deep readiness is intentionally degraded because exact owner-approved consent-policy content/version and privacy-operator access configuration are absent. |
+| Post-version-10 logs | The final 30-minute query completed at `2026-08-08T21:31:05.892Z`, 14 minutes 38 seconds after the final deployment began and after the `21:20`, `21:25`, and `21:30` expected five-minute boundaries. It returned zero events and zero scheduled events. This strengthens the suspected scheduler gap but remains inconclusive because log completeness and scheduled-event visibility are unconfirmed; it proves neither error-free operation, redaction, alert delivery, nor authenticated health and closes no operational finding. |
+| Version-9 predecessor artifact boundary | The release-time exact-build version-9 archive inspection passed: 61 safe entries/49 files, 23 source-mapped files, all 10 migrations, exactly 2 expected generated credential files, 0 unexpected copies or paths, and `localBuildCompared: true`. A later retrospective inspection also passed its narrower scope; the subsequently rebuilt working-tree `dist` is not treated as the submitted build. An isolated clean-checkout build passed behavior but did not byte-match the archive, so deterministic byte identity remains unproved for version 9. |
+| Automated/local evidence | Exact-version-10 build, lint, strict types, and 234/234 tests passed in three complete runs. The integrity scan covered 258 text files with zero secret findings and preserved Business Plan V1; exact-lock production audit reported zero vulnerabilities. A post-deployment exact-runtime rerun confirmed 31 tables/no migration drift, completed 54 local synthetic requests with zero failures, and restored 2 synthetic tenants/3 objects after all 10 migrations. These remain local results rather than hosted/provider capacity or recovery evidence. |
+| Not demonstrated | Exact-v10 authenticated browser/manual accessibility journeys, hosted scheduler/trigger provisioning, alert delivery, staffed monitoring, rollback, D1/R2 restore, or measured RPO/RTO. Deep readiness is intentionally degraded because exact owner-approved consent-policy content/version and privacy-operator access configuration are absent. |
 
 These are bounded release observations, not provider SLA, durability, recovery,
 regional-processing, account-support, cost, or public-suitability evidence. Sites
-versions 6 through 8 remain historical predecessor evidence. `OWNER-SEC-001` is
+versions 6 through 9 remain historical predecessor evidence. `OWNER-SEC-001` is
 recorded and the exposed prior value is provider-invalidated. `SEC-001` is
 **REMEDIATED — RETEST PENDING**, not closed, because a normal signed-in owner journey
 and meaningful privacy-safe hosted log/redaction sample are still missing. No
 credential is reproduced or accepted here.
 
-### Undeployed successor-source supply-control observation
+### Current and precursor normalized-reproducibility observations
 
-Exact successor source commit `66f5203a913f01c8da20555feebdbb99152c052c`
+Exact version-10 commit `ae35ef25ed46563f6b8f09f5c22dc12581eff8b1`
 passed two distinct detached clean checkouts. Each locked install contained 501
-packages, kept the same five install scripts blocked, and passed 234/234 verification.
-A separate `npm audit --omit=dev` of the successor lock reported zero vulnerabilities.
-The builds had identical
-49-file inventories. Raw variation was limited to `server/index.js` and the two
-`vinext-server.json` manifests; strict allowlisted normalization of only the
-framework-generated build ID and within-build matching prerender-manifest values
-left zero differences.
+packages, kept the same five install scripts blocked, and passed 234/234
+verification. The builds had identical 49-file inventories. Raw variation was
+limited to `server/index.js` and the two `vinext-server.json` manifests; strict
+allowlisted normalization of only the framework-generated build ID and matching
+prerender-manifest values left zero differences. The
+[exact version-10 record](release-evidence/ROADMAP-SITES-V10-2026-08-08.md)
+binds that normalized-reproducibility result to the saved/deployed candidate.
 
-The [successor reproducibility record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md)
-closes `SUPPLY-EVID-001` prospectively for that control only. It does not alter the
-deployed version-9 artifact or historical byte-rebuild result. This source is not
-deployed, saved as a Sites version, public, accepted, or a rollback target.
+Exact precursor commit `66f5203a913f01c8da20555feebdbb99152c052c`
+previously passed the same prospective control; its
+[precursor record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md)
+remains separate historical evidence. Neither result alters version 9's failed
+byte-rebuild, proves byte identity, makes version 10 public or accepted, or
+establishes rollback/restore suitability.
 
 ## Current official-provider ambiguity and constraint
 

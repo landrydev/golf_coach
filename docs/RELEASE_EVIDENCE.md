@@ -3,7 +3,7 @@
 **Candidate:** `roadmap-production-saas` 1.0.0
 **Evidence opened:** 2026-08-07
 **Authority:** `AUTH-005`
-**Status:** hardened owner-only Sites version 9 succeeded; not accepted for public launch or real-user operation
+**Status:** hardened owner-only Sites version 10 succeeded; not accepted for public launch or real-user operation
 
 This file records evidence for one exact candidate. A command result supports only
 the scope it actually exercised. A successful private deployment is not Aaron's
@@ -46,40 +46,50 @@ marketplace, AI, CRM/messaging, and unapproved analytics are excluded or disable
 
 | Check | Current result | Scope and limitation |
 |---|---|---|
-| `npm run verify` | Passed: lint, strict TypeScript, production Worker build, and 229/229 tests; zero failures, cancellations, skips, or todos | Exact version-9 release source commit; covers source/build/automated behavior, not hosted identity, provider operation, manual accessibility, policy, or real users |
-| `npm run verify:release-integrity` | Passed: 252 source text files scanned with zero pattern findings; historical Business Plan V1 digest preserved; canonical Git-blob/SBOM `package-lock.json` SHA-256 `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d` | Exact version-9 source only. The check intentionally excludes generated `dist`, `outputs`, dependencies, coverage, and work directories and is not an independent security assessment |
-| Exact-v9 artifact and submitted-archive audit | Passed: 61 safe tar entries/49 files; 23 source-mapped controls matched; all ten migrations were present; the archive matched the fresh local `dist`; exactly two matching generated prerender-credential files were confined to expected server locations; zero unexpected credential copies were found | The verifier reported `localBuildCompared: true`. Credential material was never printed. This proves the checked local build/archive relationship, not deterministic rebuilds on another machine or provider-side byte identity |
-| Isolated exact-commit clean install | Passed: `npm ci --no-audit` installed 501 packages; `npm run verify` rebuilt and passed 229/229 tests with zero skips/todos | [Detailed record](release-evidence/ROADMAP-SITES-V9-2026-08-08-clean-install.md). The rebuilt output did not byte-match the submitted archive after Windows checkout line-ending conversion; clean behavioral reproducibility passed, while deterministic byte identity remains unproved for version 9 |
+| `npm run verify` | Passed independently in the main tree and two detached clean worktrees: lint, strict TypeScript, production Worker build, release-artifact integrity, and 234/234 tests; zero failures, cancellations, skips, or todos | Exact version-10 release commit; covers source/build/automated behavior, not hosted identity, provider operation, manual accessibility, policy, or real users |
+| `npm run verify:release-integrity` | Passed: 258 source/evidence text files scanned with zero pattern findings; historical Business Plan V1 preserved; canonical Git-blob/SBOM `package-lock.json` SHA-256 `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d` | Exact version-10 source only. The check intentionally excludes generated `dist`, dependencies, coverage, and work directories and is not an independent security assessment |
+| Exact-v10 artifact and submitted-archive audit | Passed: 61 safe tar entries/49 files; 23 source-mapped controls matched; all ten migrations were present; the archive matched a clean-worktree `dist`; exactly two matching generated prerender-credential files were confined to expected server locations; zero unexpected credential copies or paths were found | The verifier reported `localBuildCompared: true`. Credential material was never printed. This proves the checked local build/archive relationship, not provider-side byte identity |
+| Two isolated exact-commit clean installs | Each installed 501 locked packages with the same five blocked install scripts; each complete verification passed 234/234. The two 49-file builds had only the three strictly validated generated-value differences and zero normalized differences | [Detailed version-10 record](release-evidence/ROADMAP-SITES-V10-2026-08-08.md). This is normalized reproducibility, not byte-for-byte identity; the historical version-9 byte-identity failure remains preserved |
 | Full-lock SBOM inventory | Lockfile digest remains unchanged; CycloneDX 1.5 contains 676 components and SPDX 2.3 contains 677 packages | Lock-derived artifacts and hashes are recorded in [Software Supply Chain](SOFTWARE_SUPPLY_CHAIN.md); this is inventory, not provenance, license advice, or vulnerability certification |
 | `npm run audit:production` | Fresh 2026-08-08 result: zero known production vulnerabilities | Exact lock; advisory snapshot is time-bounded and not an independent assessment |
 | `npm run db:generate` | Passed: `No schema changes, nothing to migrate` | Drizzle schema, journal, snapshots, and ten packaged migrations agree across 31 tables |
 | `npm run exercise:recovery:local` | Passed: ten migrations per isolated D1 database, two synthetic tenants, three private synthetic objects, child-process secret isolation, and snapshot SHA-256 `34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54` | Deterministic D1/R2-compatible logical-copy exercise only; not hosted/provider-native recovery, production data, RPO, RTO, or operator evidence |
-| `npm run exercise:capacity:local` | Passed: 54 synthetic requests at maximum concurrency four, four author/edit/publish/share flows, two exports, zero failures; local p50 42.75 ms, p95 107.09 ms, max 107.99 ms | Local synthetic exercise only; no approved SLO, hosted capacity, provider saturation, or real-user performance claim |
+| `npm run exercise:capacity:local` | Passed against the exact version-10 runtime source: 54 synthetic requests at maximum concurrency four, four author/edit/publish/share flows, two exports, zero failures; local p50 49.26 ms, p95 103.23 ms, max 103.63 ms | Local synthetic exercise only; no approved SLO, hosted capacity, provider saturation, or real-user performance claim |
 | D1 integration journeys | Passed | Production Worker plus real local D1 exercised tenant isolation; consent grant/withdrawal and final-statement share/session race fencing; staged-save replay/races; three- and four-phase lifecycles; publication/session invalidation; share expiry/revocation/response; data-request operator boundaries; scheduler/dead-letter states; Checkout/reconciliation races; webhook healing; migration upgrades; and stale provider-read fencing; not hosted SIWC or live-provider evidence |
 | `git diff --check` | Passed; no whitespace errors, with only line-ending warnings reported | Source-tree consistency check only; not behavioral evidence |
 
-### Undeployed successor-source normalized reproducibility
+After the version-10 evidence record was added, a post-evidence
+`npm run verify:release-integrity` reconciliation scanned 259 source/evidence
+text files with zero findings, preserved historical Business Plan V1, and
+retained the same lockfile SHA-256. The 258-file value in the table remains the
+frozen exact-release scan; the additional file is release evidence, not runtime
+source.
 
-A separate, undeployed successor-source exercise at commit
-`66f5203a913f01c8da20555feebdbb99152c052c` used two independently created
-detached clean worktrees. In each worktree, `npm ci --no-audit` installed 501
-locked packages and reported five blocked install scripts, and `npm run verify`
-passed 234/234 tests. `npm audit --omit=dev` also reported zero known
-vulnerabilities for that exact successor lock; the result remains time-bounded.
+### Version 10 normalized reproducibility
 
-`npm run verify:reproducible-builds` compared the two clean `dist` trees. Both
+Two independently created detached clean worktrees at exact release commit
+`ae35ef25ed46563f6b8f09f5c22dc12581eff8b1` each used `npm ci --no-audit`,
+installed 501 locked packages with the same five blocked install scripts, and
+passed the complete 234-test verification. `npm audit --omit=dev` also reported
+zero known vulnerabilities for that exact lock; the result remains time-bounded.
+
+The release comparator (`node scripts/compare-release-builds.mjs` with both clean
+`dist` paths) compared the two build trees. Both
 contained the same 49 paths. The only three raw content differences were
 `server/index.js`, `server/ssr/vinext-server.json`, and
 `server/vinext-server.json`. Strict allowlisted validation accepted only the
 framework-generated build identifier and within-build matching prerender-secret
 manifest pairs; after normalizing those values, zero differences remained. This proves
 normalized reproducibility under the recorded procedure, not byte-identical
-output. See the [successor reproducibility record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md).
+output. See the [exact version-10 record](release-evidence/ROADMAP-SITES-V10-2026-08-08.md).
 
-This exercise does not alter the version-9 clean-build result above: the
-version-9 rebuild still did not byte-match its submitted archive. The successor
-commit is not saved or deployed in Sites, is not a rollback target, and does not
-change the owner-only hosted version-9 status.
+This exercise does not alter the historical version-9 clean-build result: that
+rebuild still did not byte-match its submitted archive. The reproducible successor
+control is now part of saved and deployed owner-only Sites version 10. Exact
+identifiers and the test-fixture correction found during the release run are in
+that record. The separate
+[precursor record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md)
+remains historical evidence for exact commit `66f5203a...`.
 
 Version-9 focused regressions additionally cover full-authoring and package-creation
 idempotency; client handoff/share retry; living-content withdrawal and practice
@@ -156,6 +166,39 @@ available, so actual Tab order, screen-reader announcements, forced-colour behav
 and real browser zoom remain explicitly unverified.
 
 ## Exact private Sites release
+
+| Field | Exact recorded value |
+|---|---|
+| Candidate | `ROADMAP-SITES-V10-2026-08-08` |
+| Release commit / runtime `RELEASE_ID` | `ae35ef25ed46563f6b8f09f5c22dc12581eff8b1` |
+| Local submitted archive | `outputs/roadmap-sites-v10-ae35ef2.tar.gz`; 2,965,930 bytes; 61 tar entries; gzip SHA-256 `5d67423e253009714bebe85bba118ded922c9f6b30b926f2af7bd0e3d05cd953` |
+| Sites project | `appgprj_6a76957326fc819196ebf3a0c95f1ec3` (`roadmap-golf-coaching`) |
+| Saved version | Version 10, `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_1007b9b4ea8c8191968d55991abf374c` |
+| Sites archive record | Content hash `sha256:0534d35af6fcdd8a0f104c5bb21fab5edd0641ec952bd32ae7a3f9c024c62033`; 49 files; 6,737,920 bytes |
+| Final deployment | `appgdep_6a779cabaec4819191b0cf1e815ce2e5`; final status `succeeded`; provider `updated_at` `2026-08-08T21:17:13.525116+00:00`; no failure message |
+| Owner-only production URL | `https://roadmap-golf-coaching.aar-landry.chatgpt.site` |
+| Applied environment revision | 12 |
+| Access policy | Provider-verified private deployment path; not a public release or real-user acceptance |
+| Billing | `BILLING_CHECKOUT_ENABLED` remained disabled; no charge was attempted |
+
+Environment revision 12 changes only `RELEASE_ID` from revision 11 and binds it to
+the exact version-10 commit. An initial deployment of saved version 10 against
+revision 11 succeeded but was immediately superseded because its runtime release
+label still identified version 9. The final evidence applies only to the revision-12
+deployment above.
+
+Fresh signed-out HTTPS GETs to `/`, `/app`, `/api/health`, and
+`/api/operations/health` each returned `401`, `Cache-Control: no-store`,
+`Referrer-Policy: no-referrer`, and no redirect location. Value-safe log queries
+before and after the final environment-labelled deployment, including a final query
+after three expected five-minute boundaries, returned zero events. They are
+inconclusive for runtime redaction, completeness, scheduler execution, errors,
+retention, or alerts because provider log completeness and scheduled-event visibility
+are unavailable. No
+signed-in browser was available. See the
+[complete version-10 record](release-evidence/ROADMAP-SITES-V10-2026-08-08.md).
+
+## Predecessor version 9 exact record
 
 | Field | Exact recorded value |
 |---|---|
@@ -397,7 +440,7 @@ from reaching the application by design.
 | Item | Current disposition |
 |---|---|
 | General public access | Blocked; working legal/support copy explicitly limits this to controlled private release |
-| Owner-only production release | Deployed successfully as Sites version 9; final authenticated owner acceptance and controlled real journeys remain unrecorded |
+| Owner-only production release | Deployed successfully as Sites version 10 at environment revision 12; final authenticated owner acceptance and controlled real journeys remain unrecorded |
 | Deep operational readiness | Intentionally degraded because exact owner-approved consent-policy content/version and privacy-operator access configuration are absent; no authenticated deep-readiness pass is claimed |
 | SIWC bypass credential exposure | Aaron authorized `OWNER-SEC-001`; the provider rotation immediately invalidated the exposed prior value under its connector contract, the replacement was not displayed/persisted/used, and owner-only access remained unchanged. `SEC-001` is **REMEDIATED — RETEST PENDING** because signed-in owner authentication was unavailable and the empty post-operation log sample is inconclusive. |
 | New SaaS charges | Fail-closed through `BILLING_CHECKOUT_ENABLED=false` until exact price/policy approval and configuration |
