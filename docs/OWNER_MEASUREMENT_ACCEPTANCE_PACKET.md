@@ -13,6 +13,31 @@ instructors. Measurement must separate real self-service from founder assistance
 and it must not confuse a golfer's external coach-package action with a sale processed
 or proven by Roadmap.
 
+## Current candidate boundary
+
+The current recorded candidate is owner-private Sites version 7 at source/runtime
+release `7ed01ec822fdb5c2bfbe6db7e3c99bcba126ac17`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_55fe270d85f081919dcd346c8476130d`,
+deployment `appgdep_6a772e0616b88191972b4e2e0603da52`, and environment
+revision `9`. Its local package has SHA-256
+`a07f06989d3ba6cf05b924b149fc9f955be512223c6f90d5dd8d7628d175e526`;
+the Sites content hash is
+`sha256:4a00694b9798f4f84487e8e7ea224703ccbbfc61a32dd132d417dc65b7f153bc`.
+Sites version 6 remains historical predecessor evidence.
+
+The exact-v7 automated suite passed 163/163 tests, but no authenticated browser
+journey, manual accessibility review, authorized real instructor/golfer protocol,
+or real-world measurement exists. Signed-out requests to `/`, `/app`,
+`/api/health`, and `/api/operations/health` all returned the outer owner-policy
+`401`; a separate safe 20-minute worker sample showed three expected fetch outcomes
+and no immediate errors. A single 1200x750 provider renderer image (SHA-256
+`b40bdedf6b9307ff1750e6b518b1be619e43ca269ac0451a034b0cbd5e30d609`)
+showed no obvious desktop landing-page clipping or overlap. None of these
+observations measures activation, usability, reliability over time, support burden,
+accessibility, or participant outcomes. The browser backend was unavailable. This
+packet records no owner acceptance and authorizes no participant, analytics,
+public-access, or commercial activity.
+
 ## Recommended measurement dictionary
 
 Definitions below are proposed for owner review; no numeric success threshold is

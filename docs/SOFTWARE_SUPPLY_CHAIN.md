@@ -1,7 +1,8 @@
 # Software supply-chain, SBOM, and license inventory
 
-**Status:** Reproducible inventory procedure plus current lockfile observation;
-not a legal opinion, vulnerability certification, or exact deployed-archive SBOM
+**Status:** Reproducible inventory procedure plus exact Sites-version-7 lockfile,
+package, integrity-scan, and production-audit observations; not a legal opinion,
+vulnerability certification, or exact deployed-archive SBOM
 **Observed:** 2026-08-08 with Node `24.18.0`, npm `12.0.1`
 **Authority:** `package-lock.json` is the exact dependency graph; `package.json`
 declares direct intent
@@ -10,9 +11,10 @@ declares direct intent
 
 ## Current inventory observation
 
-**Implemented evidence:** the committed lockfile is lockfile version 3 and has
+**Implemented exact-v7 evidence:** the committed lockfile is lockfile version 3 and has
 SHA-256 `a29e63ce73d1de9f40d54ebc615982686af6c53084c107f84e35d1316ba425d1`.
-It is unchanged from the recorded Sites version-6 source. Its 712
+It is unchanged across the recorded Sites version-6 source and immutable
+version-7 source commit `7ed01ec822fdb5c2bfbe6db7e3c99bcba126ac17`. Its 712
 `node_modules/*` locations normalize to 676 unique `name@version` components.
 The built-in npm generator produced a CycloneDX 1.5 document with 676 components
 and an SPDX 2.3 document with 677 packages, including the application package.
@@ -21,6 +23,25 @@ Those counts describe the complete locked graph, including development and
 platform-optional packages. They do not prove which components Sites placed in
 the deployed archive. Exact-release evidence must retain both the full-lock SBOM
 and a shipped-artifact inventory.
+
+### Exact Sites version 7 package and scan observation
+
+| Field | Recorded result |
+|---|---|
+| Source/runtime release ID | `7ed01ec822fdb5c2bfbe6db7e3c99bcba126ac17` |
+| Local package | Gzip SHA-256 `a07f06989d3ba6cf05b924b149fc9f955be512223c6f90d5dd8d7628d175e526`; 2,916,309 bytes; 57 tar entries |
+| Sites package | Content hash `sha256:4a00694b9798f4f84487e8e7ea224703ccbbfc61a32dd132d417dc65b7f153bc`; 45 files; 6,236,160 bytes |
+| Saved/deployed version | `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_55fe270d85f081919dcd346c8476130d`; deployment `appgdep_6a772e0616b88191972b4e2e0603da52`; environment revision `9` |
+| Release-integrity scan | 204 text files inspected; zero secret findings; historical Business Plan V1 preserved; package-lock digest matched |
+| Production dependency audit | `npm audit --omit=dev` reported zero vulnerabilities |
+
+The differing tar-entry and Sites-file counts are provider/package-format
+observations, not a dependency-to-runtime reconciliation. The zero audit and secret
+findings apply only to the tools, inputs, and advisory data used at verification
+time; they do not certify package provenance, absence of malicious behavior, legal
+compliance, provider configuration, or runtime safety. An exact shipped-artifact
+SBOM and qualified license-obligation review remain open. Sites version 6 evidence
+is retained as historical predecessor evidence in the release record.
 
 ### Direct production dependencies
 

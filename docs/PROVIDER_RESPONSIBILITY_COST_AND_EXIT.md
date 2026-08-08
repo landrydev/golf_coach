@@ -1,7 +1,9 @@
 # Provider responsibility, cost, portability, and exit record
 
-**Status:** Phase-3 implementation record under `AUTH-005`; selected architecture,
-not provider-account approval, budget approval, SLA evidence, or live acceptance
+**Status:** Production implementation record under `AUTH-005`, reconciled to the
+owner-private Sites version-7 candidate; selected architecture and limited provider
+observations, not provider-account approval, budget approval, SLA evidence, public
+operation, or live acceptance
 **Related decisions:** `TECH-001` through `TECH-004` in
 [the decision log](../../DECISION_LOG.md)
 **Related:** [Architecture](ARCHITECTURE.md), [Operations](OPERATIONS.md), and
@@ -10,6 +12,23 @@ not provider-account approval, budget approval, SLA evidence, or live acceptance
 `[SUPPORTED BY BUSINESS PLAN V2]` The bounded V1 is a Canada-wide self-serve SaaS
 for individual instructors. Provider choices must not introduce mandatory onboarding,
 facility administration, native coach-package payment, AI, or hidden concierge work.
+
+## Current provider-bound candidate observation
+
+| Field | Exact recorded observation |
+|---|---|
+| Source/runtime and package | Commit `7ed01ec822fdb5c2bfbe6db7e3c99bcba126ac17`; local gzip SHA-256 `a07f06989d3ba6cf05b924b149fc9f955be512223c6f90d5dd8d7628d175e526` (2,916,309 bytes; 57 entries); Sites content `sha256:4a00694b9798f4f84487e8e7ea224703ccbbfc61a32dd132d417dc65b7f153bc` (45 files; 6,236,160 bytes) |
+| Sites identity | Project `appgprj_6a76957326fc819196ebf3a0c95f1ec3`; version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_55fe270d85f081919dcd346c8476130d`; deployment `appgdep_6a772e0616b88191972b4e2e0603da52`; environment revision `9`; succeeded `2026-08-08T13:24:35.466957+00:00` |
+| Access and safe probes | Owner-only at `https://roadmap-golf-coaching.aar-landry.chatgpt.site`. External signed-out probes of `/`, `/app`, `/api/health`, and `/api/operations/health` each returned outer-policy `401`. A separate safe 20-minute provider-worker sample contained three non-truncated fetches: `GET /` 200/ok, `GET /.rsc` 200/ok, and `GET /app.rsc` 403/ok at the expected non-owner application boundary; the immediate error-only sample had zero entries. |
+| Renderer sanity | Provider-generated `roadmap-sites-v7-renderer.png`, 1200x750, 77,485 bytes, SHA-256 `b40bdedf6b9307ff1750e6b518b1be619e43ca269ac0451a034b0cbd5e30d609`; visual inspection found no obvious clipping/overlap in the desktop landing hero/nav/sample card. |
+| Automated/local | 163/163 tests; 204-file integrity scan with zero secret findings and Business Plan V1 preserved; production dependency audit zero vulnerabilities; no generated schema changes; local recovery exercised 8 migrations and 2 synthetic tenants. |
+| Not demonstrated | Exact-v7 authenticated browser/manual accessibility journeys, hosted scheduler, authenticated deep health, alert delivery, staffed monitoring, rollback, D1/R2 restore, or measured RPO/RTO. The browser backend was unavailable. |
+
+These are bounded release observations, not provider SLA, durability, recovery,
+regional-processing, account-support, cost, or public-suitability evidence. Sites
+version 6 remains historical predecessor evidence. `SEC-001` remains contained and
+open pending authorized rotation/revocation and retest; no credential is reproduced
+or accepted here.
 
 ## Responsibility boundary
 

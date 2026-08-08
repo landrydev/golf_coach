@@ -12,7 +12,27 @@ rotation, and D1/R2 recovery are different operations. Selecting an older Sites
 version must never silently reverse SQL, overwrite data, delete billing history,
 or restore an exposed secret.
 
-## Registered rollback target
+## Registered current candidate and rollback baseline
+
+### Current exact candidate
+
+| Field | Exact recorded value / status |
+|---|---|
+| Record ID | `RB-CANDIDATE-007` |
+| Candidate | `ROADMAP-SITES-V7-2026-08-08` |
+| Source and runtime release ID | `7ed01ec822fdb5c2bfbe6db7e3c99bcba126ac17` |
+| Local source package | Gzip SHA-256 `a07f06989d3ba6cf05b924b149fc9f955be512223c6f90d5dd8d7628d175e526`; 2,916,309 bytes; 57 tar entries |
+| Sites archive content | `sha256:4a00694b9798f4f84487e8e7ea224703ccbbfc61a32dd132d417dc65b7f153bc`; 45 files; 6,236,160 bytes |
+| Saved Sites version | `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_55fe270d85f081919dcd346c8476130d` |
+| Successful deployment | `appgdep_6a772e0616b88191972b4e2e0603da52`; succeeded `2026-08-08T13:24:35.466957+00:00` |
+| Environment revision used by that deployment | `9` |
+| Access boundary | Owner-only at `https://roadmap-golf-coaching.aar-landry.chatgpt.site` |
+| Schema journal | `0000` through `0007`; no generated schema change relative to Sites version 6 |
+| Package-lock SHA-256 | `a29e63ce73d1de9f40d54ebc615982686af6c53084c107f84e35d1316ba425d1` |
+| Local recovery observation | 8 migrations and 2 synthetic tenants passed; snapshot SHA-256 `ebbba2d865090457ef567a1d15658cad0457e4e7d89c2c1975ec45ce944887c5` |
+| Exercise status | **IMMUTABLE CANDIDATE REGISTERED; NOT ROLLBACK- OR HOSTED-RESTORE-TESTED** |
+
+### Historical predecessor and rollback baseline
 
 | Field | Exact recorded value / status |
 |---|---|
@@ -27,25 +47,28 @@ or restore an exposed secret.
 | Schema journal | `0000` through `0007`; journal SHA-256 `c30d149f36f949b1edb419fe4ecd2d8abc73d2d1eb55f4fb3f858327dd899335` |
 | Migration digests | Exact per-file SHA-256 values are frozen in [release evidence](RELEASE_EVIDENCE.md#exact-private-sites-release) |
 | Package-lock SHA-256 | `a29e63ce73d1de9f40d54ebc615982686af6c53084c107f84e35d1316ba425d1` |
-| Exercise status | **REGISTERED, NOT ROLLBACK-TESTED** |
+| Exercise status | **HISTORICAL SUCCESSFUL DEPLOYMENT; REGISTERED, NOT ROLLBACK-TESTED** |
 
-The saved version and content hash identify the current code rollback artifact.
-They do not prove that Sites can redeploy it under a later environment revision or
-that it can safely read a later schema.
+The version-7 identifiers bind the current candidate, while version 6 remains the
+prior immutable baseline available for a potential code rollback. Neither table
+proves that Sites can switch versions under environment revision 9, that version 6
+can safely read current hosted data, or that application/data recovery will succeed.
 
 ## Current compatibility observation
 
-**Implemented repository evidence:** on 2026-08-08,
-`git diff --quiet e2a6e344d0cccdb73cde4697beca32ad02743f79 -- drizzle db`
-returned success. The current working candidate therefore introduces no repository
-schema or migration change relative to version 6. This is preliminary class `N`
-evidence only: the working tree is not an immutable release, and hosted rollback,
-configuration compatibility, and data integrity have not been exercised.
+**Implemented exact-candidate evidence:** Sites version 7 is immutable at commit
+`7ed01ec822fdb5c2bfbe6db7e3c99bcba126ac17`, migration generation reported no
+schema changes, and its migration journal remains `0000` through `0007`. Relative
+to version 6 commit `e2a6e344d0cccdb73cde4697beca32ad02743f79`, this is schema
+class `N`. The class says only that no schema change was introduced; hosted version
+switching, environment/configuration compatibility, rollback smoke, and data
+integrity have not been exercised.
 
 | From state | To target | Schema class | Current conclusion |
 |---|---|---|---|
 | Sites version 6 on its recorded schema/configuration | Same saved version 6 | `N` | Existing successful deployment proves deployability at that time, not a rollback drill |
-| Current uncommitted candidate, no migration delta | `RB-BASE-006` | Preliminary `N` | Code rollback is plausible; exact-candidate build, hosted deployment switch, smoke, and data-integrity evidence are still required |
+| Immutable Sites version 7, no migration delta | `RB-BASE-006` / Sites version 6 | `N` | Code rollback is plausible at the schema level only; hosted deployment switch, revision-9 configuration compatibility, smoke, and data-integrity evidence are still required |
+| Immutable Sites version 7 | Same saved version 7 | `N` | Existing successful deployment proves deployability at that time, not rollback or restore |
 | Any future release with migration/configuration changes | `RB-BASE-006` | Unclassified | **Do not roll back** until the per-release matrix below is completed and exercised |
 
 Compatibility classes are:

@@ -3,7 +3,7 @@
 **Candidate:** `roadmap-production-saas` 1.0.0
 **Evidence opened:** 2026-08-07
 **Authority:** `AUTH-005`
-**Status:** hardened owner-only Sites version 6 succeeded; not accepted for public launch or real-user operation
+**Status:** hardened owner-only Sites version 7 succeeded; not accepted for public launch or real-user operation
 
 This file records evidence for one exact candidate. A command result supports only
 the scope it actually exercised. A successful private deployment is not Aaron's
@@ -17,17 +17,24 @@ acceptance and is not evidence that unresolved policy or live operations work.
 - resumable adults-only golfer identity/title/goal capture followed by bounded coaching completion;
 - goal, assessment, priority, first-phase rationale/signals, and three- or four-phase roadmap creation;
 - draft return, contextual next action, core editing, stale-revision rejection, exact golfer preview, canonical publication readiness, and coach confirmation;
-- living lesson, practice, evidence, and phase-review updates;
+- living lesson, practice, evidence, and phase-review updates, including lesson
+  archive, practice retirement/replacement, evidence withdrawal, revision fencing,
+  publication invalidation, and minimized replacement-retirement audit events;
 - HMAC-fingerprinted, expiring, revision-scoped golfer access with fragment exchange,
   HTTP-only session, one-active-link rotation, access status, and revocation;
 - separate Stripe Checkout/Portal/webhook boundary for the Roadmap SaaS subscription,
   with tenant-scoped read-only refresh and bounded scheduled recovery;
-- tenant-scoped JSON export and non-destructive access, correction, deletion,
-  restriction, and consent-withdrawal request intake;
+- tenant-scoped bounded JSON export with count preflight and durable manual-request
+  fallback, plus non-destructive access, correction, deletion, restriction, and
+  consent-withdrawal request intake;
 - public working-release privacy, terms, and support boundaries;
 - D1 schema/migration, private R2 binding, audit events, public and owner-operator
-  health checks, release-aware scheduler heartbeat, security headers, correlation
-  identifiers, and privacy-safe error responses.
+  health checks, release-aware scheduler heartbeat, bounded request telemetry,
+  runtime log-field allowlisting, strengthened CSP/input controls, correlation
+  identifiers, and privacy-safe error responses;
+- tenant-scoped race-safe idempotency for full golfer authoring and package creation,
+  resilient client retry behavior for share exchange and external handoff tracking,
+  bounded list traversal, and bounded coach/golfer plan snapshots.
 
 Media upload, junior golfers, native coach-package transactions, teams/facilities,
 marketplace, AI, CRM/messaging, and unapproved analytics are excluded or disabled.
@@ -36,12 +43,21 @@ marketplace, AI, CRM/messaging, and unapproved analytics are excluded or disable
 
 | Check | Current result | Scope and limitation |
 |---|---|---|
-| `npm run verify` | Passed: lint, strict TypeScript, production Worker build, and 132/132 tests; zero failures, cancellations, skips, or todos | Exact release source commit; covers source/build/automated behavior, not hosted identity, provider operation, manual accessibility, policy, or real users |
-| `npm run verify:release-integrity` | Passed: 180 text files scanned with zero secret findings; historical Business Plan V1 digest preserved; package-lock SHA-256 `a29e63ce73d1de9f40d54ebc615982686af6c53084c107f84e35d1316ba425d1` | Exact release source and production output; a scoped pattern scan is not an independent security assessment |
-| `npm audit --omit=dev` | Fresh 2026-08-08 result: zero known production vulnerabilities | Exact lock; advisory snapshot is time-bounded and not an independent assessment |
+| `npm run verify` | Passed: lint, strict TypeScript, production Worker build, and 163/163 tests; zero failures, cancellations, skips, or todos | Exact version-7 release source commit; covers source/build/automated behavior, not hosted identity, provider operation, manual accessibility, policy, or real users |
+| `npm run verify:release-integrity` | Passed: 204 text files scanned with zero secret findings; historical Business Plan V1 digest preserved; package-lock SHA-256 `a29e63ce73d1de9f40d54ebc615982686af6c53084c107f84e35d1316ba425d1` | Exact version-7 release source and production output; a scoped pattern scan is not an independent security assessment |
+| `npm run audit:production` | Fresh 2026-08-08 result: zero known production vulnerabilities | Exact lock; advisory snapshot is time-bounded and not an independent assessment |
 | `npm run db:generate` | Passed: `No schema changes, nothing to migrate` | Drizzle schema, journal, snapshots, and eight packaged migrations agree across 31 tables |
-| `npm run exercise:recovery:local` | Passed: eight migrations per isolated D1 database, two synthetic tenants, three private synthetic objects/199 bytes, and child-process secret isolation | Deterministic D1/R2-compatible logical-copy exercise only; not hosted/provider-native recovery, production data, RPO, RTO, or operator evidence |
+| `npm run exercise:recovery:local` | Passed: eight migrations per isolated D1 database, two synthetic tenants, three private synthetic objects/199 bytes, child-process secret isolation, and snapshot SHA-256 `ebbba2d865090457ef567a1d15658cad0457e4e7d89c2c1975ec45ce944887c5` | Deterministic D1/R2-compatible logical-copy exercise only; not hosted/provider-native recovery, production data, RPO, RTO, or operator evidence |
 | D1 integration journeys | Passed | Production Worker plus real local D1 exercised tenant isolation; staged-save replay/races; three- and four-phase lifecycles; profile-wide publication/session invalidation; share expiry/revocation/response; six data-request types; scheduler heartbeat/dead-letter states; Checkout/reconciliation leases and races; webhook healing; migration rollback; and stale provider-read fencing; not hosted SIWC or live-provider evidence |
+| `git diff --check` | Passed; no whitespace errors, with only line-ending warnings reported | Source-tree consistency check only; not behavioral evidence |
+
+Version-7 focused regressions additionally cover full-authoring and package-creation
+idempotency; client handoff/share retry; living-content withdrawal and practice
+replacement audits; bounded golfer/package pagination and plan snapshots; export
+preflight/manual fallback; shallow liveness versus owner-only operational health;
+allowlisted request telemetry and runtime log privacy; CSP/input/overposting cases;
+and the complete declared mutation-route audit-event matrix. These remain automated
+local/production-bundle results, not mounted-browser or hosted operational evidence.
 
 The clean build's `dist/server/wrangler.json` pointed to `index.js`; the server entry
 passed `node --check`, client assets and observability configuration were present,
@@ -69,14 +85,67 @@ exchange. No customer data is used.
   broken `aria-labelledby` references. Focused semantic/contrast tests passed 16/16;
   sampled text and focus-ring contrasts met their applicable AA thresholds.
 
-Version 6 changes roadmap and authoring surfaces, so this visual evidence is retained
-only for predecessor scope and is not exact version-6 runtime evidence. It does not
+Versions 6 and 7 change roadmap, authoring, recovery, and bounded-data surfaces, so
+this visual evidence is retained only for predecessor scope and is not exact
+version-7 runtime evidence. It does not
 substitute for a real screen reader, supported-device matrix,
 or human keyboard/accessibility acceptance review. The in-app browser backend was not
 available, so actual Tab order, screen-reader announcements, forced-colour behavior,
 and real browser zoom remain explicitly unverified.
 
 ## Exact private Sites release
+
+| Field | Exact recorded value |
+|---|---|
+| Candidate | `ROADMAP-SITES-V7-2026-08-08` |
+| Release commit / runtime `RELEASE_ID` | `7ed01ec822fdb5c2bfbe6db7e3c99bcba126ac17` |
+| Local submitted archive | `D:\Projects\golf-coaching-design-blueprint\10_production_saas\outputs\roadmap-sites-v7-7ed01ec.tar.gz`; 2,916,309 bytes; 57 tar entries; gzip SHA-256 `a07f06989d3ba6cf05b924b149fc9f955be512223c6f90d5dd8d7628d175e526` |
+| Sites project | `appgprj_6a76957326fc819196ebf3a0c95f1ec3` (`roadmap-golf-coaching`) |
+| Saved version | Version 7, `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_55fe270d85f081919dcd346c8476130d` |
+| Sites archive record | Content hash `sha256:4a00694b9798f4f84487e8e7ea224703ccbbfc61a32dd132d417dc65b7f153bc`; 45 files; 6,236,160 unpacked bytes |
+| Final deployment | `appgdep_6a772e0616b88191972b4e2e0603da52`, `succeeded` at `2026-08-08T13:24:35.466957+00:00`, no failure message |
+| Owner-only production URL | `https://roadmap-golf-coaching.aar-landry.chatgpt.site` |
+| Applied environment revision | 9 |
+| Access policy | Owner-only; not a public release or real-user acceptance |
+
+The version-7 source branch was pushed using a short-lived authorization header
+scoped to the command; the credential was not persisted in the remote URL, Git
+configuration, environment files, or source. Environment revision 9 binds
+`RELEASE_ID` to the exact version-7 commit while retaining the owner-private,
+billing-disabled configuration. The archive includes the built Worker, client
+assets, hosting metadata, all eight journaled migrations, and the production icon.
+The local gzip digest and Sites content hash describe different representations and
+are recorded separately rather than treated as interchangeable.
+
+### Version 7 hosted smoke evidence and limits
+
+- Fresh signed-out GETs to `/`, `/app`, `/api/health`, and
+  `/api/operations/health` each returned `401` from the outer owner-only Sites
+  policy. This demonstrates anonymous denial on those paths, not authenticated
+  application health or journey behavior.
+- Sites generated one version-7 renderer screenshot, retained outside the release
+  commit at `outputs/roadmap-sites-v7-renderer.png`: 1200×750, 77,485 bytes,
+  SHA-256 `b40bdedf6b9307ff1750e6b518b1be619e43ca269ac0451a034b0cbd5e30d609`.
+  Visual inspection found the complete desktop landing hero, navigation, and sample
+  card without obvious clipping or overlap. This is one visual sanity check, not an
+  authenticated session, mounted-browser interaction, responsive matrix, or manual
+  accessibility result.
+- An immediate error-only Worker-log query after the successful deployment returned
+  zero events. This is a bounded observation window, not proof of error-free
+  operation, log completeness, redaction, retention, alert delivery, or scheduled
+  invocation.
+- A separate non-error 20-minute version-7 Worker sample returned three untruncated
+  renderer fetch events: `GET /` → `200`, `GET /.rsc` → `200`, and the expected
+  non-owner `GET /app.rsc` → `403`; each recorded outcome `ok`. These are
+  provider-renderer/runtime observations and do not supersede the outer signed-out
+  `401` probes or prove owner authentication.
+- The in-app browser backend was unavailable. No exact version-7 authenticated
+  mounted-browser journey, manual accessibility review, owner operational-health
+  response, private golfer-link exercise, or hosted scheduler observation is
+  claimed. Version-5 screenshots and version-6 renderer/log observations below are
+  historical evidence only.
+
+### Predecessor version 6 exact record
 
 | Field | Exact recorded value |
 |---|---|
@@ -137,10 +206,10 @@ output. Stripe and development-auth variables are absent. Rotating
 the share-token pepper would invalidate active golfer capabilities and therefore is
 an explicit operation, not routine redeployment behavior.
 
-### Hosted smoke evidence and limits
+#### Version 6 hosted smoke evidence and limits
 
-- Final version 6 deployed successfully with environment revision 8 and remains the
-  current live version at the recorded URL.
+- Version 6 deployed successfully with environment revision 8 and was current when
+  this predecessor evidence was recorded; version 7 now supersedes it at the same URL.
 - A fresh signed-out GET to `/` after version-6 deployment received `401 Unauthorized`
   from the outer Sites access policy with `Cache-Control: no-store` and
   `Referrer-Policy: no-referrer`; separate signed-out GETs to `/app` and
@@ -197,7 +266,7 @@ from reaching the application by design.
 | Item | Current disposition |
 |---|---|
 | General public access | Blocked; working legal/support copy explicitly limits this to controlled private release |
-| Owner-only production release | Deployed successfully as Sites version 6; final authenticated owner acceptance and controlled real journeys remain unrecorded |
+| Owner-only production release | Deployed successfully as Sites version 7; final authenticated owner acceptance and controlled real journeys remain unrecorded |
 | SIWC bypass credential exposure | A connector-returned active bearer appeared in the private tool transcript and was not used or persisted; explicit owner-directed rotation/revocation is required before access expands |
 | New SaaS charges | Fail-closed through `BILLING_CHECKOUT_ENABLED=false` until exact price/policy approval and configuration |
 | Paid entitlement enforcement | A fail-closed, explicit-status guard exists but production remains in `owner_private`; no owner-approved failed/cancelled/unpaid consequence is selected or claimed |
