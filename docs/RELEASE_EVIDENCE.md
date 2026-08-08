@@ -95,6 +95,13 @@ both journaled migrations, client assets, and the production favicon. Sites repo
 short-lived per-command authorization header; no repository credential is stored in
 the remote URL, Git configuration, environment files, or source.
 
+Credential-handling incident: the initial `create_site` result was accidentally
+surfaced unredacted in the private tool transcript while its response shape was being
+parsed. That credential was never written to disk or Git and was not used for a push;
+it expired at `2026-08-08T02:43:30.052Z`. Every actual push used a newly issued
+per-command credential, and the source/built secret scan found no persisted Sites
+credential. No active credential from that result remains.
+
 Environment revision 4 contains the exact canonical `APP_URL`, the release commit,
 `BILLING_CHECKOUT_ENABLED=false`, and two independent masked secrets for share-token
 and abuse-counter HMACs. Stripe and development-auth variables are absent. Rotating
