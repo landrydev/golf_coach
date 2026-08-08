@@ -10,9 +10,9 @@ security, privacy, and operational decisions are documented in [`docs/`](docs/).
 
 ## Current private release
 
-Sites version 4 is deployed owner-only at
+Sites version 5 is deployed owner-only at
 <https://roadmap-golf-coaching.aar-landry.chatgpt.site> from release commit
-`7305c4231d39e92ff11ff43e1c1f796d0e148b21`. The outer Sites policy allows only
+`ef258da53e15b2d516e22c65b24a017965f34dd0`. The outer Sites policy allows only
 the owner; Stripe Checkout remains disabled. This is a production deployment, not
 a public launch or accepted real-user release. Exact evidence and unresolved
 operating dependencies are recorded in
