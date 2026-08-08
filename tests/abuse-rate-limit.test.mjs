@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { setTimeout as delay } from "node:timers/promises";
 import {
   identityHeaders,
   startD1Worker,
@@ -18,6 +19,18 @@ test(
     context.after(() => worker.dispose());
     const rawGuess = "synthetic-private-capability-guess";
 
+    // The network rule uses aligned 60-second windows. Keep this atomicity
+    // burst away from a real wall-clock rollover; otherwise a later request can
+    // legitimately delete the expired prior-window network row while the
+    // 5-minute capability window remains active, making the final inspection
+    // time-dependent even though the enforced 12/8 response split is correct.
+    const networkWindowOffset = Date.now() % 60_000;
+    if (networkWindowOffset >= 30_000) {
+      await delay(60_000 - networkWindowOffset + 50);
+    }
+    const stableNetworkWindowStartedAt =
+      Math.floor(Date.now() / 60_000) * 60_000;
+
     const responses = await Promise.all(
       Array.from({ length: 20 }, () =>
         worker.dispatch("/r/session", {
@@ -31,6 +44,11 @@ test(
           body: JSON.stringify({ token: rawGuess }),
         }),
       ),
+    );
+    assert.equal(
+      Math.floor(Date.now() / 60_000) * 60_000,
+      stableNetworkWindowStartedAt,
+      "The concurrent atomicity fixture must remain within one network-limit window.",
     );
 
     assert.equal(responses.filter((response) => response.status === 404).length, 12);
