@@ -14,7 +14,7 @@ copy does not claim a staffed public service.
 | Decision | Current state | Why |
 |---|---|---|
 | `OWNER-SEC-001` credential containment | **HISTORICAL AUTHORIZATION COMPLETE 2026-08-08; `SEC-001` RETEST PENDING** | Aaron authorized the completed rotation; the provider-invalidated prior value and unchanged owner-only policy are evidenced, while normal signed-in owner and meaningful hosted-log retests remain missing |
-| `OWNER-SCOPE-001` product/design/content baseline | **READY FOR REVIEW** | Exact version 12 owner-only candidate and evidence records exist; Aaron may approve, modify, or reject the bounded baseline |
+| `OWNER-SCOPE-001` product/design/content baseline | **READY FOR REVIEW** | Exact version 13 owner-only candidate and evidence records exist; Aaron may approve, modify, or reject the bounded baseline |
 | `OWNER-OPS-001` operators and contacts | **PREREQUISITE MISSING** | Names, entity, routes, and public contacts must be supplied |
 | `OWNER-COMM-001` offer and consequences | **PREREQUISITE MISSING** | Exact policy and Stripe Product/Price are not supplied or validated |
 | `OWNER-PRIV-001` privacy and retention | **PREREQUISITE MISSING** | Versioned policy and qualified Canadian review do not exist |
@@ -53,11 +53,45 @@ normal owner journey without a bypass header remains untested. `SEC-001` is
 under `AUTH-EVID-001`. This record resolves only the rotation authorization; it does
 not infer any other owner decision or authorize access expansion or release acceptance.
 
+Aaron repeated the `OWNER-SEC-001` instruction during version-13 continuation.
+Because the authorized rotation/revocation had already completed, no second rotation
+was performed and no replacement credential was generated, read, displayed,
+persisted, or used. Exact-v13 signed-out probes remained `401`; this preserves the
+historical completion of the owner action and does not close `SEC-001`.
+
 ## Decision 0B — exact product, design, and content baseline
 
 `[REAL-WORLD VALIDATION REQUIRED]` Selecting the bounded release baseline does not validate demand, usability, pricing, accessibility, coaching outcomes, or real-user comprehension.
 
-**Evidence:** exact owner-only Sites version 12 is pinned to source/runtime release commit `7b77e6507c1b1c1acb091ab046808cf8b5cc0a5c`, local archive gzip SHA-256 `994f725ba6c5952c45885a4d72d38804f1b10b8440273dc26ac8bd1c38d2bd75` (2,967,333 bytes; 61 entries/49 files; all 10 migrations), Sites archive content hash `sha256:0805c04e9dcd5e8bac77f58aec2362dece1754f6eec63ec73d9c2e249bb01700` (49 files; 6,748,160 bytes), saved Sites version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_8868e09fcb28819181cfbebdf82ce73f`, deployment `appgdep_6a77c5c85974819185ce1c8caf13007c`, and environment revision 14. Final status is `succeeded` with provider `updated_at` `2026-08-09T00:12:04.939300+00:00`; four fresh no-credential boundary probes returned `401`/`no-store`/`no-referrer`. Version-9 local synthetic Chrome captures remain renderer/layout-equivalent evidence for the unchanged UI/CSS only; they are not evidence of version-12 CSP, headers, authentication, response recovery, hosted behavior, or human accessibility acceptance. Version 12 inherits per-response nonces and adds session-scoped response idempotency/recovery, but supported signed-in hosted-browser evidence remains unavailable. `SEC-002` is **REMEDIATED — HOSTED RETEST PENDING** and `SEC-001` is **REMEDIATED — RETEST PENDING**. Deep readiness is intentionally degraded because exact owner-approved consent-policy content/version and privacy-operator access configuration are absent. Requirements traceability still identifies external, hosted, manual, and owner-decision gaps, so approval may be conditional or deferred.
+**Current evidence:** exact owner-only Sites version 13 is pinned to
+source/runtime release commit `f3482845a42730e87f4ff1190550511f19ea6ad5`,
+saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_a050ad7d2e408191a7138c91f93f588c`,
+and deployment `appgdep_6a7801d93d6481918bc66a4df14bbe14`. Two detached
+clean worktrees passed 332/332 verification; their 51-file comparison reported
+three expected framework-generated raw differences and zero normalized
+differences. The local archive has gzip SHA-256
+`f3c5ce7fc76a52d693f0b1f0fcdfc6385e398cd11df2898a5b66b2d67f09da51`,
+3,047,466 bytes, 63 entries/51 files, and all 11 migrations through
+`0010_steep_hemingway`; the
+provider package hash is
+`sha256:734a527a2d76322ffa341acb02b3a7f52714179021383430e32e578be0193d99`.
+The integrated security review found no actionable Critical or High blocker in its
+bounded source/package scope. The private deployment succeeded at environment
+revision `15` at `2026-08-09T04:28:22.001529+00:00` with exact `RELEASE_ID`,
+`APPLICATION_WRITE_MODE=enabled`,
+`INSTRUCTOR_ACCESS_MODE=owner_private`, and
+`BILLING_CHECKOUT_ENABLED=false`; four existing secrets were retained without
+exposing their values. Fresh signed-out requests to `/`, `/app`, `/r`, and
+`/api/health` returned `401`. No bypass bearer was generated, read, displayed,
+persisted, or used. This is not public/paid launch, owner acceptance, real-user,
+hosted signed-in, manual accessibility, scheduler/alert, backup/restore, or RTO/RPO
+evidence. `SEC-002` is **REMEDIATED — HOSTED RETEST PENDING** and `SEC-001` is
+**REMEDIATED — RETEST PENDING**. Deep readiness remains intentionally degraded
+because exact owner-approved consent-policy content/version and privacy-operator
+access configuration are absent.
+
+**Historical predecessor evidence:** exact owner-only Sites version 12 was pinned to source/runtime release commit `7b77e6507c1b1c1acb091ab046808cf8b5cc0a5c`, local archive gzip SHA-256 `994f725ba6c5952c45885a4d72d38804f1b10b8440273dc26ac8bd1c38d2bd75` (2,967,333 bytes; 61 entries/49 files; all 10 migrations), Sites archive content hash `sha256:0805c04e9dcd5e8bac77f58aec2362dece1754f6eec63ec73d9c2e249bb01700` (49 files; 6,748,160 bytes), saved Sites version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_8868e09fcb28819181cfbebdf82ce73f`, deployment `appgdep_6a77c5c85974819185ce1c8caf13007c`, and environment revision 14. Final status was `succeeded` with provider `updated_at` `2026-08-09T00:12:04.939300+00:00`; four no-credential boundary probes returned `401`/`no-store`/`no-referrer`. Version-9 local synthetic Chrome captures remain renderer/layout-equivalent evidence for the unchanged UI/CSS only; they are not evidence of version-13 CSP, headers, authentication, response recovery, hosted behavior, or human accessibility acceptance.
 
 The version-12 response control requires a safe operation key; derives HMAC receipts
 from the account, resolved share session, and key; atomically commits one response
@@ -69,7 +103,18 @@ keys are never server-persisted or logged, and external handoffs use fresh keys.
 This closes the v11 lost-ack duplicate risk locally; it is not hosted/manual or
 real-user acceptance evidence.
 
-**Exact version-12 supply-control evidence:** two distinct detached clean checkouts at
+Version 13 adds no-auto-replay mutation recovery with strict receipts; account-,
+action-, and revision-scoped 24-hour/64-KiB/SHA-256 authoring drafts with explicit
+restore and compare-and-swap clear; account/share/session-scoped golfer recovery;
+lapsed-owner minimized link list/revoke, same-revision reissue, and lost-ack link
+replacement with exact lifecycle receipts; strict profile page-version CAS and
+write-bound receipts; independent `DELETE /r/session` close-abuse scopes through
+migration `0010`; and a fail-closed application-write boundary at both edge and
+scheduled entry points. These are exact local/package/deployed-code claims. The
+hosted/manual validation tracked in `OPS-CONTAIN-001`, `CLIENT-RECOVERY-002`, and
+`RESP-RECOVERY-002` remains pending.
+
+**Historical exact version-12 supply-control evidence:** two distinct detached clean checkouts at
 commit `7b77e6507c1b1c1acb091ab046808cf8b5cc0a5c` each installed 501 locked packages
 with the same five blocked install scripts and passed 242/242 verification. Their
 49-file inventories matched; raw variation was limited to the three validated
@@ -81,10 +126,17 @@ version 12 public or accepted. Its response durability is a security/behavior de
 so rollback from version 12 to version 11 would reintroduce the lost-ack duplicate
 response/audit risk and is a regression, not class `N`.
 
+The [exact-v13 local exercise record](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md)
+records local synthetic recovery across all 11 migrations and 31/31 tables for two
+tenants, three private objects, and three negative checks, plus a 54-request bounded
+capacity run with zero failures. The 104,421 ms local recovery wall time is not an
+RTO and snapshot age is not an RPO. It is not hosted/provider backup or restore,
+deletion recovery, scheduler/alert, or production-capacity evidence.
+
 The historical [exact-v11 local exercise record](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md)
 records predecessor local synthetic recovery across all ten migrations and 31/31 tables,
 plus a 54-request bounded-capacity run with zero failures. It does not establish
-exact-version-12 recovery, hosted restore, rollback, RPO/RTO, performance targets, operator readiness, or
+exact-version-13 recovery, hosted restore, rollback, RPO/RTO, performance targets, operator readiness, or
 public-release suitability.
 
 **Viable choices:** approve the exact bounded baseline with recorded conditions, require specified modifications and a new candidate, or defer approval while owner-only engineering continues.
@@ -254,7 +306,37 @@ evidence record.
 
 > `OWNER-ACCEPT-001`: I reviewed Roadmap release **[exact candidate/version and source commit]** at **[exact URL]** on **[date]**. I accept it for **[owner-only / controlled users / public]** operation under configuration **[revision]**, policies **[versions]**, and residual-risk record **[version]**. Approved operators are **[names]**. Stop/revisit triggers are **[exact triggers]**.
 
-The currently evidenced candidate fields are: Sites version 12, source/runtime release commit `7b77e6507c1b1c1acb091ab046808cf8b5cc0a5c`, local archive gzip SHA-256 `994f725ba6c5952c45885a4d72d38804f1b10b8440273dc26ac8bd1c38d2bd75` (2,967,333 bytes; 61 entries/49 files; 10 migrations), Sites archive content hash `sha256:0805c04e9dcd5e8bac77f58aec2362dece1754f6eec63ec73d9c2e249bb01700` (49 files; 6,748,160 unpacked bytes), saved Sites version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_8868e09fcb28819181cfbebdf82ce73f`, deployment `appgdep_6a77c5c85974819185ce1c8caf13007c` with final status `succeeded` and provider `updated_at` `2026-08-09T00:12:04.939300+00:00`, environment revision 14, fresh signed-out `401`/`no-store`/`no-referrer` results for `/`, `/app`, `/r`, and `/api/health`, and `https://roadmap-golf-coaching.aar-landry.chatgpt.site`. Both exact-version-12 clean installs contained 501 packages with the same five blocked install scripts and passed 242/242 verification. The builds matched across 49 files with three controlled raw differences and zero normalized differences; production dependency audit reported zero vulnerabilities; release integrity inspected 261 source/evidence files with zero findings and preserved Business Plan V1. Version-9 responsive captures and exact-v11 recovery/capacity exercises remain historical predecessor evidence only. `SEC-002` is **REMEDIATED — HOSTED RETEST PENDING** and `SEC-001` is **REMEDIATED — RETEST PENDING**. No exact-version-12 authenticated mounted-browser, manual accessibility/CSP review, observed hosted scheduler invocation, complete hosted-log sample, hosted recovery, or owner operational-health evidence exists. A post-v12 value-safe capture at `2026-08-09T00:13:27.8566565Z` returned six broad `fetch`/`info`/`ok` events and zero `errors_only` events, with `scheduled=0`; it remains inconclusive. Version-12-to-11 rollback would reintroduce the lost-ack duplicate response/audit risk and is a security/behavior regression, not class `N`. Exact owner-approved consent-policy content/version and privacy-operator access configuration are absent, so deep readiness is intentionally degraded. These fields describe an owner-only, Checkout-disabled candidate, not a pre-approved or full-live release; any later source, configuration, or deployment needs a new exact record.
+The currently evidenced candidate fields are: Sites version 13, source/runtime
+release commit `f3482845a42730e87f4ff1190550511f19ea6ad5`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_a050ad7d2e408191a7138c91f93f588c`,
+deployment `appgdep_6a7801d93d6481918bc66a4df14bbe14`, local archive
+gzip SHA-256 `f3c5ce7fc76a52d693f0b1f0fcdfc6385e398cd11df2898a5b66b2d67f09da51`
+(3,047,466 bytes; 63 entries/51 files; 11 migrations), provider package
+`sha256:734a527a2d76322ffa341acb02b3a7f52714179021383430e32e578be0193d99`
+(51 files; 7,270,400 bytes), successful private deployment at
+`2026-08-09T04:28:22.001529+00:00` under environment revision `15`, and
+`https://roadmap-golf-coaching.aar-landry.chatgpt.site`. The exact configuration
+records the same `RELEASE_ID`, `APPLICATION_WRITE_MODE=enabled`,
+`INSTRUCTOR_ACCESS_MODE=owner_private`, and
+`BILLING_CHECKOUT_ENABLED=false`; four redacted secrets were retained. Both
+detached clean worktrees passed 332/332 verification; their 51-file comparison
+reported three expected raw differences and zero normalized differences. The
+integrated security review found no actionable Critical or High blocker in its
+bounded scope. Fresh
+signed-out `/`, `/app`, `/r`, and `/api/health` requests returned `401`; no bypass
+credential was generated, read, displayed, persisted, or used. `SEC-002` is
+**REMEDIATED — HOSTED RETEST PENDING** and `SEC-001` is **REMEDIATED — RETEST
+PENDING**. No exact-version-13 authenticated mounted-browser, manual
+accessibility/CSP review, hosted frozen/missing/invalid/restored-enabled exercise,
+zero-side-effect hosted scheduler proof, owner operational-health observation,
+controlled hosted write, provider backup/restore, alert delivery, complete hosted-
+log sample, public/paid launch, real-user result, or owner acceptance exists.
+Exact owner-approved consent-policy content/version and privacy-operator access
+configuration remain absent. These fields describe an owner-only, Checkout-
+disabled candidate; any later source, configuration, or deployment needs a new
+exact record.
+
+The superseded version-12 candidate fields were: source/runtime release commit `7b77e6507c1b1c1acb091ab046808cf8b5cc0a5c`, local archive gzip SHA-256 `994f725ba6c5952c45885a4d72d38804f1b10b8440273dc26ac8bd1c38d2bd75` (2,967,333 bytes; 61 entries/49 files; 10 migrations), Sites archive content hash `sha256:0805c04e9dcd5e8bac77f58aec2362dece1754f6eec63ec73d9c2e249bb01700` (49 files; 6,748,160 unpacked bytes), saved Sites version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_8868e09fcb28819181cfbebdf82ce73f`, deployment `appgdep_6a77c5c85974819185ce1c8caf13007c` with final status `succeeded` and provider `updated_at` `2026-08-09T00:12:04.939300+00:00`, environment revision 14, fresh signed-out `401`/`no-store`/`no-referrer` results for `/`, `/app`, `/r`, and `/api/health`, and `https://roadmap-golf-coaching.aar-landry.chatgpt.site`. Both exact-version-12 clean installs contained 501 packages with the same five blocked install scripts and passed 242/242 verification. The builds matched across 49 files with three controlled raw differences and zero normalized differences; production dependency audit reported zero vulnerabilities; release integrity inspected 261 source/evidence files with zero findings and preserved Business Plan V1. Version-9 responsive captures and exact-v11 recovery/capacity exercises remain historical predecessor evidence only. `SEC-002` is **REMEDIATED — HOSTED RETEST PENDING** and `SEC-001` is **REMEDIATED — RETEST PENDING**. No exact-version-12 authenticated mounted-browser, manual accessibility/CSP review, observed hosted scheduler invocation, complete hosted-log sample, hosted recovery, or owner operational-health evidence exists. A post-v12 value-safe capture at `2026-08-09T00:13:27.8566565Z` returned six broad `fetch`/`info`/`ok` events and zero `errors_only` events, with `scheduled=0`; it remains inconclusive. Version-12-to-11 rollback would reintroduce the lost-ack duplicate response/audit risk and is a security/behavior regression, not class `N`. Exact owner-approved consent-policy content/version and privacy-operator access configuration are absent, so deep readiness is intentionally degraded. These fields described an owner-only, Checkout-disabled candidate at that time; version 13 now supersedes it as the current private candidate.
 
 **Consequence of deferral:** deployment and technical verification remain useful
 evidence, but the production-completion goal remains active and no accepted-live-V1

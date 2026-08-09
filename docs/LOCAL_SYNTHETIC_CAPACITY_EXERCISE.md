@@ -8,21 +8,24 @@ Run from `10_production_saas`:
 npm run exercise:capacity:local
 ```
 
-## Recorded exact-version-11 result
+## Recorded exact-version-13 result
 
-The exact-version-11 run at source/runtime release
-`44670a64498779cf747914b4465380916a939301` passed. It completed all 54 measured
+The exact-version-13 run at source/runtime release
+`f3482845a42730e87f4ff1190550511f19ea6ad5` passed. It completed all 54 measured
 requests at maximum concurrency 4 across the two synthetic tenant shapes and
 four author/edit/publish/share-exchange flows plus two bounded exports. The
 status distribution was exactly 44 `200` responses and 10 `201` responses, with
-0 failures. Overall local latency was p50 48.46 ms, p95 107.60 ms, and maximum
-107.83 ms.
+0 failures. Overall local latency was p50 46.60 ms, p95 103.30 ms, and maximum
+103.62 ms. The measured workload took 1,547.01 ms and the full exercise took
+1,935.81 ms. The exercised Worker bundle had SHA-256
+`b34a12724c50908c83767450cbc7c5e98aa781597226f9ec5eaab9d7f77387ad`, and
+all response-output bounds held.
 
 This is a single-process, local Miniflare/D1 observation only. It does not set or
 validate a business threshold, tenant limit, SLO, SLA, sustained-throughput or
 soak claim, provider contention result, network or geographic latency, cold-start
 behavior, hosted capacity, or production performance. See the
-[canonical exact-version-11 local exercise record](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md).
+[canonical exact-version-13 local exercise record](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md).
 
 The npm command first creates the current production Worker bundle and then
 runs that bundle in a disposable Miniflare runtime backed by an isolated local

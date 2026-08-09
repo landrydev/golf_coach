@@ -5,7 +5,8 @@
 **Related:** [Findings and retests](FINDINGS_RETEST_LEDGER.md),
 [rollback/schema record](ROLLBACK_SCHEMA_COMPATIBILITY.md),
 [release evidence](RELEASE_EVIDENCE.md),
-[historical exact-v11 local exercises](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md), and
+[exact-v13 release evidence](release-evidence/ROADMAP-SITES-V13-2026-08-09.md),
+[exact-v13 local exercises](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md), and
 [owner release decisions](OWNER_RELEASE_DECISIONS_REQUIRED.md)
 
 Owner approval cannot convert an unrun test, missing qualified review, unavailable
@@ -16,65 +17,68 @@ for the exact candidate; inherited predecessor evidence must stay labelled histo
 
 | Field | Recorded current value / remaining input |
 |---|---|
-| Candidate / source commit / runtime release ID | Sites version 12 / `7b77e6507c1b1c1acb091ab046808cf8b5cc0a5c` |
-| Archive and source-package SHA-256 | Local gzip `994f725ba6c5952c45885a4d72d38804f1b10b8440273dc26ac8bd1c38d2bd75` (2,967,333 bytes; 61 entries/49 files; 10 migrations); Sites content `sha256:0805c04e9dcd5e8bac77f58aec2362dece1754f6eec63ec73d9c2e249bb01700` (49 files; 6,748,160 bytes) |
-| Sites project, saved version, deployment, environment revision | Project `appgprj_6a76957326fc819196ebf3a0c95f1ec3`; saved version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_8868e09fcb28819181cfbebdf82ce73f`; deployment `appgdep_6a77c5c85974819185ce1c8caf13007c`; revision `14`; final status `succeeded`, provider `updated_at` `2026-08-09T00:12:04.939300+00:00` |
+| Candidate / source commit / runtime release ID | Sites version 13 / `f3482845a42730e87f4ff1190550511f19ea6ad5` |
+| Archive and source-package SHA-256 | Local gzip `f3c5ce7fc76a52d693f0b1f0fcdfc6385e398cd11df2898a5b66b2d67f09da51` (3,047,466 bytes; 63 entries/51 files; 11 migrations); Sites content `sha256:734a527a2d76322ffa341acb02b3a7f52714179021383430e32e578be0193d99` (51 files; 7,270,400 bytes) |
+| Sites project, saved version, deployment, environment revision | Project `appgprj_6a76957326fc819196ebf3a0c95f1ec3`; saved version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_a050ad7d2e408191a7138c91f93f588c`; deployment `appgdep_6a7801d93d6481918bc66a4df14bbe14`; revision `15`; final status `succeeded`, provider `updated_at` `2026-08-09T04:28:22.001529+00:00` |
 | Authorized URL and access policy | Owner-only at `https://roadmap-golf-coaching.aar-landry.chatgpt.site`; Sites policy `custom` revision 1 with one owner, zero groups, and zero external visitors; no public-access approval |
-| Credential remediation | Historical `OWNER-SEC-001` authorization completed on 2026-08-08. One value-safe project-level Sites rotation succeeded and invalidated the exposed prior bypass value; the replacement was not displayed, persisted, or used. Version-12 signed-out containment passed, but normal signed-in owner and meaningful hosted-log evidence remain missing, so `SEC-001` is **REMEDIATED — RETEST PENDING**, not closed. See the historical [rotation evidence](release-evidence/ROADMAP-SITES-V9-2026-08-08-sec001-rotation.md). |
-| D1 migration journal and compatibility class | `0000` through `0009`; no generated schema changes. Version 12 adds response idempotency/recovery over version 11, so version-12-to-11 rollback would reintroduce a lost-ack duplicate response/audit risk and is a security/behavior regression, not class `N`. The existing privacy-behavior class `B` boundary relative to version 7 still forbids an ordinary rollback across consent-governed use. Hosted rollback is untested. |
-| Non-secret configuration and binding baseline | Environment revision `14` is recorded. Exact owner-approved consent-policy content/version and privacy-operator access configuration are absent, so deep readiness is intentionally degraded; field-level owner review remains `[attach]` |
+| Credential remediation | Historical `OWNER-SEC-001` authorization completed on 2026-08-08. One value-safe project-level Sites rotation succeeded and invalidated the exposed prior bypass value; the replacement was not displayed, persisted, or used. No bypass was generated, read, or used for version 13. Signed-out containment passed, but normal signed-in owner and meaningful hosted-log evidence remain missing, so `SEC-001` is **REMEDIATED — RETEST PENDING**, not closed. See the historical [rotation evidence](release-evidence/ROADMAP-SITES-V9-2026-08-08-sec001-rotation.md). |
+| D1 migration journal and compatibility class | `0000` through `0010_steep_hemingway`. Migration 0010 is schema-backward-compatible, but version-13-to-12 rollback removes fail-closed global write containment and newer authoring, share, profile, recovery, receipt, and compare-and-swap behavior, so the path is class `B`. Historical v12-to-v11 response-durability and v11-to-v10 CSP class-`B` boundaries, plus the privacy-behavior boundary relative to version 7, remain recorded. Hosted rollback is untested. |
+| Non-secret configuration and binding baseline | Environment revision `15` retains `INSTRUCTOR_ACCESS_MODE=owner_private` and `BILLING_CHECKOUT_ENABLED=false`, and adds `APPLICATION_WRITE_MODE=enabled`. Exact owner-approved consent-policy content/version and privacy-operator access configuration are absent, so deep readiness is intentionally degraded; field-level owner review remains `[attach]` |
 | Policy/copy/design versions | `[attach]`; privacy/legal, commercial, and exact-release decisions remain open |
 | Review date, observation window, reviewers | Automated/local and bounded hosted evidence dated through 2026-08-09; no owner quality review, named manual tester, or staffed hosted observation window is recorded |
 
-Sites versions 6 through 11 remain historical predecessor evidence and are not
-silently carried forward as exact-version-12 quality evidence. Version-9 responsive
-captures are renderer/layout-equivalent for the unchanged UI/CSS only; they do not
-cover version-12 CSP, headers, authentication, or other security behavior.
+Sites versions 6 through 12 remain historical predecessor evidence and are not
+silently carried forward as exact-version-13 quality evidence. Version-9 responsive
+captures remain historical renderer/layout evidence only; they do not cover
+version-13 recovery/share/profile interactions, CSP, headers, authentication, or
+other security behavior.
 
-### Exact version-12 normalized-reproducibility control
+### Exact version-13 normalized-reproducibility control
 
-Exact commit `7b77e6507c1b1c1acb091ab046808cf8b5cc0a5c` is the candidate identified
+Exact commit `f3482845a42730e87f4ff1190550511f19ea6ad5` is the candidate identified
 above. Two distinct detached clean checkouts each completed the locked
-501-package install with the same five install scripts blocked and passed 242/242
-verification. Their 49-file inventories matched; raw variation occurred only in
-`server/index.js` and the two `vinext-server.json` manifests, and strict allowlisted
-generated-value normalization left zero differences. `npm audit --omit=dev` also
-reported zero vulnerabilities. Release integrity inspected 261 source/evidence text
-files with zero findings. The version-12 record preserves the historical version-11
-and earlier releases and version-9 byte-rebuild failure. The control does not make
-version 12 public or accepted.
+501-package install with the same five install scripts blocked and passed 332/332
+verification with no failures, skips, or todos. Their 51-file inventories matched;
+strict comparison found three expected generated raw differences and zero normalized
+differences. `npm audit --omit=dev` reported zero vulnerabilities. The pre-freeze
+release-integrity run inspected 297 source/evidence text files with zero findings,
+preserved Business Plan V1, and confirmed the unchanged lockfile. The
+[version-13 record](release-evidence/ROADMAP-SITES-V13-2026-08-09.md) preserves
+the historical version-12, version-11, and earlier release evidence and the
+version-9 byte-rebuild failure. The control does not make version 13 public or
+accepted.
 
-### Historical exact version-11 local synthetic exercises
+### Exact version-13 local synthetic exercises
 
-The [canonical exercise record](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md)
-binds the disposable local recovery and bounded-capacity runs to predecessor deployed source
-commit `44670a64498779cf747914b4465380916a939301`. Recovery passed across all ten
+The [canonical v13 exercise record](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md)
+binds the disposable local recovery and bounded-capacity runs to exact source/runtime
+commit `f3482845a42730e87f4ff1190550511f19ea6ad5`. Recovery passed across all 11
 migrations and 31/31 application tables, two synthetic tenants, and three
 R2-compatible objects totalling 199 bytes. It matched the 34,380-byte D1 snapshot
-SHA-256 `34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54`,
-detected three negative integrity scenarios, and isolated secret-shaped variables
-from the Wrangler subprocess. Its 103,656 ms local wall-clock duration is not an
-RTO and the synthetic snapshot age is not an RPO.
+SHA-256 `8eaef0372bf2e4457ab651ec5c7bb3e3b22a51289495187761622fede0a1b139`,
+detected three negative integrity scenarios, and passed environment-isolation
+checks. Its 104,421 ms local wall-clock duration is not an RTO and the synthetic
+snapshot is not RPO evidence.
 
 The bounded-capacity exercise completed 54 requests at maximum concurrency four
 with 44 `200`, ten `201`, zero failures, and local p50/p95/maximum observations of
-48.46/107.60/107.83 ms. Those observations are not approved performance targets,
+46.60/103.30/103.62 ms. Those observations are not approved performance targets,
 an SLO/SLA, sustained-load or soak evidence, or hosted capacity. Neither exercise
-is exact-version-12 recovery evidence or proves hosted backup/restore,
-rollback/forward-fix, scheduler operation, alerting,
+proves hosted backup/restore, rollback/forward-fix, scheduler operation, alerting,
 named-operator readiness, public operation, real-user behavior, or acceptance.
+Historical v12 release and v11 local-exercise records remain predecessor evidence.
 
 ## Quality evidence disposition
 
 | Area | Required evidence | Current disposition |
 |---|---|---|
-| Automated candidate | Clean install; lint; strict types; production build; complete tests; migration generation/parity; release-integrity and production dependency audit | Both exact-version-12 clean installs contained 501 packages with the same five blocked install scripts and passed 242/242 verification. The integrity pass checked 261 source/evidence text files with zero findings and preserved Business Plan V1. Production audit reported zero vulnerabilities; `db:generate` reported no schema changes. Exact archive verification passed with 61 entries/49 files and all 10 migrations. Two exact-commit builds had only three validated generated-value differences and zero normalized differences. Version 11's 237/237 evidence and earlier history remain unchanged. |
-| Security/privacy | Tenant/capability/input/session/CSRF/consent/operator/billing-webhook/abuse tests; deployed headers/log sampling; secret/config review; qualified policy review | Automated exact-version-12 coverage passed, including per-response script nonces, response-key HMAC receipts scoped to account and resolved share session, and raw operation-key non-persistence/non-logging. Historical `OWNER-SEC-001` authorization remains complete; four exact-version-12 no-credential routes returned `401` with `no-store`/`no-referrer`. The supported Browser list was empty, so no signed-in owner browser was mounted. `SEC-001` is **REMEDIATED — RETEST PENDING** and `SEC-002` is **REMEDIATED — HOSTED RETEST PENDING**, neither closed. `AUTH-EVID-001`, exact owner-approved consent policy/operator configuration, qualified policy/legal review, and broader deployed log review remain open. |
-| Accessibility/content | Exact-release responsive captures plus keyboard, focus, screen-reader, forced-colour, zoom, reduced-motion, long-content, browser and truthful-copy review | Nine historical version-9 local synthetic Chrome captures cover only the unchanged renderer/layout UI and CSS carried into version 12 at 320, 390, and 1440 CSS px. `RESP-001` and `HARNESS-001` remain closed for that local layout boundary, but the captures do not cover v12 CSP, headers, authentication, outcome-unknown retry/reload interaction, or other security behavior and are not relabelled as exact-version-12 hosted/manual evidence. The supported Browser list was empty; exact-v12 browser review, keyboard, screen reader, forced colour, real browser zoom, reduced motion, long-content interaction, supported-browser/device, and human review remain open. |
-| Critical journeys | Public, SIWC, instructor setup/return, consent grant/withdrawal, golfer authoring/share/revoke, living updates, external handoff, data requests/operator boundary, error/recovery | Exact-version-12 signed-out `/`, `/app`, `/r`, and `/api/health` requests each received the outer-policy `401`. Automated response recovery requires a safe operation key, atomically records one response/audit per account-and-resolved-share-session-scoped receipt, returns `201` first/`200` replay/`409` changed payload, covers same/mixed races, and retains a key per tab only across ambiguous timeout/reload outcomes; external handoffs use fresh keys. The renderer/layout-equivalent local synthetic golfer fixture is not v12 CSP/header/security, hosted, or authorized real-account evidence. The supported Browser list was empty, so the required normal signed-in owner, nonce-CSP, and mounted interruption/reload tests remained unavailable; broader authenticated hosted and real-account journeys remain open under `AUTH-EVID-001`. Deep readiness intentionally remains degraded until exact consent/operator configuration exists. |
+| Automated candidate | Clean install; lint; strict types; production build; complete tests; migration generation/parity; release-integrity and production dependency audit | Both exact-version-13 clean installs contained 501 packages with the same five blocked install scripts and passed 332/332 verification with no failures, skips, or todos. The pre-freeze integrity pass checked 297 source/evidence text files with zero findings, preserved Business Plan V1, and confirmed the unchanged lockfile. Production audit reported zero vulnerabilities. Exact archive verification passed with 63 entries/51 files and all 11 migrations. Two exact-commit builds had three expected generated raw differences and zero normalized differences. Historical v12/v11 and earlier evidence remains unchanged. |
+| Security/privacy | Tenant/capability/input/session/CSRF/consent/operator/billing-webhook/abuse tests; deployed headers/log sampling; secret/config review; qualified policy review | Automated exact-version-13 coverage passed, including fail-closed global write containment, strict profile/package compare-and-swap behavior, bounded recovery, share revoke/reissue lifecycle controls, exact receipts, and inherited nonce/response controls. The integrated source/migration review found no actionable Critical or High blocker. Historical `OWNER-SEC-001` remains complete; no bypass was generated, read, or used. Four exact-version-13 signed-out routes returned `401`; status only was recorded. No signed-in owner browser or authenticated hosted write exercise occurred. `SEC-001` is **REMEDIATED — RETEST PENDING** and `SEC-002` is **REMEDIATED — HOSTED RETEST PENDING**, neither closed. Exact owner-approved consent policy/operator configuration, qualified policy/legal review, and broader deployed log review remain open. |
+| Accessibility/content | Exact-release responsive captures plus keyboard, focus, screen-reader, forced-colour, zoom, reduced-motion, long-content, browser and truthful-copy review | Nine version-9 local synthetic Chrome captures remain historical renderer/layout evidence only. Version 13 changes recovery, sharing, profile, and authoring interactions, so those captures are not relabelled as exact-v13 evidence. Exact-v13 browser review, keyboard, screen reader, forced colour, real browser zoom, reduced motion, long-content interaction, supported-browser/device, and human review remain open. |
+| Critical journeys | Public, SIWC, instructor setup/return, consent grant/withdrawal, golfer authoring/share/revoke, living updates, external handoff, data requests/operator boundary, error/recovery | Exact-version-13 signed-out `/`, `/app`, `/r`, and `/api/health` requests each received outer-policy `401`; the probe recorded status only. Automated coverage exercises bounded ambiguous-mutation/draft recovery, stale-tab and request-ownership fences, strict compare-and-swap behavior, share revoke/reissue, write-bound receipts, and inherited golfer-response idempotency. These are not hosted signed-in journeys. Normal signed-in owner, nonce-CSP, mounted interruption/reload, authenticated write-mode, and real-account journeys remain open. Deep readiness intentionally remains degraded until exact consent/operator configuration exists. |
 | Billing | Test-mode Checkout/Portal/webhook ordering/replay/failure/recovery; exact offer/configuration; controlled authorized live exercise if paid | Checkout is disabled; commercial/provider evidence remains open |
-| Resilience/operations | Capacity/failure paths, telemetry/audit, alert delivery, scheduler, incident/support/cost drills | The historical exact-v11 bounded local capacity exercise completed 54 requests at maximum concurrency four with zero failures; it is not exact-v12 or hosted capacity evidence. Packaged-cron invariants do not prove Sites invocation. A value-safe post-v12 capture at `2026-08-09T00:13:27.8566565Z` returned zero `errors_only` events and six broad `fetch`/`info`/`ok` events: two `200` root, two `200` `/.rsc`, and two handled `403` `/app.rsc`; `scheduled=0`. No raw content was emitted or retained. The observation proves neither completeness, error-free operation, nor scheduler invocation/absence because scheduled-event visibility and deployed-trigger metadata remain unavailable. Authenticated healthy deep readiness, accessibility/browser review, alert delivery, cost, incident/support drills, and named operators remain open. |
-| Recovery/release | Exact rollback target, schema compatibility, D1/R2 restore with integrity and measured RPO/RTO | Immutable v12 and historical v11/v10/v9/v8/v7/v6 artifacts are registered or linked. Version 12's response durability makes rollback to version 11 a security/behavior regression, not class `N`; the privacy-behavior class `B` boundary relative to v7 still requires a forward fix/recovery after consent-governed use. The historical exact-v11 local synthetic exercise passed all 10 migrations and 31/31 tables, restored two tenants and three R2-compatible objects/199 bytes, and passed its recorded integrity checks, but is not exact-v12 recovery evidence. Hosted/provider-native backup/restore, rollback/forward-fix, deletion recovery, alert delivery, named-operator execution, and measured RPO/RTO remain absent. |
+| Resilience/operations | Capacity/failure paths, telemetry/audit, alert delivery, scheduler, incident/support/cost drills | The exact-v13 bounded local capacity exercise completed 54 requests at maximum concurrency four with 44 `200`, ten `201`, zero failures, and p50/p95/maximum 46.60/103.30/103.62 ms. It is not hosted capacity evidence or an approved target. The v13 package includes scheduler configuration, but packaging does not prove hosted invocation. The historical post-v12 log capture remains predecessor evidence only. Hosted scheduler/trigger provisioning, log completeness, alert delivery, cost, incident/support drills, and named operators remain open. |
+| Recovery/release | Exact rollback target, schema compatibility, D1/R2 restore with integrity and measured RPO/RTO | Immutable v13 and historical v12/v11/v10/v9/v8/v7/v6 artifacts are registered or linked. The v13-to-v12 path is class `B`: migration 0010 is schema-backward-compatible, but rollback removes fail-closed global write containment and newer authoring/share/profile recovery, receipt, and CAS behavior. The exact-v13 local exercise passed all 11 migrations and 31/31 tables, restored two tenants and three R2-compatible objects/199 bytes, matched snapshot SHA-256 `8eaef0372bf2e4457ab651ec5c7bb3e3b22a51289495187761622fede0a1b139`, and passed three negative and environment-isolation checks in 104,421 ms. That duration is not an RTO and the snapshot is not RPO evidence. Hosted/provider-native backup/restore, rollback/forward-fix, deletion recovery, alert delivery, named-operator execution, and measured RPO/RTO remain absent. |
 | Findings | No open Critical item; every applicable release-blocking finding closed; every residual risk linked to a dated decision | See active [ledger](FINDINGS_RETEST_LEDGER.md) |
 
 ## Viable decisions

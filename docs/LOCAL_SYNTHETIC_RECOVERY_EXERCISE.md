@@ -8,14 +8,14 @@ Run from `10_production_saas`:
 npm run exercise:recovery:local
 ```
 
-## Recorded exact-version-11 result
+## Recorded exact-version-13 result
 
-The exact-version-11 run at source/runtime release
-`44670a64498779cf747914b4465380916a939301` passed. It applied all 10
-migrations through `0009_cultured_namora`, populated and compared all 31
+The exact-version-13 run at source/runtime release
+`f3482845a42730e87f4ff1190550511f19ea6ad5` passed. It applied all 11
+migrations through `0010_steep_hemingway`, populated and compared all 31
 application tables across 2 synthetic tenants, and restored 3 private synthetic
 objects. The D1 logical snapshot was 34,380 bytes with SHA-256
-`34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54`;
+`8eaef0372bf2e4457ab651ec5c7bb3e3b22a51289495187761622fede0a1b139`;
 the object inventory totalled 199 bytes.
 
 All three negative integrity checks detected their intended fault: modified D1
@@ -27,11 +27,11 @@ Post-restore normalization preserved active rate limits, removed expired limits,
 made in-flight account, billing-event, and reconciliation leases retry-safe, and
 marked the running scheduler heartbeat interrupted.
 
-The measured 103,656 ms is local wall-clock duration, not an RTO measurement;
+The measured 104,421 ms is local wall-clock duration, not an RTO measurement;
 snapshot age is not an RPO measurement. This exact-commit result remains local
 synthetic evidence and is not a hosted D1/R2 restore, provider-backup,
 deletion-recovery, operator-readiness, or alert-delivery result. See the
-[canonical exact-version-11 local exercise record](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md).
+[canonical exact-version-13 local exercise record](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md).
 
 The command creates only deterministic fake records and private fake objects in
 an isolated operating-system temporary directory. It exits nonzero at the first

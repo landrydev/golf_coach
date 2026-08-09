@@ -1,6 +1,6 @@
 # Software supply-chain, SBOM, and license inventory
 
-**Status:** Reproducible inventory procedure plus exact Sites-version-12 lockfile,
+**Status:** Reproducible inventory procedure plus exact Sites-version-13 lockfile,
 package, integrity-scan, production-audit, two-clean-build normalized-
 reproducibility, and provider/deployment observations; not a legal opinion,
 vulnerability certification, exact deployed-archive SBOM, retroactive v9 rebuild,
@@ -13,16 +13,16 @@ declares direct intent
 
 ## Current inventory observation
 
-**Implemented exact-v12 evidence:** the committed lockfile is lockfile version 3 and has
+**Implemented exact-v13 evidence:** the committed lockfile is lockfile version 3 and has
 SHA-256 `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d` at
-version-12 source commit `7b77e6507c1b1c1acb091ab046808cf8b5cc0a5c`. Its 712
+version-13 source commit `f3482845a42730e87f4ff1190550511f19ea6ad5`. Its 712
 `node_modules/*` locations normalize to 676 unique `name@version` components.
 The built-in npm generator produced a CycloneDX 1.5 document with 676 components
 and an SPDX 2.3 document with 677 packages, including the application package.
-The lock digest is unchanged from versions 8 through 11. The retained full-lock artifacts under
+The lock digest is unchanged from versions 8 through 13. The retained full-lock artifacts under
 `docs/release-evidence` therefore inventory the same exact locked graph, but keep
-their version-8 names and provenance; no version-9-, version-10-, version-11-, or
-version-12-named SBOM
+their version-8 names and provenance; no version-9-, version-10-, version-11-,
+version-12-, or version-13-named SBOM
 regeneration is claimed:
 
 | Retained artifact | Bytes | SHA-256 |
@@ -36,7 +36,44 @@ platform-optional packages. They do not prove which components Sites placed in
 the deployed archive. Exact-release evidence must retain both the full-lock SBOM
 and a shipped-artifact inventory.
 
-### Exact Sites version 12 package, scan, and normalized-reproducibility observation
+### Exact Sites version 13 package, scan, and normalized-reproducibility observation
+
+| Field | Recorded result |
+|---|---|
+| Source/runtime release ID | `f3482845a42730e87f4ff1190550511f19ea6ad5` |
+| Local package | `outputs/roadmap-sites-v13-f348284.tar.gz`; gzip SHA-256 `f3c5ce7fc76a52d693f0b1f0fcdfc6385e398cd11df2898a5b66b2d67f09da51`; 3,047,466 bytes; 63 tar entries/51 files; eleven migrations |
+| Sites package | Content hash `sha256:734a527a2d76322ffa341acb02b3a7f52714179021383430e32e578be0193d99`; 51 files; 7,270,400 bytes |
+| Saved/deployed version | `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_a050ad7d2e408191a7138c91f93f588c`; deployment `appgdep_6a7801d93d6481918bc66a4df14bbe14`; environment revision `15`; final status `succeeded`, provider `updated_at` `2026-08-09T04:28:22.001529+00:00`; owner-only URL unchanged |
+| Source release-integrity scan | 297 source/evidence text files inspected; zero secret findings; historical Business Plan V1 preserved; lockfile SHA-256 unchanged. Generated output and dependencies were intentionally excluded |
+| Exact archive audit | 63 safe entries/51 files, eleven migrations, and 25 source-mapped controls matched the checked clean build; expected generated credential files were confined to their expected locations with zero unexpected copies or paths; the scheduler manifest was present |
+| Two-clean-build comparison | Two detached exact-commit worktrees each installed 501 locked packages, reported the same five blocked install scripts, and passed 332/332 tests. Both inventories had 51 files; exactly three allowlisted raw generated-value differences and zero normalized differences remained |
+| Migration upgrade | `0010_steep_hemingway` extends the rate-limit scope constraint for `share_close_network` and `share_close_session`; upgrade tests passed |
+| Production dependency audit | `npm audit --omit=dev` reported zero vulnerabilities on 2026-08-09 |
+
+The exact version-13 comparison records normalized reproducibility, not
+byte-for-byte identity. The local gzip and provider content hashes describe
+different representations. The archive and saved-version records bind the checked
+candidate to the successful revision-15 private deployment, but do not prove
+provider-side byte identity, hosted scheduler behavior, authenticated application
+writes, or an exact shipped-artifact SBOM.
+
+Version 13 adds application-wide fail-closed write containment, bounded draft and
+session recovery, stricter response/CAS/revision boundaries, native billing
+recovery, and account share revoke, same-revision reissue, and lost-ack replacement
+receipts without changing the locked dependency graph. The new migration and its
+upgrade tests are local D1 evidence, not hosted migration or rollback evidence.
+Four signed-out probes to `/`, `/app`, `/r`, and `/api/health` returned `401`; no
+signed-in browser, hosted write/freeze exercise, public user, charge, message, or
+real-user operation is claimed. `OWNER-SEC-001` remains historically completed;
+no bypass credential was generated, rotated, displayed, persisted, or used for
+this release. See the
+[exact version-13 release record](release-evidence/ROADMAP-SITES-V13-2026-08-09.md).
+The post-evidence integrity rerun separately scanned 299 source/evidence text
+files with zero secret findings, preserved Business Plan V1, and retained the
+same lockfile digest; it does not change the 297-file immutable release-source
+boundary above.
+
+### Historical exact Sites version 12 package, scan, and normalized-reproducibility observation
 
 | Field | Recorded result |
 |---|---|

@@ -1,11 +1,13 @@
 # Roadmap Sites version 11 private-candidate evidence
 
 > **Historical predecessor:** This record is frozen evidence for superseded Sites
-> version 11. The current owner-private candidate is Sites version 12, pinned in
+> version 11. The current owner-private candidate is Sites version 13, pinned in
 > [release evidence](../RELEASE_EVIDENCE.md#exact-private-sites-release). Version 12
-> closes the version-11 lost-acknowledgement duplicate golfer-response risk; the
-> version-11 hashes, identifiers, test counts, observations, and limitations below
-> remain past-tense historical facts and are not relabelled as version-12 evidence.
+> closed the version-11 lost-acknowledgement duplicate golfer-response risk, and
+> version 13 preserves that control while adding newer containment and recovery
+> boundaries. The version-11 hashes, identifiers, test counts, observations, and
+> limitations below remain historical facts and are not relabelled as successor
+> evidence.
 
 **Observed:** 2026-08-08 22:29Z-22:42Z
 **Authority:** `AUTH-005`; bounded private release preparation only

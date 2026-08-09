@@ -1,5 +1,11 @@
 # Roadmap Sites version 10 private-candidate evidence
 
+> **Historical predecessor:** This record freezes superseded Sites version 10.
+> The current owner-private candidate is Sites version 13, pinned in
+> [release evidence](../RELEASE_EVIDENCE.md#exact-private-sites-release). The
+> identifiers, observations, and limitations below remain historical facts and
+> are not relabelled as version-13 evidence.
+
 **Observed:** 2026-08-08 20:49Z–22:07Z  
 **Authority:** `AUTH-005`; bounded private release preparation only  
 **Result:** exact version 10 deployed successfully owner-only; not approved for

@@ -5,8 +5,10 @@
 analytics reuse is approved by this document
 **Authority:** [Business Plan V2](../../00_source/BUSINESS_PLAN_V2.md) governs; its
 numeric targets and commercial expectations remain hypotheses
-**Related:** [Owner release decisions](OWNER_RELEASE_DECISIONS_REQUIRED.md) and
-[findings ledger](FINDINGS_RETEST_LEDGER.md); [historical exact-v11 local exercises](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md)
+**Related:** [Owner release decisions](OWNER_RELEASE_DECISIONS_REQUIRED.md),
+[findings ledger](FINDINGS_RETEST_LEDGER.md), [exact-v13 release evidence](release-evidence/ROADMAP-SITES-V13-2026-08-09.md),
+[exact-v13 local exercises](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md),
+and [historical exact-v12 release evidence](release-evidence/ROADMAP-SITES-V12-2026-08-09.md)
 
 `[SUPPORTED BY BUSINESS PLAN V2]` Roadmap is a self-serve B2B SaaS for individual
 instructors. Measurement must separate real self-service from founder assistance,
@@ -15,45 +17,56 @@ or proven by Roadmap.
 
 ## Current candidate boundary
 
-The current recorded candidate is owner-private Sites version 12 at source/runtime
-release `7b77e6507c1b1c1acb091ab046808cf8b5cc0a5c`, saved version
-`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_8868e09fcb28819181cfbebdf82ce73f`,
-deployment `appgdep_6a77c5c85974819185ce1c8caf13007c`, and environment
-revision `14`; final deployment status is `succeeded` with provider `updated_at`
-`2026-08-09T00:12:04.939300+00:00`.
-Its 61-entry/49-file local release archive is 2,967,333 bytes, contains all 10
-migrations, and has gzip SHA-256
-`994f725ba6c5952c45885a4d72d38804f1b10b8440273dc26ac8bd1c38d2bd75`;
-the Sites content hash is
-`sha256:0805c04e9dcd5e8bac77f58aec2362dece1754f6eec63ec73d9c2e249bb01700`
-across 49 files and 6,748,160 bytes. Version 11 is the immediate historical
-predecessor of version 12. Because version 12 adds operation-keyed golfer-response
-durability, version-12-to-11 rollback would reintroduce the lost-ack duplicate
-response/audit risk and is a security/behavior regression rather than class `N`.
-Version 7 remains privacy-behaviorally forbidden
-as an ordinary target after version-8-or-later consent-governed use.
+The current recorded candidate is owner-private Sites version 13 at source/runtime
+release `f3482845a42730e87f4ff1190550511f19ea6ad5`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_a050ad7d2e408191a7138c91f93f588c`,
+deployment `appgdep_6a7801d93d6481918bc66a4df14bbe14`, and environment
+revision `15`; final deployment status is `succeeded` with provider `updated_at`
+`2026-08-09T04:28:22.001529+00:00`. The environment remains
+`INSTRUCTOR_ACCESS_MODE=owner_private` and `BILLING_CHECKOUT_ENABLED=false`, with
+`APPLICATION_WRITE_MODE=enabled` added as an exact fail-closed application
+containment setting.
 
-Both exact-version-12 clean installs contained 501 packages with the same five
-blocked install scripts and passed 242/242 verification. Their 49-file builds had
-three controlled raw differences and zero normalized differences. Release integrity
-inspected 261 source/evidence files with zero findings and preserved Business Plan V1;
-the production dependency audit reported zero vulnerabilities. The historical
-[exact-v11 local exercise record](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md)
-records predecessor recovery passing all 10 migrations and 31/31 tables, two synthetic tenants,
-three R2-compatible objects totalling 199 bytes, the 34,380-byte snapshot SHA-256
-`34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54`,
-three negative integrity scenarios, and subprocess secret isolation. Its 103,656 ms
-local wall-clock duration is not an RTO and the synthetic snapshot age is not an
-RPO. The companion bounded-capacity run completed 54 requests at maximum concurrency
-four with 44 `200`, ten `201`, zero failures, and local p50/p95/maximum observations
-of 48.46/107.60/107.83 ms. These do not supply approved performance targets, an
-SLO/SLA, hosted capacity or backup/restore, rollback/forward-fix, RPO/RTO, scheduler,
-named-operator readiness, production recovery, exact-version-12 recovery, or a real-user measurement result.
-Historical exact-v10 exercises remain predecessor evidence. Historical version-9
-smoke recorded plain HTTP `/`
-redirecting to HTTPS. After version 12 deployed, signed-out HTTPS requests to `/`,
-`/app`, `/r`, and `/api/health` each returned the outer owner-policy `401` with
-`Cache-Control: no-store` and `Referrer-Policy: no-referrer`.
+Its 63-entry/51-file local release archive is 3,047,466 bytes, contains all 11
+migrations, and has gzip SHA-256
+`f3c5ce7fc76a52d693f0b1f0fcdfc6385e398cd11df2898a5b66b2d67f09da51`;
+the Sites content hash is
+`sha256:734a527a2d76322ffa341acb02b3a7f52714179021383430e32e578be0193d99`
+across 51 files and 7,270,400 bytes. Version 12 remains the immediate historical
+predecessor with its immutable evidence linked above; version 11 and earlier remain
+historical as well. Version-13-to-12 rollback is class `B`: migration
+`0010_steep_hemingway` is schema-backward-compatible, but rollback removes
+fail-closed global write containment and newer authoring, share, profile,
+recovery, receipt, and compare-and-swap behavior. The historical v12-to-v11 lost-
+acknowledgement regression and privacy-behavior boundary relative to version 7
+also remain recorded.
+
+Both exact-version-13 clean installs contained 501 packages with the same five
+blocked install scripts and passed 332/332 verification with no failures, skips,
+or todos. Their 51-file builds had three expected generated raw differences and
+zero normalized differences. The pre-freeze release-integrity run inspected 297
+source/evidence files with zero findings, preserved Business Plan V1, and confirmed
+the unchanged lockfile; the production dependency audit reported zero
+vulnerabilities.
+
+The [exact-v13 local exercise record](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md)
+records recovery through 11 migrations and 31/31 tables for two synthetic tenants,
+three R2-compatible objects totalling 199 bytes, three negative checks, environment
+isolation, and a 34,380-byte snapshot with SHA-256
+`8eaef0372bf2e4457ab651ec5c7bb3e3b22a51289495187761622fede0a1b139`.
+Its 104,421 ms local wall-clock duration is not an RTO and the synthetic snapshot
+is not RPO evidence. The companion bounded-capacity run completed 54 requests at
+maximum concurrency four with 44 `200`, ten `201`, zero failures, and local
+p50/p95/maximum observations of 46.60/103.30/103.62 ms. These do not supply
+approved performance targets, an SLO/SLA, hosted capacity or backup/restore,
+rollback/forward-fix, RPO/RTO, scheduler, named-operator readiness, production
+recovery, or a real-user measurement result. Historical exact-v12, v11, and v10
+evidence remains predecessor evidence.
+
+After version 13 deployed, signed-out HTTPS requests to `/`, `/app`, `/r`, and
+`/api/health` each returned the outer owner-policy `401`. The v13 probe recorded
+status only; it is not evidence for response headers, authenticated application
+behavior, or browser execution.
 
 A sanitized version-8-era continuity query started at
 `2026-08-08T17:27:16.287Z`, completed at `2026-08-08T17:27:17.305Z`, requested
@@ -76,7 +89,7 @@ Do not use these samples as an analytics feed or depend on hosted scheduling for
 measurement.
 
 Historical version-11 aggregates remain preserved in its frozen release record.
-The current post-v12 value-safe capture completed at
+The historical post-v12 value-safe capture completed at
 `2026-08-09T00:13:27.8566565Z`: `errors_only` returned zero events, while the
 broad aggregate returned six `fetch`/`info`/`ok` events—two `200` root requests,
 two `200` `/.rsc` requests, and two handled `403` `/app.rsc` requests—and
@@ -93,15 +106,14 @@ reliability over time, support burden, accessibility, or participant outcomes. T
 packet records no owner acceptance and authorizes no participant, analytics,
 public-access, or commercial activity.
 
-Version 12's inherited nonce remediation and new response-recovery controls passed
-automated coverage. Responses require a safe key, use account-and-resolved-share-
-session-scoped HMAC receipts, atomically record one response/audit pair, return
-`201` first/`200` replay/`409` changed payload, and retain a key per tab only across
-ambiguous timeout/reload outcomes; raw keys are not server-persisted or logged and
-external handoffs use fresh keys. These controls improve response reliability but
-do not themselves measure golfer agency, trust, or real-world success. The supported Browser
-list was empty, so no signed-in hosted browser was available for CSP, hydration,
-navigation, interruption/reload recovery, or interaction retesting.
+Version 13 retains the nonce and golfer-response controls and adds bounded
+ambiguous-mutation and authoring-draft recovery, stricter profile/package
+compare-and-swap handling, share revoke/reissue lifecycle controls, exact
+write-bound receipts, and global write containment. These controls improve
+reliability but do not themselves measure golfer agency, trust, hosted behavior,
+or real-world success. No hosted signed-in browser, manual accessibility review,
+authenticated write-mode exercise, backup/restore, scheduler/alert exercise, or
+provider validation occurred. No bypass credential was generated, read, or used.
 `SEC-002` is **REMEDIATED — HOSTED RETEST PENDING**. Historical `OWNER-SEC-001`
 authorization is complete, while `SEC-001` remains **REMEDIATED — RETEST PENDING**.
 
