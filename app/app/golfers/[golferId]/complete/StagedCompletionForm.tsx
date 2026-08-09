@@ -3,6 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
+import {
+  clientMutationErrorMessage,
+  requestClientMutation,
+} from "@/lib/client-mutation-recovery";
 import styles from "../../../workspace.module.css";
 
 type PackageOption = {
@@ -50,7 +54,7 @@ export function StagedCompletionForm({
     });
 
     try {
-      const response = await fetch(
+      const response = await requestClientMutation(
         `/api/golfers/${encodeURIComponent(golferId)}/complete`,
         {
           method: "POST",
@@ -87,9 +91,12 @@ export function StagedCompletionForm({
     } catch (error) {
       setState("error");
       setMessage(
-        error instanceof Error
-          ? error.message
-          : "The staged roadmap could not be completed.",
+        clientMutationErrorMessage(
+          error,
+          "the staged roadmap was completed",
+          "reload_before_retry",
+          "The staged roadmap could not be completed.",
+        ),
       );
     }
   }

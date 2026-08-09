@@ -3,6 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
+import {
+  clientMutationErrorMessage,
+  requestClientMutation,
+} from "@/lib/client-mutation-recovery";
 import styles from "../../workspace.module.css";
 
 type ApiError = { error?: { message?: string } };
@@ -60,7 +64,7 @@ export function NewGolferForm({ packages }: { packages: PackageOption[] }) {
       if (!idempotencyKeyRef.current) {
         idempotencyKeyRef.current = crypto.randomUUID();
       }
-      const response = await fetch("/api/golfers", {
+      const response = await requestClientMutation("/api/golfers", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -76,7 +80,14 @@ export function NewGolferForm({ packages }: { packages: PackageOption[] }) {
       router.refresh();
     } catch (error) {
       setStatus("error");
-      setMessage(error instanceof Error ? error.message : "The golfer record could not be created.");
+      setMessage(
+        clientMutationErrorMessage(
+          error,
+          "the golfer workspace was created",
+          "retry_same_attempt",
+          "The golfer record could not be created.",
+        ),
+      );
     }
   }
 

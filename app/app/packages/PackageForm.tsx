@@ -3,6 +3,10 @@
 import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
+import {
+  clientMutationErrorMessage,
+  requestClientMutation,
+} from "@/lib/client-mutation-recovery";
 import styles from "../workspace.module.css";
 
 const ERROR_SUMMARY_ID = "package-form-error-summary";
@@ -46,7 +50,7 @@ export function PackageForm() {
       if (!idempotencyKeyRef.current) {
         idempotencyKeyRef.current = crypto.randomUUID();
       }
-      const response = await fetch("/api/packages", {
+      const response = await requestClientMutation("/api/packages", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -64,7 +68,14 @@ export function PackageForm() {
       }
     } catch (error) {
       setState("error");
-      setMessage(error instanceof Error ? error.message : "The package could not be saved.");
+      setMessage(
+        clientMutationErrorMessage(
+          error,
+          "the package was saved",
+          "retry_same_attempt",
+          "The package could not be saved.",
+        ),
+      );
       return;
     }
 

@@ -2,6 +2,10 @@
 
 import { useRef, useState } from "react";
 import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
+import {
+  clientMutationErrorMessage,
+  requestClientMutation,
+} from "@/lib/client-mutation-recovery";
 import type {
   AccountDataRequestType,
   AccountDataRequestView,
@@ -52,7 +56,7 @@ export function DataRequestControls({
     setError(false);
 
     try {
-      const response = await fetch("/api/data-export", {
+      const response = await requestClientMutation("/api/data-export", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -109,9 +113,12 @@ export function DataRequestControls({
     } catch (requestError) {
       setError(true);
       setMessage(
-        requestError instanceof Error
-          ? requestError.message
-          : "The JSON export could not be prepared.",
+        clientMutationErrorMessage(
+          requestError,
+          "the export request completed",
+          "reload_before_retry",
+          "The JSON export could not be prepared.",
+        ),
       );
     } finally {
       setBusy(null);
@@ -120,7 +127,7 @@ export function DataRequestControls({
 
   async function refreshRequestHistory(): Promise<boolean> {
     try {
-      const response = await fetch("/api/data-requests", {
+      const response = await requestClientMutation("/api/data-requests", {
         headers: { Accept: "application/json" },
         cache: "no-store",
       });
@@ -155,7 +162,7 @@ export function DataRequestControls({
       if (!deletionIdempotencyKeyRef.current) {
         deletionIdempotencyKeyRef.current = crypto.randomUUID();
       }
-      const response = await fetch("/api/data-requests", {
+      const response = await requestClientMutation("/api/data-requests", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -185,9 +192,12 @@ export function DataRequestControls({
     } catch (requestError) {
       setError(true);
       setMessage(
-        requestError instanceof Error
-          ? requestError.message
-          : "The request could not be queued.",
+        clientMutationErrorMessage(
+          requestError,
+          "the deletion review request was recorded",
+          "retry_same_attempt",
+          "The request could not be queued.",
+        ),
       );
     } finally {
       if (definitiveOutcome) deletionIdempotencyKeyRef.current = "";
@@ -218,7 +228,7 @@ export function DataRequestControls({
     }
     let definitiveOutcome = false;
     try {
-      const response = await fetch("/api/data-requests", {
+      const response = await requestClientMutation("/api/data-requests", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -247,9 +257,12 @@ export function DataRequestControls({
     } catch (requestError) {
       setError(true);
       setMessage(
-        requestError instanceof Error
-          ? requestError.message
-          : "The request could not be queued.",
+        clientMutationErrorMessage(
+          requestError,
+          "the data-rights review request was recorded",
+          "retry_same_attempt",
+          "The request could not be queued.",
+        ),
       );
     } finally {
       if (definitiveOutcome) manualReviewIdempotencyRef.current = null;

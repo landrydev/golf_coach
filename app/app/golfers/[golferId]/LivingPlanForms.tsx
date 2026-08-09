@@ -3,6 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
+import {
+  clientMutationErrorMessage,
+  requestClientMutation,
+} from "@/lib/client-mutation-recovery";
 import styles from "../../workspace.module.css";
 
 type PhaseOption = { id: string; number: number; title: string; purpose: string; status: string };
@@ -68,7 +72,7 @@ export function LivingPlanForms({
       expectedRevision: planRevision,
     };
     try {
-      const response = await fetch(`/api/plans/${encodeURIComponent(planId)}/content`, {
+      const response = await requestClientMutation(`/api/plans/${encodeURIComponent(planId)}/content`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -82,7 +86,14 @@ export function LivingPlanForms({
       router.refresh();
     } catch (submitError) {
       setError(true);
-      setMessage(submitError instanceof Error ? submitError.message : "The plan update could not be saved.");
+      setMessage(
+        clientMutationErrorMessage(
+          submitError,
+          "the plan update was saved",
+          "reload_before_retry",
+          "The plan update could not be saved.",
+        ),
+      );
     } finally {
       setBusy(null);
     }
@@ -100,7 +111,7 @@ export function LivingPlanForms({
     setMessage("");
     setError(false);
     try {
-      const response = await fetch(
+      const response = await requestClientMutation(
         `/api/plans/${encodeURIComponent(planId)}/content`,
         {
           method: "DELETE",
@@ -126,9 +137,12 @@ export function LivingPlanForms({
     } catch (withdrawError) {
       setError(true);
       setMessage(
-        withdrawError instanceof Error
-          ? withdrawError.message
-          : "The plan content could not be withdrawn.",
+        clientMutationErrorMessage(
+          withdrawError,
+          "the plan content was withdrawn",
+          "reload_before_retry",
+          "The plan content could not be withdrawn.",
+        ),
       );
     } finally {
       setBusy(null);

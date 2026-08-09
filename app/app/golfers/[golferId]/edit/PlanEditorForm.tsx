@@ -3,6 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
+import {
+  clientMutationErrorMessage,
+  requestClientMutation,
+} from "@/lib/client-mutation-recovery";
 import type { PlanViewModel } from "@/components/plan/types";
 import styles from "../../../workspace.module.css";
 
@@ -89,7 +93,7 @@ export function PlanEditorForm({
     };
 
     try {
-      const response = await fetch(
+      const response = await requestClientMutation(
         `/api/plans/${encodeURIComponent(model.plan.id)}`,
         {
           method: "PUT",
@@ -107,9 +111,12 @@ export function PlanEditorForm({
     } catch (error) {
       setState("error");
       setMessage(
-        error instanceof Error
-          ? error.message
-          : "The plan changes could not be saved.",
+        clientMutationErrorMessage(
+          error,
+          "the plan changes were saved",
+          "reload_before_retry",
+          "The plan changes could not be saved.",
+        ),
       );
     }
   }

@@ -3,6 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
+import {
+  clientMutationErrorMessage,
+  requestClientMutation,
+} from "@/lib/client-mutation-recovery";
 import styles from "../../workspace.module.css";
 
 const ERROR_SUMMARY_ID = "staged-golfer-form-error-summary";
@@ -24,7 +28,7 @@ export function StagedGolferForm() {
     }
 
     try {
-      const response = await fetch("/api/golfers/staged", {
+      const response = await requestClientMutation("/api/golfers/staged", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -60,9 +64,12 @@ export function StagedGolferForm() {
     } catch (error) {
       setState("error");
       setMessage(
-        error instanceof Error
-          ? error.message
-          : "The resumable golfer draft could not be saved.",
+        clientMutationErrorMessage(
+          error,
+          "the resumable golfer draft was saved",
+          "retry_same_attempt",
+          "The resumable golfer draft could not be saved.",
+        ),
       );
     }
   }

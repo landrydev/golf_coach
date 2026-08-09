@@ -3,6 +3,10 @@
 import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
+import {
+  clientMutationErrorMessage,
+  requestClientMutation,
+} from "@/lib/client-mutation-recovery";
 import styles from "../workspace.module.css";
 
 const ERROR_SUMMARY_ID = "profile-form-error-summary";
@@ -28,7 +32,7 @@ export function ProfileForm(props: {
     const payload = Object.fromEntries(form.entries());
 
     try {
-      const response = await fetch("/api/profile", {
+      const response = await requestClientMutation("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -51,7 +55,14 @@ export function ProfileForm(props: {
       router.refresh();
     } catch (error) {
       setState("error");
-      setMessage(error instanceof Error ? error.message : "Your profile could not be saved.");
+      setMessage(
+        clientMutationErrorMessage(
+          error,
+          "your coach identity was saved",
+          "reload_before_retry",
+          "Your profile could not be saved.",
+        ),
+      );
     }
   }
 

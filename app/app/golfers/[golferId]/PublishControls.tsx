@@ -2,6 +2,10 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
+import {
+  clientMutationErrorMessage,
+  requestClientMutation,
+} from "@/lib/client-mutation-recovery";
 import type { PlanShareSummary } from "@/lib/plans";
 import styles from "../../workspace.module.css";
 
@@ -39,7 +43,7 @@ export function PublishControls({
     const form = new FormData(event.currentTarget);
 
     try {
-      const response = await fetch(`/api/plans/${encodeURIComponent(planId)}/publish`, {
+      const response = await requestClientMutation(`/api/plans/${encodeURIComponent(planId)}/publish`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -82,7 +86,14 @@ export function PublishControls({
       );
     } catch (error) {
       setState("error");
-      setMessage(error instanceof Error ? error.message : "The private link could not be created.");
+      setMessage(
+        clientMutationErrorMessage(
+          error,
+          "the private link was created",
+          "reload_before_retry",
+          "The private link could not be created.",
+        ),
+      );
     }
   }
 
@@ -92,7 +103,7 @@ export function PublishControls({
     setRevokingId(shareId);
     setMessage("");
     try {
-      const response = await fetch(`/api/shares/${encodeURIComponent(shareId)}`, {
+      const response = await requestClientMutation(`/api/shares/${encodeURIComponent(shareId)}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason: "Revoked by instructor" }),
@@ -113,7 +124,14 @@ export function PublishControls({
       setMessage("Private access revoked. An already-open page will fail its next authorization check.");
     } catch (error) {
       setState("error");
-      setMessage(error instanceof Error ? error.message : "The private link could not be revoked.");
+      setMessage(
+        clientMutationErrorMessage(
+          error,
+          "the private link was revoked",
+          "reload_before_retry",
+          "The private link could not be revoked.",
+        ),
+      );
     } finally {
       setRevokingId(null);
     }

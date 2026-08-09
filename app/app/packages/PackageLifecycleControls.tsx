@@ -3,6 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
+import {
+  clientMutationErrorMessage,
+  requestClientMutation,
+} from "@/lib/client-mutation-recovery";
 import type { PackageView } from "@/lib/repository";
 import styles from "../workspace.module.css";
 
@@ -70,7 +74,12 @@ export function PackageLifecycleControls({ item }: { item: PackageView }) {
     } catch (error) {
       setState("error");
       setMessage(
-        error instanceof Error ? error.message : "The package could not be updated.",
+        clientMutationErrorMessage(
+          error,
+          "the package changes were saved",
+          "reload_before_retry",
+          "The package could not be updated.",
+        ),
       );
     }
   }
@@ -97,7 +106,12 @@ export function PackageLifecycleControls({ item }: { item: PackageView }) {
     } catch (error) {
       setState("error");
       setMessage(
-        error instanceof Error ? error.message : "The package could not be archived.",
+        clientMutationErrorMessage(
+          error,
+          "the package was archived",
+          "reload_before_retry",
+          "The package could not be archived.",
+        ),
       );
     }
   }
@@ -321,7 +335,7 @@ async function lifecycleRequest(
   method: "PUT" | "DELETE",
   payload: unknown,
 ): Promise<LifecycleResponse> {
-  const response = await fetch(`/api/packages/${encodeURIComponent(packageId)}`, {
+  const response = await requestClientMutation(`/api/packages/${encodeURIComponent(packageId)}`, {
     method,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),

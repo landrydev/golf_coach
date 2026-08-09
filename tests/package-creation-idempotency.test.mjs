@@ -170,12 +170,13 @@ test("package form retains one client key until a definitive success", async () 
   assert.match(source, /const idempotencyKeyRef = useRef\(""\)/);
   assert.match(source, /idempotencyKeyRef\.current = crypto\.randomUUID\(\)/);
   assert.match(source, /"Idempotency-Key": idempotencyKeyRef\.current/);
+  assert.match(source, /@\/lib\/client-mutation-recovery/);
 
   const assignment = source.indexOf(
     "idempotencyKeyRef.current = crypto.randomUUID()",
   );
   const capturedForm = source.indexOf("const formElement = event.currentTarget");
-  const request = source.indexOf('fetch("/api/packages"');
+  const request = source.indexOf('requestClientMutation("/api/packages"');
   const rejected = source.indexOf("if (!response.ok)");
   const confirmed = source.indexOf('typeof result.package?.id !== "string"');
   const reset = source.indexOf('idempotencyKeyRef.current = ""');

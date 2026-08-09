@@ -3,6 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
+import {
+  clientMutationErrorMessage,
+  requestClientMutation,
+} from "@/lib/client-mutation-recovery";
 import styles from "../../../workspace.module.css";
 
 const ERROR_SUMMARY_ID = "golfer-settings-form-error-summary";
@@ -30,7 +34,7 @@ export function GolferSettingsForm(props: {
     setMessage("");
     const form = new FormData(event.currentTarget);
     try {
-      const response = await fetch(`/api/golfers/${encodeURIComponent(props.golferId)}`, {
+      const response = await requestClientMutation(`/api/golfers/${encodeURIComponent(props.golferId)}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -46,7 +50,14 @@ export function GolferSettingsForm(props: {
       router.push(`/app/golfers/${encodeURIComponent(props.golferId)}`);
       router.refresh();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Golfer details could not be saved.");
+      setMessage(
+        clientMutationErrorMessage(
+          error,
+          "the golfer details were saved",
+          "reload_before_retry",
+          "Golfer details could not be saved.",
+        ),
+      );
       setBusy(null);
     }
   }
@@ -57,7 +68,7 @@ export function GolferSettingsForm(props: {
     setBusy("archive");
     setMessage("");
     try {
-      const response = await fetch(`/api/golfers/${encodeURIComponent(props.golferId)}`, {
+      const response = await requestClientMutation(`/api/golfers/${encodeURIComponent(props.golferId)}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ confirmation: "archive_golfer_and_revoke_access" }),
@@ -69,7 +80,14 @@ export function GolferSettingsForm(props: {
       router.push("/app/golfers");
       router.refresh();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "The golfer could not be archived.");
+      setMessage(
+        clientMutationErrorMessage(
+          error,
+          "the golfer was archived and private access was revoked",
+          "reload_before_retry",
+          "The golfer could not be archived.",
+        ),
+      );
       setBusy(null);
     }
   }
