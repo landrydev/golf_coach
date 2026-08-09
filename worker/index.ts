@@ -18,6 +18,7 @@ import {
   shouldLogRequestTelemetry,
 } from "../lib/request-telemetry";
 import { safeErrorType } from "../lib/log-safety";
+import { failureResponseForRequest } from "../lib/failure-response";
 import { withTrustedRequestCorrelation } from "../lib/request-correlation";
 import {
   readApplicationWriteControl,
@@ -99,7 +100,7 @@ const worker = {
       );
       if (canonicalDecision.action !== "allow") {
         const response = withSecurityHeaders(
-          canonicalRequestResponse(canonicalDecision),
+          canonicalRequestResponse(request, applicationPath, canonicalDecision),
           request,
           requestId,
           contentSecurityPolicy,
@@ -145,7 +146,7 @@ const worker = {
         !writeControl.writesEnabled
       ) {
         const response = withSecurityHeaders(
-          applicationWritesUnavailableResponse(request),
+          applicationWritesUnavailableResponse(request, applicationPath),
           request,
           requestId,
           contentSecurityPolicy,
@@ -179,22 +180,13 @@ const worker = {
       return response;
     } catch (error) {
       const response = withSecurityHeaders(
-        Response.json(
-          {
-            error: {
-              code: "internal_error",
-              message: "The request could not be completed.",
-            },
-          },
-          {
-            status: 500,
-            headers: {
-              "Cache-Control": "private, no-store, max-age=0",
-              Pragma: "no-cache",
-              "X-Robots-Tag": "noindex, nofollow, noarchive",
-            },
-          },
-        ),
+        failureResponseForRequest(request, applicationPath, {
+          status: 500,
+          code: "internal_error",
+          heading: "This page could not be loaded",
+          message: "The request could not be completed.",
+          links: [{ href: "/support", label: "Get support guidance" }],
+        }),
         request,
         requestId,
         contentSecurityPolicy,
@@ -254,44 +246,24 @@ const worker = {
   },
 };
 
-function applicationWritesUnavailableResponse(request: Request): Response {
-  const headers = {
-    "Cache-Control": "private, no-store, max-age=0",
-    Pragma: "no-cache",
-    "Retry-After": "60",
-    Vary: "Accept",
-    "X-Robots-Tag": "noindex, nofollow, noarchive",
-  };
+function applicationWritesUnavailableResponse(
+  request: Request,
+  applicationPath: string,
+): Response {
   const message = "Changes are temporarily unavailable. Try again later.";
-
-  if (acceptsHtml(request)) {
-    return new Response(
-      `<!doctype html><html lang="en-CA"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Changes temporarily unavailable | Roadmap</title></head><body><main><h1>Changes temporarily unavailable</h1><p>${message}</p><p><a href="/support">Review support options</a></p></main></body></html>`,
-      {
-        status: 503,
-        headers: { ...headers, "Content-Type": "text/html; charset=utf-8" },
-      },
-    );
-  }
-
-  return Response.json(
-    {
-      error: {
-        code: "application_writes_unavailable",
-        message,
-      },
-    },
-    { status: 503, headers },
-  );
-}
-
-function acceptsHtml(request: Request): boolean {
-  return (request.headers.get("accept") ?? "")
-    .split(",")
-    .some((value) => value.trim().split(";", 1)[0] === "text/html");
+  return failureResponseForRequest(request, applicationPath, {
+    status: 503,
+    code: "application_writes_unavailable",
+    heading: "Changes temporarily unavailable",
+    message,
+    retryAfter: "60",
+    links: [{ href: "/support", label: "Review support options" }],
+  });
 }
 
 function canonicalRequestResponse(
+  request: Request,
+  applicationPath: string,
   decision: Exclude<ReturnType<typeof evaluateCanonicalRequest>, { action: "allow" }>,
 ): Response {
   if (decision.action === "redirect") {
@@ -304,25 +276,18 @@ function canonicalRequestResponse(
     });
   }
 
-  return Response.json(
-    {
-      error: {
-        code: decision.code,
-        message:
-          decision.status === 503
-            ? "The application origin is unavailable."
-            : "This request did not use the canonical application origin.",
-      },
-    },
-    {
-      status: decision.status,
-      headers: {
-        "Cache-Control": "private, no-store, max-age=0",
-        Pragma: "no-cache",
-        "X-Robots-Tag": "noindex, nofollow, noarchive",
-      },
-    },
-  );
+  const unavailable = decision.status === 503;
+  return failureResponseForRequest(request, applicationPath, {
+    status: decision.status,
+    code: decision.code,
+    heading: unavailable
+      ? "Application temporarily unavailable"
+      : "Request unavailable",
+    message: unavailable
+      ? "The application origin is unavailable."
+      : "This request did not use the canonical application origin.",
+    links: [{ href: "/support", label: "Get support guidance" }],
+  });
 }
 
 function withSecurityHeaders(

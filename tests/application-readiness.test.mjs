@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { register } from "node:module";
 import test from "node:test";
+import { startD1Worker } from "./support/d1-worker.mjs";
 
 register(new URL("./support/cloudflare-loader.mjs", import.meta.url));
 
@@ -106,6 +107,66 @@ test("D1 and R2 readiness deadlines run concurrently and fail closed", async () 
     assert.ok(elapsedMs < 500, `readiness took ${elapsedMs}ms`);
   });
 });
+
+test(
+  "D1 readiness requires migration 0010 scope semantics and the exact expiry index",
+  { timeout: 60_000 },
+  async () => {
+    const { loadApplicationReadiness } = await import(
+      "../lib/application-readiness.ts"
+    );
+
+    const beforeMigration0010 = await startD1Worker(
+      {},
+      { migrationThroughIndex: 9 },
+    );
+    try {
+      const database = await beforeMigration0010.database();
+      await withReadyEnvironment(async () => {
+        const readiness = await loadApplicationReadiness({
+          database,
+          media: mediaReturning(null),
+          dependencyTimeoutMs: 2_000,
+        });
+        assert.equal(readiness.status, "degraded");
+        assert.equal(readiness.checks.database, false);
+        assertSchemaDetailsPrivate(readiness);
+      });
+    } finally {
+      await beforeMigration0010.dispose();
+    }
+
+    const currentSchema = await startD1Worker();
+    try {
+      const database = await currentSchema.database();
+      await withReadyEnvironment(async () => {
+        const ready = await loadApplicationReadiness({
+          database,
+          media: mediaReturning(null),
+          dependencyTimeoutMs: 2_000,
+        });
+        assert.equal(ready.status, "ready");
+        assert.equal(ready.checks.database, true);
+      });
+
+      await currentSchema.inspect([
+        { sql: "drop index abuse_rate_limits_expires_idx" },
+      ]);
+      await withReadyEnvironment(async () => {
+        const readiness = await loadApplicationReadiness({
+          database: await currentSchema.database(),
+          media: mediaReturning(null),
+          dependencyTimeoutMs: 2_000,
+        });
+        assert.equal(readiness.status, "degraded");
+        assert.equal(readiness.checks.database, false);
+        assertSchemaDetailsPrivate(readiness);
+      });
+    } finally {
+      await currentSchema.dispose();
+    }
+  },
+);
 
 test("application readiness requires both V1 consent purposes with their correct subjects", async () => {
   const invalidRegistries = [
@@ -248,6 +309,18 @@ function mediaRejecting() {
 
 function mediaHanging() {
   return { head: () => new Promise(() => undefined) };
+}
+
+function assertSchemaDetailsPrivate(readiness) {
+  const serialized = JSON.stringify(readiness);
+  for (const detail of [
+    "abuse_rate_limits",
+    "share_close_network",
+    "share_close_session",
+    "window_expires_at",
+  ]) {
+    assert.equal(serialized.includes(detail), false);
+  }
 }
 
 async function readyApplicationReadiness() {

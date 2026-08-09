@@ -8,6 +8,7 @@ import {
   clearKeyedAttempt,
   keyedAttemptBlockedMessage,
   keyedAttemptMutationDisposition,
+  keyedAttemptRetryReadiness,
   keyedAttemptReceiptBlockedMessage,
   loadKeyedAttempt,
   matchesCanonicalKeyedAttemptEmail,
@@ -75,7 +76,9 @@ export function StagedGolferForm({ recoveryScope }: { recoveryScope: string }) {
       }
       if (loaded.kind === "blocked") {
         setState("blocked");
-        setMessage(keyedAttemptBlockedMessage("resumable golfer creation"));
+        setMessage(
+          keyedAttemptBlockedMessage("resumable golfer creation", loaded.reason),
+        );
         return;
       }
       const values = parseStagedGolferAttempt(loaded.attempt.body);
@@ -167,6 +170,18 @@ export function StagedGolferForm({ recoveryScope }: { recoveryScope: string }) {
     }
 
     const attempt = pendingAttemptRef.current;
+    const retryReadiness = keyedAttemptRetryReadiness(attempt);
+    if (retryReadiness !== "ready") {
+      if (retryReadiness === "expired") pendingAttemptRef.current = null;
+      setState("blocked");
+      setMessage(
+        keyedAttemptBlockedMessage(
+          "resumable golfer creation",
+          retryReadiness === "expired" ? "expired" : undefined,
+        ),
+      );
+      return;
+    }
     try {
       const response = await requestClientMutation("/api/golfers/staged", {
         method: "POST",

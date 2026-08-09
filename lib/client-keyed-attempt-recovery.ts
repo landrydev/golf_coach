@@ -4,7 +4,8 @@ import {
 } from "./client-mutation-recovery.ts";
 import { isSafeMailtoAddress } from "./mailto.ts";
 
-export const KEYED_ATTEMPT_VERSION = "roadmap-keyed-attempt.v1";
+export const KEYED_ATTEMPT_VERSION = "roadmap-keyed-attempt.v2";
+export const KEYED_ATTEMPT_LIFETIME_MS = 24 * 60 * 60 * 1_000;
 export const KEYED_ATTEMPT_MAX_BODY_BYTES = 64 * 1024;
 export const KEYED_ATTEMPT_MAX_RECORD_BYTES = 72 * 1024;
 
@@ -25,12 +26,28 @@ export type KeyedAttemptRecord = Readonly<{
   key: string;
   body: string;
   ui: Record<string, unknown>;
+  createdAt: number;
+  expiresAt: number;
 }>;
+
+export type KeyedAttemptBlockedReason =
+  | "unavailable"
+  | "invalid"
+  | "expired"
+  | "legacy";
 
 export type KeyedAttemptLoadResult =
   | Readonly<{ kind: "empty" }>
   | Readonly<{ kind: "restored"; attempt: KeyedAttemptRecord }>
-  | Readonly<{ kind: "blocked"; reason: "unavailable" | "invalid" }>;
+  | Readonly<{
+      kind: "blocked";
+      reason: KeyedAttemptBlockedReason;
+    }>;
+
+export type KeyedAttemptRetryReadiness =
+  | "ready"
+  | "expired"
+  | "blocked";
 
 export type KeyedAttemptMutationDisposition =
   | "retry_exact"
@@ -45,6 +62,8 @@ const RECOVERY_REQUIRED_CODES = new Set([
 ]);
 const SAFE_SCOPE = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const SAFE_KEY = /^[A-Za-z0-9][A-Za-z0-9._:-]{19,127}$/;
+const KEYED_ATTEMPT_CLOCK_SKEW_MS = 5 * 60 * 1_000;
+const LEGACY_KEYED_ATTEMPT_STORAGE_VERSION = "v1";
 const MANUAL_REVIEW_TYPES = new Set([
   "access",
   "correction",
@@ -64,7 +83,7 @@ export function keyedAttemptStorageKey(
   operation: KeyedAttemptOperation,
 ): string {
   if (!SAFE_SCOPE.test(accountScope)) throw new KeyedAttemptStorageError();
-  return `roadmap:keyed-attempt:v1:${operation}:${accountScope}`;
+  return `roadmap:keyed-attempt:v2:${operation}:${accountScope}`;
 }
 
 export function loadKeyedAttempt(
@@ -72,13 +91,24 @@ export function loadKeyedAttempt(
   operation: KeyedAttemptOperation,
   storage?: StorageLike,
   createOwner: () => string = defaultAttemptOwner,
+  now: number = Date.now(),
 ): KeyedAttemptLoadResult {
   let resolved: StorageLike;
   let raw: string | null;
   try {
+    if (!isValidNow(now)) return { kind: "blocked", reason: "invalid" };
     resolved = resolveStorage(storage);
     proveStorageWritable(resolved, accountScope);
-    raw = resolved.getItem(keyedAttemptStorageKey(accountScope, operation));
+    const key = keyedAttemptStorageKey(accountScope, operation);
+    raw = resolved.getItem(key);
+    const legacyKey = legacyKeyedAttemptStorageKey(accountScope, operation);
+    const legacyRaw = resolved.getItem(legacyKey);
+    if (legacyRaw !== null) {
+      if (!compareAndRemove(resolved, legacyKey, legacyRaw)) {
+        return { kind: "blocked", reason: "unavailable" };
+      }
+      if (raw === null) return { kind: "blocked", reason: "legacy" };
+    }
   } catch {
     return { kind: "blocked", reason: "unavailable" };
   }
@@ -91,6 +121,15 @@ export function loadKeyedAttempt(
     const value: unknown = JSON.parse(raw);
     if (!isValidRecord(value, accountScope, operation)) {
       return { kind: "blocked", reason: "invalid" };
+    }
+    if (value.createdAt > now + KEYED_ATTEMPT_CLOCK_SKEW_MS) {
+      return { kind: "blocked", reason: "invalid" };
+    }
+    if (now >= value.expiresAt) {
+      const key = keyedAttemptStorageKey(accountScope, operation);
+      return compareAndRemove(resolved, key, raw)
+        ? { kind: "blocked", reason: "expired" }
+        : { kind: "blocked", reason: "unavailable" };
     }
     const claimed: KeyedAttemptRecord = {
       ...value,
@@ -127,7 +166,11 @@ export function persistKeyedAttempt(
   }>,
   storage?: StorageLike,
   createOwner: () => string = defaultAttemptOwner,
+  now: number = Date.now(),
 ): KeyedAttemptRecord {
+  if (!isValidNow(now) || !Number.isSafeInteger(now + KEYED_ATTEMPT_LIFETIME_MS)) {
+    throw new KeyedAttemptStorageError();
+  }
   const attempt: KeyedAttemptRecord = {
     version: KEYED_ATTEMPT_VERSION,
     accountScope: input.accountScope,
@@ -136,6 +179,8 @@ export function persistKeyedAttempt(
     key: input.key,
     body: input.body,
     ui: input.ui,
+    createdAt: now,
+    expiresAt: now + KEYED_ATTEMPT_LIFETIME_MS,
   };
   if (!isValidRecord(attempt, input.accountScope, input.operation)) {
     throw new KeyedAttemptStorageError();
@@ -150,7 +195,14 @@ export function persistKeyedAttempt(
       input.accountScope,
       input.operation,
     );
-    if (resolved.getItem(storageKey) !== null) {
+    const legacyStorageKey = legacyKeyedAttemptStorageKey(
+      input.accountScope,
+      input.operation,
+    );
+    if (
+      resolved.getItem(storageKey) !== null ||
+      resolved.getItem(legacyStorageKey) !== null
+    ) {
       throw new Error("an attempt is already persisted");
     }
     resolved.setItem(storageKey, serialized);
@@ -184,6 +236,38 @@ export function clearKeyedAttempt(
   }
 }
 
+/**
+ * Rechecks the exact owned record immediately before a retry. This prevents a
+ * long-lived tab from sending a saved operation after its bounded recovery
+ * window or after a successor mount has claimed the storage slot.
+ */
+export function keyedAttemptRetryReadiness(
+  attempt: KeyedAttemptRecord,
+  storage?: StorageLike,
+  now: number = Date.now(),
+): KeyedAttemptRetryReadiness {
+  if (
+    !isValidNow(now) ||
+    !isValidRecord(attempt, attempt.accountScope, attempt.operation) ||
+    attempt.createdAt > now + KEYED_ATTEMPT_CLOCK_SKEW_MS
+  ) {
+    return "blocked";
+  }
+  try {
+    const resolved = resolveStorage(storage);
+    const key = keyedAttemptStorageKey(
+      attempt.accountScope,
+      attempt.operation,
+    );
+    const serialized = JSON.stringify(attempt);
+    if (resolved.getItem(key) !== serialized) return "blocked";
+    if (now < attempt.expiresAt) return "ready";
+    return compareAndRemove(resolved, key, serialized) ? "expired" : "blocked";
+  } catch {
+    return "blocked";
+  }
+}
+
 export function keyedAttemptMutationDisposition(
   error: unknown,
 ): KeyedAttemptMutationDisposition {
@@ -198,7 +282,24 @@ export function keyedAttemptMutationDisposition(
   return "definitive_failure";
 }
 
-export function keyedAttemptBlockedMessage(action: string): string {
+export function keyedAttemptBlockedMessage(
+  action: string,
+  reason?: KeyedAttemptBlockedReason,
+): string {
+  if (reason === "expired") {
+    return (
+      `Roadmap retired this tab's saved ${action} attempt after its 24-hour ` +
+      "recovery window. Reload and inspect the authoritative workspace record " +
+      "before deciding whether to submit anything new."
+    );
+  }
+  if (reason === "legacy") {
+    return (
+      `Roadmap retired an older saved ${action} attempt that cannot be safely ` +
+      "age-checked. Reload and inspect the authoritative workspace record " +
+      "before deciding whether to submit anything new."
+    );
+  }
   return (
     `Roadmap cannot safely reconcile the saved ${action} attempt in this tab, ` +
     "so it will not create a new attempt. Reload and inspect the authoritative " +
@@ -305,6 +406,8 @@ function isValidRecord(
     "key",
     "body",
     "ui",
+    "createdAt",
+    "expiresAt",
   ])) {
     return false;
   }
@@ -321,7 +424,13 @@ function isValidRecord(
     byteLength(value.body) < 2 ||
     byteLength(value.body) > KEYED_ATTEMPT_MAX_BODY_BYTES ||
     !isPlainObject(value.ui) ||
-    !isValidUi(value.ui, expectedOperation)
+    !isValidUi(value.ui, expectedOperation) ||
+    typeof value.createdAt !== "number" ||
+    !Number.isSafeInteger(value.createdAt) ||
+    value.createdAt < 1 ||
+    typeof value.expiresAt !== "number" ||
+    !Number.isSafeInteger(value.expiresAt) ||
+    value.expiresAt !== value.createdAt + KEYED_ATTEMPT_LIFETIME_MS
   ) {
     return false;
   }
@@ -367,6 +476,27 @@ function resolveStorage(storage?: StorageLike): StorageLike {
   if (storage) return storage;
   if (typeof window === "undefined") throw new KeyedAttemptStorageError();
   return window.sessionStorage;
+}
+
+function legacyKeyedAttemptStorageKey(
+  accountScope: string,
+  operation: KeyedAttemptOperation,
+): string {
+  return `roadmap:keyed-attempt:${LEGACY_KEYED_ATTEMPT_STORAGE_VERSION}:${operation}:${accountScope}`;
+}
+
+function compareAndRemove(
+  storage: StorageLike,
+  key: string,
+  expected: string,
+): boolean {
+  if (storage.getItem(key) !== expected) return false;
+  storage.removeItem(key);
+  return storage.getItem(key) === null;
+}
+
+function isValidNow(value: number): boolean {
+  return Number.isSafeInteger(value) && value > 0;
 }
 
 function canonicalKeyedAttemptText(value: RestoredFormValue): string | null {

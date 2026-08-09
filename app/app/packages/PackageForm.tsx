@@ -8,6 +8,7 @@ import {
   clearKeyedAttempt,
   keyedAttemptBlockedMessage,
   keyedAttemptMutationDisposition,
+  keyedAttemptRetryReadiness,
   keyedAttemptReceiptBlockedMessage,
   loadKeyedAttempt,
   matchesCanonicalKeyedAttemptExternalUrl,
@@ -75,7 +76,7 @@ export function PackageForm({ recoveryScope }: { recoveryScope: string }) {
       }
       if (loaded.kind === "blocked") {
         setState("blocked");
-        setMessage(keyedAttemptBlockedMessage("package creation"));
+        setMessage(keyedAttemptBlockedMessage("package creation", loaded.reason));
         return;
       }
       const values = parsePackageAttempt(
@@ -180,6 +181,18 @@ export function PackageForm({ recoveryScope }: { recoveryScope: string }) {
     }
 
     const attempt = pendingAttemptRef.current;
+    const retryReadiness = keyedAttemptRetryReadiness(attempt);
+    if (retryReadiness !== "ready") {
+      if (retryReadiness === "expired") pendingAttemptRef.current = null;
+      setState("blocked");
+      setMessage(
+        keyedAttemptBlockedMessage(
+          "package creation",
+          retryReadiness === "expired" ? "expired" : undefined,
+        ),
+      );
+      return;
+    }
     try {
       const response = await requestClientMutation("/api/packages", {
         method: "POST",

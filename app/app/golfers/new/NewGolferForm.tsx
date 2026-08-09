@@ -8,6 +8,7 @@ import {
   clearKeyedAttempt,
   keyedAttemptBlockedMessage,
   keyedAttemptMutationDisposition,
+  keyedAttemptRetryReadiness,
   keyedAttemptReceiptBlockedMessage,
   loadKeyedAttempt,
   matchesCanonicalKeyedAttemptText,
@@ -84,7 +85,9 @@ export function NewGolferForm({
       }
       if (loaded.kind === "blocked") {
         setStatus("blocked");
-        setMessage(keyedAttemptBlockedMessage("golfer workspace creation"));
+        setMessage(
+          keyedAttemptBlockedMessage("golfer workspace creation", loaded.reason),
+        );
         return;
       }
       const restored = parseFullGolferAttempt(loaded.attempt.body);
@@ -199,6 +202,18 @@ export function NewGolferForm({
     }
 
     const attempt = pendingAttemptRef.current;
+    const retryReadiness = keyedAttemptRetryReadiness(attempt);
+    if (retryReadiness !== "ready") {
+      if (retryReadiness === "expired") pendingAttemptRef.current = null;
+      setStatus("blocked");
+      setMessage(
+        keyedAttemptBlockedMessage(
+          "golfer workspace creation",
+          retryReadiness === "expired" ? "expired" : undefined,
+        ),
+      );
+      return;
+    }
     try {
       const response = await requestClientMutation("/api/golfers", {
         method: "POST",

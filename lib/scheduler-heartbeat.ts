@@ -1,4 +1,7 @@
-import type { BillingReconciliationSweepResult } from "@/lib/billing-reconciliation-sweep";
+import {
+  loadBillingReconciliationBacklog,
+  type BillingReconciliationSweepResult,
+} from "@/lib/billing-reconciliation-sweep";
 
 const BILLING_SCHEDULER_KEY = "billing_reconciliation";
 const SCHEDULER_INTERVAL_SECONDS = 5 * 60;
@@ -53,6 +56,9 @@ export type SchedulerOperationalHealth = Readonly<{
   billingReconciliation: Readonly<{
     deadLetterCount: number;
     oldestDeadLetterAgeSeconds: number | null;
+    overdueAccountCount: number | null;
+    overdueAccountCountIsLowerBound: boolean | null;
+    oldestOverdueAgeSeconds: number | null;
   }>;
 }>;
 
@@ -192,9 +198,10 @@ export async function failBillingSchedulerAttempt(input: {
 }
 
 /**
- * Read the latest scheduler attempt and a current aggregate of exhausted
- * reconciliation work. No tenant IDs, provider IDs, messages, or payloads are
- * selected, which keeps this safe for an authenticated operator response.
+ * Read the latest scheduler attempt and current bounded aggregates of
+ * exhausted and overdue reconciliation work. No tenant IDs, provider IDs,
+ * messages, or payloads are returned from D1, which keeps this safe for an
+ * authenticated operator response.
  */
 export async function loadSchedulerOperationalHealth(input: {
   database: D1Database;
@@ -204,7 +211,7 @@ export async function loadSchedulerOperationalHealth(input: {
   const now = checkedDate(input.now ?? new Date());
   const release = normalizeReleaseId(input.releaseId);
   const releaseId = release.value;
-  const [heartbeat, deadLetters] = await Promise.all([
+  const [heartbeat, deadLetters, backlog] = await Promise.all([
     input.database
       .prepare(
         `SELECT release_id AS releaseId,
@@ -233,12 +240,23 @@ export async function loadSchedulerOperationalHealth(input: {
             AND automatic_dead_lettered_at IS NOT NULL`,
       )
       .first<DeadLetterSummaryRow>(),
+    loadBillingReconciliationBacklog({
+      database: input.database,
+      now,
+    }).then(
+      (summary) => summary,
+      () => null,
+    ),
   ]);
 
   const deadLetterCount = checkedCount(deadLetters?.count ?? 0);
   const oldestDeadLetterAgeSeconds = ageSeconds(
     now,
     checkedOptionalTimestamp(deadLetters?.oldestDeadLetteredAt ?? null),
+  );
+  const oldestOverdueAgeSeconds = ageSeconds(
+    now,
+    backlog?.oldestOverdueAt ?? null,
   );
 
   if (!heartbeat) {
@@ -260,6 +278,10 @@ export async function loadSchedulerOperationalHealth(input: {
       billingReconciliation: {
         deadLetterCount,
         oldestDeadLetterAgeSeconds,
+        overdueAccountCount: backlog?.overdueAccountCount ?? null,
+        overdueAccountCountIsLowerBound:
+          backlog?.overdueAccountCountIsLowerBound ?? null,
+        oldestOverdueAgeSeconds,
       },
     };
   }
@@ -293,6 +315,7 @@ export async function loadSchedulerOperationalHealth(input: {
     !stale &&
     releaseCurrent &&
     deadLetterCount === 0 &&
+    backlog?.overdueAccountCount === 0 &&
     result !== null &&
     result.failed === 0;
 
@@ -317,6 +340,10 @@ export async function loadSchedulerOperationalHealth(input: {
     billingReconciliation: {
       deadLetterCount,
       oldestDeadLetterAgeSeconds,
+      overdueAccountCount: backlog?.overdueAccountCount ?? null,
+      overdueAccountCountIsLowerBound:
+        backlog?.overdueAccountCountIsLowerBound ?? null,
+      oldestOverdueAgeSeconds,
     },
   };
 }

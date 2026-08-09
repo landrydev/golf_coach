@@ -15,31 +15,43 @@ export const CLIENT_MUTATION_TIMEOUT_MS = 10_000;
 export const CLIENT_MUTATION_MAX_RESPONSE_BYTES = 8 * 1024 * 1024;
 
 const RETRYABLE_RESPONSE_STATUSES = new Set([408, 425, 429]);
+const SAFE_CLIENT_REQUEST_ID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export class ClientMutationOutcomeUnknownError extends Error {
   readonly reason: ClientMutationOutcomeUnknownReason;
   readonly status: number | null;
+  readonly requestId: string | null;
 
   constructor(
     reason: ClientMutationOutcomeUnknownReason,
     status: number | null = null,
+    requestId: string | null = null,
   ) {
     super("The mutation outcome is unknown.");
     this.name = "ClientMutationOutcomeUnknownError";
     this.reason = reason;
     this.status = status;
+    this.requestId = safeClientRequestId(requestId);
   }
 }
 
 export class ClientMutationApiError extends Error {
   readonly status: number;
   readonly code: string | null;
+  readonly requestId: string | null;
 
-  constructor(status: number, code: string | null, message: string) {
+  constructor(
+    status: number,
+    code: string | null,
+    message: string,
+    requestId: string | null = null,
+  ) {
     super(message);
     this.name = "ClientMutationApiError";
     this.status = status;
     this.code = code;
+    this.requestId = safeClientRequestId(requestId);
   }
 }
 
@@ -72,6 +84,7 @@ export async function requestClientMutation(
   }
 
   let activeReader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+  let activeRequestId: string | null = null;
   let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
     const operation = Promise.resolve().then(async () => {
@@ -80,12 +93,14 @@ export async function requestClientMutation(
         redirect: "error",
         signal: controller.signal,
       });
+      activeRequestId = clientMutationResponseRequestId(response);
       if (response.redirected) {
         controller.abort();
         void cancelResponseBody(response);
         throw new ClientMutationOutcomeUnknownError(
           "redirected_response",
           response.status,
+          activeRequestId,
         );
       }
       if (
@@ -97,6 +112,7 @@ export async function requestClientMutation(
         throw new ClientMutationOutcomeUnknownError(
           "retryable_response",
           response.status,
+          activeRequestId,
         );
       }
 
@@ -119,14 +135,24 @@ export async function requestClientMutation(
       timeout = setTimeout(() => {
         controller.abort();
         void activeReader?.cancel().catch(() => undefined);
-        reject(new ClientMutationOutcomeUnknownError("timeout"));
+        reject(
+          new ClientMutationOutcomeUnknownError(
+            "timeout",
+            null,
+            activeRequestId,
+          ),
+        );
       }, timeoutMs);
     });
 
     return await Promise.race([operation, expired]);
   } catch (error) {
     if (error instanceof ClientMutationOutcomeUnknownError) throw error;
-    throw new ClientMutationOutcomeUnknownError("transport");
+    throw new ClientMutationOutcomeUnknownError(
+      "transport",
+      null,
+      activeRequestId,
+    );
   } finally {
     if (timeout) clearTimeout(timeout);
     callerSignal?.removeEventListener("abort", forwardAbort);
@@ -161,10 +187,16 @@ export function clientMutationErrorMessage(
   recovery: "retry_same_attempt" | "reload_before_retry",
   fallback: string,
 ): string {
+  let message: string;
   if (isClientMutationOutcomeUnknown(error)) {
-    return clientMutationOutcomeUnknownMessage(action, recovery);
+    message = clientMutationOutcomeUnknownMessage(action, recovery);
+  } else {
+    message = error instanceof Error ? error.message : fallback;
   }
-  return error instanceof Error ? error.message : fallback;
+  return clientMutationReferenceMessage(
+    message,
+    clientMutationErrorRequestId(error),
+  );
 }
 
 /**
@@ -185,6 +217,7 @@ export async function requireClientMutationJson<T>(
     throw new ClientMutationOutcomeUnknownError(
       "malformed_success_response",
       response.status,
+      clientMutationResponseRequestId(response),
     );
   }
   let value: unknown;
@@ -195,18 +228,30 @@ export async function requireClientMutationJson<T>(
       throw new ClientMutationOutcomeUnknownError(
         "malformed_success_response",
         response.status,
+        clientMutationResponseRequestId(response),
       );
     }
-    throw new ClientMutationApiError(response.status, null, fallback);
+    throw new ClientMutationApiError(
+      response.status,
+      null,
+      fallback,
+      clientMutationResponseRequestId(response),
+    );
   }
 
   if (!response.ok) {
-    throw clientMutationApiError(response.status, value, fallback);
+    throw clientMutationApiError(
+      response.status,
+      value,
+      fallback,
+      clientMutationResponseRequestId(response),
+    );
   }
   if (!isExpectedSuccess(value)) {
     throw new ClientMutationOutcomeUnknownError(
       "malformed_success_response",
       response.status,
+      clientMutationResponseRequestId(response),
     );
   }
   return value as T;
@@ -227,7 +272,7 @@ export async function requireClientMutationSuccess(
       allowedSuccessStatuses &&
       !allowedSuccessStatuses.includes(response.status)
     ) {
-      throw clientMutationMalformedSuccess(response.status);
+      throw clientMutationMalformedSuccess(response);
     }
     return;
   }
@@ -238,15 +283,21 @@ export async function requireClientMutationSuccess(
   } catch {
     // A malformed non-2xx body is still a definitive failure.
   }
-  throw clientMutationApiError(response.status, value, fallback);
+  throw clientMutationApiError(
+    response.status,
+    value,
+    fallback,
+    clientMutationResponseRequestId(response),
+  );
 }
 
 export function clientMutationMalformedSuccess(
-  status: number,
+  response: Pick<Response, "status" | "headers">,
 ): ClientMutationOutcomeUnknownError {
   return new ClientMutationOutcomeUnknownError(
     "malformed_success_response",
-    status,
+    response.status,
+    safeClientRequestId(response.headers.get("x-request-id")),
   );
 }
 
@@ -254,6 +305,7 @@ function clientMutationApiError(
   status: number,
   value: unknown,
   fallback: string,
+  requestId: string | null,
 ): ClientMutationApiError {
   let code: string | null = null;
   let message = fallback;
@@ -279,7 +331,41 @@ function clientMutationApiError(
       code = value.error.code;
     }
   }
-  return new ClientMutationApiError(status, code, message);
+  return new ClientMutationApiError(status, code, message, requestId);
+}
+
+/**
+ * Correlation is accepted only from the response header selected by the
+ * trusted application boundary. Invalid or caller-shaped values are discarded
+ * rather than copied into UI text or client diagnostics.
+ */
+export function clientMutationResponseRequestId(
+  response: Pick<Response, "headers">,
+): string | null {
+  return safeClientRequestId(response.headers.get("x-request-id"));
+}
+
+export function clientMutationErrorRequestId(error: unknown): string | null {
+  return error instanceof ClientMutationOutcomeUnknownError ||
+    error instanceof ClientMutationApiError
+    ? error.requestId
+    : null;
+}
+
+export function clientMutationReferenceMessage(
+  message: string,
+  requestId: string | null | undefined,
+): string {
+  const safeRequestId = safeClientRequestId(requestId ?? null);
+  return safeRequestId === null
+    ? message
+    : `${message} Reference: ${safeRequestId}.`;
+}
+
+function safeClientRequestId(value: string | null): string | null {
+  return value && SAFE_CLIENT_REQUEST_ID.test(value)
+    ? value.toLowerCase()
+    : null;
 }
 
 function browserFetch(
@@ -321,6 +407,7 @@ async function bufferResponseBody(
         throw new ClientMutationOutcomeUnknownError(
           "response_too_large",
           response.status,
+          clientMutationResponseRequestId(response),
         );
       }
       chunks.push(value);

@@ -15,6 +15,7 @@ import { CLIENT_MUTATION_MAX_RESPONSE_BYTES } from "../lib/client-mutation-recov
 
 const SESSION_CONTEXT = "a".repeat(64);
 const OTHER_SESSION_CONTEXT = "b".repeat(64);
+const SAFE_REQUEST_ID = "2d48a8b9-0777-4dd0-b36a-f2fe065e1e3c";
 
 test("serialized client tasks make a successor the final cookie writer", async () => {
   const queue = createSerialClientTaskQueue();
@@ -537,6 +538,51 @@ test("golfer response failures distinguish definitive rejection from outcome unk
   }
 });
 
+test("golfer response results propagate only safe server request references", async () => {
+  const rejected = await requestGolferResponse(
+    "decline",
+    "golfer-response-reference-key-0001",
+    SESSION_CONTEXT,
+    async () =>
+      Response.json(
+        { error: { message: "This response was rejected." } },
+        {
+          status: 409,
+          headers: { "X-Request-ID": SAFE_REQUEST_ID.toUpperCase() },
+        },
+      ),
+  );
+  assert.equal(rejected.kind, "rejected");
+  assert.equal(rejected.requestId, SAFE_REQUEST_ID);
+
+  const unknown = await requestGolferResponse(
+    "wait",
+    "golfer-response-reference-key-0002",
+    SESSION_CONTEXT,
+    async () =>
+      new Response(null, {
+        status: 503,
+        headers: { "X-Request-ID": SAFE_REQUEST_ID },
+      }),
+  );
+  assert.deepEqual(unknown, {
+    kind: "outcome_unknown",
+    requestId: SAFE_REQUEST_ID,
+  });
+
+  const invalid = await requestGolferResponse(
+    "wait",
+    "golfer-response-reference-key-0003",
+    SESSION_CONTEXT,
+    async () =>
+      new Response(null, {
+        status: 503,
+        headers: { "X-Request-ID": "private-data-is-not-a-request-id" },
+      }),
+  );
+  assert.deepEqual(invalid, { kind: "outcome_unknown" });
+});
+
 test("golfer response exposes only bounded machine errors and classifies invalidated sessions", async () => {
   const unavailable = await requestGolferResponse(
     "wait",
@@ -686,6 +732,10 @@ test("golfer choices restore one pending retry with accessible busy and live sta
   assert.match(component, /attemptExternalHandoffRecord\(sessionContext\)/);
   assert.match(component, /activateClientRequestScope\(/);
   assert.match(component, /retireClientRequestScope\(/);
+  assert.match(
+    component,
+    /clientMutationReferenceMessage\([\s\S]*?result\.requestId/,
+  );
   const responseAwait = component.indexOf(
     "const result = await requestGolferResponse",
   );
@@ -824,6 +874,55 @@ test("share exchange distinguishes retryable transport/service failures from rej
   assert.deepEqual(offline, { kind: "retryable" });
 });
 
+test("share exchange results propagate only safe server request references", async () => {
+  const success = await requestShareExchange(
+    "referenced-token",
+    async () =>
+      Response.json(
+        { sessionContext: SESSION_CONTEXT },
+        { headers: { "X-Request-ID": SAFE_REQUEST_ID.toUpperCase() } },
+      ),
+  );
+  assert.equal(success.kind, "success");
+  assert.equal(success.requestId, SAFE_REQUEST_ID);
+
+  const retryable = await requestShareExchange(
+    "referenced-token",
+    async () =>
+      new Response(null, {
+        status: 503,
+        headers: { "X-Request-ID": SAFE_REQUEST_ID },
+      }),
+  );
+  assert.deepEqual(retryable, {
+    kind: "retryable",
+    requestId: SAFE_REQUEST_ID,
+  });
+
+  const unavailable = await requestShareExchange(
+    "referenced-token",
+    async () =>
+      new Response(null, {
+        status: 404,
+        headers: { "X-Request-ID": SAFE_REQUEST_ID },
+      }),
+  );
+  assert.deepEqual(unavailable, {
+    kind: "unavailable",
+    requestId: SAFE_REQUEST_ID,
+  });
+
+  const invalid = await requestShareExchange(
+    "referenced-token",
+    async () =>
+      new Response(null, {
+        status: 503,
+        headers: { "X-Request-ID": "private-data-is-not-a-request-id" },
+      }),
+  );
+  assert.deepEqual(invalid, { kind: "retryable" });
+});
+
 test("share exchange times out to a retryable state and aborts the pending request", async () => {
   let aborted = false;
   const result = await requestShareExchange(
@@ -942,6 +1041,10 @@ test("ShareAccess preserves retryable fragments and exposes accessible recovery"
     /generationSequence\.current = generation\.id;[\s\S]*?currentGeneration\.current = generation;[\s\S]*?shareExchangeQueue[\s\S]*?if \(!ownsGeneration\(generation\)\) return;[\s\S]*?exchangeCapability\(generation, token\)/,
   );
   assert.match(component, /const shareExchangeQueue = createSerialClientTaskQueue\(\)/);
+  assert.match(
+    component,
+    /setRequestId\(result\.requestId \?\? null\)[\s\S]*?clientMutationReferenceMessage\(/,
+  );
   assert.match(
     component,
     /window\.addEventListener\("hashchange", beginCurrentGeneration\)[\s\S]*?window\.removeEventListener\("hashchange", beginCurrentGeneration\)[\s\S]*?active\.current = false;[\s\S]*?generationSequence\.current \+= 1;[\s\S]*?currentGeneration\.current = null;/,

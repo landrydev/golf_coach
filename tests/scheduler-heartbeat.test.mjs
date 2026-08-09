@@ -111,6 +111,9 @@ test(
     assert.deepEqual(after.body.billingReconciliation, {
       deadLetterCount: 0,
       oldestDeadLetterAgeSeconds: null,
+      overdueAccountCount: 0,
+      overdueAccountCountIsLowerBound: false,
+      oldestOverdueAgeSeconds: null,
     });
     assertSafeOperationalPayload(after.body);
 
@@ -348,6 +351,153 @@ test(
 );
 
 test(
+  "scheduler health detects and drains actionable work beyond the 12-account sweep",
+  { timeout: 120_000 },
+  async (context) => {
+    const priceId = "price_scheduler_backlog_test";
+    const createdSeconds = Math.floor(Date.now() / 1_000) - 3_600;
+    const expiresSeconds = createdSeconds + 24 * 60 * 60;
+    const providerCalls = [];
+    const worker = await startD1Worker(
+      {
+        BILLING_CHECKOUT_ENABLED: "false",
+        RELEASE_ID: releaseId,
+        STRIPE_SECRET_KEY: "sk_test_scheduler_backlog_synthetic_only",
+        STRIPE_WEBHOOK_SECRET: "whsec_scheduler_backlog_synthetic_only",
+        STRIPE_CHECKOUT_PRICE_ID: priceId,
+        STRIPE_RECOGNIZED_PRICE_IDS: priceId,
+        SUBSCRIPTION_ENTITLEMENT_PRICE_IDS: priceId,
+        SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS: "3600",
+        STRIPE_CHECKOUT_SESSION_LIFETIME_SECONDS: "3600",
+      },
+      {
+        triggerHandlers: true,
+        outboundService: async (request) => {
+          const path = new URL(request.url).pathname;
+          const match = path.match(/^\/v1\/checkout\/sessions\/cs_backlog_(\d{2})$/);
+          assert.ok(match, `unexpected provider path ${path}`);
+          providerCalls.push(path);
+          const suffix = match[1];
+          return Response.json({
+            id: `cs_backlog_${suffix}`,
+            mode: "subscription",
+            status: "open",
+            url: null,
+            client_reference_id: `backlog_account_${suffix}`,
+            customer: null,
+            subscription: null,
+            created: createdSeconds,
+            expires_at: expiresSeconds,
+            metadata: {
+              account_id: `backlog_account_${suffix}`,
+              checkout_attempt_id: `backlog_attempt_${suffix}`,
+              price_id: priceId,
+            },
+          });
+        },
+      },
+    );
+    context.after(() => worker.dispose());
+
+    const overdueAt = Date.now() - 30 * 60 * 1_000;
+    await worker.inspect([
+      {
+        sql: `with recursive sequence(n) as (
+          select 1 union all select n + 1 from sequence where n < 13
+        ) insert into accounts (
+          id, auth_provider, auth_subject, primary_email, normalized_email,
+          status, created_at, updated_at
+        ) select printf('backlog_account_%02d', n), 'siwc',
+          printf('backlog_subject_%02d', n),
+          printf('backlog-%02d@example.test', n),
+          printf('backlog-%02d@example.test', n),
+          'active', ?, ? from sequence`,
+        params: [overdueAt, overdueAt],
+      },
+      {
+        sql: `with recursive sequence(n) as (
+          select 1 union all select n + 1 from sequence where n < 13
+        ) insert into billing_checkout_attempts (
+          id, account_id, provider, state, request_version, idempotency_key,
+          provider_price_id, application_origin, customer_email,
+          provider_expires_at, provider_session_id, provider_created_at,
+          created_at, updated_at
+        ) select printf('backlog_attempt_%02d', n),
+          printf('backlog_account_%02d', n), 'stripe', 'open', 1,
+          printf('backlog-key-%02d', n), ?, ?,
+          printf('backlog-%02d@example.test', n), ?,
+          printf('cs_backlog_%02d', n), ?, ?, ? from sequence`,
+        params: [
+          priceId,
+          testOrigin,
+          expiresSeconds * 1_000,
+          createdSeconds * 1_000,
+          overdueAt,
+          overdueAt,
+        ],
+      },
+    ]);
+
+    const boundedBacklog = await operationalHealth(worker);
+    assert.equal(boundedBacklog.response.status, 503);
+    assert.equal(boundedBacklog.body.scheduler.state, "never_run");
+    assert.equal(
+      boundedBacklog.body.billingReconciliation.overdueAccountCount,
+      13,
+    );
+    assert.equal(
+      boundedBacklog.body.billingReconciliation
+        .overdueAccountCountIsLowerBound,
+      true,
+    );
+    assert.ok(
+      boundedBacklog.body.billingReconciliation.oldestOverdueAgeSeconds >=
+        1_800,
+    );
+    assertSafeOperationalPayload(boundedBacklog.body);
+
+    assert.equal((await worker.dispatchScheduled()).status, 200);
+    assert.equal(providerCalls.length, 12);
+
+    const backlogged = await operationalHealth(worker);
+    assert.equal(backlogged.response.status, 503);
+    assert.equal(backlogged.body.status, "degraded");
+    assert.deepEqual(backlogged.body.scheduler.result, {
+      considered: 12,
+      attempted: 12,
+      succeeded: 12,
+      failed: 0,
+      deadLetterCount: 0,
+    });
+    assert.equal(
+      backlogged.body.billingReconciliation.overdueAccountCount,
+      1,
+    );
+    assert.equal(
+      backlogged.body.billingReconciliation.overdueAccountCountIsLowerBound,
+      false,
+    );
+    assert.ok(
+      backlogged.body.billingReconciliation.oldestOverdueAgeSeconds >= 1_800,
+    );
+    assertSafeOperationalPayload(backlogged.body);
+
+    assert.equal((await worker.dispatchScheduled()).status, 200);
+    assert.equal(providerCalls.length, 13);
+    const drained = await operationalHealth(worker);
+    assert.equal(drained.response.status, 200);
+    assert.equal(drained.body.status, "ready");
+    assert.deepEqual(drained.body.billingReconciliation, {
+      deadLetterCount: 0,
+      oldestDeadLetterAgeSeconds: null,
+      overdueAccountCount: 0,
+      overdueAccountCountIsLowerBound: false,
+      oldestOverdueAgeSeconds: null,
+    });
+  },
+);
+
+test(
   "operational health exposes only the aggregate dead-letter count and age",
   { timeout: 60_000 },
   async (context) => {
@@ -532,6 +682,13 @@ test(
       "billing_reconciliation_sweep_failed",
     );
     assert.equal(health.body.scheduler.result, null);
+    assert.deepEqual(health.body.billingReconciliation, {
+      deadLetterCount: 0,
+      oldestDeadLetterAgeSeconds: null,
+      overdueAccountCount: null,
+      overdueAccountCountIsLowerBound: null,
+      oldestOverdueAgeSeconds: null,
+    });
     assertSafeOperationalPayload(health.body);
   },
 );

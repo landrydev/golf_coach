@@ -17,6 +17,7 @@ import {
   ownsClientRequest,
   retireClientRequestScope,
 } from "@/lib/client-request-ownership";
+import { clientMutationReferenceMessage } from "@/lib/client-mutation-recovery";
 import { buildCoachContactMailtoUri } from "@/lib/mailto";
 import styles from "./plan.module.css";
 
@@ -177,16 +178,28 @@ export function GolferChoices({
 
       if (result.kind === "outcome_unknown") {
         setIsError(true);
-        setMessage(OUTCOME_UNKNOWN_MESSAGE);
+        setMessage(
+          clientMutationReferenceMessage(
+            OUTCOME_UNKNOWN_MESSAGE,
+            result.requestId,
+          ),
+        );
         return;
       }
       if (result.kind === "rejected") {
         setIsError(true);
         if (golferResponseRequiresSessionReload(result)) {
           setSessionReloadRequired(true);
-          setMessage(SESSION_RELOAD_REQUIRED_MESSAGE);
+          setMessage(
+            clientMutationReferenceMessage(
+              SESSION_RELOAD_REQUIRED_MESSAGE,
+              result.requestId,
+            ),
+          );
         } else {
-          setMessage(result.message);
+          setMessage(
+            clientMutationReferenceMessage(result.message, result.requestId),
+          );
         }
         return;
       }

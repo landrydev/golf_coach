@@ -166,6 +166,9 @@ export async function startD1Worker(bindingOverrides = {}, runtimeOptions = {}) 
       database() {
         return miniflare.getD1Database("DB");
       },
+      media() {
+        return miniflare.getR2Bucket("MEDIA");
+      },
       async inspect(queries) {
         await miniflare.setOptions({
           ...common,

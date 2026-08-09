@@ -5,6 +5,7 @@ import {
   type BillingPolicy,
   type BillingPolicyEnvironment,
 } from "@/lib/billing-policy";
+import { failureResponseForRequest } from "@/lib/failure-response";
 
 export const instructorAccessModes = [
   "owner_private",
@@ -223,9 +224,7 @@ export function productAccessDeniedResponse(
   >,
   request: Request,
 ): Response {
-  const isApi = normalizeApplicationPath(new URL(request.url).pathname).startsWith(
-    "/api/",
-  );
+  const applicationPath = normalizeApplicationPath(new URL(request.url).pathname);
   const details =
     decision === "subscription_required"
       ? {
@@ -254,29 +253,20 @@ export function productAccessDeniedResponse(
             message: "Product access is temporarily unavailable.",
             heading: "Access temporarily unavailable",
           };
-  const headers = {
-    "Cache-Control": "private, no-store, max-age=0",
-    "X-Robots-Tag": "noindex, nofollow, noarchive",
-  };
-
-  if (isApi) {
-    return Response.json(
-      { error: { code: details.code, message: details.message } },
-      { status: details.status, headers },
-    );
-  }
-
-  const billingLink =
-    decision === "subscription_required"
-      ? '<p><a href="/app/billing">Review plan and billing</a></p><p><a href="/app/settings/shares">Review or revoke active private access</a></p>'
-      : "";
-  return new Response(
-    `<!doctype html><html lang="en-CA"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${details.heading} | Roadmap</title></head><body><main><h1>${details.heading}</h1><p>${details.message}</p>${billingLink}<p><a href="/support">Contact support</a></p></main></body></html>`,
-    {
-      status: details.status,
-      headers: { ...headers, "Content-Type": "text/html; charset=utf-8" },
-    },
-  );
+  return failureResponseForRequest(request, applicationPath, {
+    ...details,
+    links:
+      decision === "subscription_required"
+        ? [
+            { href: "/app/billing", label: "Review plan and billing" },
+            {
+              href: "/app/settings/shares",
+              label: "Review or revoke active private access",
+            },
+            { href: "/support", label: "Contact support" },
+          ]
+        : [{ href: "/support", label: "Contact support" }],
+  });
 }
 
 function readProductAccessConfiguration(

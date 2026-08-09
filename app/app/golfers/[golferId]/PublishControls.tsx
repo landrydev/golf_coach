@@ -128,7 +128,7 @@ export function PublishControls({
         }),
       });
       if (response.ok && response.status !== 201) {
-        throw clientMutationMalformedSuccess(response.status);
+        throw clientMutationMalformedSuccess(response);
       }
       result = await requireClientMutationJson<ShareMutationEnvelope>(
         response,
@@ -205,7 +205,7 @@ export function PublishControls({
         },
       );
       if (response.ok && response.status !== 201) {
-        throw clientMutationMalformedSuccess(response.status);
+        throw clientMutationMalformedSuccess(response);
       }
       result = await requireClientMutationJson<ShareMutationEnvelope>(
         response,
@@ -293,7 +293,7 @@ export function PublishControls({
         },
       );
       if (response.ok && response.status !== 201) {
-        throw clientMutationMalformedSuccess(response.status);
+        throw clientMutationMalformedSuccess(response);
       }
       result = await requireClientMutationJson<ShareMutationEnvelope>(
         response,

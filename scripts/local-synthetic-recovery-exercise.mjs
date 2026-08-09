@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 import {
   mkdir,
   mkdtemp,
@@ -12,6 +12,10 @@ import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Miniflare } from "miniflare";
+import {
+  identityHeaders,
+  startD1Worker,
+} from "../tests/support/d1-worker.mjs";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const wranglerEntry = resolve(
@@ -80,7 +84,7 @@ const expectedTableRowCounts = {
   billing_reconciliation_targets: 2,
   billing_subscription_projection_generations: 2,
   coaching_packages: 2,
-  consent_records: 2,
+  consent_records: 3,
   data_requests: 2,
   development_plans: 2,
   evidence_items: 2,
@@ -234,6 +238,7 @@ const baseVerificationStatements = [
 let workDirectory;
 let sourceR2;
 let restoredR2;
+let restoredApplication;
 const exerciseStartedAt = Date.now();
 
 try {
@@ -317,6 +322,13 @@ try {
     sourceState,
   );
   const r2Result = await exerciseR2(workDirectory, restoredState);
+  // Miniflare's local proxy layer is exercised one runtime group at a time.
+  // Materialize only the already-verified synthetic restored objects, then
+  // close both R2 exercise runtimes before booting the exact application.
+  await disposeLocalRuntime(restoredR2);
+  restoredR2 = undefined;
+  await disposeLocalRuntime(sourceR2);
+  sourceR2 = undefined;
 
   await writeFile(
     normalizationSqlPath,
@@ -330,6 +342,10 @@ try {
   );
   assertRepresentativeState(normalizedState, { recoveryNormalized: true });
   assertNormalizationWasBounded(restoredState, normalizedState);
+  const applicationResult = await exerciseRestoredApplication(
+    snapshot,
+    r2Result.applicationObjects,
+  );
 
   const runtimeVersions = await readRuntimeVersions();
   const evidenceRecord = buildEvidenceRecord({
@@ -342,6 +358,7 @@ try {
     r2Result,
     runtimeVersions,
     snapshot,
+    applicationResult,
   });
   assertPrivacySafeEvidenceRecord(evidenceRecord);
 
@@ -359,6 +376,9 @@ try {
     `PASS local R2-compatible restore: ${r2Result.objectCount} private synthetic objects, ${r2Result.totalBytes} bytes, inventory and SHA-256 checks match D1 metadata.`,
   );
   console.log(
+    "PASS restored application runtime: the exact built Worker booted against the normalized D1 snapshot and restored R2-compatible objects, then served authenticated profile, package, and workspace reads plus the expected degraded scheduler health state.",
+  );
+  console.log(
     `PASS negative integrity checks: ${evidenceRecord.negativeIntegrityScenarios.length} modified-snapshot, missing-object, and checksum-mismatch scenarios were detected.`,
   );
   console.log(
@@ -369,9 +389,23 @@ try {
   );
   console.log(`RECOVERY_EVIDENCE_JSON ${JSON.stringify(evidenceRecord)}`);
 } finally {
-  await Promise.allSettled([sourceR2?.dispose(), restoredR2?.dispose()]);
+  // Miniflare teardown uses internal proxy clients. Dispose independently and
+  // in dependency order so one instance cannot be torn down while another
+  // instance is still finishing a proxied response or object copy.
+  await disposeLocalRuntime(restoredApplication);
+  await disposeLocalRuntime(restoredR2);
+  await disposeLocalRuntime(sourceR2);
   if (workDirectory) {
     await rm(workDirectory, { force: true, recursive: true });
+  }
+}
+
+async function disposeLocalRuntime(runtime) {
+  if (!runtime) return;
+  try {
+    await runtime.dispose();
+  } catch {
+    // Cleanup must not replace the exercise's authoritative assertion error.
   }
 }
 
@@ -917,27 +951,25 @@ async function exerciseModifiedSnapshotDetection(
   ];
 }
 
-function buildRecoveryNormalizationSql() {
-  return `
-update billing_account_operation_leases
+function buildRecoveryNormalizationStatements() {
+  return [
+    `update billing_account_operation_leases
    set state = 'idle',
        operation = null,
        lease_token = null,
        lease_expires_at = null,
        last_released_at = ${recoveryNormalizationTimestamp},
        updated_at = ${recoveryNormalizationTimestamp}
- where state = 'held';
-
-update billing_events
+ where state = 'held'`,
+    `update billing_events
    set status = 'failed',
        lease_token = null,
        lease_expires_at = null,
        last_error_code = 'restore_recovered_inflight',
        last_error_message = 'Synthetic restore interrupted in-flight processing; retry required.',
        updated_at = ${recoveryNormalizationTimestamp}
- where status = 'processing';
-
-update billing_reconciliation_targets
+ where status = 'processing'`,
+    `update billing_reconciliation_targets
    set state = 'failed',
        lease_token = null,
        lease_expires_at = null,
@@ -948,9 +980,8 @@ update billing_reconciliation_targets
        last_error_message = 'Synthetic restore interrupted in-flight reconciliation; retry required.',
        last_completed_at = ${recoveryNormalizationTimestamp},
        updated_at = ${recoveryNormalizationTimestamp}
- where state = 'processing';
-
-update scheduler_heartbeat
+ where state = 'processing'`,
+    `update scheduler_heartbeat
    set state = 'failed',
        completed_at = ${recoveryNormalizationTimestamp},
        billing_configured = null,
@@ -961,11 +992,14 @@ update scheduler_heartbeat
        dead_letter_count = null,
        last_failure_code = 'restore_inflight_interrupted',
        updated_at = ${recoveryNormalizationTimestamp}
- where state = 'running';
+ where state = 'running'`,
+    `delete from abuse_rate_limits
+ where window_expires_at <= ${recoveryNormalizationTimestamp}`,
+  ];
+}
 
-delete from abuse_rate_limits
- where window_expires_at <= ${recoveryNormalizationTimestamp};
-`;
+function buildRecoveryNormalizationSql() {
+  return `${buildRecoveryNormalizationStatements().join(";\n\n")};\n`;
 }
 
 async function readRuntimeVersions() {
@@ -998,6 +1032,7 @@ async function readJson(path) {
 }
 
 function buildEvidenceRecord({
+  applicationResult,
   durationMs,
   migrationPlan,
   negativeScenarios,
@@ -1052,6 +1087,7 @@ function buildEvidenceRecord({
       objectCount: r2Result.objectCount,
       totalBytes: r2Result.totalBytes,
     },
+    restoredApplicationRuntime: applicationResult,
     snapshot: {
       byteSize: snapshot.byteLength,
       checksumAlgorithm: "sha256",
@@ -1093,6 +1129,103 @@ function assertPrivacySafeEvidenceRecord(evidenceRecord) {
       "JSON evidence contains a fixture identifier or private-object location",
     );
   }
+}
+
+async function exerciseRestoredApplication(snapshot, applicationObjects) {
+  const authenticatedEmail = "alpha@synthetic.invalid";
+  const authenticatedName = "Synthetic Instructor Alpha";
+  const ownerPepper =
+    "synthetic-restored-runtime-owner-pepper-only-2026-08-09";
+  const ownerDigest = createHmac("sha256", ownerPepper)
+    .update(authenticatedEmail)
+    .digest("hex");
+
+  restoredApplication = await startD1Worker({
+    BILLING_CHECKOUT_ENABLED: "false",
+    OWNER_PRIVATE_ACCESS_PEPPER: ownerPepper,
+    OWNER_PRIVATE_EMAIL_DIGESTS: ownerDigest,
+    RELEASE_ID: "release.synthetic.restore",
+  });
+  const applicationDatabase = await restoredApplication.database();
+  await applicationDatabase.exec(snapshot.toString("utf8"));
+  await applicationDatabase.batch(
+    buildRecoveryNormalizationStatements().map((statement) =>
+      applicationDatabase.prepare(statement),
+    ),
+  );
+
+  const applicationBucket = await restoredApplication.media();
+  for (const item of applicationObjects) {
+    await applicationBucket.put(item.key, item.body, {
+      customMetadata: item.customMetadata,
+      httpMetadata: item.httpMetadata,
+    });
+  }
+  const restoredInventory = applicationObjects.map((item) => ({
+    customMetadata: item.customMetadata,
+    httpMetadata: item.httpMetadata,
+    key: item.key,
+    sha256: item.sha256,
+    size: item.size,
+  }));
+  assertR2InventoryMatches(
+    await inventoryR2(applicationBucket),
+    restoredInventory,
+  );
+
+  const headers = identityHeaders(authenticatedEmail, authenticatedName);
+  const profileResponse = await restoredApplication.dispatch("/api/profile", {
+    headers,
+  });
+  assert.equal(profileResponse.status, 200, "restored profile read failed");
+  const profile = await profileResponse.json();
+  assert.equal(profile.profile?.businessName, "Synthetic Alpha Coaching");
+
+  const packagesResponse = await restoredApplication.dispatch("/api/packages", {
+    headers,
+  });
+  assert.equal(packagesResponse.status, 200, "restored package read failed");
+  const packages = await packagesResponse.json();
+  assert.equal(packages.packages?.length, 1);
+
+  const workspaceResponse = await restoredApplication.dispatch("/app", {
+    headers: { ...headers, accept: "text/html" },
+  });
+  assert.equal(workspaceResponse.status, 200, "restored workspace boot failed");
+  assert.match(
+    workspaceResponse.headers.get("content-type") ?? "",
+    /^text\/html\b/iu,
+  );
+  const workspaceBody = await workspaceResponse.text();
+  assert.match(workspaceBody, /Synthetic Golfer Alpha/u);
+  assert.match(workspaceBody, /Synthetic Alpha Roadmap/u);
+  assert.doesNotMatch(workspaceBody, /Golfer records are unavailable\./u);
+
+  const healthResponse = await restoredApplication.dispatch(
+    "/api/operations/health",
+    { headers },
+  );
+  assert.equal(
+    healthResponse.status,
+    503,
+    "post-restore interrupted scheduler must keep operational health degraded",
+  );
+  const health = await healthResponse.json();
+  assert.equal(health.application?.status, "ready");
+  assert.equal(health.scheduler?.state, "failed");
+  assert.equal(
+    health.scheduler?.lastFailureCode,
+    "restore_inflight_interrupted",
+  );
+
+  return {
+    authenticatedProfileRead: true,
+    authenticatedPackageRead: true,
+    authenticatedWorkspaceRead: true,
+    exactBuiltWorkerBooted: true,
+    expectedInterruptedSchedulerDegradationObserved: true,
+    restoredObjectInventoryVerified: true,
+  };
 }
 
 async function exerciseR2(root, restoredState) {
@@ -1187,7 +1320,17 @@ async function exerciseR2(root, restoredState) {
     "private-object inventory contains an unreferenced synthetic object",
   );
 
+  const applicationObjects = [];
+  for (const item of restoredInventory) {
+    const object = await restoredBucket.get(item.key);
+    assert.ok(object, `restored application object disappeared: ${item.key}`);
+    const body = Buffer.from(await object.arrayBuffer());
+    assertObjectChecksum(body, item);
+    applicationObjects.push({ ...item, body });
+  }
+
   return {
+    applicationObjects,
     negativeScenarios: [
       { id: "r2_missing_object_detected", passed: true },
       { id: "r2_checksum_mismatch_detected", passed: true },
@@ -1481,11 +1624,16 @@ values
    'granted', 'synthetic-v1', 'Synthetic terms acceptance evidence.',
    'self_service', 'synthetic-terms-check', 'acct-alpha',
    ${baseTimestamp + 22}, ${baseTimestamp + 22}),
+  ('consent-alpha-golfer-record', 'acct-alpha', null, 'account',
+   'golfer_record', 'granted', 'synthetic-golfer-record-v1',
+   'Synthetic authorization for test-only golfer records; no real person is represented.',
+   'self_service', 'synthetic-golfer-record-check', 'acct-alpha',
+   ${baseTimestamp + 23}, ${baseTimestamp + 23}),
   ('consent-beta-golfer', 'acct-beta', 'golfer-beta', 'golfer',
    'roadmap_sharing', 'granted', 'synthetic-v1',
    'Synthetic roadmap-sharing evidence.', 'instructor_attested',
-   'synthetic-sharing-check', 'acct-beta', ${baseTimestamp + 23},
-   ${baseTimestamp + 23});
+   'synthetic-sharing-check', 'acct-beta', ${baseTimestamp + 24},
+   ${baseTimestamp + 24});
 
 insert into development_plans
   (id, account_id, golfer_id, title, status, revision, approved_revision,

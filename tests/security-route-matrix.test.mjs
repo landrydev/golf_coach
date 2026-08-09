@@ -224,24 +224,26 @@ test(
       "GET invalid normalized API path",
     );
 
-    const htmlResponse = await worker.dispatch("/api/profile", {
-      method: "PUT",
+    const broadAcceptFetch = await worker.dispatch("/app", {
+      method: "GET",
       headers: {
-        ...writeHeaders("coach.a@example.test", "Coach Avery"),
+        ...identityHeaders("coach.a@example.test", "Coach Avery"),
         accept: "text/html,application/xhtml+xml",
+        "sec-fetch-dest": "document",
+        "sec-fetch-mode": "navigate",
       },
-      body: "{}",
     });
-    assert.equal(htmlResponse.status, 503);
+    assert.equal(broadAcceptFetch.status, 503);
     assert.match(
-      htmlResponse.headers.get("content-type") ?? "",
-      /^text\/html/i,
+      broadAcceptFetch.headers.get("content-type") ?? "",
+      /^application\/json/i,
     );
-    const html = await htmlResponse.text();
-    assert.match(html, /<main>/i);
-    assert.match(html, /<h1>Changes temporarily unavailable<\/h1>/i);
-    assert.match(html, /href="\/support"/i);
-    assert.doesNotMatch(html, /frozen|invalid|APPLICATION_WRITE_MODE/i);
+    assert.deepEqual(await broadAcceptFetch.json(), {
+      error: {
+        code: "application_writes_unavailable",
+        message: "Changes are temporarily unavailable. Try again later.",
+      },
+    });
 
     const missingIdentity = await worker.dispatch("/api/profile", {
       method: "GET",

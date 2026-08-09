@@ -13,6 +13,72 @@ import {
 
 export const READINESS_DEPENDENCY_TIMEOUT_MS = 2_000;
 
+/**
+ * Prove the latest security-sensitive D1 shape, not merely that D1 answers.
+ * Migration 0010 rebuilds `abuse_rate_limits` so the two share-close scopes
+ * are admitted. Its six-column composite-key shape and expiry index are also
+ * required by every current rate-limit path. The query returns one boolean;
+ * schema names and DDL never leave this private dependency check.
+ */
+const DATABASE_SCHEMA_READINESS_QUERY = `WITH required_columns (
+    name, declared_type, required_not_null, default_sql, primary_key_position
+  ) AS (
+    VALUES
+      ('scope', 'TEXT', 1, null, 1),
+      ('subject_key_hash', 'TEXT', 1, null, 2),
+      ('window_started_at', 'INTEGER', 1, null, 3),
+      ('window_expires_at', 'INTEGER', 1, null, 0),
+      ('request_count', 'INTEGER', 1, '1', 0),
+      ('last_request_at', 'INTEGER', 1, null, 0)
+  ), actual_columns AS (
+    SELECT name,
+           upper(trim(type)) AS declared_type,
+           "notnull" AS required_not_null,
+           trim(dflt_value) AS default_sql,
+           pk AS primary_key_position
+      FROM pragma_table_info('abuse_rate_limits')
+  )
+  SELECT CASE WHEN
+    (SELECT count(*) FROM actual_columns) = 6
+    AND NOT EXISTS (
+      SELECT 1
+        FROM required_columns AS required
+        LEFT JOIN actual_columns AS actual ON actual.name = required.name
+       WHERE actual.name IS NULL
+          OR actual.declared_type <> required.declared_type
+          OR actual.required_not_null <> required.required_not_null
+          OR coalesce(actual.default_sql, '') <> coalesce(required.default_sql, '')
+          OR actual.primary_key_position <> required.primary_key_position
+    )
+    AND (
+      SELECT count(*)
+        FROM pragma_index_list('abuse_rate_limits')
+       WHERE name = 'abuse_rate_limits_expires_idx'
+         AND "unique" = 0
+         AND origin = 'c'
+         AND partial = 0
+    ) = 1
+    AND (
+      SELECT count(*)
+        FROM pragma_index_info('abuse_rate_limits_expires_idx')
+       WHERE seqno = 0
+         AND name = 'window_expires_at'
+    ) = 1
+    AND (
+      SELECT count(*)
+        FROM pragma_index_info('abuse_rate_limits_expires_idx')
+    ) = 1
+    AND EXISTS (
+      SELECT 1
+        FROM sqlite_master
+       WHERE type = 'table'
+         AND name = 'abuse_rate_limits'
+         AND instr(lower(sql), 'abuse_rate_limits_scope_check') > 0
+         AND instr(lower(sql), '''share_close_network''') > 0
+         AND instr(lower(sql), '''share_close_session''') > 0
+    )
+    THEN 1 ELSE 0 END AS healthy`;
+
 export type ApplicationReadiness = Readonly<{
   status: "ready" | "degraded";
   writeControl: Readonly<{
@@ -84,7 +150,7 @@ export async function loadApplicationReadiness(input: {
   [checks.database, checks.media] = await Promise.all([
     boundedDependencyCheck(async () => {
       const result = await input.database
-        .prepare("SELECT 1 AS healthy")
+        .prepare(DATABASE_SCHEMA_READINESS_QUERY)
         .first<{ healthy: number }>();
       return result?.healthy === 1;
     }, dependencyTimeoutMs),

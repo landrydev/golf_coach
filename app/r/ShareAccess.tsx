@@ -6,6 +6,7 @@ import {
   createSerialClientTaskQueue,
   requestShareExchange,
 } from "@/lib/client-recovery";
+import { clientMutationReferenceMessage } from "@/lib/client-mutation-recovery";
 import styles from "./share.module.css";
 
 type AccessState =
@@ -29,6 +30,7 @@ const shareExchangeQueue = createSerialClientTaskQueue();
 export function ShareAccess() {
   const [state, setState] = useState<AccessState>("loading");
   const [redirectTo, setRedirectTo] = useState<string | null>(null);
+  const [requestId, setRequestId] = useState<string | null>(null);
   const active = useRef(false);
   const generationSequence = useRef(0);
   const currentGeneration = useRef<AccessGeneration | null>(null);
@@ -86,6 +88,11 @@ export function ShareAccess() {
     token: string,
   ) => {
     const result = await requestShareExchange(token);
+    if (
+      !runOwnedEffect(generation, () => setRequestId(result.requestId ?? null))
+    ) {
+      return;
+    }
     if (result.kind === "retryable") {
       // Keep the capability in this tab so retry and reload remain possible
       // after a transient network, timeout, throttling, or service failure.
@@ -149,6 +156,7 @@ export function ShareAccess() {
       shareToken.current = token;
     })) return;
     if (!runOwnedEffect(generation, () => setRedirectTo(null))) return;
+    if (!runOwnedEffect(generation, () => setRequestId(null))) return;
 
     if (token) {
       if (!runOwnedEffect(generation, () => setState("loading"))) return;
@@ -241,8 +249,10 @@ export function ShareAccess() {
             <span>Plan unavailable</span>
             <h1>This private roadmap cannot be opened.</h1>
             <p>
-              The link may be expired, revoked, replaced by a newer plan, or incomplete. No
-              golfer information has been disclosed. Ask the coach to send a current link.
+              {clientMutationReferenceMessage(
+                "The link may be expired, revoked, replaced by a newer plan, or incomplete. No golfer information has been disclosed. Ask the coach to send a current link.",
+                requestId,
+              )}
             </p>
           </>
         ) : null}
@@ -251,8 +261,10 @@ export function ShareAccess() {
             <span>Connection interrupted</span>
             <h1>Roadmap could not check the private link yet.</h1>
             <p>
-              The access code remains in this browser tab so you can safely try the same
-              link again. No coaching details have been disclosed.
+              {clientMutationReferenceMessage(
+                "The access code remains in this browser tab so you can safely try the same link again. No coaching details have been disclosed.",
+                requestId,
+              )}
             </p>
             <button type="button" onClick={retry}>
               Try again

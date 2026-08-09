@@ -6,12 +6,16 @@ import { fileURLToPath } from "node:url";
 import {
   CLIENT_MUTATION_MAX_RESPONSE_BYTES,
   CLIENT_MUTATION_TIMEOUT_MS,
+  ClientMutationApiError,
   ClientMutationOutcomeUnknownError,
   clientMutationErrorMessage,
+  clientMutationMalformedSuccess,
   requestClientMutation,
   requireClientMutationJson,
   requireClientMutationSuccess,
 } from "../lib/client-mutation-recovery.ts";
+
+const SAFE_REQUEST_ID = "2d48a8b9-0777-4dd0-b36a-f2fe065e1e3c";
 
 const projectRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -138,6 +142,63 @@ test("retryable responses are outcome-unknown and are never replayed", async () 
   }
 });
 
+test("failure wrappers preserve only trusted-shape response correlation IDs", async () => {
+  for (const [supplied, expected] of [
+    [SAFE_REQUEST_ID.toUpperCase(), SAFE_REQUEST_ID],
+    ["attacker-request-id-containing-private-data", null],
+  ]) {
+    await assert.rejects(
+      requestClientMutation(
+        "/api/synthetic",
+        { method: "POST" },
+        {
+          timeoutMs: 100,
+          fetcher: async () =>
+            new Response(null, {
+              status: 503,
+              headers: { "X-Request-ID": supplied },
+            }),
+        },
+      ),
+      (error) => {
+        assert.equal(error instanceof ClientMutationOutcomeUnknownError, true);
+        assert.equal(error.requestId, expected);
+        return true;
+      },
+    );
+  }
+
+  await assert.rejects(
+    requireClientMutationJson(
+      new Response(
+        JSON.stringify({ error: { code: "synthetic_conflict", message: "Conflict" } }),
+        {
+          status: 409,
+          headers: {
+            "Content-Type": "application/json",
+            "X-Request-ID": SAFE_REQUEST_ID,
+          },
+        },
+      ),
+      () => false,
+      "fallback",
+    ),
+    (error) => {
+      assert.equal(error instanceof ClientMutationApiError, true);
+      assert.equal(error.requestId, SAFE_REQUEST_ID);
+      return true;
+    },
+  );
+
+  const malformed = clientMutationMalformedSuccess(
+    new Response(null, {
+      status: 202,
+      headers: { "X-Request-ID": SAFE_REQUEST_ID },
+    }),
+  );
+  assert.equal(malformed.requestId, SAFE_REQUEST_ID);
+});
+
 test("retryable responses abort the request and cancel their bodies", async () => {
   let calls = 0;
   let cancelled = false;
@@ -240,7 +301,10 @@ test("the deadline covers a response body that stalls after headers", async () =
     }),
     {
       status: 201,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Request-ID": SAFE_REQUEST_ID,
+      },
     },
   );
 
@@ -260,6 +324,7 @@ test("the deadline covers a response body that stalls after headers", async () =
     (error) => {
       assert.equal(error instanceof ClientMutationOutcomeUnknownError, true);
       assert.equal(error.reason, "timeout");
+      assert.equal(error.requestId, SAFE_REQUEST_ID);
       return true;
     },
   );
@@ -476,6 +541,34 @@ test("outcome-unknown copy distinguishes same-attempt retry from reload-first re
     ),
     "fallback",
   );
+  assert.equal(
+    clientMutationErrorMessage(
+      new ClientMutationApiError(
+        409,
+        "synthetic_conflict",
+        "Conflict",
+        SAFE_REQUEST_ID.toUpperCase(),
+      ),
+      "anything happened",
+      "reload_before_retry",
+      "fallback",
+    ),
+    `Conflict Reference: ${SAFE_REQUEST_ID}.`,
+  );
+  assert.equal(
+    clientMutationErrorMessage(
+      new ClientMutationApiError(
+        409,
+        "synthetic_conflict",
+        "Conflict",
+        "private-data-is-not-a-request-id",
+      ),
+      "anything happened",
+      "reload_before_retry",
+      "fallback",
+    ),
+    "Conflict",
+  );
 });
 
 test("every application client network call uses a bounded recovery helper", async () => {
@@ -539,7 +632,6 @@ test("network primitives stay inside explicit browser and server transport allow
     ["lib/client-recovery.ts", ["fetch"]],
   ]);
   const approvedServerTransports = new Map([
-    ["lib/http.ts", ["fetch", "fetch"]],
     ["lib/stripe.ts", ["fetch"]],
     ["lib/synthetic-concurrency-barrier.ts", ["fetch"]],
   ]);
@@ -565,6 +657,25 @@ test("network primitives stay inside explicit browser and server transport allow
   }
 
   assert.deepEqual(actual, approved);
+});
+
+test("the network inventory recognizes calls without matching fetch metadata", () => {
+  const source = `
+    // Fetch failures remain generic.
+    request.headers.get("sec-fetch-dest");
+    request.headers.get("sec-fetch-mode");
+    fetch("/api/example");
+    globalThis.fetch("/api/example");
+    new XMLHttpRequest();
+    navigator.sendBeacon("/telemetry", "bounded");
+  `;
+
+  assert.deepEqual(
+    [...source.matchAll(CLIENT_NETWORK_PRIMITIVE)].map((match) =>
+      networkPrimitiveName(match[0]),
+    ),
+    ["fetch", "fetch", "XMLHttpRequest", "sendBeacon"],
+  );
 });
 
 test("outcome-unknown keyed retries retain their exact payload and visible state", async () => {
@@ -691,7 +802,8 @@ function networkPrimitiveName(match) {
   return "fetch";
 }
 
-const CLIENT_NETWORK_PRIMITIVE = /\bfetch\b|\bXMLHttpRequest\b|\.\s*sendBeacon\b/g;
+const CLIENT_NETWORK_PRIMITIVE =
+  /\bfetch\s*\(|\bnew\s+XMLHttpRequest\s*\(|\.\s*sendBeacon\s*\(/g;
 
 function relativePath(filename) {
   return path.relative(projectRoot, filename).replaceAll("\\", "/");

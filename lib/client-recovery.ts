@@ -1,5 +1,9 @@
 import type { GolferResponseType, PlanResponseSummary } from "./plans";
-import { requestClientMutation } from "./client-mutation-recovery.ts";
+import {
+  clientMutationErrorRequestId,
+  clientMutationResponseRequestId,
+  requestClientMutation,
+} from "./client-mutation-recovery.ts";
 
 type ClientFetch = (
   input: RequestInfo | URL,
@@ -66,22 +70,25 @@ export type ShareExchangeResult =
       kind: "success";
       sessionContext: string;
       redirectTo: SharePlanRedirect;
+      requestId?: string;
     }
-  | { kind: "retryable" }
-  | { kind: "unavailable" };
+  | { kind: "retryable"; requestId?: string }
+  | { kind: "unavailable"; requestId?: string };
 
 export type GolferResponseSubmissionResult =
   | {
       kind: "success";
       response: PlanResponseSummary;
       idempotentReplay: boolean;
+      requestId?: string;
     }
-  | { kind: "outcome_unknown" }
+  | { kind: "outcome_unknown"; requestId?: string }
   | {
       kind: "rejected";
       status: number;
       code: string | null;
       message: string;
+      requestId?: string;
     };
 
 /**
@@ -521,6 +528,7 @@ export async function requestGolferResponse(
       },
       { fetcher, timeoutMs },
     );
+    const requestReference = clientResponseRequestReference(response);
     if (!response.ok) {
       const payload = await response.json().catch(() => null);
       const error = responseError(payload);
@@ -529,28 +537,33 @@ export async function requestGolferResponse(
         status: response.status,
         code: error.code,
         message: error.message,
+        ...requestReference,
       };
     }
     if (
       ![200, 201].includes(response.status) ||
       !hasJsonContentType(response)
     ) {
-      return { kind: "outcome_unknown" };
+      return { kind: "outcome_unknown", ...requestReference };
     }
     const payload = await response.json().catch(() => null);
     if (
       !validGolferResponsePayload(payload, responseType) ||
       (response.status === 200) !== payload.idempotentReplay
     ) {
-      return { kind: "outcome_unknown" };
+      return { kind: "outcome_unknown", ...requestReference };
     }
     return {
       kind: "success",
       response: payload.response,
       idempotentReplay: payload.idempotentReplay,
+      ...requestReference,
     };
-  } catch {
-    return { kind: "outcome_unknown" };
+  } catch (error) {
+    return {
+      kind: "outcome_unknown",
+      ...clientErrorRequestReference(error),
+    };
   }
 }
 
@@ -576,26 +589,44 @@ export async function requestShareExchange(
       },
       { fetcher, timeoutMs },
     );
+    const requestReference = clientResponseRequestReference(response);
 
     if (!response.ok) {
       return isRetryableShareExchangeStatus(response.status)
-        ? { kind: "retryable" }
-        : { kind: "unavailable" };
+        ? { kind: "retryable", ...requestReference }
+        : { kind: "unavailable", ...requestReference };
     }
 
     if (response.status !== 200 || !hasJsonContentType(response)) {
-      return { kind: "retryable" };
+      return { kind: "retryable", ...requestReference };
     }
     const payload = await response.json().catch(() => null);
-    if (!validShareExchangePayload(payload)) return { kind: "retryable" };
+    if (!validShareExchangePayload(payload)) {
+      return { kind: "retryable", ...requestReference };
+    }
     return {
       kind: "success",
       sessionContext: payload.sessionContext,
       redirectTo: `${SHARE_PLAN_PATH}?context=${payload.sessionContext}`,
+      ...requestReference,
     };
-  } catch {
-    return { kind: "retryable" };
+  } catch (error) {
+    return { kind: "retryable", ...clientErrorRequestReference(error) };
   }
+}
+
+function clientResponseRequestReference(
+  response: Pick<Response, "headers">,
+): Readonly<{ requestId?: string }> {
+  const requestId = clientMutationResponseRequestId(response);
+  return requestId === null ? {} : { requestId };
+}
+
+function clientErrorRequestReference(
+  error: unknown,
+): Readonly<{ requestId?: string }> {
+  const requestId = clientMutationErrorRequestId(error);
+  return requestId === null ? {} : { requestId };
 }
 
 function validShareExchangePayload(

@@ -72,7 +72,7 @@ test(
       assertPrivate(denied);
     }
 
-    for (const path of ["/app", "/app.rsc", "/app/billing"]) {
+    for (const path of ["/app", "/app/billing"]) {
       const denied = await worker.dispatch(path, {
         headers: {
           ...identityHeaders(
@@ -80,14 +80,53 @@ test(
             unknownInstructor.name,
           ),
           accept: "text/html",
+          "sec-fetch-dest": "document",
+          "sec-fetch-mode": "navigate",
         },
       });
       assert.equal(denied.status, 403);
-      const body = await denied.text();
-      assert.match(body, /Access unavailable/);
-      assert.doesNotMatch(body, /not\.allowed|owner_private|digest|pepper/i);
+      assert.match(
+        denied.headers.get("content-type") ?? "",
+        /^application\/json/i,
+      );
+      const body = await denied.json();
+      assert.deepEqual(body, {
+        error: {
+          code: "product_access_denied",
+          message: "Product access is not available for this account.",
+        },
+      });
+      assert.doesNotMatch(
+        JSON.stringify(body),
+        /not\.allowed|owner_private|digest|pepper/i,
+      );
       assertPrivate(denied);
     }
+
+    const deniedRsc = await worker.dispatch("/app.rsc", {
+      headers: {
+        ...identityHeaders(
+          unknownInstructor.email,
+          unknownInstructor.name,
+        ),
+        accept: "text/html,text/x-component",
+        rsc: "1",
+        "sec-fetch-dest": "document",
+        "sec-fetch-mode": "navigate",
+      },
+    });
+    assert.equal(deniedRsc.status, 403);
+    assert.match(
+      deniedRsc.headers.get("content-type") ?? "",
+      /^application\/json/i,
+    );
+    assert.deepEqual(await deniedRsc.json(), {
+      error: {
+        code: "product_access_denied",
+        message: "Product access is not available for this account.",
+      },
+    });
+    assertPrivate(deniedRsc);
 
     const anonymous = await worker.dispatch("/api/profile");
     assert.equal(anonymous.status, 401);

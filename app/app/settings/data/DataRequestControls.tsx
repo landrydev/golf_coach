@@ -7,6 +7,7 @@ import {
   clearKeyedAttempt,
   keyedAttemptBlockedMessage,
   keyedAttemptMutationDisposition,
+  keyedAttemptRetryReadiness,
   keyedAttemptReceiptBlockedMessage,
   loadKeyedAttempt,
   persistKeyedAttempt,
@@ -109,7 +110,9 @@ export function DataRequestControls({
       } else if (manual.kind === "blocked") {
         setManualRecovery("blocked");
         setError(true);
-        setMessage(keyedAttemptBlockedMessage("data-rights review"));
+        setMessage(
+          keyedAttemptBlockedMessage("data-rights review", manual.reason),
+        );
       } else {
         const restored = parseManualReviewAttempt(manual.attempt);
         if (restored === null) {
@@ -137,7 +140,9 @@ export function DataRequestControls({
       } else if (deletion.kind === "blocked") {
         setDeletionRecovery("blocked");
         setError(true);
-        setMessage(keyedAttemptBlockedMessage("account-deletion review"));
+        setMessage(
+          keyedAttemptBlockedMessage("account-deletion review", deletion.reason),
+        );
       } else if (!isDeletionAttempt(deletion.attempt)) {
         setDeletionRecovery("blocked");
         setError(true);
@@ -233,17 +238,17 @@ export function DataRequestControls({
           "The JSON export could not be prepared.",
         );
         if (response.status !== 200) {
-          throw clientMutationMalformedSuccess(response.status);
+          throw clientMutationMalformedSuccess(response);
         }
         const contentType = response.headers.get("content-type") ?? "";
         if (!contentType.toLowerCase().startsWith("application/json")) {
-          throw clientMutationMalformedSuccess(response.status);
+          throw clientMutationMalformedSuccess(response);
         }
         let body: string;
         try {
           body = await response.text();
         } catch {
-          throw clientMutationMalformedSuccess(response.status);
+          throw clientMutationMalformedSuccess(response);
         }
         if (
           parseInstructorDataExport(
@@ -252,7 +257,7 @@ export function DataRequestControls({
             recoveryScope,
           ) === null
         ) {
-          throw clientMutationMalformedSuccess(response.status);
+          throw clientMutationMalformedSuccess(response);
         }
         prepared = {
           kind: "download",
@@ -407,6 +412,20 @@ export function DataRequestControls({
       }
     }
     const attempt = deletionAttemptRef.current;
+    const retryReadiness = keyedAttemptRetryReadiness(attempt);
+    if (retryReadiness !== "ready") {
+      if (retryReadiness === "expired") deletionAttemptRef.current = null;
+      setDeletionRecovery("blocked");
+      setError(true);
+      setMessage(
+        keyedAttemptBlockedMessage(
+          "account-deletion review",
+          retryReadiness === "expired" ? "expired" : undefined,
+        ),
+      );
+      setBusy(null);
+      return;
+    }
     try {
       const response = await requestClientMutation("/api/data-requests", {
         method: "POST",
@@ -529,6 +548,20 @@ export function DataRequestControls({
       setManualRecovery("blocked");
       setError(true);
       setMessage(keyedAttemptBlockedMessage("data-rights review"));
+      setBusy(null);
+      return;
+    }
+    const retryReadiness = keyedAttemptRetryReadiness(attempt);
+    if (retryReadiness !== "ready") {
+      if (retryReadiness === "expired") manualReviewAttemptRef.current = null;
+      setManualRecovery("blocked");
+      setError(true);
+      setMessage(
+        keyedAttemptBlockedMessage(
+          "data-rights review",
+          retryReadiness === "expired" ? "expired" : undefined,
+        ),
+      );
       setBusy(null);
       return;
     }

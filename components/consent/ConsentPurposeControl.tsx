@@ -109,7 +109,7 @@ export function ConsentPurposeControl({
         "The authorization choice could not be recorded.",
       );
       if (!isConsentTransitionStatusPair(response.status, result.replayed)) {
-        throw clientMutationMalformedSuccess(response.status);
+        throw clientMutationMalformedSuccess(response);
       }
     } catch (error) {
       const authoritativeReloadRequired = requiresAuthoritativeMutationReload(

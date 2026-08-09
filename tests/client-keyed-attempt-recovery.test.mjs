@@ -4,10 +4,14 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import {
+  KEYED_ATTEMPT_LIFETIME_MS,
   KEYED_ATTEMPT_MAX_BODY_BYTES,
+  KEYED_ATTEMPT_VERSION,
   KeyedAttemptStorageError,
   clearKeyedAttempt,
+  keyedAttemptBlockedMessage,
   keyedAttemptMutationDisposition,
+  keyedAttemptRetryReadiness,
   keyedAttemptStorageKey,
   loadKeyedAttempt,
   matchesCanonicalKeyedAttemptEmail,
@@ -43,6 +47,7 @@ const exactBody = JSON.stringify({
   type: "access",
   details: "Please review the stored contact details.",
 });
+const NOW = 1_800_000_000_000;
 
 test("same-tab reload restores the exact key, body, and UI without cross-account bleed", () => {
   const storage = memoryStorage();
@@ -203,12 +208,119 @@ test("a same-account remount claims the attempt and fences a late predecessor cl
   );
   assert.equal(successor.kind, "restored");
 
+  assert.equal(keyedAttemptRetryReadiness(firstMount, storage), "blocked");
+  assert.equal(keyedAttemptRetryReadiness(successor.attempt, storage), "ready");
   assert.equal(clearKeyedAttempt(firstMount, storage), false);
   assert.equal(
     loadStoredAttempt(storage, accountA, "data_request_manual_create").owner,
     secondOwner,
   );
   assert.equal(clearKeyedAttempt(successor.attempt, storage), true);
+});
+
+test("keyed attempts expire at a fixed boundary and cannot be retried from a long-lived tab", () => {
+  const storage = memoryStorage();
+  const attempt = persistKeyedAttempt(
+    {
+      accountScope: accountA,
+      operation: "data_request_deletion_create",
+      key: operationKey,
+      body: JSON.stringify({ type: "deletion" }),
+      ui: {},
+    },
+    storage,
+    () => firstOwner,
+    NOW,
+  );
+
+  assert.equal(attempt.version, KEYED_ATTEMPT_VERSION);
+  assert.equal(attempt.createdAt, NOW);
+  assert.equal(attempt.expiresAt, NOW + KEYED_ATTEMPT_LIFETIME_MS);
+  assert.equal(
+    keyedAttemptRetryReadiness(
+      attempt,
+      storage,
+      NOW + KEYED_ATTEMPT_LIFETIME_MS - 1,
+    ),
+    "ready",
+  );
+  assert.equal(
+    keyedAttemptRetryReadiness(
+      attempt,
+      storage,
+      NOW + KEYED_ATTEMPT_LIFETIME_MS,
+    ),
+    "expired",
+  );
+  assert.equal(
+    storage.getItem(
+      keyedAttemptStorageKey(accountA, "data_request_deletion_create"),
+    ),
+    null,
+  );
+  assert.deepEqual(
+    loadKeyedAttempt(
+      accountA,
+      "data_request_deletion_create",
+      storage,
+      () => secondOwner,
+      NOW + KEYED_ATTEMPT_LIFETIME_MS,
+    ),
+    { kind: "empty" },
+  );
+});
+
+test("mount-time expiry and legacy records retire with an inspect-before-new-attempt barrier", () => {
+  const expiredStorage = memoryStorage();
+  persistKeyedAttempt(
+    {
+      accountScope: accountA,
+      operation: "package_create",
+      key: operationKey,
+      body: JSON.stringify({ title: "Recovery package" }),
+      ui: { priceText: "" },
+    },
+    expiredStorage,
+    () => firstOwner,
+    NOW,
+  );
+  assert.deepEqual(
+    loadKeyedAttempt(
+      accountA,
+      "package_create",
+      expiredStorage,
+      () => secondOwner,
+      NOW + KEYED_ATTEMPT_LIFETIME_MS,
+    ),
+    { kind: "blocked", reason: "expired" },
+  );
+  assert.equal(
+    expiredStorage.getItem(keyedAttemptStorageKey(accountA, "package_create")),
+    null,
+  );
+  assert.match(
+    keyedAttemptBlockedMessage("package creation", "expired"),
+    /24-hour recovery window[\s\S]*Reload and inspect/,
+  );
+
+  const legacyStorage = memoryStorage();
+  const legacyKey = `roadmap:keyed-attempt:v1:package_create:${accountA}`;
+  legacyStorage.setItem(legacyKey, JSON.stringify({ version: "legacy" }));
+  assert.deepEqual(
+    loadKeyedAttempt(
+      accountA,
+      "package_create",
+      legacyStorage,
+      () => secondOwner,
+      NOW,
+    ),
+    { kind: "blocked", reason: "legacy" },
+  );
+  assert.equal(legacyStorage.getItem(legacyKey), null);
+  assert.match(
+    keyedAttemptBlockedMessage("package creation", "legacy"),
+    /older saved[\s\S]*cannot be safely age-checked[\s\S]*Reload and inspect/,
+  );
 });
 
 test("persistence never overwrites an existing owned slot", () => {
@@ -454,6 +566,7 @@ test("keyed creation UIs pass account scope, lock restored fields, and expose re
     assert.match(source, /loadKeyedAttempt\(.*recoveryScope|loadKeyedAttempt\(\s*recoveryScope/s);
     assert.match(source, /persistKeyedAttempt\(/);
     assert.match(source, /clearKeyedAttempt\(/);
+    assert.match(source, /keyedAttemptRetryReadiness\(/);
     assert.match(source, /clearKeyedAttempt\(attempt\)/);
     assert.match(source, /beginOwnedClientRequest\(/);
     assert.match(source, /ownsClientRequest\(/);
@@ -471,6 +584,10 @@ test("keyed creation UIs pass account scope, lock restored fields, and expose re
   assert.match(sources[1], /disabled=\{fieldsLocked\}/);
   assert.match(sources[2], /disabled=\{fieldsLocked\}/);
   assert.match(sources[3], /disabled=\{busy !== null \|\| anyRecoveryPending\}/);
+  assert.equal(
+    [...sources[3].matchAll(/keyedAttemptRetryReadiness\(/g)].length,
+    2,
+  );
 
   for (const [filename, keyPattern] of [
     ["app/app/golfers/new/page.tsx", /key=\{`(?:staged|full)-golfer:\$\{account\.id\}`\}/],

@@ -142,7 +142,7 @@ export async function requireExactClientMutationJson<T>(
   fallback: string,
 ): Promise<T> {
   if (response.ok && response.status !== expectedStatus) {
-    throw clientMutationMalformedSuccess(response.status);
+    throw clientMutationMalformedSuccess(response);
   }
   return requireClientMutationJson<T>(
     response,
