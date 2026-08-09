@@ -1,9 +1,9 @@
 # Rollback artifact and schema-compatibility record
 
-**Status:** Exact current candidate and predecessors registered; version 15 to
-versions 14 or 13 is application/schema class `N`, but none resolves
-`LOG-PRIV-001`; version 12 is not an ordinary rollback target from versions 15
-through 13
+**Status:** Exact current candidate and predecessors registered; version 16 to
+version 15 is security/recovery behavior class `B` despite an unchanged schema,
+and no predecessor resolves `LOG-PRIV-001`; version 12 is not an ordinary
+rollback target from versions 16 through 13
 because it would remove current
 write-containment, recovery, CAS/revision, share-lifecycle, and close-rate-limit
 controls; version 11 is not an ordinary target from version 12 because it would
@@ -26,35 +26,37 @@ or restore an exposed secret.
 
 | Field | Exact recorded value / status |
 |---|---|
-| Record ID | `RB-CANDIDATE-015` |
-| Candidate | `ROADMAP-SITES-V15-2026-08-09` |
-| Source and runtime release ID | `8a359398099ab9b970df1d28eb3473dcbcd6207f` |
-| Local source package | `outputs/roadmap-sites-v15-8a35939.tar.gz`; gzip SHA-256 `f987afcd00f9151e4c1a698fdf7aeb06fe8d275ec778494bb7dd38f535406a31`; 3,047,495 bytes; 63 tar entries/51 files; all 11 migrations |
-| Sites archive content | `sha256:880189d7d59994b0c72fd34c9c206b2f37328096dea41c2ebd7b4fdf9d6775ad`; 51 files; 7,270,400 bytes |
-| Saved Sites version | `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_085298ff9b9c819193d48e0df7a71631` |
-| Successful deployment | `appgdep_6a7810bf6fc08191b2cb9bfb081e58c2`; final status `succeeded`, provider `updated_at` `2026-08-09T05:31:58.490796Z` |
-| Environment revision used by that deployment | `17` |
-| Access boundary | Owner-only at `https://roadmap-golf-coaching.aar-landry.chatgpt.site` |
-| Configuration boundary | `APPLICATION_WRITE_MODE=enabled` and exact `RELEASE_ID`; `INSTRUCTOR_ACCESS_MODE=owner_private` and `BILLING_CHECKOUT_ENABLED=false` retained |
-| Schema and security behavior | Journal `0000` through `0010`; product behavior and schema are unchanged from v13. V15-to-v14/v13 is class `N`; only packaged observability configuration differs. The provider ignored both configurations, so rollback does not resolve `LOG-PRIV-001`. Historical v13-to-v12 and earlier class-`B` boundaries remain. |
+| Record ID | `RB-CANDIDATE-016` |
+| Candidate | `ROADMAP-SITES-V16-2026-08-09` |
+| Source and runtime release ID | `91f37ebd542774779f6db7e000832c2f6714e528` |
+| Local source package | `outputs/roadmap-sites-v16-91f37eb.tar.gz`; gzip SHA-256 `9119a848bb8b4c7fff1d810280cf845ec44366449adac3176fd35d8c24438fe6`; 3,052,294 bytes; 63 tar entries/51 files; all 11 migrations |
+| Sites archive content | `sha256:752f05fd957f8f4b043b5955d9cdbdbf2176b0f1f3414827c9c3e8d0f44f6e2c`; 51 files; 7,290,880 bytes |
+| Saved Sites version | `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_0a4d7dc3d8108191aa4a1b3e14051a96` |
+| Successful deployment | `appgdep_6a7826b2f4c481919cc85665dffa2391`; final status `succeeded`, provider `updated_at` `2026-08-09T07:05:36.176024Z` |
+| Environment revision used by that deployment | `18` |
+| Access boundary | Custom access with one owner, zero groups, and zero external visitors at `https://roadmap-golf-coaching.aar-landry.chatgpt.site` |
+| Configuration boundary | `APPLICATION_WRITE_MODE=enabled` and exact `RELEASE_ID`; `INSTRUCTOR_ACCESS_MODE=owner_private` and `BILLING_CHECKOUT_ENABLED=false` retained; four existing secrets retained without disclosure |
+| Schema and security behavior | Journal `0000` through `0010`; v16 adds generic document-failure handling, UUIDv4 request references, version-2 attempt lifecycle/ownership checks, exact readiness validation, bounded scheduler-backlog health, and exact-Worker recovery boot. V16-to-v15 removes security/recovery behavior and is class `B` absent an exact narrower compatibility exercise. No predecessor resolves `LOG-PRIV-001`; historical v13-to-v12 and earlier class-`B` boundaries remain. |
 | Package-lock SHA-256 | `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d` |
-| Hosted containment | Four post-v15 signed-out probes to `/`, `/app`, `/r`, and `/api/health` returned `401` with `no-store`/`no-referrer`. Three provider fetch events persisted despite all packaged log switches being configured off; `LOG-PRIV-001` remains open. |
-| Local recovery observation | The exact-version-13 local synthetic exercise remains historical predecessor evidence. It is not relabelled as v15 and is not hosted evidence. See the [exact-v13 local exercise record](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md). |
-| Local capacity observation | The historical exact-version-13 single-process local exercise completed 54 requests at maximum concurrency 4 with zero failures. It is not relabelled as version 15 and proves no hosted capacity, threshold, SLO/SLA, or production-performance claim. |
+| Hosted containment | Four post-v16 signed-out probes to `/`, `/app`, `/r`, and `/api/health` returned `401` with `no-store`/`no-referrer`. No v16 log query ran; v15 already proved the unchanged packaged switches ineffective. `LOG-PRIV-001` remains High/open. |
+| Local recovery observation | Exact v16 passed all 11 migrations, 31/31 tables, a 34,956-byte snapshot, three objects/199 bytes, exact-Worker authenticated reads, expected interrupted-scheduler degradation, and three corruption checks in 105,940 ms. Local-only; no hosted recovery, RPO, or RTO claim. |
+| Local capacity observation | Exact v16 completed 54 local requests at concurrency 4 with zero failures and p50/p95/max 41.5/93.18/93.58 ms. No target, SLO/SLA, hosted-capacity, or production-performance claim. |
 | Exercise status | **IMMUTABLE CANDIDATE REGISTERED; NOT ROLLBACK- OR HOSTED-RESTORE-TESTED** |
 
-See the [exact version-15 private release record](release-evidence/ROADMAP-SITES-V15-2026-08-09.md)
-and [exact version-13 local exercise record](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md).
+See the [exact version-16 private release record](release-evidence/ROADMAP-SITES-V16-2026-08-09.md)
+and [version-15 predecessor record](release-evidence/ROADMAP-SITES-V15-2026-08-09.md).
 
 ### Current and precursor supply-control lineage
 
-Exact version-15 commit `8a359398099ab9b970df1d28eb3473dcbcd6207f` was
-checked in two detached clean worktrees. Each `npm ci --no-audit` installed 501
-locked packages and reported five blocked install scripts; each `npm run verify`
-passed 333/333 tests. Both builds had 51 files, the three controlled raw
-differences, and zero differences after strict allowlisted normalization. A
-separate exact-version-15 release-integrity run covered 299 files with zero
-findings, and a fresh exact-version-15 production audit reported zero
+Exact version-16 commit `91f37ebd542774779f6db7e000832c2f6714e528` passed
+346/346 tests in the primary worktree and two detached clean worktrees. Each
+clean `npm ci --no-audit` installed 501 locked packages and reported five
+blocked install scripts. Both detached builds had 51 files, exactly three
+controlled raw differences, three validated build-ID occurrences per build,
+and zero differences after strict allowlisted normalization. The exact-version-
+16 release-integrity run covered 304 files with zero secret findings, preserved
+historical Business Plan V1, and confirmed the lockfile digest; a fresh exact-
+version-16 production audit reported zero
 vulnerabilities. This is
 exact-candidate normalized reproducibility,
 not byte identity or hosted rollback evidence.
@@ -71,15 +73,21 @@ zero differences remained after normalization. This is normalized reproducibilit
 not byte identity. See the [successor reproducibility record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md).
 
 Exact commit `66f5203a...` remains unsaved and undeployed and is not a rollback
-target. Versions 10 through 15 are later deployed descendants with their own exact
+target. Versions 10 through 16 are later deployed descendants with their own exact
 release evidence. The precursor exercise does not alter the historical version-9
 failed byte-identity result or prove hosted rollback/restore.
 
-### Immediate versions 14 and 13 observability-only predecessors
+### Immediate version 15 and earlier predecessors
+
+Version 15 (`8a359398099ab9b970df1d28eb3473dcbcd6207f`) is the
+immediate predecessor. Its schema journal matches version 16, but it lacks the
+version-16 failure-boundary, request-reference, attempt-lifecycle, readiness,
+scheduler-health, and recovery-boot hardening. The downgrade is class `B`
+behaviorally unless an exact exercise establishes a narrower safe path.
 
 Versions 14 (`5db791d0d4a7317a2913d2e65d855cb0bb31baec`) and 13
 (`f3482845a42730e87f4ff1190550511f19ea6ad5`) have the same application behavior
-and schema as version 15. The v15-to-v14/v13 application/schema class is `N`.
+and schema as version 15. The historical v15-to-v14/v13 application/schema class is `N`.
 Version 14 disabled invocation logs while retaining structured logs; version 13
 predated that package control. Sites exposed invocation events for v14 and still
 exposed them when v15 configured all packaged log-persistence settings off. Therefore neither
@@ -197,25 +205,27 @@ the Sites content hash is
 It is privacy-behaviorally forbidden as an ordinary target after version-8-or-later
 consent-governed use.
 
-The version-15 identifiers bind the current candidate. Versions 14 and 13 are the
-immediate observability-only predecessors; version 12 and earlier are older
+The version-16 identifiers bind the current candidate. Version 15 is the
+immediate behaviorally incompatible predecessor; versions 14 and 13 are older
+observability-lineage predecessors, and version 12 and earlier are older
 predecessor evidence. No
 older version is a presumed safe target. These records do not prove that Sites can
-switch versions from environment revision 17, that an older application can safely
+switch versions from environment revision 18, that an older application can safely
 operate on current hosted data/configuration, or that application/data recovery will
 succeed.
 
 ## Current compatibility observation
 
-**Implemented exact-candidate evidence:** Sites version 15 is immutable at commit
-`8a359398099ab9b970df1d28eb3473dcbcd6207f` with migration journal `0000`
+**Implemented exact-candidate evidence:** Sites version 16 is immutable at commit
+`91f37ebd542774779f6db7e000832c2f6714e528` with migration journal `0000`
 through `0010`. Migration `0010_steep_hemingway` extends the rate-limit scope
 constraint for `share_close_network` and `share_close_session`, and upgrade tests
 passed. The SQL change is backward-readable for predecessor operations. The
-v15-to-v14/v13 application/schema classification is `N`, but neither target
-resolves `LOG-PRIV-001`. The historical v13-to-v12 classification carries forward
-to v14 and v15 because their application and schema behavior is unchanged; every
-v15/v14/v13-to-v12 path is class `B` because version 12 removes
+v16-to-v15 path is class `B` behaviorally because version 15 removes current
+failure-boundary, request-reference, attempt-lifecycle, readiness, scheduler-
+health, and recovery-boot controls. No predecessor resolves `LOG-PRIV-001`.
+The historical v13-to-v12 classification carries forward; every
+v16/v15/v14/v13-to-v12 path is class `B` because version 12 removes
 application-wide write containment, bounded draft/session recovery, stricter
 response/CAS/revision boundaries, native billing recovery, and account share
 revoke/reissue/replacement controls. The provider switch and exact rollback smoke
@@ -226,7 +236,7 @@ remain historical class-`B` evidence.
 The historical v10-to-v9 comparison found the same application/runtime source,
 package lock, bindings, runtime configuration contract, and schema journal for that
 past pair, supporting application/schema class `N` between those two releases. That
-fact does not classify or authorize a current v15-to-v9 action. Any version selection
+fact does not classify or authorize a current v16-to-v9 action. Any version selection
 must preserve current secret values, owner-only access,
 `BILLING_CHECKOUT_ENABLED=false`, and a compatible `APPLICATION_WRITE_MODE`; do not restore an old environment revision
 wholesale. Application rollback is not D1/R2 data restore and does not undo or
@@ -245,7 +255,7 @@ but structural
 readability is not sufficient for a safe application rollback. Version 7 lacks the
 version-8 account `golfer_record` and golfer `roadmap_sharing` enforcement on
 ordinary reads, mutations, publication, token exchange, live sessions, and golfer
-responses. Once any version from 8 through 15 has governed real data or disclosure through those
+responses. Once any version from 8 through 16 has governed real data or disclosure through those
 controls, selecting version 7 would remove a mandatory privacy/authorization
 boundary. The overall rollback is therefore class `B` behaviorally: ordinary
 rollback is forbidden; stop affected writes and use a tested forward fix or
@@ -253,17 +263,18 @@ controlled recovery. No hosted version switch or recovery exercise has been run.
 
 | From state | To target | Schema class | Current conclusion |
 |---|---|---|---|
-| Immutable Sites version 15 | Same saved version 15 | `N` | Existing successful private deployment proves deployability at that time, not rollback or restore |
-| Sites version 15 | Sites version 14 or 13 | `N` application/schema | Only packaged observability configuration changed. Neither target resolves `LOG-PRIV-001`; do not recommend v13 as privacy remediation. |
-| Sites versions 15 through 13 | `RB-BASE-012` / Sites version 12 | `B` behaviorally; migration `0010` is backward-readable but downgrade behavior is unexercised | **Ordinary rollback forbidden.** Version 12 removes write containment, bounded draft/session recovery, stricter CAS/revision boundaries, native billing recovery, share lifecycle controls, and close-rate-limit scopes. Use a tested forward fix or another explicitly classified recovery path. |
+| Immutable Sites version 16 | Same saved version 16 | `N` | Existing successful private deployment proves deployability at that time, not rollback or restore |
+| Sites version 16 | Sites version 15 | `B` behaviorally; schema journal unchanged | **Ordinary rollback forbidden absent an exact narrower exercise.** Version 15 removes current failure-boundary, request-reference, attempt-lifecycle, readiness, scheduler-health, and recovery-boot controls and does not resolve `LOG-PRIV-001`. |
+| Historical Sites version 15 | Sites version 14 or 13 | `N` application/schema for that historical comparison | Only packaged observability configuration changed. Neither target resolves `LOG-PRIV-001`; do not recommend v13 as privacy remediation. |
+| Sites versions 16 through 13 | `RB-BASE-012` / Sites version 12 | `B` behaviorally; migration `0010` is backward-readable but downgrade behavior is unexercised | **Ordinary rollback forbidden.** Version 12 removes write containment, bounded draft/session recovery, stricter CAS/revision boundaries, native billing recovery, share lifecycle controls, and close-rate-limit scopes. Use a tested forward fix or another explicitly classified recovery path. |
 | Historical Sites version 12 | `RB-BASE-011` / Sites version 11 | `B` behaviorally; schema shape through `0009` unchanged | Preserved historical evidence: version 11 removes lost-ack response/audit deduplication, and its legacy response payload can mismatch an active version-12 client holding an outcome-unknown key. |
-| Sites versions 15 through 13 | `RB-BASE-010` / Sites version 10 | `B` / unsupported as a current rollback path | Skips multiple predecessors and removes multiple mandatory security/recovery boundaries, including the nonce-CSP boundary. |
+| Sites versions 16 through 13 | `RB-BASE-010` / Sites version 10 | `B` / unsupported as a current rollback path | Skips multiple predecessors and removes multiple mandatory security/recovery boundaries, including the nonce-CSP boundary. |
 | Historical Sites version 11 | `RB-BASE-010` / Sites version 10 | `B` security/behaviorally; schema shape unchanged | Preserved historical compatibility evidence: version 10 removes the per-response framework-script nonce boundary and reintroduces `script-src 'unsafe-inline'`. |
-| Historical Sites version 10 | `RB-BASE-009` / Sites version 9 | `N` application/schema for that historical pair; operationally unexercised | Preserved compatibility evidence only. It is not a current version-15 rollback route and neither release is approved as a routine target. |
-| Sites versions 15 through 13 | `RB-BASE-009` / Sites version 9 | `B` / unsupported | Skips multiple predecessors and mandatory security/behavior boundaries. Historical v10-to-v9 class `N` does not authorize this action. |
-| Sites versions 15 through 13 | `RB-BASE-008` / Sites version 8 | `U` pending exact behavior/configuration classification | Version 8 is not an immediate baseline. Do not select it merely because part of the journal is backward-readable. |
-| Any Sites version from 15 through 13 after version-8-or-later consent-governed use | `RB-BASE-007` / Sites version 7 | `B` (behavioral; SQL structures are backward-readable) | **Ordinary rollback forbidden.** Version 7 lacks the required consent enforcement; use a tested forward fix or controlled recovery. |
-| Sites versions 15 through 13 | Version 6 or any older predecessor | `B` / unsupported | Multiple security, behavior, migration, and evidence deltas are not an approved rollback path. Use a forward fix or tested recovery. |
+| Historical Sites version 10 | `RB-BASE-009` / Sites version 9 | `N` application/schema for that historical pair; operationally unexercised | Preserved compatibility evidence only. It is not a current version-16 rollback route and neither release is approved as a routine target. |
+| Sites versions 16 through 13 | `RB-BASE-009` / Sites version 9 | `B` / unsupported | Skips multiple predecessors and mandatory security/behavior boundaries. Historical v10-to-v9 class `N` does not authorize this action. |
+| Sites versions 16 through 13 | `RB-BASE-008` / Sites version 8 | `U` pending exact behavior/configuration classification | Version 8 is not an immediate baseline. Do not select it merely because part of the journal is backward-readable. |
+| Any Sites version from 16 through 13 after version-8-or-later consent-governed use | `RB-BASE-007` / Sites version 7 | `B` (behavioral; SQL structures are backward-readable) | **Ordinary rollback forbidden.** Version 7 lacks the required consent enforcement; use a tested forward fix or controlled recovery. |
+| Sites versions 16 through 13 | Version 6 or any older predecessor | `B` / unsupported | Multiple security, behavior, migration, and evidence deltas are not an approved rollback path. Use a forward fix or tested recovery. |
 | Undeployed successor source `66f5203a913f01c8da20555feebdbb99152c052c` | Any deployed version | Not applicable | Normalized build reproducibility alone does not create a saved runtime or rollback target. Do not use this source as a rollback action. |
 | Any future release with migration/configuration changes | Any predecessor | Unclassified | **Do not roll back** until the per-release matrix below is completed and exercised. |
 
@@ -306,7 +317,7 @@ customer identifiers in this record.
    state, R2 inventory, Stripe backlog, and exact `RB-*` target.
 3. Confirm the compatibility record is complete. If class `B` or unknown, do not
    select old code; choose a tested forward fix or controlled recovery. Version 12
-   is class `B` from versions 15 through 13 because it removes current write-containment,
+   is class `B` from versions 16 through 13 because it removes current write-containment,
    recovery, CAS/revision, share-lifecycle, and session-close controls. Historical
    version 11 is class `B` from version 12 because it removes golfer-response
    lost-ack deduplication and can mismatch an active version-12 client. Historical version
@@ -337,7 +348,7 @@ a migration is partially applied, tenant ownership/integrity is uncertain, conse
 or sharing enforcement would regress, capability/secret exposure exists, audit writes
 fail, deletion/export work is in flight without a safe state, Stripe events are
 unresolved, or the target/configuration hashes do not match. In particular, do not
-select version 12 as an ordinary target from versions 15 through 13, because doing so would
+select version 12 as an ordinary target from versions 16 through 13, because doing so would
 remove current application write-containment, recovery, CAS/revision,
 share-lifecycle, and session-close controls without a hosted compatibility
 exercise. The historical v12-to-v11 lost-ack and v11-to-v10 CSP regressions also remain

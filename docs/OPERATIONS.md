@@ -16,24 +16,26 @@ not a public launch or Aaron's acceptance. No successful hosted backup/restore o
 exercise, staffed operating assignment, alert-delivery exercise, live Stripe flow,
 qualified legal/privacy review, or controlled real-user validation is claimed.
 
-The current exact private candidate is Sites version 15 at source/runtime release
-`8a359398099ab9b970df1d28eb3473dcbcd6207f`, saved version
-`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_085298ff9b9c819193d48e0df7a71631`,
-deployment `appgdep_6a7810bf6fc08191b2cb9bfb081e58c2`, and provider
+The current exact private candidate is Sites version 16 at source/runtime release
+`91f37ebd542774779f6db7e000832c2f6714e528`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_0a4d7dc3d8108191aa4a1b3e14051a96`,
+deployment `appgdep_6a7826b2f4c481919cc85665dffa2391`, and provider
 deployment `site---6a76957326fc819196ebf3a0c95f1ec3`. Its owner-private
-deployment succeeded at `2026-08-09T05:31:58.490796Z` against environment
-revision `17`. The exact provider package is
-`sha256:880189d7d59994b0c72fd34c9c206b2f37328096dea41c2ebd7b4fdf9d6775ad`
-with 51 files and 7,270,400 bytes. It packages
+deployment succeeded at `2026-08-09T07:05:36.176024Z` against environment
+revision `18`. The exact provider package is
+`sha256:752f05fd957f8f4b043b5955d9cdbdbf2176b0f1f3414827c9c3e8d0f44f6e2c`
+with 51 files and 7,290,880 bytes. It packages
 `observability.enabled=false`, `observability.logs.enabled=false`, and
 `observability.logs.invocation_logs=false`. The URL remains
-`https://roadmap-golf-coaching.aar-landry.chatgpt.site`; access remains
-owner-only and `BILLING_CHECKOUT_ENABLED=false`. Four signed-out route probes
+`https://roadmap-golf-coaching.aar-landry.chatgpt.site`; custom access remains
+one owner, zero groups, and zero external visitors, and
+`BILLING_CHECKOUT_ENABLED=false`. Four signed-out route probes
 returned `401` with `no-store` and `no-referrer`. No bypass bearer was generated,
-read, displayed, persisted, or used.
+read, rotated, displayed, persisted, or used; four existing secret values were
+retained without disclosure.
 
-Sites nevertheless returned three post-success fetch invocation records for
-version 15 at `2026-08-09T05:32:32.228Z`, `05:32:33.881Z`, and
+The immediate predecessor, version 15, nevertheless returned three post-success
+fetch invocation records at `2026-08-09T05:32:32.228Z`, `05:32:33.881Z`, and
 `05:32:34.431Z` (two `200`, one handled `403`) under one new script-version
 identifier. The query surface returned redaction markers for cookie/SIWC identity
 fields, while network-IP/request-signature fields remained nonempty; collection
@@ -50,6 +52,41 @@ limitation and a **High constraint before real-user/public operation**, not an
 application-logger leak. Because the candidate is owner-only and held no customer
 data, no customer-data incident is claimed, although network and signature
 metadata persisted. Logging and alerting remain degraded; Checkout stays disabled.
+No version-16 provider-log query ran because version 15 already proved the
+unchanged packaged switches ineffective and another query would add processing
+without satisfying closure. `LOG-PRIV-001` remains High/open and blocks
+real-user/public operation.
+
+Version 16 adds generic private/no-store HTML only for top-level document
+failures while retaining JSON for API/RSC/assets, accepts only UUIDv4 request
+references for client support copy, gives keyed attempt records a 24-hour
+version-2 lifecycle with legacy retirement and exact-owner/submit-time checks,
+validates the exact migration-`0010` readiness structure, and reports bounded
+13-account scheduler-backlog health. The primary release worktree and two
+detached exact-commit worktrees each passed 346/346 tests. Each detached clean
+install installed 501 locked packages and reported the same five blocked
+scripts; the two 51-file builds had exactly three expected raw generated
+differences, three build-ID occurrences per build, and zero normalized
+differences. These are source/build controls, not signed-in hosted browser or
+scheduler evidence.
+
+The exact-version-16 local recovery exercise applied all 11 migrations, covered
+31/31 application tables, produced a 34,956-byte snapshot with SHA-256
+`123631eb46858ef7f5962b00ec4a7e0da736d2afe048f6b2598b16c0f3ba1e0a`,
+restored three private synthetic objects/199 bytes, booted the exact built Worker,
+completed authenticated synthetic profile/package/workspace reads, returned the
+expected degraded operations health for an interrupted scheduler item, and
+passed three corruption checks in 105,940 ms. The exact-version-16 local capacity
+exercise completed 54 requests at concurrency four with zero failures and local
+p50/p95/maximum of 41.5/93.18/93.58 ms. These local-only results establish no
+hosted recovery, RPO/RTO, scheduler operation, target, SLO/SLA, or production
+capacity claim.
+
+Version 15 remains the immutable immediate predecessor at release
+`8a359398099ab9b970df1d28eb3473dcbcd6207f`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_085298ff9b9c819193d48e0df7a71631`,
+deployment `appgdep_6a7810bf6fc08191b2cb9bfb081e58c2`, and environment
+revision `17`. It is historical evidence, not the current candidate.
 
 The superseded owner-only version-13 candidate remains immutable historical
 evidence at source/runtime release
@@ -64,7 +101,7 @@ Its provider package is
 `sha256:734a527a2d76322ffa341acb02b3a7f52714179021383430e32e578be0193d99`
 with 51 files and 7,270,400 bytes. The v13 reproducibility, recovery, capacity,
 application controls, and signed-out containment observations remain historical;
-they are not overwritten by versions 14 or 15.
+they are not overwritten by versions 14, 15, or 16.
 
 The superseded owner-only version-12 candidate remains immutable historical
 evidence at source/runtime release
@@ -239,7 +276,7 @@ and reported five blocked install scripts; each `npm run verify` passed 234/234
 tests. Both builds contained the same 49 paths. Strict allowlisted normalization
 of the framework-generated build identifier and matching prerender-manifest pair
 left zero differences. The [successor record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md)
-is exact to `66f5203a...`; the later exact v10 through v15 checks do not change the
+is exact to `66f5203a...`; the later exact v10 through v16 checks do not change the
 failed historical version-9 byte comparison.
 
 After version 11 deployed, four signed-out HTTPS probes to `/`, `/app`,
@@ -267,7 +304,7 @@ health, hosted recovery, write-mode behavior, scheduler invocation, or manual
 accessibility. `OWNER-SEC-001` remains historically complete and `SEC-001`
 remains **REMEDIATED — RETEST PENDING**.
 
-After version 15 deployed, the same four signed-out routes returned owner-only
+After version 16 deployed, the same four signed-out routes returned owner-only
 outer-policy `401` with `Cache-Control: no-store` and
 `Referrer-Policy: no-referrer`. No bypass bearer was generated, read, displayed,
 persisted, or used. These are current anonymous-containment observations only;
@@ -477,12 +514,12 @@ The inventory records a name, purpose, environment, provider owner, last rotatio
 
 Logical D1/R2 declarations live in `.openai/hosting.json`; Sites owns real Cloudflare resource provisioning and deployment wiring. Hosted runtime values are managed through the Sites control plane. No `.env` file, dashboard export, credential screenshot, or copied webhook payload belongs in version control.
 
-For the current private version-15 environment, do not invent consent or
+For the current private version-16 environment, do not invent consent or
 privacy-operator values to make deep health green. `CONSENT_POLICY_REGISTRY_JSON`
 and the independent operator access configuration remain owner/qualified-review
 dependencies. Their absence must continue to fail the affected controls closed and
 report degraded readiness until the exact decisions and configuration are recorded.
-Revision `17` records exact `APPLICATION_WRITE_MODE=enabled`; every later
+Revision `18` records exact `APPLICATION_WRITE_MODE=enabled`; every later
 environment revision must also receive an explicit exact value. A release operator
 must not promote a missing or malformed value and must record the intended state
 without treating a value-safe configuration check as evidence that writes were
@@ -610,16 +647,19 @@ Application rollback and data recovery are distinct:
 - If capability or secret exposure is involved, revoke/rotate separately; code rollback does not remove exposed secrets.
 - If a Stripe event processor caused a bad entitlement projection, preserve accepted webhook events and rebuild/reconcile state rather than deleting billing history.
 
-Sites versions 15, 14, and 13 package the migration journal through
-`0010_steep_hemingway`. Version 14 is the immediate predecessor and version 13 is
-the next predecessor; both retain version 15's application and schema behavior.
-The v15-to-v14/v13 application/schema path is class `N` because only packaged
-observability configuration differs, but neither predecessor resolves
-`LOG-PRIV-001`, so neither is a privacy remediation. Version 12 is the next older
+Sites versions 16 through 13 package the migration journal through
+`0010_steep_hemingway`. Version 15 is the immediate predecessor, but it lacks
+version 16's generic document-failure boundary, safe request-reference
+propagation, version-2 attempt lifecycle/ownership checks, exact readiness
+validation, bounded scheduler-backlog health, and exact-Worker recovery boot.
+Treat v16-to-v15 as security/recovery behavior class `B` unless an exact
+compatibility exercise establishes a narrower safe path. Versions 14 and 13 are
+older predecessors; neither they nor version 15 resolves `LOG-PRIV-001`.
+Version 12 is the next older
 deployed predecessor and lacks the fail-closed application-write boundary, strict
 general mutation receipts and authoring recovery, session-context response/close
 protection, close-specific abuse scopes, current share lifecycle controls, and
-strict profile page-version CAS. Treat every v15/v14/v13-to-v12 path as
+strict profile page-version CAS. Treat every v16/v15/v14/v13-to-v12 path as
 security/behavior class `B`; ordinary rollback is forbidden. Use a tested
 compatible forward fix or an explicitly reviewed recovery release, and do not
 reverse migration `0010` destructively. A provider version switch does not by
@@ -638,12 +678,12 @@ classified recovery path.
 The historical v11-to-v10 path remains class `B`: version 10 lacks the
 per-response CSP nonce behavior and uses `script-src 'unsafe-inline'`. That
 security regression remains historical compatibility evidence and does not create
-a fallback path from versions 15 through 13.
+a fallback path from versions 16 through 13.
 
 The historical v10-to-v9 application/schema comparison remains class `N` for that
 past pair because their application/runtime source, package lock, bindings, runtime
 configuration contract, and journal matched. It does not classify a current
-v15-to-v9 action, authorize skipping versions 14, 13, 12, 11, and 10, or make
+v16-to-v9 action, authorize skipping versions 15, 14, 13, 12, 11, and 10, or make
 version 9 an approved target.
 Any authorized version selection must preserve current secret values, owner-only
 access, and `BILLING_CHECKOUT_ENABLED=false`; never restore an old environment
@@ -657,14 +697,14 @@ but version 7 lacks the consent enforcement introduced in version 8 and retained
 by the current candidate for ordinary instructor reads/writes and golfer sharing.
 Migration `0010` extends the abuse-scope constraint for golfer-session close
 controls and must remain part of any current schema-compatibility review. After
-consent-governed real data or disclosure under version 8 through 15, rollback to
+consent-governed real data or disclosure under version 8 through 16, rollback to
 version 7 is class `B` behaviorally and forbidden as an ordinary code rollback.
 Freeze affected writes and use a tested forward fix or controlled recovery. Do not
 treat SQL shape compatibility as authorization/privacy compatibility.
 
 Exact source commit `66f5203a913f01c8da20555feebdbb99152c052c` remains the
 undeployed exact subject of the precursor normalized reproducibility exercise.
-Versions 10 through 15 are later deployed descendants with their own exact release
+Versions 10 through 16 are later deployed descendants with their own exact release
 evidence; the earlier exercise does not
 make commit `66f5203a...` a saved runtime or rollback target.
 
@@ -771,17 +811,19 @@ response remain `[REAL-WORLD VALIDATION REQUIRED]`.
 For a repeatable pre-production check of the repository's logical-copy path, run
 `npm run exercise:recovery:local` and follow
 [Local synthetic recovery exercise](LOCAL_SYNTHETIC_RECOVERY_EXERCISE.md). The
-exact-version-13 run passed all 11 migrations and 31 application tables for 2
-synthetic tenants and 3 private synthetic objects. It matched a 34,380-byte D1
+exact-version-16 run passed all 11 migrations and 31/31 application tables,
+restored 3 private synthetic objects/199 bytes, and matched a 34,956-byte D1
 snapshot with SHA-256
-`8eaef0372bf2e4457ab651ec5c7bb3e3b22a51289495187761622fede0a1b139`,
-passed all 3 negative integrity checks and the child-process secret-isolation
-check, and took 104,421 ms of local wall-clock time. That duration is not an RTO,
+`123631eb46858ef7f5962b00ec4a7e0da736d2afe048f6b2598b16c0f3ba1e0a`.
+It booted the exact built Worker, completed authenticated synthetic
+profile/package/workspace reads, observed expected degraded health for an
+interrupted scheduler item, passed all 3 corruption checks, and took 105,940 ms
+of local wall-clock time. That duration is not an RTO,
 and the result remains labelled `LOCAL SYNTHETIC EVIDENCE — NOT HOSTED
 BACKUP/RESTORE EVIDENCE`; it must not be entered as provider or production
 recovery evidence. The exact record is
-[here](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md). The
-exact-version-11 record remains historical predecessor evidence and is not
+[here](release-evidence/ROADMAP-SITES-V16-2026-08-09.md). The exact-version-13 and
+exact-version-11 records remain historical predecessor evidence and are not
 rewritten by the later exercise.
 
 `[REAL-WORLD VALIDATION REQUIRED]` No successful hosted D1/R2 restore exercise is claimed here. Provider-native backup and restore, real environment separation, operator execution, alerting, deletion recovery, and measured RPO/RTO remain unresolved operational evidence, not a reason to stop implementation work.
@@ -806,8 +848,8 @@ Immediately classify whether the event involves cross-tenant access, raw capabil
 
 ### Application write containment and recovery
 
-This runbook applies to exact version 15, which retains `OPS-CONTAIN-001`, passed
-release verification, and is privately deployed with revision-17 mode `enabled`.
+This runbook applies to exact version 16, which retains `OPS-CONTAIN-001`, passed
+release verification, and is privately deployed with revision-18 mode `enabled`.
 The configuration record alone does not prove containment: the required
 authenticated hosted `frozen`, missing/invalid, and restored-enabled exercise,
 zero-side-effect scheduled proof, owner-only operations-health observation, and
@@ -1034,9 +1076,9 @@ Deployment alone, a working happy path, or a green build does not complete this 
 | Stripe live account/price | Planned integration; Checkout disabled; production credentials and exact approved Price unavailable/unrecorded; current Sites guidance directs builders not to use Sites to enable financial transactions | Explicit provider confirmation or a verified superseding hosting decision, authorized secret/config inventory, policy alignment, reachable signed webhook, and controlled transaction evidence |
 | Domain | No approved production entry point recorded here | Authorized domain, DNS/redirect/TLS/origin checks, published support/legal destinations |
 | Legal and privacy copy | Exact qualified/owner-approved copy not recorded | Versioned review and deployed copy/behavior conformance |
-| Backup/restore | Procedure specified; exact-v13 local synthetic logical recovery passed 11 migrations, 31 tables, 2 tenants, 3 objects, 3 negative checks, and secret isolation. No successful hosted/provider backup or restore is claimed; 104,421 ms is not an RTO and snapshot age is not an RPO | Hosted D1/R2 restore evidence with integrity, measured recovery and recovery point, provider/environment separation, deletion recovery, and named owner |
-| Hosted capacity/performance | An exact-v13 single-process local exercise completed 54 requests at concurrency 4 with 44 `200`, 10 `201`, zero failures, and local p50/p95/max of 46.60/103.30/103.62 ms. It sets no business threshold, SLO/SLA, or hosted limit | Approved capacity targets plus hosted, network, contention, sustained-load, quota, failure, and representative-device evidence |
-| Sites logs/alerts and scheduling | Hosted invocation-log control is a confirmed provider limitation: v14 returned records with `invocation_logs=false`, and v15 returned records with all packaged observability/logging settings configured off. Value-safe query results returned redaction markers for cookie/SIWC identity fields but nonempty network-IP/request-signature fields; collection/storage disposition behind the markers is unknown. Connector/tool processing was transient; no raw field value was surfaced in the transcript or written to the repository. No customer incident is claimed for the owner-only/no-customer-data candidate, and D1 audit remains required. Logging/alerting is degraded and High before real-user/public operation. Historical observations also did not establish scheduled invocation. | Provider support must enforce the logging control, establish retained-data disposition, and prove that invocation records are unavailable, or a verified host migration must replace Sites before real-user/public operation. Separately establish scheduler support/trigger state, at least three hosted intervals, frozen no-work behavior, privacy-safe access/retention/deletion/export checks, and alert delivery/response |
+| Backup/restore | Procedure specified; exact-v16 local synthetic recovery passed 11 migrations, 31/31 tables, 3 objects/199 bytes, exact-Worker authenticated reads, expected interrupted-scheduler degradation, and 3 corruption checks. No successful hosted/provider backup or restore is claimed; 105,940 ms is not an RTO and snapshot age is not an RPO | Hosted D1/R2 restore evidence with integrity, measured recovery and recovery point, provider/environment separation, deletion recovery, and named owner |
+| Hosted capacity/performance | An exact-v16 single-process local exercise completed 54 requests at concurrency 4 with zero failures and local p50/p95/max of 41.5/93.18/93.58 ms. It sets no business target, SLO/SLA, or hosted limit | Approved capacity targets plus hosted, network, contention, sustained-load, quota, failure, and representative-device evidence |
+| Sites logs/alerts and scheduling | `LOG-PRIV-001` is High/open: v14 returned records with `invocation_logs=false`, and v15 returned records with all packaged observability/logging settings configured off. Value-safe query results returned redaction markers for cookie/SIWC identity fields but nonempty network-IP/request-signature fields; collection/storage disposition behind the markers is unknown. Connector/tool processing was transient; no raw field value was surfaced in the transcript or written to the repository. No v16 query ran because the predecessor result already proved the unchanged switches ineffective and another query would add processing without closure. No customer incident is claimed for the owner-only/no-customer-data candidate, and D1 audit remains required. Logging/alerting is degraded and real-user/public operation is blocked. Historical observations also did not establish scheduled invocation. | Provider support must enforce the logging control, establish retained-data disposition, and prove that invocation records are unavailable, or a verified host migration must replace Sites before real-user/public operation. Separately establish scheduler support/trigger state, at least three hosted intervals, frozen no-work behavior, privacy-safe access/retention/deletion/export checks, and alert delivery/response |
 | Live acceptance | No exact production release acceptance recorded | Complete evidence packet and Aaron's dated release acceptance |
 
 These dependencies determine whether affected production claims are supported. They do not retract `AUTH-005`, and they must not be described as completed until evidence exists.

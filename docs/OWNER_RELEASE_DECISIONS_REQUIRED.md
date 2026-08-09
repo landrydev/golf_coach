@@ -14,12 +14,12 @@ copy does not claim a staffed public service.
 | Decision | Current state | Why |
 |---|---|---|
 | `OWNER-SEC-001` credential containment | **HISTORICAL AUTHORIZATION COMPLETE 2026-08-08; `SEC-001` RETEST PENDING** | Aaron authorized the completed rotation; the provider-invalidated prior value and unchanged owner-only policy are evidenced, while normal signed-in owner retesting remains missing. The separate hosted log retest failed under `LOG-PRIV-001`. |
-| `OWNER-SCOPE-001` product/design/content baseline | **READY FOR REVIEW** | Exact version 15 owner-only candidate and evidence records exist; Aaron may approve, modify, or reject the bounded baseline |
+| `OWNER-SCOPE-001` product/design/content baseline | **READY FOR REVIEW** | Exact version 16 owner-only candidate and evidence records exist; Aaron may approve, modify, or reject the bounded baseline |
 | `OWNER-OPS-001` operators and contacts | **PREREQUISITE MISSING** | Names, entity, routes, and public contacts must be supplied |
 | `OWNER-COMM-001` offer and consequences | **PREREQUISITE MISSING** | Exact policy and Stripe Product/Price are not supplied or validated |
 | `OWNER-PRIV-001` privacy and retention | **PREREQUISITE MISSING** | Versioned policy and qualified Canadian review do not exist |
 | `OWNER-MEDIA-001` text-first exclusion | **READY FOR DECISION** | Exclusion matches the implemented fail-closed state |
-| `OWNER-PROD-001` origin/providers/access | **PREREQUISITE MISSING; `LOG-PRIV-001` OPEN** | Origin, accounts, access scope, budgets, and provider evidence are unresolved; Sites ignored both v14 and v15 packaged invocation-log controls |
+| `OWNER-PROD-001` origin/providers/access | **PREREQUISITE MISSING; `LOG-PRIV-001` OPEN** | Origin, accounts, access scope, budgets, and provider evidence are unresolved; v15 proved that all packaged Sites logging switches were ineffective, and no v16 provider-log query was run |
 | `OWNER-VALIDATION-001` controlled real operation | **INELIGIBLE WHILE `LOG-PRIV-001` IS OPEN** | Policy, consent, operators, participants, and any transaction limit must be exact, and provider log-privacy enforcement must pass first |
 | `OWNER-ACCEPT-001` exact-release acceptance | **OWNER-ONLY REVIEW POSSIBLE; PUBLIC/REAL-USER INELIGIBLE** | The complete evidence packet and all applicable prerequisites must be attached; `LOG-PRIV-001` blocks public and controlled-real-user acceptance |
 
@@ -66,50 +66,65 @@ historical completion of the owner action and does not close `SEC-001`.
 
 `[REAL-WORLD VALIDATION REQUIRED]` Selecting the bounded release baseline does not validate demand, usability, pricing, accessibility, coaching outcomes, or real-user comprehension.
 
-**Current evidence:** exact owner-only Sites version 15 is pinned to
-source/runtime release commit `8a359398099ab9b970df1d28eb3473dcbcd6207f`,
+**Current evidence:** exact owner-only Sites version 16 is pinned to
+source/runtime release commit `91f37ebd542774779f6db7e000832c2f6714e528`,
 saved version
-`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_085298ff9b9c819193d48e0df7a71631`,
-and deployment `appgdep_6a7810bf6fc08191b2cb9bfb081e58c2`. Two detached
-clean worktrees passed 333/333 verification; their 51-file comparison reported
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_0a4d7dc3d8108191aa4a1b3e14051a96`,
+and deployment `appgdep_6a7826b2f4c481919cc85665dffa2391`. Three
+verification runs, including two independent exact clean installs, passed 346/346;
+each clean install contained 501 packages with the same five blocked install scripts,
+and their 51-file comparison reported
 three expected framework-generated raw differences and zero normalized
 differences. The local archive has gzip SHA-256
-`f987afcd00f9151e4c1a698fdf7aeb06fe8d275ec778494bb7dd38f535406a31`,
-3,047,495 bytes, 63 entries/51 files, and all 11 migrations through
+`9119a848bb8b4c7fff1d810280cf845ec44366449adac3176fd35d8c24438fe6`,
+3,052,294 bytes, 63 entries/51 files, all 11 migrations, and 25 source mappings through
 `0010_steep_hemingway`; the
 provider package hash is
-`sha256:880189d7d59994b0c72fd34c9c206b2f37328096dea41c2ebd7b4fdf9d6775ad`.
-The integrated security review found no actionable Critical or High blocker in its
-bounded source/package scope. The private deployment succeeded at environment
-revision `17` at `2026-08-09T05:31:58.490796Z` with exact `RELEASE_ID`,
+`sha256:752f05fd957f8f4b043b5955d9cdbdbf2176b0f1f3414827c9c3e8d0f44f6e2c`
+across 7,290,880 bytes and 51 files. Production dependency audit reported zero
+vulnerabilities; release integrity inspected 304 files with zero findings and
+preserved Business Plan V1. The private deployment succeeded at environment
+revision `18` at `2026-08-09T07:05:36.176024Z` with exact `RELEASE_ID`,
 `APPLICATION_WRITE_MODE=enabled`,
 `INSTRUCTOR_ACCESS_MODE=owner_private`, and
 `BILLING_CHECKOUT_ENABLED=false`; four existing secrets were retained without
-exposing their values. Fresh signed-out requests to `/`, `/app`, `/r`, and
-`/api/health` returned `401` with `no-store`/`no-referrer`. No bypass bearer was generated, read, displayed,
+exposing their values. Sites access remains custom revision 1 with one owner, zero
+groups, and zero external visitors. Fresh signed-out requests to `/`, `/app`, `/r`, and
+`/api/health` returned `401` with `no-store`/`no-referrer`. No bypass bearer was generated, read, rotated, displayed,
 persisted, or used. This is not public/paid launch, owner acceptance, real-user,
 hosted signed-in, manual accessibility, scheduler/alert, backup/restore, or RTO/RPO
-evidence. `SEC-002` is **REMEDIATED — HOSTED RETEST PENDING** and `SEC-001` is
+evidence. `SEC-002` is **REMEDIATED — HOSTED RETEST PENDING**, `SEC-001` is
 **REMEDIATED — RETEST PENDING**. Deep readiness remains intentionally degraded
 because exact owner-approved consent-policy content/version and privacy-operator
 access configuration are absent.
 
-`LOG-PRIV-001` is open. The exact version-15 package configured all observability
+Version 16 adds generic private HTML for top-level document failures while keeping
+API, RSC, and asset failures JSON; safe UUIDv4 request-reference propagation; a
+24-hour keyed-recovery v2 lifecycle with exact-owner cleanup and legacy retirement;
+exact migration-0010 schema readiness; and bounded 13-account scheduler-backlog
+health. Its local-only recovery exercise applied all 11 migrations, inspected 31
+tables, restored three objects, booted the exact built Worker, authenticated profile,
+package, and workspace reads, observed the expected degraded interrupted-scheduler
+state, and passed three negative checks. Its local-only capacity exercise completed
+54 requests with zero failures. These are not hosted recovery, RPO, RTO, SLO,
+scheduler, alert, signed-in browser, manual accessibility, or real-user evidence.
+
+`LOG-PRIV-001` is open. The exact version-15 predecessor configured all observability
 and log-persistence switches off, yet Sites returned three post-success fetch events;
 the query surface returned redaction markers for cookie/SIWC identity fields, while
 network-IP and request-signature fields were nonempty and not redaction markers.
 Collection/storage disposition behind the markers is unknown. Connector/tool
 processing was transient; no raw field value was surfaced in the transcript or
-written to the repository. Version 14 also returned three invocation
-events with `invocation_logs=false`. Version-15-to-14/13 application/schema
-compatibility is class `N`, but the provider ignores each packaged configuration,
-so neither predecessor is a privacy remediation. Scope and media choices remain
+written to the repository. No version-16 provider-log query was run because the
+collection/storage disposition remains unknown and the v15 result already proved
+the packaged controls ineffective. Version 15 is the immediate historical
+predecessor and is not a privacy remediation. Scope and media choices remain
 reviewable owner decisions; public and controlled-real-user acceptance are
 ineligible until this finding is remediated and retested.
 
-**Historical immediate predecessors:** versions 14 and 13 retain their exact
-release records. Version 13's local recovery/capacity exercise remains historical
-exact-v13 evidence and is not relabelled as version 15.
+**Historical immediate predecessor:** version 15 retains its exact release record
+and failed provider-log privacy retest. Versions 14, 13, and earlier remain older
+historical provenance.
 
 **Historical predecessor evidence:** exact owner-only Sites version 12 was pinned to source/runtime release commit `7b77e6507c1b1c1acb091ab046808cf8b5cc0a5c`, local archive gzip SHA-256 `994f725ba6c5952c45885a4d72d38804f1b10b8440273dc26ac8bd1c38d2bd75` (2,967,333 bytes; 61 entries/49 files; all 10 migrations), Sites archive content hash `sha256:0805c04e9dcd5e8bac77f58aec2362dece1754f6eec63ec73d9c2e249bb01700` (49 files; 6,748,160 bytes), saved Sites version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_8868e09fcb28819181cfbebdf82ce73f`, deployment `appgdep_6a77c5c85974819185ce1c8caf13007c`, and environment revision 14. Final status was `succeeded` with provider `updated_at` `2026-08-09T00:12:04.939300+00:00`; four no-credential boundary probes returned `401`/`no-store`/`no-referrer`. Version-9 local synthetic Chrome captures remain renderer/layout-equivalent evidence for the unchanged UI/CSS only; they are not evidence of version-13 CSP, headers, authentication, response recovery, hosted behavior, or human accessibility acceptance.
 
@@ -326,44 +341,48 @@ evidence record.
 
 > `OWNER-ACCEPT-001`: I reviewed Roadmap release **[exact candidate/version and source commit]** at **[exact URL]** on **[date]**. I accept it for **[owner-only / controlled users / public]** operation under configuration **[revision]**, policies **[versions]**, and residual-risk record **[version]**. Approved operators are **[names]**. Stop/revisit triggers are **[exact triggers]**.
 
-The currently evidenced candidate fields are: Sites version 15, source/runtime
-release commit `8a359398099ab9b970df1d28eb3473dcbcd6207f`, saved version
-`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_085298ff9b9c819193d48e0df7a71631`,
-deployment `appgdep_6a7810bf6fc08191b2cb9bfb081e58c2`, local archive
-gzip SHA-256 `f987afcd00f9151e4c1a698fdf7aeb06fe8d275ec778494bb7dd38f535406a31`
-(3,047,495 bytes; 63 entries/51 files; 11 migrations), provider package
-`sha256:880189d7d59994b0c72fd34c9c206b2f37328096dea41c2ebd7b4fdf9d6775ad`
-(51 files; 7,270,400 bytes), successful private deployment at
-`2026-08-09T05:31:58.490796Z` under environment revision `17`, and
+The currently evidenced candidate fields are: Sites version 16, source/runtime
+release commit `91f37ebd542774779f6db7e000832c2f6714e528`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_0a4d7dc3d8108191aa4a1b3e14051a96`,
+deployment `appgdep_6a7826b2f4c481919cc85665dffa2391`, local archive
+gzip SHA-256 `9119a848bb8b4c7fff1d810280cf845ec44366449adac3176fd35d8c24438fe6`
+(3,052,294 bytes; 63 entries/51 files; 11 migrations/25 source mappings), provider package
+`sha256:752f05fd957f8f4b043b5955d9cdbdbf2176b0f1f3414827c9c3e8d0f44f6e2c`
+(51 files; 7,290,880 bytes), successful private deployment at
+`2026-08-09T07:05:36.176024Z` under environment revision `18`, and
 `https://roadmap-golf-coaching.aar-landry.chatgpt.site`. The exact configuration
 records the same `RELEASE_ID`, `APPLICATION_WRITE_MODE=enabled`,
 `INSTRUCTOR_ACCESS_MODE=owner_private`, and
 `BILLING_CHECKOUT_ENABLED=false`; four redacted secrets were retained. Both
-detached clean worktrees passed 333/333 verification; their 51-file comparison
+independent exact clean installs passed 346/346 verification; their 51-file comparison
 reported three expected raw differences and zero normalized differences. The
-integrated security review found no actionable Critical or High blocker in its
-bounded scope. Fresh
+production dependency audit reported zero vulnerabilities, and release integrity
+inspected 304 files with zero findings while preserving Business Plan V1. Fresh
 signed-out `/`, `/app`, `/r`, and `/api/health` requests returned `401` with
 `no-store`/`no-referrer`; no bypass
-credential was generated, read, displayed, persisted, or used. `SEC-002` is
+credential was generated, read, rotated, displayed, persisted, or used. `SEC-002` is
 **REMEDIATED — HOSTED RETEST PENDING** and `SEC-001` is **REMEDIATED — RETEST
-PENDING**. `LOG-PRIV-001` remains open because three provider fetch events
-persisted despite all packaged logging switches being configured off. Public and
-controlled-real-user acceptance are ineligible. No exact-version-15 authenticated mounted-browser, manual
+PENDING**; `AUTH-EVID-001` remains open. `LOG-PRIV-001` remains open because the
+version-15 predecessor returned three provider fetch events despite all packaged
+logging switches being configured off, and collection/storage disposition is unknown.
+No version-16 provider-log query was run. Public and controlled-real-user acceptance
+are ineligible. No exact-version-16 authenticated mounted-browser, manual
 accessibility/CSP review, hosted frozen/missing/invalid/restored-enabled exercise,
 zero-side-effect hosted scheduler proof, owner operational-health observation,
 controlled hosted write, provider backup/restore, alert delivery, complete hosted-
 log sample, public/paid launch, real-user result, or owner acceptance exists.
 Exact owner-approved consent-policy content/version and privacy-operator access
-configuration remain absent. These fields describe an owner-only, Checkout-
+configuration remain absent. Local-only exact-Worker recovery boot, 54-request
+capacity, and scheduler/readiness hardening are recorded without a hosted, RPO/RTO/SLO,
+or alert claim. These fields describe an owner-only, Checkout-
 disabled candidate; any later source, configuration, or deployment needs a new
 exact record.
 
 The superseded version-12 candidate fields were: source/runtime release commit `7b77e6507c1b1c1acb091ab046808cf8b5cc0a5c`, local archive gzip SHA-256 `994f725ba6c5952c45885a4d72d38804f1b10b8440273dc26ac8bd1c38d2bd75` (2,967,333 bytes; 61 entries/49 files; 10 migrations), Sites archive content hash `sha256:0805c04e9dcd5e8bac77f58aec2362dece1754f6eec63ec73d9c2e249bb01700` (49 files; 6,748,160 unpacked bytes), saved Sites version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_8868e09fcb28819181cfbebdf82ce73f`, deployment `appgdep_6a77c5c85974819185ce1c8caf13007c` with final status `succeeded` and provider `updated_at` `2026-08-09T00:12:04.939300+00:00`, environment revision 14, fresh signed-out `401`/`no-store`/`no-referrer` results for `/`, `/app`, `/r`, and `/api/health`, and `https://roadmap-golf-coaching.aar-landry.chatgpt.site`. Both exact-version-12 clean installs contained 501 packages with the same five blocked install scripts and passed 242/242 verification. The builds matched across 49 files with three controlled raw differences and zero normalized differences; production dependency audit reported zero vulnerabilities; release integrity inspected 261 source/evidence files with zero findings and preserved Business Plan V1. Version-9 responsive captures and exact-v11 recovery/capacity exercises remain historical predecessor evidence only. `SEC-002` is **REMEDIATED — HOSTED RETEST PENDING** and `SEC-001` is **REMEDIATED — RETEST PENDING**. No exact-version-12 authenticated mounted-browser, manual accessibility/CSP review, observed hosted scheduler invocation, complete hosted-log sample, hosted recovery, or owner operational-health evidence exists. A post-v12 value-safe capture at `2026-08-09T00:13:27.8566565Z` returned six broad `fetch`/`info`/`ok` events and zero `errors_only` events, with `scheduled=0`; it remains inconclusive. Version-12-to-11 rollback would reintroduce the lost-ack duplicate response/audit risk and is a security/behavior regression, not class `N`. Exact owner-approved consent-policy content/version and privacy-operator access configuration are absent, so deep readiness is intentionally degraded. These fields described an owner-only, Checkout-disabled candidate at that time; version 13 now supersedes it as the current private candidate.
 
 The final version-12 historical sentence above is itself superseded: versions 13
-and 14 are now immutable predecessors, and version 15 is the current private
-candidate.
+through 15 are now immutable predecessors, version 15 is the immediate predecessor,
+and version 16 is the current private candidate.
 
 **Consequence of deferral:** deployment and technical verification remain useful
 evidence, but the production-completion goal remains active and no accepted-live-V1

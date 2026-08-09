@@ -3,8 +3,9 @@
 **Candidate:** `roadmap-production-saas` 1.0.0
 **Evidence opened:** 2026-08-07
 **Authority:** `AUTH-005`
-**Status:** owner-only Sites version 15 succeeded, but its hosted provider-log
-opt-out retest failed; not accepted for public launch or real-user operation
+**Status:** owner-only Sites version 16 succeeded with additional failure,
+recovery, readiness, and scheduler hardening; `LOG-PRIV-001` remains High/open
+and blocks public launch or real-user operation
 
 This file records evidence for one exact candidate. A command result supports only
 the scope it actually exercised. A successful private deployment is not Aaron's
@@ -44,7 +45,12 @@ acceptance and is not evidence that unresolved policy or live operations work.
 - application-wide fail-closed write containment, bounded account/plan/action-scoped
   authoring-draft and session recovery, stricter response/CAS/revision boundaries,
   native billing recovery, and account-level share revoke, same-revision reissue,
-  and lost-ack replacement receipts.
+  and lost-ack replacement receipts;
+- generic private HTML for top-level document failures while API/RSC/assets retain
+  JSON, safe UUIDv4 request references, version-2 keyed attempts with 24-hour
+  expiry and exact-owner cleanup, exact migration-`0010` readiness validation,
+  bounded 13-account scheduler-backlog health, and exact-Worker recovery boot
+  verification.
 
 Media upload, junior golfers, native coach-package transactions, teams/facilities,
 marketplace, AI, CRM/messaging, and unapproved analytics are excluded or disabled.
@@ -53,29 +59,46 @@ marketplace, AI, CRM/messaging, and unapproved analytics are excluded or disable
 
 | Check | Current result | Scope and limitation |
 |---|---|---|
-| `npm run verify` | Passed independently in two detached clean worktrees: lint, strict TypeScript, production Worker build, release-artifact integrity, and 333/333 tests in each; zero failures, skips, or todos | Exact version-15 release commit; covers source/build/automated behavior, not hosted identity, authenticated application writes, provider adherence to packaged log settings, manual accessibility, policy, or real users |
-| `npm run verify:release-integrity` | A separate exact-version-15 run inspected 299 source/evidence text files with zero findings, preserved historical Business Plan V1, and confirmed the unchanged lockfile digest | The check intentionally excludes generated `dist`, dependencies, coverage, and work directories and is not an independent security or provider-retention assessment |
-| Exact-v15 artifact and submitted-archive audit | Passed: 63 safe tar entries/51 files; 25 source-mapped controls matched; all eleven migrations were present; the archive matched a clean-worktree `dist`; packaged `observability.enabled`, `logs.enabled`, and `invocation_logs` were all exactly `false` | This proves the checked local build/archive setting, not provider-side byte identity, provider adherence, hosted scheduler activation, or hosted deletion; the provider returned three post-success fetch events despite the all-false package configuration |
-| Two isolated exact-commit clean installs | Each installed 501 locked packages with the same five blocked install scripts; each complete verification passed 333/333. The two 51-file builds had exactly three allowlisted raw generated-value differences and zero normalized differences | [Detailed version-15 record](release-evidence/ROADMAP-SITES-V15-2026-08-09.md). This is normalized reproducibility, not byte-for-byte identity; versions 14 and 13 and the historical version-9 byte-identity failure remain preserved |
+| `npm run verify` | Passed in the primary release worktree and independently in two detached clean worktrees: lint, strict TypeScript, production Worker build, release-artifact integrity, and 346/346 tests in each; zero failures, skips, or todos | Exact version-16 release commit; covers source/build/automated behavior, not hosted identity, authenticated application writes, provider adherence to packaged log settings, manual accessibility, policy, or real users |
+| `npm run verify:release-integrity` | The exact-version-16 run inspected 304 source/evidence text files with zero secret findings, preserved historical Business Plan V1, and confirmed lockfile SHA-256 `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d` | The check intentionally excludes generated `dist`, dependencies, coverage, and work directories and is not an independent security or provider-retention assessment |
+| Exact-v16 artifact and submitted-archive audit | Passed: 63 safe tar entries/51 files; 25 source-mapped controls matched; all eleven migrations were present; the archive matched a clean-worktree `dist` | This proves the checked local build/archive, not provider-side byte identity, hosted scheduler activation, provider-log enforcement, or hosted deletion |
+| Two isolated exact-commit clean installs | Each installed 501 locked packages with the same five blocked install scripts; each complete verification passed 346/346. The two 51-file builds had exactly three allowlisted raw generated-value differences, three validated build-ID occurrences per build, and zero normalized differences | [Detailed version-16 record](release-evidence/ROADMAP-SITES-V16-2026-08-09.md). This is normalized reproducibility, not byte-for-byte identity; version 15 and earlier exact records and the historical version-9 byte-identity failure remain preserved |
 | Full-lock SBOM inventory | Lockfile digest remains unchanged; CycloneDX 1.5 contains 676 components and SPDX 2.3 contains 677 packages | Lock-derived artifacts and hashes are recorded in [Software Supply Chain](SOFTWARE_SUPPLY_CHAIN.md); this is inventory, not provenance, license advice, or vulnerability certification |
-| `npm run audit:production` | A fresh exact-version-15 check on 2026-08-09 reported zero known production vulnerabilities | Exact version-15 lock; the advisory snapshot is time-bounded and is not an independent assessment |
+| `npm run audit:production` | A fresh exact-version-16 check on 2026-08-09 reported zero known production vulnerabilities | Exact version-16 lock; the advisory snapshot is time-bounded and is not an independent assessment |
 | Migration `0010_steep_hemingway` | Forward migration and upgrade tests passed; the rate-limit scope constraint now admits `share_close_network` and `share_close_session` while retaining existing scopes | Exact local D1 migration evidence only; not hosted migration or rollback evidence |
-| `npm run exercise:recovery:local` | Passed at exact version-13 source: eleven migrations, 31/31 application tables, two synthetic tenants, three private R2-compatible objects/199 bytes, three negative integrity scenarios, child-process secret isolation, and 34,380-byte snapshot SHA-256 `8eaef0372bf2e4457ab651ec5c7bb3e3b22a51289495187761622fede0a1b139` | [Exact-v13 local exercise record](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md). Deterministic local synthetic evidence only; its 104,421 ms wall-clock duration is not an RTO and no hosted/provider-native recovery, RPO, operator, or alert result is claimed |
-| `npm run exercise:capacity:local` | Passed at exact version-13 source: 54 synthetic requests at maximum concurrency four, four author/edit/publish/share flows, two exports, 44 `200` plus ten `201` responses, and zero failures; local p50 46.60 ms, p95 103.30 ms, max 103.62 ms | [Exact-v13 local exercise record](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md). Single-process local synthetic evidence only; no approved SLO, tenant limit, hosted capacity, provider saturation, or real-user performance claim |
+| `npm run exercise:recovery:local` | Passed at exact version-16 source: eleven migrations, 31/31 application tables, 34,956-byte snapshot SHA-256 `123631eb46858ef7f5962b00ec4a7e0da736d2afe048f6b2598b16c0f3ba1e0a`, three private R2-compatible objects/199 bytes, authenticated synthetic profile/package/workspace reads through the exact built Worker, expected interrupted-scheduler health degradation, and three corruption checks | [Exact-v16 record](release-evidence/ROADMAP-SITES-V16-2026-08-09.md). Deterministic local synthetic evidence only; its 105,940 ms wall-clock duration is not an RTO and no hosted/provider-native recovery, RPO, operator, or alert result is claimed |
+| `npm run exercise:capacity:local` | Passed at exact version-16 source: 54 synthetic requests at maximum concurrency four and zero failures; local p50 41.5 ms, p95 93.18 ms, max 93.58 ms | [Exact-v16 record](release-evidence/ROADMAP-SITES-V16-2026-08-09.md). Single-process local synthetic evidence only; no approved target, SLO/SLA, tenant limit, hosted capacity, provider saturation, or real-user performance claim |
 | D1 integration journeys | Passed | Production Worker plus real local D1 exercised tenant isolation; consent grant/withdrawal and final-statement share/session race fencing; staged-save replay/races; session-scoped golfer-response replay/conflict/mixed four-way race handling; three- and four-phase lifecycles; publication/session invalidation; share expiry/revocation/response; data-request operator boundaries; scheduler/dead-letter states; Checkout/reconciliation races; webhook healing; migration upgrades; and stale provider-read fencing; not hosted SIWC or live-provider evidence |
-| `git diff --check` | Passed; no whitespace errors, with only line-ending warnings reported | Source-tree consistency check only; not behavioral evidence |
+| `git diff --check` | Passed; no whitespace errors | Source-tree consistency check only; not behavioral evidence |
 
-The separately recorded exact-version-15 release-integrity scan covered 299
-source/evidence text files with zero findings. Frozen version-14, version-13,
-and earlier scan results remain historical evidence in their exact release
-records.
-After the current evidence tree was reconciled, a second integrity run scanned
-301 source/evidence text files with zero findings, preserved historical Business
-Plan V1, and confirmed the same lockfile digest. That later check validates the
-evidence tree; it does not change the immutable runtime commit or retroactively
-enlarge the 299-file pre-evidence scan.
+The exact-version-16 release-integrity run covered 304 source/evidence text files
+with zero secret findings, preserved historical Business Plan V1, and confirmed
+the unchanged lockfile digest. Frozen version-15, version-14, version-13, and
+earlier scan results remain historical evidence in their exact release records.
+After the version-16 evidence record was added, the evidence-only reconciliation
+tree passed the same check across 305 files with zero secret findings. That later
+documentation check does not alter or relabel the immutable deployed runtime.
 
-### Versions 15 and 14 normalized reproducibility and provider-log mismatch
+### Version 16 normalized reproducibility and hardening
+
+The primary release worktree and two independently created detached clean
+worktrees at exact version-16 release commit
+`91f37ebd542774779f6db7e000832c2f6714e528` each passed the complete 346-test
+verification. Each clean install installed 501 locked packages and reported the
+same five blocked install scripts. The two detached 51-file build trees had
+exactly three strictly allowlisted framework-generated raw differences, three
+validated build-ID occurrences per build, and zero normalized differences.
+
+The exact source adds generic private HTML for top-level document failures while
+preserving JSON for API/RSC/assets, safe UUIDv4 request-reference propagation,
+version-2 keyed attempts with 24-hour expiry and exact-owner/submit-time checks,
+exact migration-`0010` readiness validation, bounded 13-account scheduler-
+backlog health, and exact-Worker boot validation after local recovery. These are
+automated/local controls, not signed-in hosted browser, scheduler, recovery, or
+real-user evidence. See the
+[exact version-16 record](release-evidence/ROADMAP-SITES-V16-2026-08-09.md).
+
+### Historical versions 15 and 14 normalized reproducibility and provider-log mismatch
 
 Two independently created detached clean worktrees at exact version-15 release
 commit `8a359398099ab9b970df1d28eb3473dcbcd6207f` each used
@@ -100,8 +123,11 @@ surfacing values and overwrote two matches with `null`; 34 likely v14/v15 names
 yielded no matches. Store enumeration is unavailable, so this is not exhaustive
 purge or deletion evidence.
 
-This proves a source/package control and a provider-setting mismatch, not hosted
-privacy closure. See the [exact version-15 record](release-evidence/ROADMAP-SITES-V15-2026-08-09.md)
+No version-16 provider-log query was run because the version-15 result already
+proved the unchanged packaged switches ineffective and another query would add
+provider/tool processing without satisfying closure. This proves a
+source/package control and a provider-setting mismatch, not hosted privacy
+closure. See the [exact version-15 record](release-evidence/ROADMAP-SITES-V15-2026-08-09.md)
 and [exact version-14 record](release-evidence/ROADMAP-SITES-V14-2026-08-09.md).
 
 ### Historical version 13 normalized reproducibility and recovery controls
@@ -146,7 +172,7 @@ output. See the [exact version-12 record](release-evidence/ROADMAP-SITES-V12-202
 This exercise does not alter the historical version-9 clean-build result: that
 rebuild still did not byte-match its submitted archive. The reproducible successor
 control was part of saved and deployed owner-only Sites version 12; historical
-version-13 and current version-15 normalized results are recorded above. Exact
+version-13, version-15, and current version-16 normalized results are recorded above. Exact
 historical identifiers remain in the version-12 record. The separate
 [precursor record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md)
 remains historical evidence for exact commit `66f5203a...`.
@@ -249,21 +275,21 @@ and real browser zoom remain explicitly unverified.
 
 | Field | Exact recorded value |
 |---|---|
-| Candidate | `ROADMAP-SITES-V15-2026-08-09` |
-| Release commit / runtime `RELEASE_ID` | `8a359398099ab9b970df1d28eb3473dcbcd6207f` |
-| Local submitted archive | `outputs/roadmap-sites-v15-8a35939.tar.gz`; 3,047,495 bytes; 63 tar entries/51 files; gzip SHA-256 `f987afcd00f9151e4c1a698fdf7aeb06fe8d275ec778494bb7dd38f535406a31` |
+| Candidate | `ROADMAP-SITES-V16-2026-08-09` |
+| Release commit / runtime `RELEASE_ID` | `91f37ebd542774779f6db7e000832c2f6714e528` |
+| Local submitted archive | `outputs/roadmap-sites-v16-91f37eb.tar.gz`; 3,052,294 bytes; 63 tar entries/51 files; gzip SHA-256 `9119a848bb8b4c7fff1d810280cf845ec44366449adac3176fd35d8c24438fe6` |
 | Sites project | `appgprj_6a76957326fc819196ebf3a0c95f1ec3` (`roadmap-golf-coaching`) |
-| Saved version | Version 15, `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_085298ff9b9c819193d48e0df7a71631` |
-| Sites archive record | Content hash `sha256:880189d7d59994b0c72fd34c9c206b2f37328096dea41c2ebd7b4fdf9d6775ad`; 51 files; 7,270,400 bytes |
-| Final deployment | `appgdep_6a7810bf6fc08191b2cb9bfb081e58c2`; final status `succeeded`; provider `updated_at` `2026-08-09T05:31:58.490796Z`; no failure message |
+| Saved version | Version 16, `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_0a4d7dc3d8108191aa4a1b3e14051a96` |
+| Sites archive record | Content hash `sha256:752f05fd957f8f4b043b5955d9cdbdbf2176b0f1f3414827c9c3e8d0f44f6e2c`; 51 files; 7,290,880 bytes |
+| Final deployment | `appgdep_6a7826b2f4c481919cc85665dffa2391`; final status `succeeded`; provider `updated_at` `2026-08-09T07:05:36.176024Z` |
 | Owner-only production URL | `https://roadmap-golf-coaching.aar-landry.chatgpt.site` |
-| Applied environment revision | 17 |
-| Access policy | The private-deployment control verified owner-only eligibility before publishing; not a public release or real-user acceptance |
+| Applied environment revision | 18 |
+| Access policy | Custom access with one owner, zero groups, and zero external visitors; not a public release or real-user acceptance |
 | Billing | `BILLING_CHECKOUT_ENABLED` remained disabled; no charge was attempted |
 | Write containment | `APPLICATION_WRITE_MODE=enabled`; no hosted authenticated write/freeze exercise is claimed |
-| Packaged log persistence | `observability.enabled=false`, `observability.logs.enabled=false`, and `observability.logs.invocation_logs=false` |
+| Environment preservation | Exact `INSTRUCTOR_ACCESS_MODE=owner_private`; four existing secrets retained without disclosure |
 
-Environment revision 17 bound `RELEASE_ID` to the exact version-15 commit. The
+Environment revision 18 bound `RELEASE_ID` to the exact version-16 commit. The
 Sites access policy remained owner-only and `BILLING_CHECKOUT_ENABLED=false`.
 
 Fresh signed-out HTTPS GETs to `/`, `/app`, `/r`, and `/api/health` each returned
@@ -272,24 +298,43 @@ verifies only the signed-out Sites boundary. It does not prove
 authenticated application behavior, application write/freeze containment, deep
 health, SIWC lifecycle, manual accessibility, hosted recovery, or real-user
 operation. See the
-[complete version-15 record](release-evidence/ROADMAP-SITES-V15-2026-08-09.md).
+[complete version-16 record](release-evidence/ROADMAP-SITES-V16-2026-08-09.md).
 
-The hosted log opt-out retest failed. Three post-success `fetch` events appeared
-at `2026-08-09T05:32:32.228Z`, `2026-08-09T05:32:33.881Z`, and
-`2026-08-09T05:32:34.431Z`, with `ok` outcomes and respective statuses `200`,
-`200`, and `403`. All reported one new script-version identifier. The query
-surface returned redaction markers for cookie and SIWC identity fields;
-network-IP and request-signature fields were nonempty and were not redaction
-markers. Raw field values processed transiently by the connector/tool were not
-surfaced in the transcript or written to the repository. These bounded aggregates
-confirm a provider-setting mismatch; they do not prove collection/storage
-masking, privacy closure, retained-data disposition, deletion, a complete
-retention boundary, or scheduler behavior.
+No version-16 provider-log query was run. Version 15 had already proved that the
+unchanged all-false packaged observability/log-persistence controls did not stop
+Sites from returning fetch invocation events, so another query would add
+provider/tool processing without satisfying `LOG-PRIV-001` closure. The finding
+remains High/open and blocks real-user/public operation.
 
 `OWNER-SEC-001` remains historically completed. No SIWC bypass credential was
-generated, rotated, read, displayed, persisted, or used for version 15. `SEC-001`
+generated, rotated, read, displayed, persisted, or used for version 16. `SEC-001`
 remains **REMEDIATED — RETEST PENDING** because the normal signed-in owner and
 authentication retest is still absent.
+
+## Predecessor version 15 exact record
+
+| Field | Exact recorded value |
+|---|---|
+| Candidate | `ROADMAP-SITES-V15-2026-08-09` |
+| Release commit / runtime `RELEASE_ID` | `8a359398099ab9b970df1d28eb3473dcbcd6207f` |
+| Local submitted archive | `outputs/roadmap-sites-v15-8a35939.tar.gz`; 3,047,495 bytes; 63 tar entries/51 files; gzip SHA-256 `f987afcd00f9151e4c1a698fdf7aeb06fe8d275ec778494bb7dd38f535406a31` |
+| Saved version | Version 15, `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_085298ff9b9c819193d48e0df7a71631` |
+| Sites archive record | Content hash `sha256:880189d7d59994b0c72fd34c9c206b2f37328096dea41c2ebd7b4fdf9d6775ad`; 51 files; 7,270,400 bytes |
+| Final deployment | `appgdep_6a7810bf6fc08191b2cb9bfb081e58c2`; final status `succeeded`; environment revision 17; provider `updated_at` `2026-08-09T05:31:58.490796Z` |
+| Packaged log persistence | `observability.enabled=false`, `observability.logs.enabled=false`, and `observability.logs.invocation_logs=false` |
+
+Version 15's four signed-out probes returned `401` with
+`no-store`/`no-referrer`. Its hosted log opt-out retest nevertheless returned
+three post-success fetch events at `2026-08-09T05:32:32.228Z`,
+`05:32:33.881Z`, and `05:32:34.431Z` (two `200`, one handled `403`) under one
+new script-version identifier. The query surface returned redaction markers for
+cookie/SIWC identity fields, while network-IP and request-signature fields were
+nonempty and were not redaction markers. Raw field values processed transiently
+by the connector/tool were not surfaced in the transcript or written to the
+repository. These bounded aggregates prove the provider-setting mismatch, not
+collection/storage masking, privacy closure, retained-data disposition,
+deletion, a complete retention boundary, or scheduler behavior. See the
+[complete version-15 record](release-evidence/ROADMAP-SITES-V15-2026-08-09.md).
 
 ## Predecessor version 14 exact record
 
@@ -327,7 +372,7 @@ collection/storage masking and retained-data disposition remain unknown. See the
 Version 13 remains immutable predecessor evidence. Its four signed-out probes
 returned `401`; its product-control and local exercise evidence remain in the
 [complete version-13 record](release-evidence/ROADMAP-SITES-V13-2026-08-09.md).
-It is not relabelled as version-15 hosted evidence.
+It is not relabelled as version-16 hosted evidence.
 
 ## Predecessor version 12 exact record
 
@@ -642,9 +687,9 @@ from reaching the application by design.
 | Item | Current disposition |
 |---|---|
 | General public access | Blocked; working legal/support copy explicitly limits this to controlled private release |
-| Owner-only production release | Deployed successfully as Sites version 15 at environment revision 17; final authenticated owner acceptance and controlled real journeys remain unrecorded |
+| Owner-only production release | Deployed successfully as Sites version 16 at environment revision 18; final authenticated owner acceptance and controlled real journeys remain unrecorded |
 | Deep operational readiness | Intentionally degraded because exact owner-approved consent-policy content/version and privacy-operator access configuration are absent; no authenticated deep-readiness pass is claimed |
-| Provider invocation-log privacy | Open. Version 14 returned three invocation events despite `invocation_logs=false`; version 15 returned three post-success fetch events despite all packaged observability/log-persistence settings being `false`. The query surface returned redaction markers for cookie/SIWC identity fields but nonempty, non-marker network-IP and request-signature fields. Raw field values processed transiently by the connector/tool were not surfaced in the transcript or written to the repository. Collection/storage masking, provider adherence, retention/access/deletion, and retained-data disposition are unknown. Closure requires actual provider enforcement plus retained-data disposition, or a verified migration to a host that enforces the control. |
+| Provider invocation-log privacy | High/open. Version 14 returned three invocation events despite `invocation_logs=false`; version 15 returned three post-success fetch events despite all packaged observability/log-persistence settings being `false`. The query surface returned redaction markers for cookie/SIWC identity fields but nonempty, non-marker network-IP and request-signature fields. Raw field values processed transiently by the connector/tool were not surfaced in the transcript or written to the repository. No version-16 log query ran because the predecessor already proved the unchanged switches ineffective and another query would add processing without closure. Collection/storage masking, provider adherence, retention/access/deletion, and retained-data disposition are unknown. Closure requires actual provider enforcement plus retained-data disposition, or a verified migration to a host that enforces the control; real-user/public operation remains blocked. |
 | SIWC bypass credential exposure | Aaron authorized `OWNER-SEC-001`; the provider rotation immediately invalidated the exposed prior value under its connector contract, the replacement was not displayed/persisted/used, and owner-only access remained unchanged. `SEC-001` is **REMEDIATED — RETEST PENDING** because signed-in owner authentication was unavailable and the empty post-operation log sample is inconclusive. |
 | New SaaS charges | Fail-closed through `BILLING_CHECKOUT_ENABLED=false` until exact price/policy approval and configuration |
 | Paid entitlement enforcement | A fail-closed, explicit-status guard exists but production remains in `owner_private`; no owner-approved failed/cancelled/unpaid consequence is selected or claimed |
@@ -653,7 +698,7 @@ from reaching the application by design.
 | Destructive account deletion | Not automated; only an identity/retention review request is created |
 | Fresh reauthentication | High-impact actions rely on the current SIWC session; provider capability/configuration for explicit recent-auth proof remains unresolved |
 | Abuse/rate-limit controls | D1-backed atomic fixed-window controls cover capability exchange/response/session close, publish/revoke, Checkout/Portal/reconciliation, export, and data requests with HMAC-only subjects and truthful `429`/`Retry-After`; migration `0010_steep_hemingway` adds the share-close network/session scopes and passed local upgrade tests; deployed edge/header/alert evidence remains required |
-| Backup/recovery claim | Local synthetic D1/R2-compatible logical restore passed; no hosted/provider-native backup, restore, rollback, RPO, or RTO claim is made |
+| Backup/recovery claim | Exact-version-16 local synthetic D1/R2-compatible restore plus exact-Worker boot passed, including authenticated synthetic reads and expected interrupted-scheduler degradation; no hosted/provider-native backup, restore, rollback, RPO, or RTO claim is made |
 | Legal/compliance claim | Not made; qualified review and final operating details remain required |
 | Production acceptance | Not granted; Aaron must accept one exact deployed release separately |
 

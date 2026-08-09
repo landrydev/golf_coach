@@ -6,7 +6,7 @@ analytics reuse is approved by this document
 **Authority:** [Business Plan V2](../../00_source/BUSINESS_PLAN_V2.md) governs; its
 numeric targets and commercial expectations remain hypotheses
 **Related:** [Owner release decisions](OWNER_RELEASE_DECISIONS_REQUIRED.md),
-[findings ledger](FINDINGS_RETEST_LEDGER.md), [exact-v15 release evidence](release-evidence/ROADMAP-SITES-V15-2026-08-09.md),
+[findings ledger](FINDINGS_RETEST_LEDGER.md), current [Release Evidence](RELEASE_EVIDENCE.md),
 [exact-v13 local exercises](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md),
 and [historical exact-v14 release evidence](release-evidence/ROADMAP-SITES-V14-2026-08-09.md)
 
@@ -17,25 +17,26 @@ or proven by Roadmap.
 
 ## Current candidate boundary
 
-The current recorded candidate is owner-private Sites version 15 at source/runtime
-release `8a359398099ab9b970df1d28eb3473dcbcd6207f`, saved version
-`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_085298ff9b9c819193d48e0df7a71631`,
-deployment `appgdep_6a7810bf6fc08191b2cb9bfb081e58c2`, and environment
-revision `17`; final deployment status is `succeeded` with provider `updated_at`
-`2026-08-09T05:31:58.490796Z`. The environment remains
+The current recorded candidate is owner-private Sites version 16 at source/runtime
+release `91f37ebd542774779f6db7e000832c2f6714e528`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_0a4d7dc3d8108191aa4a1b3e14051a96`,
+deployment `appgdep_6a7826b2f4c481919cc85665dffa2391`, and environment
+revision `18`; final deployment status is `succeeded` at
+`2026-08-09T07:05:36.176024Z`. The environment remains
 `INSTRUCTOR_ACCESS_MODE=owner_private` and `BILLING_CHECKOUT_ENABLED=false`, with
 `APPLICATION_WRITE_MODE=enabled` added as an exact fail-closed application
-containment setting.
+containment setting. Sites access remains custom revision 1 with one owner, zero
+groups, and zero external visitors; four existing secrets were retained without
+exposing their values, and the exact `RELEASE_ID` is set.
 
-Its 63-entry/51-file local release archive is 3,047,495 bytes, contains all 11
-migrations, and has gzip SHA-256
-`f987afcd00f9151e4c1a698fdf7aeb06fe8d275ec778494bb7dd38f535406a31`;
+Its 63-entry/51-file local release archive is 3,052,294 bytes, contains all 11
+migrations and 25 source mappings, and has gzip SHA-256
+`9119a848bb8b4c7fff1d810280cf845ec44366449adac3176fd35d8c24438fe6`;
 the Sites content hash is
-`sha256:880189d7d59994b0c72fd34c9c206b2f37328096dea41c2ebd7b4fdf9d6775ad`
-across 51 files and 7,270,400 bytes. Versions 14 and 13 are immutable historical
-predecessors. Version-15-to-14 or version-15-to-13 application/schema compatibility
-is class `N` because only packaged observability configuration changed, but neither
-target achieves the privacy objective or resolves `LOG-PRIV-001`. The historical
+`sha256:752f05fd957f8f4b043b5955d9cdbdbf2176b0f1f3414827c9c3e8d0f44f6e2c`
+across 51 files and 7,290,880 bytes. Version 15 is the immediate immutable historical
+predecessor; versions 14 and 13 are older provenance. Version 15 does not achieve
+the privacy objective or resolve `LOG-PRIV-001`. The historical
 version-13-to-12 path remains class `B`: migration
 `0010_steep_hemingway` is schema-backward-compatible, but rollback removes
 fail-closed global write containment and newer authoring, share, profile,
@@ -43,35 +44,31 @@ recovery, receipt, and compare-and-swap behavior. The historical v12-to-v11 lost
 acknowledgement regression and privacy-behavior boundary relative to version 7
 also remain recorded.
 
-Both exact-version-15 clean installs contained 501 packages with the same five
-blocked install scripts and passed 333/333 verification with no failures, skips,
+Three exact-version-16 verification runs, including both independent clean installs,
+passed 346/346 with no failures, skips,
 or todos. Their 51-file builds had three expected generated raw differences and
-zero normalized differences. A separate exact-version-15 release-integrity run
-covered 299 files with zero findings, and a fresh exact-version-15 production
-dependency audit reported zero vulnerabilities.
+zero normalized differences; both clean installs contained 501 packages with the
+same five blocked install scripts. A separate exact-version-16 release-integrity run
+covered 304 files with zero findings and preserved Business Plan V1, and the
+production dependency audit reported zero vulnerabilities.
 
-The historical [exact-v13 local exercise record](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md)
-records recovery through 11 migrations and 31/31 tables for two synthetic tenants,
-three R2-compatible objects totalling 199 bytes, three negative checks, environment
-isolation, and a 34,380-byte snapshot with SHA-256
-`8eaef0372bf2e4457ab651ec5c7bb3e3b22a51289495187761622fede0a1b139`.
-Its 104,421 ms local wall-clock duration is not an RTO and the synthetic snapshot
-is not RPO evidence. The companion bounded-capacity run completed 54 requests at
-maximum concurrency four with 44 `200`, ten `201`, zero failures, and local
-p50/p95/maximum observations of 46.60/103.30/103.62 ms. These are not relabelled
-as exact-v15 results and do not supply
+The exact-version-16 local synthetic exercise applied all 11 migrations, inspected
+31/31 tables, restored three R2-compatible objects, booted the exact built Worker,
+authenticated profile, package, and workspace reads, observed the expected degraded
+interrupted-scheduler state, and passed three negative checks. The companion bounded-
+capacity run completed 54 requests with zero failures. These local results do not supply
 approved performance targets, an SLO/SLA, hosted capacity or backup/restore,
 rollback/forward-fix, RPO/RTO, scheduler, named-operator readiness, production
 recovery, or a real-user measurement result. Historical exact-v12, v11, and v10
 evidence remains predecessor evidence.
 
-After version 15 deployed, signed-out HTTPS requests to `/`, `/app`, `/r`, and
+After version 16 deployed, signed-out HTTPS requests to `/`, `/app`, `/r`, and
 `/api/health` each returned the outer owner-policy `401` with `no-store` and
 `no-referrer`. This is not evidence for authenticated application behavior or
 browser execution.
 
 `LOG-PRIV-001` remains open and makes public or controlled-real-user acceptance
-ineligible. Version 15's exact package configured observability, custom-log
+ineligible. Version 15's exact predecessor package configured observability, custom-log
 collection, and automatic invocation-log persistence off, yet the provider returned
 three post-success `fetch` events. The query surface returned redaction markers for
 cookie and SIWC identity fields; network-IP and request-signature fields remained
@@ -79,7 +76,9 @@ nonempty and were not redaction markers. Collection/storage disposition behind
 the markers is unknown. Connector/tool processing was transient; no raw field
 value was surfaced in the transcript or written to the repository. Version 14 also returned three
 invocation events with `invocation_logs=false`. The provider ignores the packaged
-privacy configuration, and rollback to version 14 or 13 is not a privacy remedy.
+privacy configuration. No version-16 provider-log query was run because the
+collection/storage disposition remains unknown and v15 already proved the packaged
+controls ineffective. Rollback to version 15, 14, or 13 is not a privacy remedy.
 
 A sanitized version-8-era continuity query started at
 `2026-08-08T17:27:16.287Z`, completed at `2026-08-08T17:27:17.305Z`, requested
@@ -119,16 +118,21 @@ reliability over time, support burden, accessibility, or participant outcomes. T
 packet records no owner acceptance and authorizes no participant, analytics,
 public-access, or commercial activity.
 
-Version 15 carries forward version 13's nonce, golfer-response, bounded
+Version 16 carries forward version 15's nonce, golfer-response, bounded
 ambiguous-mutation and authoring-draft recovery, stricter profile/package
 compare-and-swap handling, share revoke/reissue lifecycle controls, exact
-write-bound receipts, and global write containment. These controls improve
+write-bound receipts, and global write containment. It adds generic private
+top-level-document failures, JSON API/RSC/asset boundaries, validated UUIDv4 request
+references, 24-hour keyed-recovery v2 lifecycle and legacy retirement, exact
+migration-0010 readiness, and bounded 13-account scheduler-backlog health. These controls improve
 reliability but do not themselves measure golfer agency, trust, hosted behavior,
 or real-world success. No hosted signed-in browser, manual accessibility review,
 authenticated write-mode exercise, backup/restore, scheduler/alert exercise, or
-provider validation occurred. No bypass credential was generated, read, or used.
+provider validation occurred. No bypass credential was generated, read, rotated,
+displayed, persisted, or used.
 `SEC-002` is **REMEDIATED — HOSTED RETEST PENDING**. Historical `OWNER-SEC-001`
-authorization is complete, while `SEC-001` remains **REMEDIATED — RETEST PENDING**.
+authorization is complete, while `SEC-001` remains **REMEDIATED — RETEST PENDING**
+and `AUTH-EVID-001` remains open.
 
 ## Recommended measurement dictionary
 
