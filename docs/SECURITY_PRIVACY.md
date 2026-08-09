@@ -2,7 +2,7 @@
 
 **Document status:** Implementation control plan under `AUTH-005`; not a security assessment, privacy opinion, legal-compliance claim, or production-readiness claim
 **Applies to:** [Production SaaS Architecture](ARCHITECTURE.md)
-**Last updated:** 2026-08-08
+**Last updated:** 2026-08-09
 
 ## Purpose and authority
 
@@ -14,31 +14,30 @@
 
 ## Current exact private-candidate security observation
 
-Owner-only Sites version 11 is bound to source/runtime release
-`44670a64498779cf747914b4465380916a939301`, saved version
-`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_4c49cdec72bc8191aeece01f5689e51a`,
-private deployment `appgdep_6a77b01714b881918245bb5248349e0d`, and
-environment revision `13`. Final deployment status is `succeeded` with provider
-`updated_at` `2026-08-08T22:40:07.742084+00:00`. This is an implementation evidence point,
+Owner-only Sites version 12 is bound to source/runtime release
+`7b77e6507c1b1c1acb091ab046808cf8b5cc0a5c`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_8868e09fcb28819181cfbebdf82ce73f`,
+private deployment `appgdep_6a77c5c85974819185ce1c8caf13007c`, and
+environment revision `14`. Final deployment status is `succeeded` with provider
+`updated_at` `2026-08-09T00:12:04.939300+00:00`. This is an implementation evidence point,
 not public-release, legal-compliance, or owner-acceptance evidence.
 
 Two detached exact-commit clean worktrees each installed 501 locked packages and
-passed build, strict types, lint, artifact integrity, and 237/237 tests. Their
+passed build, strict types, lint, artifact integrity, and 242/242 tests. Their
 49-file inventories differed only in three strictly validated generated-value
 files and had zero differences after allowlisted normalization. The integrity scan
-inspected 259 source/evidence text files with zero pattern findings and preserved
+inspected 261 source/evidence text files with zero pattern findings and preserved
 historical Business Plan V1. The value-safe artifact verifier found exactly two
 expected server-manifest copies of the build-generated prerender credential, zero
 unexpected copies or paths, no production prerender binding, and the exact
 packaged five-minute scheduler declaration. The exact archive
 passed with gzip SHA-256
-`d88be6513bc58afd057d4a3fb3a6d64b744f7a5c359731ec9fc693a788e1fa0e`
+`994f725ba6c5952c45885a4d72d38804f1b10b8440273dc26ac8bd1c38d2bd75`
 and 10 migrations; the separate Sites package has content hash
-`sha256:d717035871790252548e7fff4e1192e590b73b7cabfe3f4c011d65ffe4493daa`.
-After the final revision-13 deployment, signed-out HTTPS probes returned the
-outer-policy `401` for `/`, `/app`, `/api/health`, and
-`/api/operations/health` with `no-store` and `no-referrer`; those probes demonstrate
-signed-out containment only.
+`sha256:0805c04e9dcd5e8bac77f58aec2362dece1754f6eec63ec73d9c2e249bb01700`.
+After the final revision-14 deployment, signed-out HTTPS probes returned the
+outer-policy `401` for `/`, `/app`, `/r`, and `/api/health` with `no-store` and
+`no-referrer`; those probes demonstrate signed-out containment only.
 
 The release working-tree/archive match is not deterministic byte-rebuild evidence.
 An isolated immutable-v9 export installed cleanly and passed the complete 229-test
@@ -51,13 +50,13 @@ runtime v9 still needed exercise on a later exact candidate.
 The later-source control was first exercised at then-undeployed precursor commit
 `66f5203a913f01c8da20555feebdbb99152c052c`; its historical result is retained in
 the [precursor evidence](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md).
-Exact version 11 repeated the two-clean-build comparison at its own immutable
+Exact version 12 repeated the two-clean-build comparison at its own immutable
 commit and bound the verified archive to the recorded provider package and
-deployment. This closes `SUPPLY-EVID-001` for exact-v11 normalized
+deployment. This closes `SUPPLY-EVID-001` for exact-v12 normalized
 reproducibility, not byte-identical output, and does not retroactively change the
 failed version-9 byte comparison.
 
-The exact-v11 artifact regression preserves the version-8 through version-10 closure of `SEC-003` for
+The exact-v12 artifact regression preserves the version-8 through version-11 closure of `SEC-003` for
 the build-generated prerender credential boundary and supersedes version 7. It does
 not close `SEC-001`; that incident is tracked independently. Aaron authorized
 `OWNER-SEC-001` on 2026-08-08, and one value-safe Sites rotation completed at
@@ -67,12 +66,13 @@ and the access policy remained `custom`, revision 1, with one owner and no group
 external visitors. The original value was not retained or empirically replayed.
 
 `SEC-001` is **REMEDIATED — RETEST PENDING**, not closed. The historical
-post-rotation and exact-v11 post-deploy signed-out containment probes passed, but no
+post-rotation plus exact-v11 and exact-v12 post-deploy signed-out containment probes passed, but no
 supported signed-in owner browser was available. Normal owner authentication
 without a bypass header and a meaningful privacy-safe log sample remain required. See the
 [value-free rotation evidence](release-evidence/ROADMAP-SITES-V9-2026-08-08-sec001-rotation.md).
 
-Version 11 remediates the known `SEC-002` source/package condition. For every
+Version 12 retains the version-11 remediation of the known `SEC-002`
+source/package condition. For every
 non-loopback application response, the Worker creates a fresh 32-hex nonce,
 inserts a server-owned CSP before vinext rendering, and the framework applies the
 matching nonce to every executable RSC/hydration script. `script-src` and
@@ -85,9 +85,10 @@ script directives. A supported signed-in hosted response was not available for
 inspection, so `SEC-002` is **REMEDIATED — RETEST PENDING** rather than closed.
 Nonce and credential values must never be recorded as evidence.
 
-Version-9 exact-commit local synthetic Chrome captures are source-equivalent to
-version 11 only for renderer/layout behavior and cover landing, workspace, and golfer
-views at 320, 390, and 1440 CSS px. During preparation, the 320 px golfer close
+Historical version-9 exact-commit local synthetic Chrome captures are
+source-equivalent to version 12 only for unchanged renderer/layout UI and CSS and
+cover landing, workspace, and golfer views at 320, 390, and 1440 CSS px. They do not
+cover version-12 outcome-unknown retry/reload interaction. During preparation, the 320 px golfer close
 action was found compressed into an unusable narrow column; the responsive header
 was repaired and a source regression plus a fresh nine-capture retest passed with no
 root/body horizontal overflow. The predecessor visual harness also bypassed the
@@ -97,9 +98,10 @@ returned scoped session cookie, removes only `Secure` for loopback HTTP, and has
 regression forbidding the old pattern. These two findings are closed locally only;
 they do not establish hosted golfer-session behavior, manual accessibility, real
 device, supported-browser, keyboard, screen-reader, forced-colour, or browser-zoom
-evidence. They are not relabelled exact-v11 CSP, header, hosted, or manual evidence.
+evidence. They are not relabelled exact-v12 CSP, header, authentication, response-
+recovery, hosted, or manual evidence.
 
-The exact-v11 archive verifier proves that the package declares exactly
+The exact-v12 archive verifier proves that the package declares exactly
 `*/5 * * * *`; the Worker exports `scheduled()` and passes local
 scheduler-heartbeat tests. A predecessor-v8 provider-log query spanning
 `2026-08-08T16:37:26.325Z` through `2026-08-08T17:16:40.472Z` returned 24 events,
@@ -107,15 +109,28 @@ all `fetch` and zero `scheduled`, across multiple expected five-minute boundarie
 The exact-v10 30-minute query completed 14m38s after final deployment began and
 after the 21:20, 21:25, and 21:30 expected boundaries, but returned zero events.
 That historical result strengthens suspicion while remaining inconclusive and
-supplies no hosted heartbeat. A final value-safe 30-minute aggregate at
-`2026-08-08T22:58:53.646Z` ran 19m23s after v11 deployment success and after the
-22:45, 22:50, and 22:55 expected boundaries. It returned three
-`fetch`/`info`/`ok` events and zero observed `scheduled` events. An
-`errors_only` aggregate returned one `fetch`/`info`/`ok` event with zero error
-fields. Multiple expected boundaries strengthen suspicion. Because provider-log completeness,
-scheduled-event visibility, and deployed trigger metadata are unavailable here,
-`OPS-CRON-001` records a suspected hosted scheduler gap rather than a confirmed
-platform or application defect. Billing remains disabled while it is open.
+supplies no hosted heartbeat. Historical post-v11 aggregates returned only
+`fetch`/`info`/`ok` events and `scheduled=0`; the later 60-minute broad sample
+contained HTTP `200`, `200`, and handled `403`, while its `errors_only` companion
+returned the handled `403`. The post-v12 ten-minute `errors_only` aggregate
+returned zero records; its broad companion returned six `fetch`/`info`/`ok`
+records (`200`, `200`, and handled `403` twice) and `scheduled=0`. Because
+provider-log completeness, scheduled-event visibility, and deployed trigger
+metadata are unavailable here, `OPS-CRON-001` records a suspected hosted scheduler
+gap rather than a confirmed platform or application defect. Billing remains
+disabled while it is open.
+
+Version 12 also closes the known golfer-response lost-ack duplicate-write gap at
+the application boundary. `/r/response` requires a bounded `Idempotency-Key` and
+scopes deterministic HMAC response and audit receipts to the account plus resolved
+golfer session. The first valid write returns `201`; an exact replay returns the
+same response with `200`; changed input under the same key returns `409`. The
+response and one audit event are committed atomically, including under same- and
+mixed-payload concurrency. A 10-second client timeout reports an outcome-unknown
+state without claiming failure and retains the pending key in per-tab
+`sessionStorage` across reloads until a definitive result or tab close. The raw key
+is never server-persisted or logged. External-handoff clicks use a fresh key for
+each click and are intentionally not cross-click deduplicated.
 
 `[OWNER INPUT REQUIRED]` Exact consent-policy-registry entries and the independent
 privacy-operator authority/configuration remain unresolved and absent from the
@@ -320,7 +335,7 @@ A capability is a bearer secret. It cannot prevent an authorized recipient from 
 - Use D1 prepared statements or ORM parameter binding; never concatenate user input into SQL.
 - Use anti-CSRF protection for cookie-authenticated mutations through same-origin checks, appropriate SameSite cookies, and a server-validated token where the exact route model requires it.
 - Permit only necessary HTTP methods and content types; return privacy-safe errors with request IDs.
-- Make publication, revocation, deletion, and billing-event handling idempotent.
+- Make golfer-response, publication, revocation, deletion, and billing-event handling idempotent.
 - Use optimistic concurrency or version checks on coach edits so a stale tab cannot silently overwrite a newer roadmap.
 
 ### Browser protections
@@ -336,7 +351,7 @@ The exact deployed response must be verified for:
 - no sensitive caching on instructor/golfer responses; and
 - consistent origin/host validation for generated absolute URLs and redirects.
 
-Exact v11 implements these application response controls in the Worker, including
+Exact v12 implements these application response controls in the Worker, including
 the per-response script nonce described above, `frame-ancestors 'none'`,
 `Referrer-Policy: no-referrer`, MIME-sniffing protection, a restrictive permissions
 policy, and route-aware `no-store`. Automated production-bundle tests exercise the
@@ -569,7 +584,7 @@ Findings need severity, affected release, owner, mitigation, retest evidence, an
 | Stripe production configuration | No production secret, approved Price, final billing terms, or live transaction evidence is recorded | Authorized configuration, signed webhook evidence, reconciliation, and controlled transaction/refund/failure checks |
 | Public domain | Final origin affects cookies, redirects, CSP, CORS, referrers, and public disclosures | Authorized domain plus final-origin security and privacy verification |
 | Backup and restore | A strategy without a successful restore does not prove recoverability | Versioned backup inventory and a timed, integrity-checked D1/R2 restore exercise |
-| Hosted scheduler | The exact-v11 archive verifier proves the five-minute cron declaration and local invocation passes. A predecessor-v8 provider query contained 24 fetch events and zero scheduled events; version-9/v10 queries produced no scheduled observation; the bounded v10/v11 window returned three `info`/`ok` fetch events and zero observed scheduled events. Empty or fetch-only bounded samples do not prove invocation or absence. Log completeness and deployed trigger metadata are unavailable. | Establish Sites cron support and deployed trigger state or move to a supported scheduler; then observe at least three exact-release intervals through authenticated health/provider evidence and exercise a privacy-safe failure alert |
+| Hosted scheduler | The exact-v12 archive verifier proves the five-minute cron declaration and local invocation passes. Predecessor v8-v11 provider queries produced no scheduled observation. The post-v12 ten-minute broad aggregate returned six `fetch`/`info`/`ok` records and `scheduled=0`; its `errors_only` companion returned zero records. Empty or fetch-only bounded samples do not prove invocation or absence. Log completeness and deployed trigger metadata are unavailable. | Establish Sites cron support and deployed trigger state or move to a supported scheduler; then observe at least three exact-release intervals through authenticated health/provider evidence and exercise a privacy-safe failure alert |
 | Sites logging | Provider-generated data, retention, redaction, access, and alerting are not demonstrated | Deployed log sampling, access review, token/PII leak test, and alert exercise |
 | Live acceptance | No exact production release has completed controlled real journeys and owner review | Release evidence packet and Aaron's dated acceptance record |
 

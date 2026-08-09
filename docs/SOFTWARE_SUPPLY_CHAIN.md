@@ -1,11 +1,11 @@
 # Software supply-chain, SBOM, and license inventory
 
-**Status:** Reproducible inventory procedure plus exact Sites-version-11 lockfile,
+**Status:** Reproducible inventory procedure plus exact Sites-version-12 lockfile,
 package, integrity-scan, production-audit, two-clean-build normalized-
 reproducibility, and provider/deployment observations; not a legal opinion,
 vulnerability certification, exact deployed-archive SBOM, retroactive v9 rebuild,
 or byte-for-byte identity claim
-**Observed:** 2026-08-08 with Node `24.18.0`, npm `12.0.1`
+**Observed:** 2026-08-09 with Node `24.18.0`, npm `12.0.1`
 **Authority:** `package-lock.json` is the exact dependency graph; `package.json`
 declares direct intent
 **Related:** [Architecture](ARCHITECTURE.md), [Operations](OPERATIONS.md), and
@@ -13,15 +13,16 @@ declares direct intent
 
 ## Current inventory observation
 
-**Implemented exact-v11 evidence:** the committed lockfile is lockfile version 3 and has
+**Implemented exact-v12 evidence:** the committed lockfile is lockfile version 3 and has
 SHA-256 `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d` at
-version-11 source commit `44670a64498779cf747914b4465380916a939301`. Its 712
+version-12 source commit `7b77e6507c1b1c1acb091ab046808cf8b5cc0a5c`. Its 712
 `node_modules/*` locations normalize to 676 unique `name@version` components.
 The built-in npm generator produced a CycloneDX 1.5 document with 676 components
 and an SPDX 2.3 document with 677 packages, including the application package.
-The lock digest is unchanged from versions 8, 9, and 10. The retained full-lock artifacts under
+The lock digest is unchanged from versions 8 through 11. The retained full-lock artifacts under
 `docs/release-evidence` therefore inventory the same exact locked graph, but keep
-their version-8 names and provenance; no version-9-, version-10-, or version-11-named SBOM
+their version-8 names and provenance; no version-9-, version-10-, version-11-, or
+version-12-named SBOM
 regeneration is claimed:
 
 | Retained artifact | Bytes | SHA-256 |
@@ -35,7 +36,58 @@ platform-optional packages. They do not prove which components Sites placed in
 the deployed archive. Exact-release evidence must retain both the full-lock SBOM
 and a shipped-artifact inventory.
 
-### Exact Sites version 11 package, scan, and normalized-reproducibility observation
+### Exact Sites version 12 package, scan, and normalized-reproducibility observation
+
+| Field | Recorded result |
+|---|---|
+| Source/runtime release ID | `7b77e6507c1b1c1acb091ab046808cf8b5cc0a5c` |
+| Local package | `outputs/roadmap-sites-v12-7b77e65.tar.gz`; gzip SHA-256 `994f725ba6c5952c45885a4d72d38804f1b10b8440273dc26ac8bd1c38d2bd75`; 2,967,333 bytes; 61 tar entries/49 files; ten migrations |
+| Sites package | Content hash `sha256:0805c04e9dcd5e8bac77f58aec2362dece1754f6eec63ec73d9c2e249bb01700`; 49 files; 6,748,160 bytes |
+| Saved/deployed version | `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_8868e09fcb28819181cfbebdf82ce73f`; deployment `appgdep_6a77c5c85974819185ce1c8caf13007c`; environment revision `14`; final status `succeeded`, provider `updated_at` `2026-08-09T00:12:04.939300+00:00`; owner-only URL unchanged |
+| Source release-integrity scan | 261 source/evidence text files inspected; zero secret findings; historical Business Plan V1 preserved; lockfile SHA-256 unchanged. Generated output and dependencies were intentionally excluded |
+| Post-evidence reconciliation | A separate 2026-08-09 integrity run inspected the resulting 262-file source/evidence set with zero secret findings, preserved historical Business Plan V1, and confirmed the same lockfile SHA-256. This verifies the current evidence tree and does not change the frozen 261-file runtime result |
+| Exact archive audit | 61 safe entries/49 files, ten migrations, and 23 source-mapped controls matched the checked clean build; exactly two expected generated credential files and zero unexpected copies or paths were found; the scheduler manifest was present |
+| Two-clean-build comparison | Two detached exact-commit worktrees each installed 501 locked packages, reported the same five blocked install scripts, and passed 242/242 tests. Both inventories had 49 files; exactly three allowlisted raw generated-value differences and zero normalized differences remained; each build ID occupied exactly three validated locations |
+| Database generation | `npm run db:generate` reported `No schema changes, nothing to migrate` |
+| Production dependency audit | `npm audit --omit=dev` reported zero vulnerabilities on 2026-08-09 |
+
+The Sites packaging shell helper was unavailable in the Windows environment. Its
+exact archive contract was reproduced in PowerShell, and the archive verifier
+proved the resulting local build/archive relationship. That result does not claim
+that the unavailable shell helper itself ran. The provider content hash describes
+the provider's stored representation and is not the local gzip digest.
+
+The exact version-12 comparator retained the strict framework-generated-value
+boundaries: identical 49-file inventories, exactly three controlled raw
+difference paths, exactly three validated build-ID locations per build, and zero
+differences after allowlisted normalization. It recorded no generated value. This
+is normalized reproducibility, not byte-for-byte identity. The archive verifier
+and Sites package record bind the checked candidate to the saved version and
+successful revision-14 deployment; they do not prove provider-side byte identity,
+hosted scheduler operation, or create an exact shipped-artifact SBOM.
+
+Version 12 adds session-scoped golfer-response idempotency without changing the
+locked dependency graph or schema. A required syntactically bounded key is reduced
+to account-and-resolved-session-scoped HMAC receipts; the server atomically records
+one response/audit pair per logical key and does not persist or log the raw key.
+Automated coverage includes first-write/replay/conflict behavior and a mixed
+four-way race. The ten-second client timeout retains ambiguous attempts in
+per-tab `sessionStorage` until a definitive result or tab close. These controls
+are source/build evidence, not hosted-browser or real-network retry evidence.
+
+Four signed-out probes to `/`, `/app`, `/r`, and `/api/health` confirmed only the
+owner-policy `401`/`no-store`/`no-referrer`/`text/html` boundary. A post-v12
+ten-minute `errors_only` aggregate returned zero events. A broad aggregate captured
+at `2026-08-09T00:13:27.8566565Z` returned six `fetch`/`info`/`ok` events: two
+sequences of `GET /` `200`, `GET /.rsc` `200`, and handled `GET /app.rsc` `403`,
+with `scheduled=0`. No raw event or content was emitted or retained. The log sample
+is not package-identity evidence and is inconclusive about log completeness,
+scheduled-event visibility, errors, retention, redaction, and trigger metadata.
+A supported signed-in browser was unavailable, so no hosted journey, CSP execution,
+or manual accessibility result is claimed. See the
+[exact version-12 release record](release-evidence/ROADMAP-SITES-V12-2026-08-09.md).
+
+### Historical exact Sites version 11 package, scan, and normalized-reproducibility observation
 
 | Field | Recorded result |
 |---|---|
@@ -97,9 +149,11 @@ Version 11 binds framework scripts to per-response CSP nonces and removes
 only the owner-policy `401`/`no-store`/`no-referrer` boundary. A signed-in hosted
 browser was unavailable, so hosted nonce-bearing HTML and framework-script
 execution remain uninspected.
-Version 10 is retained below as historical supply-chain evidence, not as an approved
-routine rollback target; selecting it from v11 would reintroduce
-`script-src 'unsafe-inline'`.
+Version 11 remains historical supply-chain and exact local-exercise evidence; it
+is not relabelled as v12. Selecting it from v12 would remove golfer-response
+idempotency and ambiguous-outcome recovery. Version 10 is also retained below;
+selecting it from v11 would additionally reintroduce script
+`'unsafe-inline'`. Neither is an approved routine rollback target.
 
 ### Historical exact Sites version 10 package, scan, and normalized-reproducibility observation
 
@@ -140,8 +194,8 @@ observations, not a dependency-to-runtime reconciliation. The zero audit and sec
 findings apply only to the tools, inputs, and advisory data used at verification
 time; they do not certify package provenance, absence of malicious behavior, legal
 compliance, provider configuration, or runtime safety. An exact shipped-artifact
-SBOM and qualified license-obligation review remain open. Sites versions 6, 7, 8,
-9, and 10 are retained as historical predecessor evidence in the release record.
+SBOM and qualified license-obligation review remain open. Sites versions 6 through
+11 are retained as historical predecessor evidence in the release record.
 
 ### Historical exact v9 isolated clean-install and rebuild observation
 
@@ -191,7 +245,7 @@ At the time, this closed `SUPPLY-EVID-001` prospectively for normalized
 reproducibility of the precursor control. It did not establish byte-for-byte
 identity, retroactively reproduce deployed Sites version 9 commit
 `6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d`, or show that commit `66f5203` was
-deployed or reconciled to a provider package. Exact versions 10 and 11 later
+deployed or reconciled to a provider package. Exact versions 10, 11, and 12 later
 repeated the two-clean-build comparison at their own immutable commits and
 separately bound their checked archives to provider packages and deployments; that
 evidence retains the same normalized-not-byte-identical limitation. See the

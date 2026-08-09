@@ -3,7 +3,7 @@
 **Candidate:** `roadmap-production-saas` 1.0.0
 **Evidence opened:** 2026-08-07
 **Authority:** `AUTH-005`
-**Status:** hardened owner-only Sites version 11 succeeded; not accepted for public launch or real-user operation
+**Status:** hardened owner-only Sites version 12 succeeded; not accepted for public launch or real-user operation
 
 This file records evidence for one exact candidate. A command result supports only
 the scope it actually exercised. A successful private deployment is not Aaron's
@@ -36,8 +36,10 @@ acceptance and is not evidence that unresolved policy or live operations work.
   runtime log-field allowlisting, strengthened CSP/input controls, correlation
   identifiers, and privacy-safe error responses;
 - tenant-scoped race-safe idempotency for full golfer authoring and package creation,
-  resilient client retry behavior for share exchange and external handoff tracking,
-  bounded list traversal, and bounded coach/golfer plan snapshots.
+  session-scoped HMAC receipts and atomic response/audit replay for golfer choices,
+  resilient bounded client retry behavior for golfer responses, share exchange, and
+  external handoff tracking, bounded list traversal, and bounded coach/golfer plan
+  snapshots.
 
 Media upload, junior golfers, native coach-package transactions, teams/facilities,
 marketplace, AI, CRM/messaging, and unapproved analytics are excluded or disabled.
@@ -46,31 +48,36 @@ marketplace, AI, CRM/messaging, and unapproved analytics are excluded or disable
 
 | Check | Current result | Scope and limitation |
 |---|---|---|
-| `npm run verify` | Passed independently in the main tree and two detached clean worktrees: lint, strict TypeScript, production Worker build, release-artifact integrity, and 237/237 tests; zero failures, cancellations, skips, or todos | Exact version-11 release commit; covers source/build/automated behavior, not hosted identity, provider operation, manual accessibility, policy, or real users |
-| `npm run verify:release-integrity` | Passed: 259 source/evidence text files scanned with zero pattern findings; historical Business Plan V1 preserved; canonical Git-blob/SBOM `package-lock.json` SHA-256 `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d` | Exact version-11 source only. The check intentionally excludes generated `dist`, dependencies, coverage, and work directories and is not an independent security assessment |
-| Exact-v11 artifact and submitted-archive audit | Passed: 61 safe tar entries/49 files; 23 source-mapped controls matched; all ten migrations and the exact five-minute scheduler declaration were present; the archive matched a clean-worktree `dist`; exactly two matching generated prerender-credential files were confined to expected server locations; zero unexpected credential copies or paths were found | The verifier reported `localBuildCompared: true` and `expectedSchedulerConfigured: true`. Credential material was never printed. This proves the checked local build/archive relationship, not provider-side byte identity or hosted scheduler activation |
-| Two isolated exact-commit clean installs | Each installed 501 locked packages with the same five blocked install scripts; each complete verification passed 237/237. The two 49-file builds had only the three strictly validated generated-value differences and zero normalized differences | [Detailed version-11 record](release-evidence/ROADMAP-SITES-V11-2026-08-08.md). This is normalized reproducibility, not byte-for-byte identity; the historical version-9 byte-identity failure remains preserved |
+| `npm run verify` | Passed independently in two detached clean worktrees: lint, strict TypeScript, production Worker build, release-artifact integrity, and 242/242 tests in each; zero failures, cancellations, skips, or todos | Exact version-12 release commit; covers source/build/automated behavior, not hosted identity, provider operation, manual accessibility, policy, or real users |
+| `npm run verify:release-integrity` | Passed: 261 source/evidence text files scanned with zero secret findings; historical Business Plan V1 preserved; canonical Git-blob/SBOM `package-lock.json` SHA-256 `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d` | Exact version-12 source only. The check intentionally excludes generated `dist`, dependencies, coverage, and work directories and is not an independent security assessment |
+| Exact-v12 artifact and submitted-archive audit | Passed: 61 safe tar entries/49 files; 23 source-mapped controls matched; all ten migrations and the scheduler manifest were present; the archive matched a clean-worktree `dist`; exactly two expected generated credential files were confined to expected server locations; zero unexpected copies or paths were found | The Sites packaging shell helper was unavailable on Windows, so its exact contract was reproduced in PowerShell and the verifier proved the resulting archive. Credential material was never printed. This proves the checked local build/archive relationship, not provider-side byte identity or hosted scheduler activation |
+| Two isolated exact-commit clean installs | Each installed 501 locked packages with the same five blocked install scripts; each complete verification passed 242/242. The two 49-file builds had exactly three allowlisted raw generated-value differences and zero normalized differences; the build identifier appeared in exactly three validated locations per build | [Detailed version-12 record](release-evidence/ROADMAP-SITES-V12-2026-08-09.md). This is normalized reproducibility, not byte-for-byte identity; the historical version-9 byte-identity failure remains preserved |
 | Full-lock SBOM inventory | Lockfile digest remains unchanged; CycloneDX 1.5 contains 676 components and SPDX 2.3 contains 677 packages | Lock-derived artifacts and hashes are recorded in [Software Supply Chain](SOFTWARE_SUPPLY_CHAIN.md); this is inventory, not provenance, license advice, or vulnerability certification |
-| `npm run audit:production` | Fresh 2026-08-08 result: zero known production vulnerabilities | Exact lock; advisory snapshot is time-bounded and not an independent assessment |
-| `npm run db:generate` | The latest recorded predecessor exact-v10 run passed: `No schema changes, nothing to migrate`; v11 clean builds/package verification preserve the same schema/journal/migration set | Historical command evidence plus exact-v11 package consistency; not a fresh v11 generation run |
+| `npm run audit:production` | Fresh 2026-08-09 result: zero known production vulnerabilities | Exact lock; advisory snapshot is time-bounded and not an independent assessment |
+| `npm run db:generate` | Passed at exact v12 source: `No schema changes, nothing to migrate` | Confirms the checked Drizzle schema and journal required no new migration; not hosted D1 migration evidence |
 | `npm run exercise:recovery:local` | Passed from a disposable detached worktree at exact deployed v11 commit `44670a64498779cf747914b4465380916a939301`: ten migrations, 31/31 application tables, two synthetic tenants, three private R2-compatible objects, three negative integrity scenarios, child-process secret isolation, and 34,380-byte snapshot SHA-256 `34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54` | [Exact-v11 local exercise record](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md). Deterministic local synthetic evidence only; not hosted/provider-native recovery, production data, deletion recovery, RPO, RTO, operator, or alert evidence |
 | `npm run exercise:capacity:local` | Passed from the same exact-v11 worktree: 54 synthetic requests at maximum concurrency four, four author/edit/publish/share flows, two exports, 44 `200` plus ten `201` responses, and zero failures; local p50 48.46 ms, p95 107.60 ms, max 107.83 ms | [Exact-v11 local exercise record](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md). Single-process local synthetic evidence only; no approved SLO, tenant limit, hosted capacity, provider saturation, or real-user performance claim |
-| D1 integration journeys | Passed | Production Worker plus real local D1 exercised tenant isolation; consent grant/withdrawal and final-statement share/session race fencing; staged-save replay/races; three- and four-phase lifecycles; publication/session invalidation; share expiry/revocation/response; data-request operator boundaries; scheduler/dead-letter states; Checkout/reconciliation races; webhook healing; migration upgrades; and stale provider-read fencing; not hosted SIWC or live-provider evidence |
+| D1 integration journeys | Passed | Production Worker plus real local D1 exercised tenant isolation; consent grant/withdrawal and final-statement share/session race fencing; staged-save replay/races; session-scoped golfer-response replay/conflict/mixed four-way race handling; three- and four-phase lifecycles; publication/session invalidation; share expiry/revocation/response; data-request operator boundaries; scheduler/dead-letter states; Checkout/reconciliation races; webhook healing; migration upgrades; and stale provider-read fencing; not hosted SIWC or live-provider evidence |
 | `git diff --check` | Passed; no whitespace errors, with only line-ending warnings reported | Source-tree consistency check only; not behavioral evidence |
 
-The frozen exact-v11 integrity scan covered the 259-file source/evidence set that
-existed at release commit `44670a64498779cf747914b4465380916a939301`. After the
-v11 evidence file and current pointers were reconciled, a documentation-only
-repeat scanned 260 source/evidence text files with zero findings, again preserved
-historical Business Plan V1, and retained the same lockfile SHA-256. The additional
-file is release evidence, not a deployed runtime change.
+The frozen exact-v12 integrity scan covered the 261-file source/evidence set that
+existed at release commit `7b77e6507c1b1c1acb091ab046808cf8b5cc0a5c`.
+The version-12 evidence file and current documentation pointers were added after
+that immutable runtime commit; they do not retroactively change the exact-release
+scan count. The predecessor v11 scans remain frozen at their recorded 259-file
+release and 260-file documentation-only results.
 
-### Version 11 normalized reproducibility and CSP nonce control
+A separate post-evidence reconciliation run on 2026-08-09 scanned the resulting
+262-file source/evidence set with zero secret findings, preserved historical
+Business Plan V1, and confirmed the same canonical lockfile SHA-256. It verifies the
+current evidence tree only and does not change the frozen 261-file runtime result.
+
+### Version 12 normalized reproducibility and golfer-response control
 
 Two independently created detached clean worktrees at exact release commit
-`44670a64498779cf747914b4465380916a939301` each used `npm ci --no-audit`,
+`7b77e6507c1b1c1acb091ab046808cf8b5cc0a5c` each used `npm ci --no-audit`,
 installed 501 locked packages with the same five blocked install scripts, and
-passed the complete 237-test verification. `npm audit --omit=dev` also reported
+passed the complete 242-test verification. `npm audit --omit=dev` also reported
 zero known vulnerabilities for that exact lock; the result remains time-bounded.
 
 The release comparator (`node scripts/compare-release-builds.mjs` with both clean
@@ -79,18 +86,21 @@ contained the same 49 paths. The only three raw content differences were
 `server/index.js`, `server/ssr/vinext-server.json`, and
 `server/vinext-server.json`. Strict allowlisted validation accepted only the
 framework-generated build identifier and within-build matching prerender-secret
-manifest pairs; after normalizing those values, zero differences remained. This proves
+manifest pairs. The build identifier appeared in exactly three validated locations
+per build; after normalizing only the three allowlisted raw generated-value
+differences, zero differences remained. This proves
 normalized reproducibility under the recorded procedure, not byte-identical
-output. See the [exact version-11 record](release-evidence/ROADMAP-SITES-V11-2026-08-08.md).
+output. See the [exact version-12 record](release-evidence/ROADMAP-SITES-V12-2026-08-09.md).
 
 This exercise does not alter the historical version-9 clean-build result: that
 rebuild still did not byte-match its submitted archive. The reproducible successor
-control is now part of saved and deployed owner-only Sites version 11. Exact
+control is now part of saved and deployed owner-only Sites version 12. Exact
 identifiers are in that record. The separate
 [precursor record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md)
 remains historical evidence for exact commit `66f5203a...`.
 
-Version 11 additionally replaces script-element `'unsafe-inline'` with a fresh
+Version 12 retains version 11's replacement of script-element `'unsafe-inline'`
+with a fresh
 32-hex per-response nonce propagated through vinext's RSC/hydration scripts. The
 trusted request boundary replaces caller CSP headers; automated adversarial tests
 require one nonce source, matching nonces on every emitted script, uniqueness
@@ -100,7 +110,16 @@ exact source/package condition for `SEC-002`, but the finding remains hosted-ret
 pending because no supported signed-in browser was available to inspect the live
 application response.
 
-Version-9 focused regressions additionally cover full-authoring and package-creation
+Version 12 additionally requires a syntactically bounded `Idempotency-Key` for
+golfer responses. Account-and-resolved-session-scoped HMAC receipts atomically
+bind one logical key to one response and audit event: the first write returns
+`201`, an exact replay returns `200`, and changed-payload reuse returns `409`.
+The ten-second browser timeout retains ambiguous attempts in per-tab
+`sessionStorage` until a definitive outcome or tab close. The raw key is not
+server-persisted or logged. Automated coverage includes a mixed four-way race;
+hosted browser/network retry behavior remains unverified.
+
+The broader focused regression suite additionally covers full-authoring and package-creation
 idempotency; client handoff/share retry; living-content withdrawal and practice
 replacement audits; bounded golfer/package pagination and plan snapshots; export
 preflight/manual fallback; shallow liveness versus owner-only operational health;
@@ -114,8 +133,8 @@ described below.
 
 The clean build's `dist/server/wrangler.json` pointed to `index.js`; the server entry
 passed `node --check`, client assets and observability configuration were present,
-  the D1/R2 bindings were `DB`/`MEDIA`, the `*/5 * * * *` scheduled trigger and
-  Worker scheduled export were present, and all ten journaled migrations were packaged.
+the D1/R2 bindings were `DB`/`MEDIA`, the `*/5 * * * *` scheduled trigger and
+Worker scheduled export were present, and all ten journaled migrations were packaged.
 
 ## Exact version-9 local rendered and reflow evidence
 
@@ -178,43 +197,53 @@ and real browser zoom remain explicitly unverified.
 
 | Field | Exact recorded value |
 |---|---|
-| Candidate | `ROADMAP-SITES-V11-2026-08-08` |
-| Release commit / runtime `RELEASE_ID` | `44670a64498779cf747914b4465380916a939301` |
-| Local submitted archive | `outputs/roadmap-sites-v11-44670a6.tar.gz`; 2,966,073 bytes; 61 tar entries; gzip SHA-256 `d88be6513bc58afd057d4a3fb3a6d64b744f7a5c359731ec9fc693a788e1fa0e` |
+| Candidate | `ROADMAP-SITES-V12-2026-08-09` |
+| Release commit / runtime `RELEASE_ID` | `7b77e6507c1b1c1acb091ab046808cf8b5cc0a5c` |
+| Local submitted archive | `outputs/roadmap-sites-v12-7b77e65.tar.gz`; 2,967,333 bytes; 61 tar entries/49 files; gzip SHA-256 `994f725ba6c5952c45885a4d72d38804f1b10b8440273dc26ac8bd1c38d2bd75` |
 | Sites project | `appgprj_6a76957326fc819196ebf3a0c95f1ec3` (`roadmap-golf-coaching`) |
-| Saved version | Version 11, `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_4c49cdec72bc8191aeece01f5689e51a` |
-| Sites archive record | Content hash `sha256:d717035871790252548e7fff4e1192e590b73b7cabfe3f4c011d65ffe4493daa`; 49 files; 6,737,920 bytes |
-| Final deployment | `appgdep_6a77b01714b881918245bb5248349e0d`; final status `succeeded`; provider `updated_at` `2026-08-08T22:40:07.742084+00:00`; no failure message |
+| Saved version | Version 12, `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_8868e09fcb28819181cfbebdf82ce73f` |
+| Sites archive record | Content hash `sha256:0805c04e9dcd5e8bac77f58aec2362dece1754f6eec63ec73d9c2e249bb01700`; 49 files; 6,748,160 bytes |
+| Final deployment | `appgdep_6a77c5c85974819185ce1c8caf13007c`; final status `succeeded`; provider `updated_at` `2026-08-09T00:12:04.939300+00:00`; no failure message |
 | Owner-only production URL | `https://roadmap-golf-coaching.aar-landry.chatgpt.site` |
-| Applied environment revision | 13 |
+| Applied environment revision | 14 |
 | Access policy | The private-deployment control verified owner-only eligibility before publishing; not a public release or real-user acceptance |
 | Billing | `BILLING_CHECKOUT_ENABLED` remained disabled; no charge was attempted |
 
-Environment revision 13 changed only `RELEASE_ID` from revision 12 and binds it
-to the exact version-11 commit. All four secret entries, the canonical app URL,
+Environment revision 14 changed only `RELEASE_ID` from revision 13 and binds it
+to the exact version-12 commit. All four secret entries, the canonical app URL,
 owner-private mode, and disabled Checkout state were preserved.
 
-Fresh signed-out HTTPS GETs to `/`, `/app`, `/api/health`, and
-`/api/operations/health` each returned `401`, `Cache-Control: no-store`,
-`Referrer-Policy: no-referrer`, and no redirect location. The first
-post-deployment value-safe 30-minute log aggregate completed at
-`2026-08-08T22:58:53.646Z`, 19m23s after
-deployment success and after the 22:45, 22:50, and 22:55 expected boundaries. It
-returned three `fetch`/`info`/`ok` events and zero observed `scheduled` events. An
-`errors_only` aggregate returned one `fetch`/`info`/`ok` event with zero error
-fields. The result strengthens scheduler suspicion but does not prove log
-completeness, redaction, scheduler execution or absence, error absence, retention,
-or alerting. A newer 30-minute broad query and its `errors_only` companion around
-`2026-08-08T23:20:16.850Z` were empty. A later value-safe 60-minute query at
-approximately `2026-08-08T23:23:52Z` returned exactly three
-`fetch`/`info`/`ok` events (`200`, `200`, and handled `403`) and `scheduled=0`;
-its `errors_only` result was the handled `403`. No raw
-content was emitted or retained. The later sample remains equally inconclusive
-because log completeness, scheduled-event visibility, and deployed trigger
-metadata are unavailable. No signed-in browser was available, so hosted CSP and
-normal owner authentication remain unverified. See the
-[complete version-11 record](release-evidence/ROADMAP-SITES-V11-2026-08-08.md) and
-[exact-v11 local exercise record](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md).
+Fresh signed-out HTTPS GETs to `/`, `/app`, `/r`, and `/api/health` each returned
+`401`, `Cache-Control: no-store`, `Referrer-Policy: no-referrer`, and
+`Content-Type: text/html;charset=utf-8`. A post-v12 ten-minute `errors_only` log aggregate
+returned zero events. The broad aggregate captured at
+`2026-08-09T00:13:27.8566565Z` returned six `fetch`/`info`/`ok` events: two
+sequences of `GET /` `200`, `GET /.rsc` `200`, and handled `GET /app.rsc` `403`;
+`scheduled=0`. No raw event or content was emitted or retained. These samples do
+not prove log completeness, redaction, scheduler execution or absence, error
+absence, retention, or alerting. No supported browser was available, so no
+signed-in hosted journey, CSP execution, or manual accessibility result is
+claimed. See the
+[complete version-12 record](release-evidence/ROADMAP-SITES-V12-2026-08-09.md).
+
+## Predecessor version 11 exact record
+
+| Field | Exact recorded value |
+|---|---|
+| Candidate | `ROADMAP-SITES-V11-2026-08-08` |
+| Release commit / runtime `RELEASE_ID` | `44670a64498779cf747914b4465380916a939301` |
+| Local submitted archive | `outputs/roadmap-sites-v11-44670a6.tar.gz`; 2,966,073 bytes; 61 tar entries/49 files; gzip SHA-256 `d88be6513bc58afd057d4a3fb3a6d64b744f7a5c359731ec9fc693a788e1fa0e` |
+| Saved version | Version 11, `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_4c49cdec72bc8191aeece01f5689e51a` |
+| Sites archive record | Content hash `sha256:d717035871790252548e7fff4e1192e590b73b7cabfe3f4c011d65ffe4493daa`; 49 files; 6,737,920 bytes |
+| Final deployment | `appgdep_6a77b01714b881918245bb5248349e0d`; final status `succeeded`; environment revision 13; provider `updated_at` `2026-08-08T22:40:07.742084+00:00` |
+
+Version 11 is historical predecessor evidence, not erased history. Its
+[complete release record](release-evidence/ROADMAP-SITES-V11-2026-08-08.md) and
+[exact local-exercise record](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md)
+retain the exact 237-test, archive, provider-log, recovery, and capacity evidence
+without relabelling it as v12. A v12-to-v11 rollback would retain the CSP nonce
+control but remove v12 golfer-response idempotency and ambiguous-outcome recovery;
+it is a reliability/behavior regression, not an ordinary class-`N` rollback target.
 
 ## Predecessor version 10 exact record
 
@@ -227,7 +256,7 @@ normal owner authentication remain unverified. See the
 | Sites archive record | Content hash `sha256:0534d35af6fcdd8a0f104c5bb21fab5edd0641ec952bd32ae7a3f9c024c62033`; 49 files; 6,737,920 bytes |
 | Final deployment | `appgdep_6a779cabaec4819191b0cf1e815ce2e5`; status `succeeded`; environment revision 12; provider `updated_at` `2026-08-08T21:17:13.525116+00:00` |
 
-Version 10 is superseded current-state evidence, not erased history. Its complete
+Version 10 is historical predecessor evidence, not erased history. Its complete
 record remains at
 [Roadmap Sites version 10 private-candidate evidence](release-evidence/ROADMAP-SITES-V10-2026-08-08.md).
 A v11-to-v10 rollback would remove the v11 nonce control and reintroduce script
@@ -476,7 +505,7 @@ from reaching the application by design.
 | Item | Current disposition |
 |---|---|
 | General public access | Blocked; working legal/support copy explicitly limits this to controlled private release |
-| Owner-only production release | Deployed successfully as Sites version 11 at environment revision 13; final authenticated owner acceptance and controlled real journeys remain unrecorded |
+| Owner-only production release | Deployed successfully as Sites version 12 at environment revision 14; final authenticated owner acceptance and controlled real journeys remain unrecorded |
 | Deep operational readiness | Intentionally degraded because exact owner-approved consent-policy content/version and privacy-operator access configuration are absent; no authenticated deep-readiness pass is claimed |
 | SIWC bypass credential exposure | Aaron authorized `OWNER-SEC-001`; the provider rotation immediately invalidated the exposed prior value under its connector contract, the replacement was not displayed/persisted/used, and owner-only access remained unchanged. `SEC-001` is **REMEDIATED — RETEST PENDING** because signed-in owner authentication was unavailable and the empty post-operation log sample is inconclusive. |
 | New SaaS charges | Fail-closed through `BILLING_CHECKOUT_ENABLED=false` until exact price/policy approval and configuration |

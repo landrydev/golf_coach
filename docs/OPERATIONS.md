@@ -3,7 +3,7 @@
 **Document status:** Operating model and runbook specification under `AUTH-005`; not evidence that production is provisioned, live, monitored, backed up, recoverable, or accepted
 **System:** [Production SaaS Architecture](ARCHITECTURE.md)
 **Security/privacy controls:** [Security and Privacy Plan](SECURITY_PRIVACY.md)
-**Last updated:** 2026-08-08
+**Last updated:** 2026-08-09
 
 ## Operating position
 
@@ -16,19 +16,32 @@ not a public launch or Aaron's acceptance. No successful hosted backup/restore o
 exercise, staffed operating assignment, alert-delivery exercise, live Stripe flow,
 qualified legal/privacy review, or controlled real-user validation is claimed.
 
-The current exact private candidate is Sites version 11 at source/runtime release
-`44670a64498779cf747914b4465380916a939301`, saved version
+The current exact private candidate is Sites version 12 at source/runtime release
+`7b77e6507c1b1c1acb091ab046808cf8b5cc0a5c`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_8868e09fcb28819181cfbebdf82ce73f`,
+deployment `appgdep_6a77c5c85974819185ce1c8caf13007c`, and environment
+revision `14`. The deployment status is `succeeded` with provider `updated_at`
+`2026-08-09T00:12:04.939300+00:00` and no recorded failure. The URL remains
+`https://roadmap-golf-coaching.aar-landry.chatgpt.site`. The saved Sites archive is
+`sha256:0805c04e9dcd5e8bac77f58aec2362dece1754f6eec63ec73d9c2e249bb01700`
+with 49 files and 6,748,160 bytes. The submitted local archive is
+`outputs/roadmap-sites-v12-7b77e65.tar.gz`, 2,967,333 bytes with 61 entries/49
+files, all ten migrations, and gzip SHA-256
+`994f725ba6c5952c45885a4d72d38804f1b10b8440273dc26ac8bd1c38d2bd75`.
+Checkout remains disabled and access remains owner-only.
+
+The superseded owner-only version-11 candidate remains immutable historical
+evidence at commit `44670a64498779cf747914b4465380916a939301`, saved version
 `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_4c49cdec72bc8191aeece01f5689e51a`,
 deployment `appgdep_6a77b01714b881918245bb5248349e0d`, and environment
-revision `13`. The deployment status is `succeeded` with provider `updated_at`
-`2026-08-08T22:40:07.742084+00:00` and no recorded failure. The URL remains
-`https://roadmap-golf-coaching.aar-landry.chatgpt.site`. The saved Sites archive is
+revision `13`. Its final provider status was `succeeded` with `updated_at`
+`2026-08-08T22:40:07.742084+00:00`. Its submitted archive was 2,966,073 bytes
+with 61 entries/49 files and gzip SHA-256
+`d88be6513bc58afd057d4a3fb3a6d64b744f7a5c359731ec9fc693a788e1fa0e`;
+the Sites package was
 `sha256:d717035871790252548e7fff4e1192e590b73b7cabfe3f4c011d65ffe4493daa`
-with 49 files and 6,737,920 bytes. The submitted local archive is
-`outputs/roadmap-sites-v11-44670a6.tar.gz`, 2,966,073 bytes with 61 entries/49
-files, all ten migrations, and gzip SHA-256
-`d88be6513bc58afd057d4a3fb3a6d64b744f7a5c359731ec9fc693a788e1fa0e`.
-Checkout remains disabled and access remains owner-only.
+with 49 files and 6,737,920 bytes. Its exact local recovery and bounded-capacity
+exercises remain historical evidence and are not relabelled as version-12 results.
 
 The superseded owner-only version-10 candidate remains immutable historical
 evidence at commit `ae35ef25ed46563f6b8f09f5c22dc12581eff8b1`, saved version
@@ -41,29 +54,39 @@ with 61 entries/49 files and gzip SHA-256
 the Sites package was
 `sha256:0534d35af6fcdd8a0f104c5bb21fab5edd0641ec952bd32ae7a3f9c024c62033`
 with 49 files and 6,737,920 bytes. Its four signed-out route probes returned
-`401` with `no-store`/`no-referrer`. Those facts are not overwritten by v11 and
+`401` with `no-store`/`no-referrer`. Those facts are not overwritten by v12 and
 do not make v10 a current rollback target.
 
-Version 11 changes security behavior relative to version 10: it binds framework
-scripts to per-response CSP nonces and removes `script-src 'unsafe-inline'`.
-Although the migration journal remains structurally unchanged through `0009`, a
-v11-to-v10 rollback would remove that protection and reintroduce
-`script-src 'unsafe-inline'`. The overall rollback classification is therefore
-security/behavior class `B`, not ordinary class `N`; version 10 is not an approved
-routine rollback target. The older v10-to-v9 application/schema class-`N`
-observation remains historical evidence only and does not make either predecessor
-a safe target from v11.
+Version 12 changes lost-ack behavior relative to version 11. Golfer-response writes
+now require an account-and-resolved-session-scoped `Idempotency-Key`; deterministic
+HMAC response/audit receipts make an exact replay return the original result while
+a changed payload is rejected. A version-12 client can also remain active across a
+deployment boundary while holding an outcome-unknown key, but version 11 returns a
+legacy payload and performs no same-key deduplication. The v12-to-v11 path is
+therefore security/behavior class `B`, not ordinary class `N`, even though the
+migration journal remains unchanged through `0009`. Ordinary rollback to version
+11 is forbidden. The historical v11-to-v10 CSP regression also remains class `B`:
+version 10 removes per-response framework-script nonces and reintroduces
+`script-src 'unsafe-inline'`. The older v10-to-v9 application/schema class-`N`
+observation remains historical evidence only.
 
-Version 11 was independently checked in two detached clean worktrees. Each
+Operationally, the golfer client bounds an attempt at 10 seconds and keeps an
+outcome-unknown key in per-tab `sessionStorage` across reloads until a definitive
+result or tab close. The server returns `201` for the first write, `200` for an
+exact replay, and `409` for changed input under the same key; raw keys are not
+server-persisted or logged. External-handoff clicks use fresh keys and are not
+cross-click deduplicated.
+
+Version 12 was independently checked in two detached clean worktrees. Each
 `npm ci --no-audit` installed 501 locked packages and reported five blocked
-install scripts; each `npm run verify` passed 237/237 tests. Both builds contained
+install scripts; each `npm run verify` passed 242/242 tests. Both builds contained
 the same 49 files. Raw differences were confined to the three controlled generated
 files and strict allowlisted normalization left zero differences. The production
 dependency audit reported zero vulnerabilities, and the release-integrity scan
-covered 259 source/evidence text files with zero findings while preserving
+covered 261 source/evidence text files with zero findings while preserving
 historical Business Plan V1. This is normalized reproducibility, not byte identity.
 
-Two additional exact-version-11 local synthetic exercises passed against release
+Two historical exact-version-11 local synthetic exercises passed against release
 `44670a64498779cf747914b4465380916a939301`. The recovery exercise applied all 10
 migrations, covered all 31 application tables across 2 synthetic tenants, restored
 3 private synthetic objects, and matched a 34,380-byte D1 snapshot with SHA-256
@@ -84,7 +107,7 @@ and reported five blocked install scripts; each `npm run verify` passed 234/234
 tests. Both builds contained the same 49 paths. Strict allowlisted normalization
 of the framework-generated build identifier and matching prerender-manifest pair
 left zero differences. The [successor record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md)
-is exact to `66f5203a...`; the later exact v10 and v11 checks do not change the
+is exact to `66f5203a...`; the later exact v10, v11, and v12 checks do not change the
 failed historical version-9 byte comparison.
 
 After version 11 deployed, four signed-out HTTPS probes to `/`, `/app`,
@@ -96,6 +119,13 @@ observations, not authenticated application, CSP execution, deep-health, or jour
 evidence. A signed-in hosted browser was unavailable, so the nonce-bearing hosted
 HTML and framework-script execution were not inspected through the intended owner
 experience.
+
+After version 12 deployed, four fresh signed-out HTTPS probes remained at the
+owner-only outer policy and returned `401` with `Cache-Control: no-store` and
+`Referrer-Policy: no-referrer`. These are transport/header/anonymous-containment
+observations only. The supported in-app browser runtime had no available browser,
+so no signed-in owner journey, manual accessibility result, CSP execution result,
+or authenticated application behavior is claimed for version 12.
 
 Aaron authorized `OWNER-SEC-001` on 2026-08-08. One value-safe Sites rotation ran
 from `2026-08-08T18:32:25.588Z` through `2026-08-08T18:32:31.831Z` and succeeded;
@@ -172,6 +202,12 @@ package evidence only. The final aggregate's `scheduled=0` is a bounded
 provider-returned observation, not proof that no hosted invocation occurred, and
 provider trigger inventory was unavailable. Hosted scheduler provisioning and
 execution therefore remain unproven.
+
+The bounded post-version-12 ten-minute provider-log aggregates remain similarly
+inconclusive. The `errors_only` query returned zero records. The broad aggregate
+returned six `fetch`/`info`/`ok` records: HTTP `200`, `200`, and handled `403`
+twice, with `scheduled=0`. This is not proof of complete logs, error-free operation,
+redaction, authenticated health, scheduler absence, or scheduler operation.
 
 The packaged scheduled handler and local heartbeat evidence exist, but the bounded
 provider aggregates returned no scheduled event. A missing or unprovisioned
@@ -263,7 +299,7 @@ The inventory records a name, purpose, environment, provider owner, last rotatio
 
 Logical D1/R2 declarations live in `.openai/hosting.json`; Sites owns real Cloudflare resource provisioning and deployment wiring. Hosted runtime values are managed through the Sites control plane. No `.env` file, dashboard export, credential screenshot, or copied webhook payload belongs in version control.
 
-For the current private version-11 environment, do not invent consent or
+For the current private version-12 environment, do not invent consent or
 privacy-operator values to make deep health green. `CONSENT_POLICY_REGISTRY_JSON`
 and the independent operator access configuration remain owner/qualified-review
 dependencies. Their absence must continue to fail the affected controls closed and
@@ -372,19 +408,25 @@ Application rollback and data recovery are distinct:
 - If capability or secret exposure is involved, revoke/rotate separately; code rollback does not remove exposed secrets.
 - If a Stripe event processor caused a bad entitlement projection, preserve accepted webhook events and rebuild/reconcile state rather than deleting billing history.
 
-Sites version 11 packages the migration journal through `0009`. Version 10 is the
+Sites version 12 packages the migration journal through `0009`. Version 11 is the
 immediate deployed predecessor and has no new SQL migration to reverse, but it lacks
-the per-response CSP nonce behavior and uses `script-src 'unsafe-inline'`. Selecting
-version 10 would therefore be a security/behavior regression even though the schema
-shape is unchanged. Treat the v11-to-v10 path as class `B`: ordinary rollback is
-forbidden, and version 10 is not a tested or approved routine rollback target. Use a
-tested forward fix or another explicitly classified recovery path instead of
-reducing the CSP boundary under the label of schema compatibility.
+version 12's server-side same-key golfer-response deduplication. A version-12 client
+can also hold an outcome-unknown key across reload while version 11 returns the
+legacy response payload. Selecting version 11 can therefore turn a lost
+acknowledgment or mixed-version request into repeated response/audit writes. Treat
+the v12-to-v11 path as class `B`: ordinary rollback is forbidden even though the
+schema shape is unchanged. Use a tested forward fix or another explicitly
+classified recovery path.
+
+The historical v11-to-v10 path remains class `B`: version 10 lacks the
+per-response CSP nonce behavior and uses `script-src 'unsafe-inline'`. That
+security regression remains historical compatibility evidence and does not create
+a fallback path from version 12.
 
 The historical v10-to-v9 application/schema comparison remains class `N` for that
 past pair because their application/runtime source, package lock, bindings, runtime
 configuration contract, and journal matched. It does not classify a current
-v11-to-v9 action, authorize skipping version 10, or make version 9 an approved target.
+v12-to-v9 action, authorize skipping versions 11 and 10, or make version 9 an approved target.
 Any authorized version selection must preserve current secret values, owner-only
 access, and `BILLING_CHECKOUT_ENABLED=false`; never restore an old environment
 revision wholesale.
@@ -395,14 +437,14 @@ rotation remains in force independently of the selected application version.
 Migrations `0008` and `0009` remain structurally backward-readable by version 7,
 but version 7 lacks the consent enforcement introduced in version 8 and retained
 by the current candidate for ordinary instructor reads/writes and golfer sharing.
-After consent-governed real data or disclosure under version 8, 9, 10, or 11, rollback to
+After consent-governed real data or disclosure under version 8, 9, 10, 11, or 12, rollback to
 version 7 is class `B` behaviorally and forbidden as an ordinary code rollback.
 Freeze affected writes and use a tested forward fix or controlled recovery. Do not
 treat SQL shape compatibility as authorization/privacy compatibility.
 
 Exact source commit `66f5203a913f01c8da20555feebdbb99152c052c` remains the
 undeployed exact subject of the precursor normalized reproducibility exercise.
-Versions 10 and 11 are later deployed descendants with their own exact release
+Versions 10, 11, and 12 are later deployed descendants with their own exact release
 evidence; the earlier exercise does not
 make commit `66f5203a...` a saved runtime or rollback target.
 
@@ -676,7 +718,7 @@ Deployment alone, a working happy path, or a green build does not complete this 
 | Legal and privacy copy | Exact qualified/owner-approved copy not recorded | Versioned review and deployed copy/behavior conformance |
 | Backup/restore | Procedure specified; an exact-v11 local synthetic logical-copy exercise passed 10 migrations, 31 tables, 2 tenants, 3 objects, 3 negative checks, and secret isolation. No successful hosted/provider restore is claimed, and 103,656 ms is not an RTO | Hosted D1/R2 restore evidence with integrity, measured recovery and recovery point, provider/environment separation, and named owner |
 | Hosted capacity/performance | An exact-v11 single-process local exercise completed 54 requests at concurrency 4 with 44 `200`, 10 `201`, 0 failures, and local p50/p95/max of 48.46/107.60/107.83 ms. It sets no business threshold, SLO/SLA, or hosted limit | Approved capacity targets plus hosted, network, contention, sustained-load, quota, failure, and representative-device evidence |
-| Sites logs/alerts and scheduling | Bounded sanitized fetch samples exist; access/retention/redaction/alerts remain unproven. The initial post-v11 30-minute aggregate returned three `fetch`/`info`/`ok` events and `scheduled=0`; the later 60-minute aggregate again returned three such events with HTTP `200`, `200`, and handled `403`, while `errors_only` returned the handled `403`. A newer 30-minute query was empty. No raw events were retained. Completeness, scheduled-event visibility, trigger metadata, and official background-service support remain unresolved | Provider confirmation or superseding scheduler/hosting decision, hosted trigger invocation, token/PII checks, alert delivery and response exercise |
+| Sites logs/alerts and scheduling | Bounded sanitized fetch samples exist; access/retention/redaction/alerts remain unproven. Historical post-v11 aggregates returned only fetch events and `scheduled=0`. The post-v12 ten-minute `errors_only` aggregate returned zero records; its broad companion returned six `fetch`/`info`/`ok` records (`200`, `200`, and handled `403` twice) and `scheduled=0`. Completeness, scheduled-event visibility, trigger metadata, and official background-service support remain unresolved | Provider confirmation or superseding scheduler/hosting decision, hosted trigger invocation, token/PII checks, alert delivery and response exercise |
 | Live acceptance | No exact production release acceptance recorded | Complete evidence packet and Aaron's dated release acceptance |
 
 These dependencies determine whether affected production claims are supported. They do not retract `AUTH-005`, and they must not be described as completed until evidence exists.

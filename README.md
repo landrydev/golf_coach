@@ -10,44 +10,55 @@ security, privacy, and operational decisions are documented in [`docs/`](docs/).
 
 ## Current private release
 
-Sites version 11 is deployed owner-only at
+Sites version 12 is deployed owner-only at
 <https://roadmap-golf-coaching.aar-landry.chatgpt.site> from release commit
-`44670a64498779cf747914b4465380916a939301`, saved version
-`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_4c49cdec72bc8191aeece01f5689e51a`,
-deployment `appgdep_6a77b01714b881918245bb5248349e0d`, and environment revision 13.
+`7b77e6507c1b1c1acb091ab046808cf8b5cc0a5c`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_8868e09fcb28819181cfbebdf82ce73f`,
+deployment `appgdep_6a77c5c85974819185ce1c8caf13007c`, and environment revision 14.
 The deployment succeeded with provider `updated_at`
-`2026-08-08T22:40:07.742084+00:00`.
+`2026-08-09T00:12:04.939300+00:00`.
 The outer Sites policy allows only the owner; Stripe Checkout remains disabled. This is a production deployment, not
 a public launch or accepted real-user release. Exact evidence and unresolved
 operating dependencies are recorded in
 [`docs/RELEASE_EVIDENCE.md`](docs/RELEASE_EVIDENCE.md).
 
-The version-11 release archive has gzip SHA-256
-`d88be6513bc58afd057d4a3fb3a6d64b744f7a5c359731ec9fc693a788e1fa0e`,
-is 2,966,073 bytes, and contains 61 entries/49 files and all ten migrations. Its saved provider
+The version-12 release archive has gzip SHA-256
+`994f725ba6c5952c45885a4d72d38804f1b10b8440273dc26ac8bd1c38d2bd75`,
+is 2,967,333 bytes, and contains 61 entries/49 files and all ten migrations. Its saved provider
 package has content hash
-`sha256:d717035871790252548e7fff4e1192e590b73b7cabfe3f4c011d65ffe4493daa`
-across 49 files and 6,737,920 bytes. Four fresh no-credential probes remained contained at the
+`sha256:0805c04e9dcd5e8bac77f58aec2362dece1754f6eec63ec73d9c2e249bb01700`
+across 49 files and 6,748,160 bytes. Four fresh no-credential probes remained contained at the
 owner-only policy with `401`, `no-store`, and `no-referrer`.
 
-The exact deployed v11 source also passed isolated local synthetic recovery and
+Version 12 makes golfer-response writes retry-safe within the resolved golfer
+session. The route requires an `Idempotency-Key`, derives HMAC response and audit
+receipts scoped to the account and resolved session, returns `201` for the first
+write, `200` for an exact replay, and `409` when the key is reused with changed
+input. The response and audit event commit in one atomic batch under same- and
+mixed-payload concurrency. The browser bounds an attempt at 10 seconds and keeps
+an outcome-unknown key in per-tab `sessionStorage` across reloads until a
+definitive result or tab close. Raw keys are not server-persisted or logged;
+external-handoff clicks intentionally use fresh keys and are not deduplicated
+across clicks.
+
+The superseded exact deployed v11 source also passed isolated local synthetic recovery and
 bounded-capacity exercises: all ten migrations and 31/31 application tables,
 two tenants, three private R2-compatible objects, three negative integrity
 scenarios, and 54 bounded requests at maximum concurrency four with zero failures.
 See the [exact-v11 local exercise record](docs/release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md).
 These are not hosted recovery, RPO/RTO, performance, capacity, or operator evidence.
 
-The latest exact application-runtime local synthetic browser evidence records nine Chrome 151 captures of
+The historical exact-version-9 local synthetic browser evidence records nine Chrome 151 captures of
 the landing page, instructor workspace, and golfer plan at 320, 390, and 1440 CSS
 pixels, with no root/body horizontal overflow. See the
 [`ROADMAP-SITES-V9-2026-08-08` responsive evidence](docs/release-evidence/ROADMAP-SITES-V9-2026-08-08-responsive-evidence.json).
 The version-9 captures remain a renderer/layout source-equivalent baseline for the
-unchanged rendered UI and CSS carried into version 11. They are not evidence of
-version-11 CSP, headers, authentication, hosted runtime, browser interaction, or
-security behavior, and they are not relabelled as exact-version-11 hosted or manual
-evidence. Version 11 replaces the prior inline-script allowance with per-response
-script nonces, but no supported signed-in hosted browser was available to retest that
-deployed behavior. `SEC-002` is therefore **REMEDIATED — HOSTED RETEST PENDING**,
+unchanged rendered UI and CSS carried into version 12. They are not evidence of
+version-12 CSP, headers, authentication, outcome-unknown retry/reload interaction,
+hosted runtime, or security behavior, and they are not relabelled as exact-version-12 hosted or manual
+evidence. Version 12 retains the per-response script nonces introduced in version
+11, but no supported signed-in hosted browser was available to retest that deployed
+behavior. `SEC-002` is therefore **REMEDIATED — HOSTED RETEST PENDING**,
 not closed.
 Those captures use the local production Worker bundle, local compatible D1, and
 synthetic adults-only fixtures. They are not hosted journey evidence, manual
@@ -192,9 +203,12 @@ and never rewrite an already-applied migration.
 Application rollback and data recovery are separate. Follow the release,
 migration, rollback, backup, restore, incident, and Stripe reconciliation
 procedures in [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
-Version 11's nonce-based CSP is a security/behavior change, so a version-11-to-10
-rollback would reintroduce the prior inline-script policy and must not be classified
-as a no-change (`N`) rollback.
+Version 12's golfer-response lost-ack recovery is a security/behavior change. A
+version-12-to-11 rollback would remove server-side same-key deduplication and can
+expose a version-12 client to the legacy response payload while an outcome remains
+unknown. It is class `B`; ordinary rollback is forbidden even though the migration
+journal did not change. The version-11-to-10 CSP regression remains a separate
+historical class-`B` boundary.
 
 ## Production boundaries
 

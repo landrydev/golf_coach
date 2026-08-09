@@ -1,5 +1,12 @@
 # Roadmap Sites version 11 private-candidate evidence
 
+> **Historical predecessor:** This record is frozen evidence for superseded Sites
+> version 11. The current owner-private candidate is Sites version 12, pinned in
+> [release evidence](../RELEASE_EVIDENCE.md#exact-private-sites-release). Version 12
+> closes the version-11 lost-acknowledgement duplicate golfer-response risk; the
+> version-11 hashes, identifiers, test counts, observations, and limitations below
+> remain past-tense historical facts and are not relabelled as version-12 evidence.
+
 **Observed:** 2026-08-08 22:29Z-22:42Z
 **Authority:** `AUTH-005`; bounded private release preparation only
 **Result:** exact version 11 deployed successfully owner-only; not approved for
@@ -17,7 +24,7 @@ public, paid, controlled-real-user, or accepted live operation
 | Production URL | `https://roadmap-golf-coaching.aar-landry.chatgpt.site` |
 | Access and billing | The private-deployment control verified owner-only eligibility before publishing; `INSTRUCTOR_ACCESS_MODE=owner_private` and `BILLING_CHECKOUT_ENABLED=false` remained unchanged |
 
-Version 11 supersedes version 10 only as the current immutable private
+Version 11 superseded version 10 only as that release's immutable private
 candidate. Version 10 and its exact record remain historical evidence; neither
 version is an approved public, paid, real-user, or owner-accepted release.
 

@@ -6,7 +6,7 @@ analytics reuse is approved by this document
 **Authority:** [Business Plan V2](../../00_source/BUSINESS_PLAN_V2.md) governs; its
 numeric targets and commercial expectations remain hypotheses
 **Related:** [Owner release decisions](OWNER_RELEASE_DECISIONS_REQUIRED.md) and
-[findings ledger](FINDINGS_RETEST_LEDGER.md); [exact-v11 local exercises](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md)
+[findings ledger](FINDINGS_RETEST_LEDGER.md); [historical exact-v11 local exercises](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md)
 
 `[SUPPORTED BY BUSINESS PLAN V2]` Roadmap is a self-serve B2B SaaS for individual
 instructors. Measurement must separate real self-service from founder assistance,
@@ -15,31 +15,31 @@ or proven by Roadmap.
 
 ## Current candidate boundary
 
-The current recorded candidate is owner-private Sites version 11 at source/runtime
-release `44670a64498779cf747914b4465380916a939301`, saved version
-`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_4c49cdec72bc8191aeece01f5689e51a`,
-deployment `appgdep_6a77b01714b881918245bb5248349e0d`, and environment
-revision `13`; final deployment status is `succeeded` with provider `updated_at`
-`2026-08-08T22:40:07.742084+00:00`.
-Its 61-entry/49-file local release archive is 2,966,073 bytes, contains all 10
+The current recorded candidate is owner-private Sites version 12 at source/runtime
+release `7b77e6507c1b1c1acb091ab046808cf8b5cc0a5c`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_8868e09fcb28819181cfbebdf82ce73f`,
+deployment `appgdep_6a77c5c85974819185ce1c8caf13007c`, and environment
+revision `14`; final deployment status is `succeeded` with provider `updated_at`
+`2026-08-09T00:12:04.939300+00:00`.
+Its 61-entry/49-file local release archive is 2,967,333 bytes, contains all 10
 migrations, and has gzip SHA-256
-`d88be6513bc58afd057d4a3fb3a6d64b744f7a5c359731ec9fc693a788e1fa0e`;
+`994f725ba6c5952c45885a4d72d38804f1b10b8440273dc26ac8bd1c38d2bd75`;
 the Sites content hash is
-`sha256:d717035871790252548e7fff4e1192e590b73b7cabfe3f4c011d65ffe4493daa`
-across 49 files and 6,737,920 bytes. Sites version 9 is the immediate historical
-predecessor of version 10; version 10 is the immediate predecessor of version 11.
-Because version 11 replaces script `'unsafe-inline'` with per-response nonces,
-version-11-to-10 rollback would be a security/behavior regression rather than class
-`N` and is not a tested or approved target. Version 7 remains privacy-behaviorally forbidden
+`sha256:0805c04e9dcd5e8bac77f58aec2362dece1754f6eec63ec73d9c2e249bb01700`
+across 49 files and 6,748,160 bytes. Version 11 is the immediate historical
+predecessor of version 12. Because version 12 adds operation-keyed golfer-response
+durability, version-12-to-11 rollback would reintroduce the lost-ack duplicate
+response/audit risk and is a security/behavior regression rather than class `N`.
+Version 7 remains privacy-behaviorally forbidden
 as an ordinary target after version-8-or-later consent-governed use.
 
-Both exact-version-11 clean installs contained 501 packages with the same five
-blocked install scripts and passed 237/237 verification. Their 49-file builds had
+Both exact-version-12 clean installs contained 501 packages with the same five
+blocked install scripts and passed 242/242 verification. Their 49-file builds had
 three controlled raw differences and zero normalized differences. Release integrity
-inspected 259 source/evidence files with zero findings and preserved Business Plan V1;
-the production dependency audit reported zero vulnerabilities. The
+inspected 261 source/evidence files with zero findings and preserved Business Plan V1;
+the production dependency audit reported zero vulnerabilities. The historical
 [exact-v11 local exercise record](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md)
-records recovery passing all 10 migrations and 31/31 tables, two synthetic tenants,
+records predecessor recovery passing all 10 migrations and 31/31 tables, two synthetic tenants,
 three R2-compatible objects totalling 199 bytes, the 34,380-byte snapshot SHA-256
 `34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54`,
 three negative integrity scenarios, and subprocess secret isolation. Its 103,656 ms
@@ -48,13 +48,12 @@ RPO. The companion bounded-capacity run completed 54 requests at maximum concurr
 four with 44 `200`, ten `201`, zero failures, and local p50/p95/maximum observations
 of 48.46/107.60/107.83 ms. These do not supply approved performance targets, an
 SLO/SLA, hosted capacity or backup/restore, rollback/forward-fix, RPO/RTO, scheduler,
-named-operator readiness, production recovery, or a real-user measurement result.
+named-operator readiness, production recovery, exact-version-12 recovery, or a real-user measurement result.
 Historical exact-v10 exercises remain predecessor evidence. Historical version-9
 smoke recorded plain HTTP `/`
-redirecting to HTTPS. After version 11 deployed, signed-out HTTPS requests to `/`,
-`/app`, `/api/health`, and `/api/operations/health` each returned the outer
-owner-policy `401` with `Cache-Control: no-store` and
-`Referrer-Policy: no-referrer`.
+redirecting to HTTPS. After version 12 deployed, signed-out HTTPS requests to `/`,
+`/app`, `/r`, and `/api/health` each returned the outer owner-policy `401` with
+`Cache-Control: no-store` and `Referrer-Policy: no-referrer`.
 
 A sanitized version-8-era continuity query started at
 `2026-08-08T17:27:16.287Z`, completed at `2026-08-08T17:27:17.305Z`, requested
@@ -76,20 +75,15 @@ working suspicion; provider support and trigger configuration are not confirmed.
 Do not use these samples as an analytics feed or depend on hosted scheduling for
 measurement.
 
-The first post-deployment exact-version-11 30-minute provider-log aggregate at
-`2026-08-08T22:58:53.646Z` returned three `fetch`/`info`/`ok` events and zero
-observed `scheduled` events after three expected five-minute boundaries; its
-`errors_only` aggregate returned one `fetch`/`info`/`ok` event with zero error
-fields. A newer 30-minute broad query and its `errors_only` companion around
-`2026-08-08T23:20:16.850Z` were empty. The later 60-minute broad aggregate at
-approximately `2026-08-08T23:23:52Z` returned three `fetch`/`info`/`ok` events
-with HTTP `200`, `200`, and handled `403`, and `scheduled=0`; `errors_only`
-returned only the handled `403`. No raw content was emitted or retained. These
-bounded observations strengthen the scheduler suspicion but do not establish log
-completeness or redaction, hosted scheduling or absence, authenticated success,
-reliability, or alerting because scheduled-event visibility and deployed trigger
-metadata remain unavailable. Historical version-8 through version-10 observations
-remain preserved.
+Historical version-11 aggregates remain preserved in its frozen release record.
+The current post-v12 value-safe capture completed at
+`2026-08-09T00:13:27.8566565Z`: `errors_only` returned zero events, while the
+broad aggregate returned six `fetch`/`info`/`ok` events—two `200` root requests,
+two `200` `/.rsc` requests, and two handled `403` `/app.rsc` requests—and
+`scheduled=0`. No raw content was emitted or retained. This bounded observation
+does not establish log completeness or redaction, hosted scheduling or absence,
+authenticated success, reliability, or alerting because scheduled-event visibility
+and deployed trigger metadata remain unavailable.
 
 No authenticated browser journey, manual accessibility review, authorized real
 instructor/golfer protocol, or real-world measurement exists. Deep readiness remains
@@ -99,9 +93,15 @@ reliability over time, support burden, accessibility, or participant outcomes. T
 packet records no owner acceptance and authorizes no participant, analytics,
 public-access, or commercial activity.
 
-Version 11's nonce remediation passed automated coverage, but the supported Browser
+Version 12's inherited nonce remediation and new response-recovery controls passed
+automated coverage. Responses require a safe key, use account-and-resolved-share-
+session-scoped HMAC receipts, atomically record one response/audit pair, return
+`201` first/`200` replay/`409` changed payload, and retain a key per tab only across
+ambiguous timeout/reload outcomes; raw keys are not server-persisted or logged and
+external handoffs use fresh keys. These controls improve response reliability but
+do not themselves measure golfer agency, trust, or real-world success. The supported Browser
 list was empty, so no signed-in hosted browser was available for CSP, hydration,
-navigation, or interaction retesting.
+navigation, interruption/reload recovery, or interaction retesting.
 `SEC-002` is **REMEDIATED — HOSTED RETEST PENDING**. Historical `OWNER-SEC-001`
 authorization is complete, while `SEC-001` remains **REMEDIATED — RETEST PENDING**.
 
