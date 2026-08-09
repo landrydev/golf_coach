@@ -10,36 +10,67 @@ security, privacy, and operational decisions are documented in [`docs/`](docs/).
 
 ## Current private release
 
-Sites version 13 is deployed owner-only at
+Sites version 15 is deployed owner-only at
 <https://roadmap-golf-coaching.aar-landry.chatgpt.site> from release commit
-`f3482845a42730e87f4ff1190550511f19ea6ad5`, saved version
-`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_a050ad7d2e408191a7138c91f93f588c`,
-deployment `appgdep_6a7801d93d6481918bc66a4df14bbe14`, and environment revision 15.
+`8a359398099ab9b970df1d28eb3473dcbcd6207f`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_085298ff9b9c819193d48e0df7a71631`,
+deployment `appgdep_6a7810bf6fc08191b2cb9bfb081e58c2`, and environment revision 17.
 The deployment succeeded with provider `updated_at`
-`2026-08-09T04:28:22.001529+00:00`.
+`2026-08-09T05:31:58.490796Z`.
 The outer Sites policy allows only the owner; Stripe Checkout remains disabled. This is a production deployment, not
 a public launch or accepted real-user release. Exact evidence and unresolved
 operating dependencies are recorded in
 [`docs/RELEASE_EVIDENCE.md`](docs/RELEASE_EVIDENCE.md), the
-[exact version-13 release record](docs/release-evidence/ROADMAP-SITES-V13-2026-08-09.md),
+[exact version-15 release record](docs/release-evidence/ROADMAP-SITES-V15-2026-08-09.md),
 and the [exact version-13 local exercise record](docs/release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md).
 
-The version-13 release archive has gzip SHA-256
-`f3c5ce7fc76a52d693f0b1f0fcdfc6385e398cd11df2898a5b66b2d67f09da51`,
-is 3,047,466 bytes, and contains 63 entries/51 files and all eleven migrations. Its saved provider
+The version-15 release archive has gzip SHA-256
+`f987afcd00f9151e4c1a698fdf7aeb06fe8d275ec778494bb7dd38f535406a31`,
+is 3,047,495 bytes, and contains 63 entries/51 files and all eleven migrations. Its saved provider
 package has content hash
-`sha256:734a527a2d76322ffa341acb02b3a7f52714179021383430e32e578be0193d99`
+`sha256:880189d7d59994b0c72fd34c9c206b2f37328096dea41c2ebd7b4fdf9d6775ad`
 across 51 files and 7,270,400 bytes. Four fresh signed-out probes to `/`,
 `/app`, `/r`, and `/api/health` remained contained at the owner-only policy
-with `401`.
+with `401`, `no-store`, and `no-referrer`.
 
-Version 13 carries forward the scoped golfer-response idempotency introduced in
-version 12 and adds bounded account/plan/action-scoped authoring-draft recovery,
-stronger request-ownership and compare-and-swap response boundaries, native
-billing recovery, and account-level share revoke, same-revision reissue, and
-lost-ack replacement receipts. These controls passed two clean 332/332-test
-verifications and an exact archive audit, but authenticated hosted recovery and
-write behavior remain unexercised.
+Version 15 carries forward the scoped golfer-response idempotency introduced in
+version 12 plus version 13's bounded account/plan/action-scoped authoring-draft
+recovery, stronger request-ownership and compare-and-swap response boundaries,
+native billing recovery, and account-level share revoke, same-revision reissue,
+and lost-ack replacement receipts. The exact version-15 source passed two clean
+333/333-test verifications and an exact archive audit, but authenticated hosted
+recovery and write behavior remain unexercised.
+
+The version-15 package configures observability, custom-log collection, and
+automatic invocation-log persistence off. Its hosted retest
+nevertheless returned exactly three post-success provider `fetch` events.
+Version 14 had already returned exactly three invocation events despite configuring
+automatic invocation logs off while keeping custom-log collection configured on.
+For both retests, the query surface returned redaction markers
+for cookie/SIWC identity fields while network-IP and request-signature fields were
+nonempty and were not markers. Raw field values processed transiently by the
+connector/tool were not surfaced in the transcript or written to the repository;
+collection/storage masking and retained-data disposition remain unknown. The
+provider-setting mismatch is confirmed. Closure requires actual provider
+enforcement plus disposition of retained metadata, or a verified migration to a
+host that enforces the control, so privacy closure, public operation, and
+controlled real users are not claimed.
+
+### Historical versions 14 and 13
+
+Version 14 remains immutable failed-retest evidence at commit
+`5db791d0d4a7317a2913d2e65d855cb0bb31baec`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_349b3a9e27e8819189d4de12ac1a89ac`,
+deployment `appgdep_6a780dd0dfb081918e825de46a7a7a17`, and environment
+revision 16. See its [exact release record](docs/release-evidence/ROADMAP-SITES-V14-2026-08-09.md).
+
+Version 13 remains immutable predecessor evidence at commit
+`f3482845a42730e87f4ff1190550511f19ea6ad5`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_a050ad7d2e408191a7138c91f93f588c`,
+deployment `appgdep_6a7801d93d6481918bc66a4df14bbe14`, and environment
+revision 15. Its [exact release record](docs/release-evidence/ROADMAP-SITES-V13-2026-08-09.md)
+and local exercise record remain historical and are not relabelled as
+version-15 hosted evidence.
 
 ### Historical version 12 predecessor
 
@@ -57,11 +88,12 @@ Version 12 introduced resolved-session-scoped golfer-response idempotency:
 `201` for first acceptance, `200` for exact replay, `409` for changed-input key
 reuse, and one atomic response/audit pair under concurrency. Its bounded same-tab
 outcome-unknown recovery and raw-key non-persistence/non-logging evidence remain
-historical and are not relabelled as version 13.
+historical and are not relabelled as version 15.
 
 ### Current write-containment and recovery controls
 
-Version 13 requires `APPLICATION_WRITE_MODE` to be exactly `enabled` before
+Version 15 carries forward version 13's requirement that
+`APPLICATION_WRITE_MODE` be exactly `enabled` before
 application-owned writes can run. Exact `frozen`, a missing value, or any malformed,
 padded, or case-variant value fails closed. After canonical-origin and product-access
 checks, and before framework routing, the Worker returns a generic, private,
@@ -75,7 +107,7 @@ not enabled. Owner-only operational health reports the normalized
 `enabled`/`frozen`/`invalid` state and degrades when writes are disabled; public
 health discloses none of it.
 
-Interactive browser mutation controls in version 13 use bounded recovery
+Interactive browser mutation controls carried into version 15 use bounded recovery
 helpers (the deliberately non-blocking external-handoff telemetry remains
 best-effort). The general helper's
 10-second deadline covers both receiving the response and consuming the complete
@@ -88,7 +120,7 @@ idempotency attempt tells the user to retry that same attempt; a control that
 cannot prove replay safety tells the user to reload and inspect current state
 before trying again.
 
-Golfer recovery in version 13 is bound to an opaque HMAC context for the exact
+Golfer recovery carried into version 15 is bound to an opaque HMAC context for the exact
 account, share, and browser session, supplied alongside the `HttpOnly` cookie for
 response and close requests. A stale tab cannot apply its pending choice to a
 replacement session: a context mismatch returns `409`, creates no response or
@@ -104,22 +136,23 @@ definitive exchange or close succeeds server-side, blocked local storage, histor
 or scripted navigation does not relabel that result as failure; the UI leaves a
 normal-link fallback.
 
-The exact deployed version-13 source also passed isolated local synthetic recovery and
+The exact version-13 source also passed isolated local synthetic recovery and
 bounded-capacity exercises: all eleven migrations and 31/31 application tables,
 two tenants, three private R2-compatible objects, three negative integrity
 scenarios, and 54 bounded requests at maximum concurrency four with zero failures.
 See the [exact-v13 local exercise record](docs/release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md).
-These are not hosted recovery, RPO/RTO, performance, capacity, or operator evidence.
+These historical exercises are not relabelled as exact-version-15 results and are
+not hosted recovery, RPO/RTO, performance, capacity, or operator evidence.
 
 The historical exact-version-9 local synthetic browser evidence records nine Chrome 151 captures of
 the landing page, instructor workspace, and golfer plan at 320, 390, and 1440 CSS
 pixels, with no root/body horizontal overflow. See the
 [`ROADMAP-SITES-V9-2026-08-08` responsive evidence](docs/release-evidence/ROADMAP-SITES-V9-2026-08-08-responsive-evidence.json).
 The version-9 captures remain a renderer/layout source-equivalent baseline for the
-unchanged rendered UI and CSS carried into version 13. They are not evidence of
-version-13 CSP, headers, authentication, outcome-unknown retry/reload interaction,
-hosted runtime, or security behavior, and they are not relabelled as exact-version-13 hosted or manual
-evidence. Version 13 retains the per-response script nonces introduced in version
+rendered UI and CSS at version 13. They are not evidence of
+version-15 CSP, headers, authentication, outcome-unknown retry/reload interaction,
+hosted runtime, or security behavior, and they are not relabelled as exact-version-15 hosted or manual
+evidence. Version 15 carries forward the per-response script nonces introduced in version
 11, but no supported signed-in hosted browser was available to retest that deployed
 behavior. `SEC-002` is therefore **REMEDIATED — HOSTED RETEST PENDING**,
 not closed.

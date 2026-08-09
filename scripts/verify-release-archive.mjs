@@ -557,12 +557,12 @@ async function runCli() {
           report.artifactReport.unexpectedCredentialPathCopies,
         expectedSchedulerConfigured:
           report.artifactReport.expectedSchedulerConfigured,
-        structuredApplicationLogsEnabled:
-          report.artifactReport.structuredApplicationLogsEnabled,
-        automaticInvocationLogsDisabled:
-          report.artifactReport.automaticInvocationLogsDisabled,
-        providerLogPersistenceDisabled:
-          report.artifactReport.providerLogPersistenceDisabled,
+        providerCustomLogCollectionConfigured:
+          report.artifactReport.providerCustomLogCollectionConfigured,
+        automaticInvocationLogsDisableConfigured:
+          report.artifactReport.automaticInvocationLogsDisableConfigured,
+        providerLogPersistenceDisableConfigured:
+          report.artifactReport.providerLogPersistenceDisableConfigured,
         verificationMode: report.verificationMode,
       },
     );

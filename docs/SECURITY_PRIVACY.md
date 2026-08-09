@@ -14,33 +14,70 @@
 
 ## Current exact private-candidate security observation
 
-Owner-only Sites version 13 is bound to source/runtime release
-`f3482845a42730e87f4ff1190550511f19ea6ad5`, the exact 51-file package with all
-11 migrations through `0010_steep_hemingway`, saved version
-`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_a050ad7d2e408191a7138c91f93f588c`,
-deployment `appgdep_6a7801d93d6481918bc66a4df14bbe14`, and environment
-revision `15`. Final status was `succeeded` at
-`2026-08-09T04:28:22.001529+00:00`. The deployed configuration records the exact
-release ID, `APPLICATION_WRITE_MODE=enabled`,
-`INSTRUCTOR_ACCESS_MODE=owner_private`, and
-`BILLING_CHECKOUT_ENABLED=false`; four existing secret values were retained
-without exposing them. This is an implementation evidence point, not public-
-release, legal-compliance, owner-acceptance, or paid-operation evidence.
+The current owner-only candidate is Sites version 15 at exact source/runtime
+release `8a359398099ab9b970df1d28eb3473dcbcd6207f`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_085298ff9b9c819193d48e0df7a71631`,
+deployment `appgdep_6a7810bf6fc08191b2cb9bfb081e58c2`, provider deployment
+`site---6a76957326fc819196ebf3a0c95f1ec3`, and environment revision `17`.
+The deployment succeeded at `2026-08-09T05:31:58.490796Z`. Its exact 51-file
+provider package is
+`sha256:880189d7d59994b0c72fd34c9c206b2f37328096dea41c2ebd7b4fdf9d6775ad`
+(7,270,400 bytes) and contains
+`observability.enabled=false`, `observability.logs.enabled=false`, and
+`observability.logs.invocation_logs=false`. Access remains owner-only,
+`BILLING_CHECKOUT_ENABLED=false`, and four fresh signed-out HTTPS probes to `/`,
+`/app`, `/r`, and `/api/health` each returned outer-policy `401` with `no-store`
+and `no-referrer`. No SIWC bypass bearer was generated, read, displayed,
+persisted, or used. These observations prove bounded package/configuration,
+deployment, and anonymous containment only; they are not authenticated
+application, deep-health, write-mode, CSP, public-release, compliance,
+owner-acceptance, or paid-operation evidence.
 
-Two detached exact-commit clean worktrees each passed build, strict types, lint,
+The hosted provider did not enforce either attempted invocation-log control. A
+value-safe pre-remediation version-13 audit found one hosted invocation record:
+the query surface returned redaction markers for cookie and dispatch SIWC identity
+fields, while IP and request-signature fields were nonempty. Collection and storage
+disposition behind the markers is unknown. Exact version 14 then packaged
+`observability.enabled=true`, `logs.enabled=true`, and
+`invocation_logs=false`; although deployment succeeded at
+`2026-08-09T05:19:27.316512Z`, three fetch invocation records appeared after
+success between `05:20:01.195Z` and `05:20:02.531Z` (two `200`, one handled
+`403`) with the same redaction classification. Exact version 15 disabled both
+observability and logs as well as invocation logs, yet three post-success fetch
+invocation records still appeared at `2026-08-09T05:32:32.228Z`,
+`05:32:33.881Z`, and `05:32:34.431Z` (two `200`, one handled `403`) under one new
+script-version identifier. Its query result carried redaction markers for
+cookie/SIWC identity fields while network-IP/request-signature fields remained
+nonempty; collection and storage disposition behind the markers is unknown.
+Connector/tool processing was transient; no raw header, identity, cookie, IP,
+signature, or log field value was surfaced in the transcript or written to the
+repository.
+
+This is a confirmed hosted-provider enforcement/configuration limitation and a
+**High constraint before any real-user or public operation**. It is not evidence
+that the application logger emitted those fields: the persistence occurs in the
+provider-generated invocation envelope. Because the deployment remains owner-only
+and no customer data was present, no customer-data incident is claimed; network
+and request-signature metadata nevertheless persisted at the provider. The
+application-owned D1 audit ledger remains required and is not replaced by these
+provider logs. Cloudflare's
+[Workers Logs documentation](https://developers.cloudflare.com/workers/observability/logs/workers-logs/)
+says `invocation_logs=false` disables invocation logs and documents a maximum
+Workers Logs retention of seven days. The Sites connector exposes no control for
+hosted log configuration, retention, or deletion. Provider support must enforce
+the declared control, or the application must migrate to a host that does, before
+real-user/public operation. Hosted logging and alerting are degraded until then;
+Checkout remains disabled.
+
+Historical exact version 13 remains immutable predecessor evidence. Its two
+detached exact-commit clean worktrees each passed build, strict types, lint,
 artifact integrity, and 332/332 tests. Both builds contained 51 files; strict
 comparison reported three expected framework-generated raw differences and zero
-normalized differences. The exact local archive verifier passed with SHA-256
+normalized differences. Its exact local archive verifier passed with SHA-256
 `f3c5ce7fc76a52d693f0b1f0fcdfc6385e398cd11df2898a5b66b2d67f09da51`,
-51 files, all 11 migrations, and the packaged scheduler declaration. The provider
-package has content hash
+51 files, all 11 migrations, and the packaged scheduler declaration. The
+historical v13 provider package has content hash
 `sha256:734a527a2d76322ffa341acb02b3a7f52714179021383430e32e578be0193d99`.
-The integrated security review found no actionable Critical or High blocker in this bounded
-source/package scope. After the revision-15 deployment, signed-out HTTPS probes
-returned the outer-policy `401` for `/`, `/app`, `/r`, and `/api/health`. No SIWC
-bypass bearer was generated, read, displayed, persisted, or used. Those probes
-demonstrate signed-out containment only; they do not exercise authenticated
-identity, application responses, deep health, write-mode behavior, or CSP.
 
 The release working-tree/archive match is not deterministic byte-rebuild evidence.
 An isolated immutable-v9 export installed cleanly and passed the complete 229-test
@@ -69,11 +106,13 @@ and the access policy remained `custom`, revision 1, with one owner and no group
 external visitors. The original value was not retained or empirically replayed.
 
 `SEC-001` is **REMEDIATED — RETEST PENDING**, not closed. `OWNER-SEC-001` is
-historically complete; the renewed instruction did not require or cause another
-rotation. The historical post-rotation and exact-v11 through exact-v13 post-deploy
-signed-out containment probes passed, but no
-supported signed-in owner browser was available. Normal owner authentication
-without a bypass header and a meaningful privacy-safe log sample remain required. See the
+historically complete; no later deployment or renewed instruction caused another
+rotation. Historical post-rotation and exact-v11 through exact-v15 post-deploy
+signed-out containment probes passed, but no supported signed-in owner browser was
+available. Normal owner authentication without a bypass header remains required.
+The hosted log audit is now meaningful enough to identify the separate
+provider-enforcement limitation above; it does not reproduce the bypass bearer or
+prove the normal signed-in journey. See the
 [value-free rotation evidence](release-evidence/ROADMAP-SITES-V9-2026-08-08-sec001-rotation.md).
 
 Version 13 retains the version-11 remediation of the known `SEC-002`
@@ -103,10 +142,10 @@ returned scoped session cookie, removes only `Secure` for loopback HTTP, and has
 regression forbidding the old pattern. These two findings are closed locally only;
 they do not establish hosted golfer-session behavior, manual accessibility, real
 device, supported-browser, keyboard, screen-reader, forced-colour, or browser-zoom
-evidence. They are not relabelled exact-v13 CSP, header, authentication, response-
+evidence. They are not relabelled exact-v15 CSP, header, authentication, response-
 recovery, hosted, or manual evidence.
 
-The exact-v13 archive verifier proves that the package declares exactly
+The exact-v15 archive verifier proves that the package declares exactly
 `*/5 * * * *`; the Worker exports `scheduled()` and passes local
 scheduler-heartbeat tests. A predecessor-v8 provider-log query spanning
 `2026-08-08T16:37:26.325Z` through `2026-08-08T17:16:40.472Z` returned 24 events,
@@ -119,7 +158,9 @@ supplies no hosted heartbeat. Historical post-v11 aggregates returned only
 contained HTTP `200`, `200`, and handled `403`, while its `errors_only` companion
 returned the handled `403`. The post-v12 ten-minute `errors_only` aggregate
 returned zero records; its broad companion returned six `fetch`/`info`/`ok`
-records (`200`, `200`, and handled `403` twice) and `scheduled=0`. Because
+records (`200`, `200`, and handled `403` twice) and `scheduled=0`. Exact-v14 and
+exact-v15 privacy retests each returned three post-success `fetch` records and no
+observed scheduled event. Because
 provider-log completeness, scheduled-event visibility, and deployed trigger
 metadata are unavailable here, `OPS-CRON-001` records a suspected hosted scheduler
 gap rather than a confirmed platform or application defect. Billing remains
@@ -635,9 +676,30 @@ Audit events never contain raw identity headers, raw capabilities, full email ad
 
 ### Sites operational logs
 
-Sites logs support runtime diagnosis, deployment health, and request correlation. Application log messages use event names, status codes, duration buckets, and opaque IDs. They do not emit request bodies, query strings, URL fragments, cookies, authorization headers, raw webhook payloads, personal content, or secrets.
+Application log messages use event names, status codes, duration buckets, and
+opaque IDs. They do not emit request bodies, query strings, URL fragments,
+cookies, authorization headers, raw webhook payloads, personal content, or
+secrets. The application-owned D1 audit remains the authoritative first-party
+accountability record.
 
-`[REAL-WORLD VALIDATION REQUIRED]` Demonstrate actual Sites log access, provider-generated fields, route/path treatment, retention, access control, export, redaction, and alert routing. This operational evidence is unresolved and must not be assumed from application logging discipline.
+Hosted Sites invocation logs currently cannot be treated as a privacy-safe
+diagnostic or alert source. Versions 14 and 15 each packaged an explicit
+`invocation_logs=false`; version 15 additionally configured all packaged
+observability/log settings off. Sites nevertheless returned post-deployment fetch
+invocation records. The v13 through v15 value-safe query results returned
+redaction markers for cookie and SIWC identity fields, while IP and
+request-signature metadata persisted; collection and storage disposition behind
+the markers is unknown. This is provider-envelope behavior, not an
+application-log emission. Connector/tool processing was transient; no raw field
+value was surfaced in the transcript or written to the repository.
+
+Cloudflare documents both the disabling control and a maximum seven-day retention
+for Workers Logs in its
+[Workers Logs documentation](https://developers.cloudflare.com/workers/observability/logs/workers-logs/),
+but the Sites connector exposes no log-configuration, retention, or deletion
+control. Logging/alerting is degraded. Do not place real-user traffic on this
+deployment until provider support demonstrates enforcement, or migration to a
+host that honors the control is completed and verified.
 
 ## Privacy lifecycle
 
@@ -736,8 +798,8 @@ Findings need severity, affected release, owner, mitigation, retest evidence, an
 | Stripe production configuration | No production secret, approved Price, final billing terms, or live transaction evidence is recorded | Authorized configuration, signed webhook evidence, reconciliation, and controlled transaction/refund/failure checks |
 | Public domain | Final origin affects cookies, redirects, CSP, CORS, referrers, and public disclosures | Authorized domain plus final-origin security and privacy verification |
 | Backup and restore | A strategy without a successful restore does not prove recoverability | Versioned backup inventory and a timed, integrity-checked D1/R2 restore exercise |
-| Hosted scheduler | The exact-v13 archive verifier proves the five-minute cron declaration and local invocation/write-mode tests pass. Historical v8-v12 provider observations produced no conclusive scheduled invocation. No exact-v13 trigger metadata, authenticated heartbeat observation, frozen zero-side-effect hosted exercise, or alert result exists. Empty or fetch-only bounded samples do not prove invocation or absence. | Establish Sites cron support and deployed trigger state or move to a supported scheduler; then observe at least three exact-release intervals through authenticated health/provider evidence, prove frozen zero-side-effect behavior, and exercise a privacy-safe failure alert |
-| Sites logging | Provider-generated data, retention, redaction, access, and alerting are not demonstrated | Deployed log sampling, access review, token/PII leak test, and alert exercise |
+| Hosted scheduler | The exact-v15 archive verifier proves the five-minute cron declaration and local invocation/write-mode tests pass. Historical v8-v15 provider observations produced no conclusive scheduled invocation. No exact-v15 trigger metadata, authenticated heartbeat observation, frozen zero-side-effect hosted exercise, or alert result exists. Empty or fetch-only bounded samples do not prove invocation or absence. | Establish Sites cron support and deployed trigger state or move to a supported scheduler; then observe at least three exact-release intervals through authenticated health/provider evidence, prove frozen zero-side-effect behavior, and exercise a privacy-safe failure alert |
+| Sites logging | Confirmed provider limitation: exact v14 ignored packaged `invocation_logs=false`, and exact v15 continued to return invocation records after all packaged observability/logging settings were configured off. Value-safe v13-v15 queries returned redaction markers for cookie/SIWC identity fields but nonempty IP/request-signature metadata; collection/storage disposition behind the markers is unknown. Connector/tool processing was transient; no raw field value was surfaced in the transcript or written to the repository. Sites exposes no connector control for configuration, retention, or deletion; logging/alerting is degraded. This is High before real-user/public operation, although no customer incident is claimed for the owner-only, no-customer-data candidate. | Provider support must demonstrate that hosted invocation logging is disabled, establish retained-data disposition, and prove invocation records are unavailable, or migrate to a host that honors the control; then repeat privacy-safe leak, access, retention/deletion, export, and alert exercises before real-user/public operation |
 | Live acceptance | No exact production release has completed controlled real journeys and owner review | Release evidence packet and Aaron's dated acceptance record |
 
 These items constrain affected real-world claims and operations. They do not revoke `AUTH-005` or prevent continued safe implementation and testing.

@@ -79,9 +79,9 @@ export async function auditReleaseArtifacts(rootDirectory) {
   const workerConfigPath = path.join(root, "server", "wrangler.json");
   let productionPrerenderBindingConfigured = false;
   let expectedSchedulerConfigured = false;
-  let structuredApplicationLogsEnabled = false;
-  let automaticInvocationLogsDisabled = false;
-  let providerLogPersistenceDisabled = false;
+  let providerCustomLogCollectionConfigured = false;
+  let automaticInvocationLogsDisableConfigured = false;
+  let providerLogPersistenceDisableConfigured = false;
   try {
     const workerConfig = JSON.parse(await readFile(workerConfigPath, "utf8"));
     productionPrerenderBindingConfigured = containsConfigurationToken(
@@ -102,19 +102,19 @@ export async function auditReleaseArtifacts(rootDirectory) {
         "server/wrangler.json: expected billing-recovery schedule is missing or changed",
       );
     }
-    structuredApplicationLogsEnabled =
+    providerCustomLogCollectionConfigured =
       workerConfig.observability?.enabled === true &&
       workerConfig.observability?.logs?.enabled === true;
-    automaticInvocationLogsDisabled =
+    automaticInvocationLogsDisableConfigured =
       workerConfig.observability?.enabled === false ||
       workerConfig.observability?.logs?.invocation_logs === false;
-    providerLogPersistenceDisabled =
+    providerLogPersistenceDisableConfigured =
       workerConfig.observability?.enabled === false &&
       workerConfig.observability?.logs?.enabled === false &&
       workerConfig.observability?.logs?.invocation_logs === false;
-    if (!providerLogPersistenceDisabled) {
+    if (!providerLogPersistenceDisableConfigured) {
       findings.push(
-        "server/wrangler.json: provider log persistence must be fully disabled until hosted invocation-log exclusion is proven",
+        "server/wrangler.json: the full provider log-persistence disable configuration is required until hosted invocation-log exclusion is proven",
       );
     }
   } catch {
@@ -130,9 +130,9 @@ export async function auditReleaseArtifacts(rootDirectory) {
     unexpectedCredentialPathCopies,
     productionPrerenderBindingConfigured,
     expectedSchedulerConfigured,
-    structuredApplicationLogsEnabled,
-    automaticInvocationLogsDisabled,
-    providerLogPersistenceDisabled,
+    providerCustomLogCollectionConfigured,
+    automaticInvocationLogsDisableConfigured,
+    providerLogPersistenceDisableConfigured,
     findings: findings.map((finding) =>
       redactKnownCredentials(finding, credentialValues),
     ),
@@ -236,12 +236,12 @@ async function runCli() {
       productionPrerenderBindingConfigured:
         report.productionPrerenderBindingConfigured,
       expectedSchedulerConfigured: report.expectedSchedulerConfigured,
-      structuredApplicationLogsEnabled:
-        report.structuredApplicationLogsEnabled,
-      automaticInvocationLogsDisabled:
-        report.automaticInvocationLogsDisabled,
-      providerLogPersistenceDisabled:
-        report.providerLogPersistenceDisabled,
+      providerCustomLogCollectionConfigured:
+        report.providerCustomLogCollectionConfigured,
+      automaticInvocationLogsDisableConfigured:
+        report.automaticInvocationLogsDisableConfigured,
+      providerLogPersistenceDisableConfigured:
+        report.providerLogPersistenceDisableConfigured,
     });
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));

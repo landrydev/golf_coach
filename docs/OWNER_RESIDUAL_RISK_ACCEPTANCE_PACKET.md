@@ -5,7 +5,7 @@
 **Related:** [Findings ledger](FINDINGS_RETEST_LEDGER.md),
 [security/privacy](SECURITY_PRIVACY.md), and
 [provider/exit record](PROVIDER_RESPONSIBILITY_COST_AND_EXIT.md), plus the
-[exact-v13 release evidence](release-evidence/ROADMAP-SITES-V13-2026-08-09.md) and
+[exact-v15 release evidence](release-evidence/ROADMAP-SITES-V15-2026-08-09.md) and
 [exact-v13 local exercises](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md)
 
 A residual risk is what remains after implemented controls and applicable evidence
@@ -14,27 +14,30 @@ policy decision that has never been made is not made safe by calling it residual
 
 ## Current candidate scope
 
-These candidate risks are reconciled to owner-private Sites version 13 at
-source/runtime release `f3482845a42730e87f4ff1190550511f19ea6ad5`, local release
+These candidate risks are reconciled to owner-private Sites version 15 at
+source/runtime release `8a359398099ab9b970df1d28eb3473dcbcd6207f`, local release
 archive SHA-256
-`f3c5ce7fc76a52d693f0b1f0fcdfc6385e398cd11df2898a5b66b2d67f09da51`
-(3,047,466 bytes; 63 entries/51 files; 11 migrations), Sites content hash
-`sha256:734a527a2d76322ffa341acb02b3a7f52714179021383430e32e578be0193d99`
+`f987afcd00f9151e4c1a698fdf7aeb06fe8d275ec778494bb7dd38f535406a31`
+(3,047,495 bytes; 63 entries/51 files; 11 migrations), Sites content hash
+`sha256:880189d7d59994b0c72fd34c9c206b2f37328096dea41c2ebd7b4fdf9d6775ad`
 (51 files; 7,270,400 bytes), saved version
-`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_a050ad7d2e408191a7138c91f93f588c`,
-deployment `appgdep_6a7801d93d6481918bc66a4df14bbe14`, and environment
-revision `15`; final status is `succeeded` with provider `updated_at`
-`2026-08-09T04:28:22.001529+00:00`. The environment retains
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_085298ff9b9c819193d48e0df7a71631`,
+deployment `appgdep_6a7810bf6fc08191b2cb9bfb081e58c2`, and environment
+revision `17`; final status is `succeeded` with provider `updated_at`
+`2026-08-09T05:31:58.490796Z`. The environment retains
 `INSTRUCTOR_ACCESS_MODE=owner_private` and `BILLING_CHECKOUT_ENABLED=false`, with
 `APPLICATION_WRITE_MODE=enabled`.
 
-Sites version 12 and earlier remain historical predecessor evidence. The
-version-13-to-12 path is class `B`: migration `0010_steep_hemingway` is schema-
+Sites versions 14 and 13 and earlier remain historical predecessor evidence.
+Version-15-to-14/13 application/schema compatibility is class `N`, but neither
+rollback resolves `LOG-PRIV-001`. The historical version-13-to-12 path remains
+class `B`: migration `0010_steep_hemingway` is schema-
 backward-compatible, but rollback removes fail-closed global write containment
 and newer authoring, share, profile, recovery, receipt, and compare-and-swap
 behavior. Historical v12-to-v11 response-durability, v11-to-v10 CSP, and
 privacy-behavior boundaries remain recorded. This identity record does not accept
-a risk or authorize public, real-user, or paid use.
+a risk or authorize public, real-user, or paid use. Public and controlled-real-user
+acceptance are ineligible while `LOG-PRIV-001` remains open.
 
 `RESP-001` and `HARNESS-001` are fixed and their source/test regressions passed
 in the exact-version-13 automated suite. The actual Chrome captures remain
@@ -52,13 +55,13 @@ unchanged. The original value was not replayed, the post-operation Worker sample
 empty and inconclusive, and no signed-in owner browser was mounted. Accordingly,
 `SEC-001` is **REMEDIATED — RETEST PENDING**, not an eligible residual risk. See the
 [rotation evidence](release-evidence/ROADMAP-SITES-V9-2026-08-08-sec001-rotation.md).
-Version 13 retained that project-level containment: four no-credential HTTPS probes
-returned the outer owner-policy `401`. The v13 probe recorded status only. No
-bypass credential was generated, read, or used, and no signed-in owner browser
-retest occurred.
+Version 15 retains that project-level containment: four no-credential HTTPS probes
+returned the outer owner-policy `401` with `no-store` and `no-referrer`. No bypass
+credential was generated, read, or used, and no signed-in owner browser retest
+occurred.
 
-Version 13 inherits version 11's replacement of script `'unsafe-inline'` with per-response CSP nonces.
-Automated coverage passed, but supported signed-in hosted-browser CSP, hydration,
+Version 15 inherits version 11's replacement of script `'unsafe-inline'` with per-response CSP nonces.
+Exact-v15 automated coverage passed, but supported signed-in hosted-browser CSP, hydration,
 navigation, and interaction evidence is absent. `SEC-002` is **REMEDIATED — HOSTED
 RETEST PENDING**, not closed or eligible for residual-risk acceptance yet.
 
@@ -76,26 +79,26 @@ same-revision reissue, binds receipts to committed writes, and fails closed when
 global write containment is unavailable. These source/test controls are not a
 hosted authenticated write-mode exercise or real-world validation.
 
-Exact version-13 source commit `f3482845a42730e87f4ff1190550511f19ea6ad5`
+Exact version-15 source commit `8a359398099ab9b970df1d28eb3473dcbcd6207f`
 passed two distinct detached clean checkouts and locked installs, two complete
-332/332 verification runs with no failures, skips, or todos, identical 51-file
+333/333 verification runs with no failures, skips, or todos, identical 51-file
 inventories, three expected generated raw differences, and zero normalized
 differences; each install contained
 501 packages and kept the same five install scripts blocked. `SUPPLY-EVID-001`
 therefore closes for the current candidate's normalized reproducibility control. The
-exact version-13 release record binds that result to the candidate. The separate
+exact version-15 release record binds that result to the candidate. The separate
 [precursor record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md)
 and historical v12/v11 records and version-9 byte-identity failure remain
 historical; none of these results
 establishes owner acceptance or rollback eligibility.
 
-The pre-freeze release-integrity run inspected 297 source/evidence files with
-zero findings, preserved Business Plan V1, and confirmed the unchanged lockfile.
-The production dependency audit reported zero vulnerabilities. These are bounded
-source/supply-chain checks, not provider or real-world validation.
+An exact-version-15 release-integrity run separately inspected 299 files with zero
+findings, and a fresh exact-version-15 production dependency audit reported zero
+vulnerabilities. These are bounded source/supply-chain
+checks, not provider or real-world validation.
 
-The [exact-v13 local exercise record](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md)
-adds current exact-commit synthetic recovery and bounded-capacity evidence. Recovery
+The historical [exact-v13 local exercise record](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md)
+records predecessor synthetic recovery and bounded-capacity evidence. Recovery
 passed across all 11 migrations and 31/31 application tables, two synthetic tenants,
 and three R2-compatible objects totalling 199 bytes; it matched the 34,380-byte D1
 snapshot SHA-256
@@ -106,7 +109,8 @@ snapshot is not RPO evidence. Capacity completed 54 requests
 at maximum concurrency four with 44 `200`, ten `201`, zero failures, and local
 p50/p95/maximum observations of 46.60/103.30/103.62 ms. Those timings are not
 performance targets, an SLO/SLA, sustained-load evidence, or hosted capacity.
-Neither exercise makes hosted restore, rollback/forward-fix, scheduler operation,
+Neither exercise is relabelled as exact-v15 evidence or makes hosted restore,
+rollback/forward-fix, scheduler operation,
 alerting, named-operator readiness, public operation, real-user behavior, or
 acceptance eligible for inference. Historical v12 release and v11 local-exercise
 evidence remains preserved in its frozen records.
@@ -131,14 +135,24 @@ Ratings below are recommendations for review, not Aaron's decisions.
 | Risk | Proposed residual rating | Implemented containment/evidence | Required disposition and trigger |
 |---|---|---|---|
 | `RR-CAP-001`: an intended golfer can forward a bearer capability | Medium | 256-bit verifier, HMAC fingerprint at rest, fragment/body exchange, short scoped session, neutral failures, expiry, rotation/revocation, no third-party analytics | Accept only after hosted exchange/revoke/session tests and approved sharing copy. Stop on token logging, cross-golfer access, unexplained forwarding harm, or inadequate revocation. |
-| `RR-PROVIDER-001`: Sites/Worker, SIWC, D1/R2, and deployment/control-plane concentration increases provider-exit impact | Medium | Versioned source/migrations, logical recovery path, immutable internal instructor IDs, private object metadata, and exact v13/v12/v11/v10/v9/v8 artifacts are recorded. Exact v13 passed two independent 332/332 clean builds with zero normalized differences and current local recovery/capacity within the recorded synthetic scope. No hosted backup/restore, rollback/forward-fix, portability, RPO/RTO, approved performance-target, or named-operator exercise exists. | Name owner and portability cadence. Revisit on terms/region/support/cost/recovery failure, unsupported runtime, a future deterministic-build control failure, or failed export/restore/portability exercise. |
+| `RR-PROVIDER-001`: Sites/Worker, SIWC, D1/R2, and deployment/control-plane concentration increases provider-exit impact | Medium | Versioned source/migrations, logical recovery path, immutable internal instructor IDs, private object metadata, and exact v15/v14/v13 and earlier artifacts are recorded. Exact v15 passed two independent 333/333 clean builds with zero normalized differences; exact-v13 local recovery/capacity remains historical. No hosted backup/restore, rollback/forward-fix, portability, RPO/RTO, approved performance-target, or named-operator exercise exists. | Name owner and portability cadence. Revisit on terms/region/support/cost/recovery failure, unsupported runtime, a future deterministic-build control failure, or failed export/restore/portability exercise. `LOG-PRIV-001` is an open blocker, not accepted within this residual rating. |
 | `RR-EXTERNAL-001`: Roadmap cannot verify the instructor's external booking/purchase/contact destination or outcome | Medium | HTTPS validation, preview, explicit leave-site warning, separate SaaS billing, no sale/booking attribution, visible ask/wait/decline choices | Confirm truthful copy and support owner. Stop on unsafe/misleading destination reports, pressure pattern, or user belief that Roadmap processed the coach transaction. |
 
 ## Items not currently eligible for residual-risk acceptance
 
+- `LOG-PRIV-001`: Sites returned three post-success fetch events after version 15
+  configured all packaged observability/log-persistence settings off. The query
+  surface returned redaction markers for cookie/SIWC identity fields, while
+  network-IP and request-signature fields remained nonempty/not redaction markers;
+  collection/storage disposition behind the markers is unknown. Connector/tool
+  processing was transient; no raw field value was surfaced in the transcript or
+  written to the repository. Version 14 failed similarly. This confirmed provider-
+  enforcement failure cannot be accepted as residual risk for public or controlled
+  real-user operation; rollback to version 14 or 13 does not resolve it;
 - `SEC-001` post-rotation retest: normal signed-in owner operation without a bypass
-  header and a meaningful privacy-safe hosted log/redaction sample remain missing;
-- `SEC-002` hosted retest: exact version 13 inherits per-response nonces without
+  header remains missing. Hosted log sampling now exists but failed separately as
+  `LOG-PRIV-001` and does not close the authentication retest;
+- `SEC-002` hosted retest: exact version 15 inherits per-response nonces without
   script `'unsafe-inline'`, but no signed-in hosted browser verified CSP
   enforcement, hydration, navigation, and representative interactions;
 - missing hosted identity/spoof/recovery evidence before public authentication;
@@ -148,7 +162,7 @@ Ratings below are recommendations for review, not Aaron's decisions.
   operator allowlist/pepper configuration; deep readiness therefore remains degraded;
 - missing manual accessibility review where an undiscovered blocker may exist;
   version-9 local 320/390/1440 captures are renderer/layout-equivalent for the
-  historical UI/CSS only, while exact-v13 automated regression passed; neither
+  historical UI/CSS only, while exact-v15 automated regression passed; neither
   body of evidence establishes keyboard, screen-reader, real-zoom, device, or
   human acceptance;
 - `OPS-CRON-001`: suspected hosted scheduler deployment gap before paid operation.
@@ -165,7 +179,7 @@ Ratings below are recommendations for review, not Aaron's decisions.
   `dist` did not byte-match the submitted archive: the Windows CRLF checkout changed
   migration/metadata bytes and content-hashed bundles. Line endings are consistent
   with the variance but are not proven to be its only cause. The repository LF rule
-  was added after the v9 runtime commit. Exact v13 closes `SUPPLY-EVID-001` for
+  was added after the v9 runtime commit. Exact v15 closes `SUPPLY-EVID-001` for
   the current normalized reproducibility control, but cannot retroactively prove v9
   byte identity;
 - exact-v13 local synthetic recovery/capacity passes within its recorded scope,

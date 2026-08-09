@@ -1,14 +1,14 @@
 # Provider responsibility, cost, portability, and exit record
 
 **Status:** Production implementation record under `AUTH-005`, reconciled to the
-owner-private Sites version-13 candidate; selected architecture and limited provider
+owner-private Sites version-15 candidate; selected architecture and limited provider
 observations, not provider-account approval, budget approval, SLA evidence, public
 operation, or live acceptance
 **Related decisions:** `TECH-001` through `TECH-004` in
 [the decision log](../../DECISION_LOG.md)
 **Related:** [Architecture](ARCHITECTURE.md), [Operations](OPERATIONS.md),
-[software supply chain](SOFTWARE_SUPPLY_CHAIN.md), [exact-v13 release evidence](release-evidence/ROADMAP-SITES-V13-2026-08-09.md),
-and [exact-v13 local exercises](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md)
+[software supply chain](SOFTWARE_SUPPLY_CHAIN.md), [historical exact-v13 release evidence](release-evidence/ROADMAP-SITES-V13-2026-08-09.md),
+and [historical exact-v13 local exercises](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md)
 
 `[SUPPORTED BY BUSINESS PLAN V2]` The bounded V1 is a Canada-wide self-serve SaaS
 for individual instructors. Provider choices must not introduce mandatory onboarding,
@@ -18,11 +18,12 @@ facility administration, native coach-package payment, AI, or hidden concierge w
 
 | Field | Exact recorded observation |
 |---|---|
-| Source/runtime and package | Commit `f3482845a42730e87f4ff1190550511f19ea6ad5`; submitted local archive SHA-256 `f3c5ce7fc76a52d693f0b1f0fcdfc6385e398cd11df2898a5b66b2d67f09da51` (3,047,466 bytes; 63 entries/51 files; 11 migrations); Sites content `sha256:734a527a2d76322ffa341acb02b3a7f52714179021383430e32e578be0193d99` (51 files; 7,270,400 bytes) |
-| Sites identity | Project `appgprj_6a76957326fc819196ebf3a0c95f1ec3`; version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_a050ad7d2e408191a7138c91f93f588c`; deployment `appgdep_6a7801d93d6481918bc66a4df14bbe14`; environment revision `15`; final status `succeeded`, provider `updated_at` `2026-08-09T04:28:22.001529+00:00` |
-| Access, configuration, and safe probes | Owner-only at `https://roadmap-golf-coaching.aar-landry.chatgpt.site`; `INSTRUCTOR_ACCESS_MODE=owner_private`, `BILLING_CHECKOUT_ENABLED=false`, and `APPLICATION_WRITE_MODE=enabled`. Four post-version-13 signed-out HTTPS probes each returned outer-policy `401`; status only was recorded. These are anonymous-containment observations, not response-header, authenticated application, write-mode, or CSP-execution evidence. No signed-in or manual browser test was performed. |
-| Version-13 behavior and rollback boundary | Version 13 adds fail-closed global write containment, bounded ambiguous-mutation and authoring-draft recovery, stricter profile/package compare-and-swap behavior, share revoke/reissue lifecycle controls, and exact write-bound receipts while retaining version-12 golfer-response recovery. Migration `0010_steep_hemingway` is schema-backward-compatible, but version 12 removes these application controls. The v13-to-v12 path is therefore class `B`; ordinary rollback is forbidden because application behavior and security regress even though the migration is backward compatible. |
-| Version-13 credential handling | No bypass credential was generated, read, or used. Historical `OWNER-SEC-001` remains complete; `SEC-001` remains **REMEDIATED — RETEST PENDING** until normal signed-in owner and meaningful privacy-safe hosted-log evidence exists. |
+| Source/runtime and package | Current exact commit `8a359398099ab9b970df1d28eb3473dcbcd6207f`; Sites content `sha256:880189d7d59994b0c72fd34c9c206b2f37328096dea41c2ebd7b4fdf9d6775ad` (51 files; 7,270,400 bytes). The v15 package sets `observability.enabled=false`, `observability.logs.enabled=false`, and `observability.logs.invocation_logs=false`. |
+| Sites identity | Project `appgprj_6a76957326fc819196ebf3a0c95f1ec3`; version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_085298ff9b9c819193d48e0df7a71631`; deployment `appgdep_6a7810bf6fc08191b2cb9bfb081e58c2`; provider deployment `site---6a76957326fc819196ebf3a0c95f1ec3`; environment revision `17`; final status `succeeded` at `2026-08-09T05:31:58.490796Z` |
+| Access, configuration, and safe probes | Owner-only at `https://roadmap-golf-coaching.aar-landry.chatgpt.site`; `BILLING_CHECKOUT_ENABLED=false`. Four post-version-15 signed-out HTTPS probes returned outer-policy `401` with `no-store` and `no-referrer`. These are anonymous-containment observations, not authenticated application, write-mode, CSP-execution, or signed-in/manual-browser evidence. |
+| Hosted invocation-log enforcement | A value-safe v13 audit found one provider invocation whose query surface returned redaction markers for cookie/SIWC identity fields while network-IP/request-signature fields were nonempty and were not markers. Exact v14 commit `5db791d0d4a7317a2913d2e65d855cb0bb31baec` packaged `observability.enabled=true`, `logs.enabled=true`, and `invocation_logs=false`; after deployment success at `2026-08-09T05:19:27.316512Z`, Sites still returned three fetch records from `05:20:01.195Z` through `05:20:02.531Z` (two `200`, one handled `403`) with the same query-surface classification. V15 configured all packaged observability/logging settings off, but Sites returned three more fetch records at `2026-08-09T05:32:32.228Z`, `05:32:33.881Z`, and `05:32:34.431Z` (two `200`, one handled `403`) under one new script-version identifier, again with query-surface redaction markers on cookie/SIWC identity and nonempty, non-marker network-IP/request-signature fields. Raw field values processed transiently by the connector/tool were not surfaced in the transcript or written to the repository. Collection/storage masking and retained-data disposition remain unknown. This confirms a provider enforcement/configuration limitation, not an application-logger leak. It is High before real-user/public operation; no customer-data incident is claimed for this owner-only/no-customer-data candidate, although network/signature metadata remained available at the query surface. The application D1 audit remains required. |
+| Current credential handling | No bypass credential was generated, read, displayed, persisted, or used for v15. Historical `OWNER-SEC-001` remains complete; no repeat rotation occurred. `SEC-001` remains **REMEDIATED — RETEST PENDING** until normal signed-in owner behavior is demonstrated. |
+| Historical version-13 package, deployment, and behavior | Commit `f3482845a42730e87f4ff1190550511f19ea6ad5`; submitted local archive SHA-256 `f3c5ce7fc76a52d693f0b1f0fcdfc6385e398cd11df2898a5b66b2d67f09da51` (3,047,466 bytes; 63 entries/51 files; 11 migrations); Sites content `sha256:734a527a2d76322ffa341acb02b3a7f52714179021383430e32e578be0193d99` (51 files; 7,270,400 bytes); saved version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_a050ad7d2e408191a7138c91f93f588c`; deployment `appgdep_6a7801d93d6481918bc66a4df14bbe14`; environment revision `15`; final status `succeeded` at `2026-08-09T04:28:22.001529+00:00`. V13 added fail-closed global write containment, bounded ambiguous-mutation/authoring-draft recovery, stricter compare-and-swap behavior, share lifecycle controls, and exact write-bound receipts. Migration `0010_steep_hemingway` is schema-backward-compatible, but v12 removes these controls; the historical v13-to-v12 path remains class `B` and ordinary rollback is forbidden. |
 | Historical version-12 package and deployment | Commit `7b77e6507c1b1c1acb091ab046808cf8b5cc0a5c`; submitted archive SHA-256 `994f725ba6c5952c45885a4d72d38804f1b10b8440273dc26ac8bd1c38d2bd75` (2,967,333 bytes; 61 entries/49 files; 10 migrations); Sites content `sha256:0805c04e9dcd5e8bac77f58aec2362dece1754f6eec63ec73d9c2e249bb01700` (49 files; 6,748,160 bytes); saved version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_8868e09fcb28819181cfbebdf82ce73f`; deployment `appgdep_6a77c5c85974819185ce1c8caf13007c`; environment revision `14`; final status `succeeded`, provider `updated_at` `2026-08-09T00:12:04.939300+00:00`. Version 12 introduced operation-keyed golfer-response durability, so its historical v12-to-v11 path remains class `B`. See the [exact v12 record](release-evidence/ROADMAP-SITES-V12-2026-08-09.md). |
 | Historical version-11 package and deployment | Commit `44670a64498779cf747914b4465380916a939301`; submitted archive SHA-256 `d88be6513bc58afd057d4a3fb3a6d64b744f7a5c359731ec9fc693a788e1fa0e` (2,966,073 bytes; 61 entries/49 files; 10 migrations); Sites content `sha256:d717035871790252548e7fff4e1192e590b73b7cabfe3f4c011d65ffe4493daa` (49 files; 6,737,920 bytes); saved version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_4c49cdec72bc8191aeece01f5689e51a`; deployment `appgdep_6a77b01714b881918245bb5248349e0d`; environment revision `13`; final status `succeeded`, provider `updated_at` `2026-08-08T22:40:07.742084+00:00`. Version 11 introduced nonce-bound framework scripts, so its historical v11-to-v10 rollback boundary remains class `B`. Its exact local recovery/capacity exercises remain historical predecessor evidence. |
 | Historical version-10 package and deployment | Commit `ae35ef25ed46563f6b8f09f5c22dc12581eff8b1`; submitted archive SHA-256 `5d67423e253009714bebe85bba118ded922c9f6b30b926f2af7bd0e3d05cd953` (2,965,930 bytes; 61 entries/49 files; 10 migrations); Sites content `sha256:0534d35af6fcdd8a0f104c5bb21fab5edd0641ec952bd32ae7a3f9c024c62033` (49 files; 6,737,920 bytes); saved version `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_1007b9b4ea8c8191968d55991abf374c`; deployment `appgdep_6a779cabaec4819191b0cf1e815ce2e5`; environment revision `12`; final status `succeeded`, provider `updated_at` `2026-08-08T21:17:13.525116+00:00`. Its four signed-out route probes returned `401`/`no-store`/`no-referrer`. This evidence remains historical and does not approve rollback. |
@@ -34,26 +35,28 @@ facility administration, native coach-package payment, AI, or hidden concierge w
 | Post-version-12 logs | The bounded ten-minute `errors_only` aggregate returned zero records. Its broad companion returned six `fetch`/`info`/`ok` records: HTTP `200`, `200`, and handled `403` twice, with `scheduled=0`. These aggregates remain inconclusive because provider-log completeness, scheduled-event visibility, and trigger metadata were unavailable. They prove neither scheduler absence nor error-free operation, redaction, authenticated health, or alert delivery. |
 | Version-9 predecessor artifact boundary | The release-time exact-build version-9 archive inspection passed: 61 safe entries/49 files, 23 source-mapped files, all 10 migrations, exactly 2 expected generated credential files, 0 unexpected copies or paths, and `localBuildCompared: true`. A later retrospective inspection also passed its narrower scope; the subsequently rebuilt working-tree `dist` is not treated as the submitted build. An isolated clean-checkout build passed behavior but did not byte-match the archive, so deterministic byte identity remains unproved for version 9. |
 | Automated/local evidence | Two exact-version-13 detached clean installs each installed 501 locked packages, reported five blocked scripts, and passed build, lint, strict types, artifact checks, and 332/332 tests with no failures, skips, or todos. Both builds had 51 files, three expected generated raw differences, and zero normalized differences. The pre-freeze integrity scan covered 297 source/evidence text files with zero findings, preserved Business Plan V1, and confirmed the unchanged lockfile; the production audit reported zero vulnerabilities. Exact-v13 local recovery applied 11 migrations, covered 31 tables across 2 tenants, restored 3 private objects/199 bytes, matched the 34,380-byte snapshot SHA-256 `8eaef0372bf2e4457ab651ec5c7bb3e3b22a51289495187761622fede0a1b139`, passed 3 negative and environment-isolation checks, and took 104,421 ms, which is not an RTO or RPO result. Exact-v13 local capacity completed 54 requests at concurrency 4 with 44 `200`, 10 `201`, 0 failures, and p50/p95/max 46.60/103.30/103.62 ms. See the [canonical v13 record](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md). These remain local synthetic results rather than hosted/provider capacity, recovery, rollback, RPO/RTO, threshold, or SLO/SLA evidence. Historical v12/v11 evidence remains preserved. |
-| Not demonstrated | Exact-v13 signed-in browser/manual accessibility, authenticated write-mode, or CSP-execution journeys; hosted scheduler/trigger provisioning, alert delivery, staffed monitoring, rollback, D1/R2 restore, or measured RPO/RTO. Deep readiness is intentionally degraded because exact owner-approved consent-policy content/version and privacy-operator access configuration are absent. |
+| Not demonstrated | Exact-v15 signed-in browser/manual accessibility, authenticated write-mode, or CSP-execution journeys; provider enforcement of hosted log controls; log deletion/disposition; hosted scheduler/trigger provisioning, alert delivery, staffed monitoring, rollback, D1/R2 restore, or measured RPO/RTO. Deep readiness is intentionally degraded because exact owner-approved consent-policy content/version and privacy-operator access configuration are absent. |
 
 These are bounded release observations, not provider SLA, durability, recovery,
 regional-processing, account-support, cost, or public-suitability evidence. Sites
-versions 6 through 12 remain historical predecessor evidence. `OWNER-SEC-001` is
+versions 6 through 14 remain historical predecessor evidence. `OWNER-SEC-001` is
 historically complete and the exposed prior value is provider-invalidated. `SEC-001` is
 **REMEDIATED — RETEST PENDING**, not closed, because a normal signed-in owner journey
-and meaningful privacy-safe hosted log/redaction sample are still missing. No
-credential is reproduced or accepted here.
+is still missing. The value-safe hosted log sample instead confirmed the separate
+provider-enforcement limitation; no credential or raw log/header value is
+reproduced or accepted here.
 
-### Current and precursor normalized-reproducibility observations
+### Current lineage and precursor normalized-reproducibility observations
 
-Exact version-13 commit `f3482845a42730e87f4ff1190550511f19ea6ad5`
+Historical exact version-13 commit `f3482845a42730e87f4ff1190550511f19ea6ad5`
 passed two distinct detached clean checkouts. Each locked install contained 501
 packages, kept the same five install scripts blocked, and passed 332/332
 verification with no failures, skips, or todos. The builds had identical 51-file
 inventories. Strict comparison reported three expected generated raw differences
 and zero normalized differences. The exact archive and provider
 records bind that normalized-reproducibility result to the saved/deployed
-owner-private candidate; they do not prove provider-side byte identity.
+owner-private v13 predecessor; they do not prove provider-side byte identity or
+relabel it as exact-v15 evidence.
 
 Historical exact version-12 commit
 `7b77e6507c1b1c1acb091ab046808cf8b5cc0a5c` passed the predecessor control with
@@ -82,7 +85,7 @@ Exact precursor commit `66f5203a913f01c8da20555feebdbb99152c052c`
 previously passed the same prospective control; its
 [precursor record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md)
 remains separate historical evidence. None of these results alters version 9's
-failed byte-rebuild, proves byte identity, makes version 13 public or accepted, or
+failed byte-rebuild, proves byte identity, makes version 15 public or accepted, or
 establishes rollback/restore suitability.
 
 ## Current official-provider ambiguity and constraint
@@ -95,6 +98,19 @@ cron/scheduled-trigger facility. The
 [Sites help article](https://help.openai.com/en/articles/20001339) also warns that
 some background services may be unsupported and says the operator remains
 responsible when using a third-party payment processor.
+
+The hosted invocation-log issue is no longer ambiguous. Cloudflare's
+[Workers Logs documentation](https://developers.cloudflare.com/workers/observability/logs/workers-logs/)
+says `invocation_logs=false` disables invocation logs and documents seven days as
+the maximum Workers Logs retention. Sites returned invocation records after exact
+v14 packaged that setting and again after exact v15 configured all packaged
+observability/logging settings off. The Sites connector provides no log-configuration,
+retention, or deletion control. Provider support must demonstrate actual
+enforcement and provide a disposition for retained metadata, including applicable
+access, retention, and deletion handling, or the application must migrate to a
+host that enforces the control, before real-user/public operation. Logging/alerting remains degraded,
+the risk is High at that boundary, and Checkout remains disabled. This does not
+replace the application-owned D1 audit.
 
 The lack of cron documentation is an ambiguity, not direct proof that a trigger is
 absent. Combined with `scheduled=0` in the bounded post-version-11 and
@@ -112,8 +128,8 @@ provider constraint.
 
 | Service/boundary | Provider responsibility | Roadmap/operator responsibility | Evidence or decision still open |
 |---|---|---|---|
-| OpenAI Sites and Cloudflare Worker runtime | Deployment/control-plane behavior, runtime execution, outer access-policy enforcement, binding delivery, provider logs | Secure application logic, release/configuration control, server authorization, headers, least privilege, smoke/rollback evidence | Public access policy, custom origin, account ownership/support path, explicit provider confirmation or superseding decision for background scheduling and payment architecture, hosted alerting/scheduling, terms and budget |
-| Dispatch-owned SIWC | Authentication/session claims delivered at the trusted dispatch boundary; the connector rotation contract invalidated the exposed prior bypass value | Internal immutable instructor ID, tenant authorization, entitlement, account lifecycle, spoof denial, recovery/support workflow, and keeping the replacement bypass bearer unused | Normal signed-in owner post-rotation retest, meaningful privacy-safe log/redaction sample, public Canada-wide suitability, stable subject/continuity, sign-in/out/recovery and provider support evidence |
+| OpenAI Sites and Cloudflare Worker runtime | Deployment/control-plane behavior, runtime execution, outer access-policy enforcement, binding delivery, and enforcement/disposition of provider-generated logs | Secure application logic, release/configuration control, server authorization, headers, least privilege, privacy-safe evidence, first-party D1 audit, smoke/rollback evidence | Provider support must demonstrate actual enforcement of the declared invocation-log disable control and provide retained-data disposition, or a verified host migration is required before real-user/public operation. Public access policy, custom origin, account ownership/support path, background scheduling/payment support, hosted alerting, terms, and budget also remain open. |
+| Dispatch-owned SIWC | Authentication/session claims delivered at the trusted dispatch boundary; the connector rotation contract invalidated the exposed prior bypass value | Internal immutable instructor ID, tenant authorization, entitlement, account lifecycle, spoof denial, recovery/support workflow, and keeping the replacement bypass bearer unused | Normal signed-in owner post-rotation retest, public Canada-wide suitability, stable subject/continuity, sign-in/out/recovery, provider support evidence, and resolution of provider-generated invocation metadata |
 | Cloudflare D1 | Managed database service and provider-native recovery capabilities according to the current account/plan | Schema/migrations, tenant constraints, query integrity, retention, backups beyond provider limits, restore testing, RPO/RTO | Exact production plan/region, hosted restore result, recovery owner and retention schedule |
 | Private Cloudflare R2 | Private object service and its provider durability/operations | Object authorization, D1 metadata/ownership, validation, lifecycle, independent recoverability, cost controls | Media remains excluded; plan/region, recovery design, retention/deletion and exercise remain open |
 | Stripe hosted billing | Hosted Checkout/Portal, payment processing, provider billing records, signed event delivery | Exact offer/policy, server-created sessions, webhook verification/idempotency, local entitlement projection, reconciliation, support/refunds under approved policy | Sites guidance currently directs builders not to use Sites to enable financial transactions; provider confirmation or superseding hosting decision, account, Product/Price, policy, webhook ingress, credentials/transaction and budget remain open |
@@ -156,7 +172,7 @@ domain purchase, or provider-plan change is authorized by this recommendation.
 | Stripe | Provider IDs, event receipts, local projection and reconciliation history can be exported/rebuilt | Existing subscriptions/payment methods may not transfer automatically; migration needs provider/legal/customer communication and cannot be inferred from local state |
 | Golfer capabilities | Publication records and hashed verifier state remain in D1 | Links are origin/session-policy dependent. A domain/provider move needs tested redirects or intentional link rotation without leaking tokens |
 | Domain | An owner-controlled domain improves entry-point portability | Registrar/DNS ownership, renewal, TLS, redirect, cookie/origin and incident controls must be approved and exercised |
-| Audit/logs | First-party audit rows are application-owned | Provider operational logs may have separate retention/export limits; preserve only approved privacy-safe incident evidence |
+| Audit/logs | First-party D1 audit rows are application-owned and remain required | Sites ignored packaged invocation-log disable controls and exposes no connector configuration/retention/deletion control. The query surface returned nonempty, non-marker network/signature fields; collection/storage masking and retained-data disposition are unknown. Preserve only value-safe evidence; require actual provider enforcement plus retained-data disposition, or migrate to a host that enforces the control, before real-user/public operation. |
 
 ## Exit sequence
 
@@ -186,6 +202,9 @@ Reopen `TECH-001` through `TECH-003` when any of these occurs:
   supportable under current guidance;
 - hosted scheduling/background services, logs, alerts, or controlled rollback cannot
   be confirmed or meet operations;
+- hosted invocation logs continue after the packaged disable control, or provider
+  support cannot supply an enforceable configuration and retained-metadata
+  disposition;
 - D1/R2 capacity, consistency, latency, location, backup, RPO/RTO, or deletion behavior fails an approved requirement;
 - actual monthly or per-tenant cost crosses an owner-approved warning/stop threshold;
 - a provider/security/license incident, material terms change, unsupported runtime, or abandoned dependency changes risk;

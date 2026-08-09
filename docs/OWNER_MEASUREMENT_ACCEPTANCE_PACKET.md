@@ -6,9 +6,9 @@ analytics reuse is approved by this document
 **Authority:** [Business Plan V2](../../00_source/BUSINESS_PLAN_V2.md) governs; its
 numeric targets and commercial expectations remain hypotheses
 **Related:** [Owner release decisions](OWNER_RELEASE_DECISIONS_REQUIRED.md),
-[findings ledger](FINDINGS_RETEST_LEDGER.md), [exact-v13 release evidence](release-evidence/ROADMAP-SITES-V13-2026-08-09.md),
+[findings ledger](FINDINGS_RETEST_LEDGER.md), [exact-v15 release evidence](release-evidence/ROADMAP-SITES-V15-2026-08-09.md),
 [exact-v13 local exercises](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md),
-and [historical exact-v12 release evidence](release-evidence/ROADMAP-SITES-V12-2026-08-09.md)
+and [historical exact-v14 release evidence](release-evidence/ROADMAP-SITES-V14-2026-08-09.md)
 
 `[SUPPORTED BY BUSINESS PLAN V2]` Roadmap is a self-serve B2B SaaS for individual
 instructors. Measurement must separate real self-service from founder assistance,
@@ -17,39 +17,40 @@ or proven by Roadmap.
 
 ## Current candidate boundary
 
-The current recorded candidate is owner-private Sites version 13 at source/runtime
-release `f3482845a42730e87f4ff1190550511f19ea6ad5`, saved version
-`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_a050ad7d2e408191a7138c91f93f588c`,
-deployment `appgdep_6a7801d93d6481918bc66a4df14bbe14`, and environment
-revision `15`; final deployment status is `succeeded` with provider `updated_at`
-`2026-08-09T04:28:22.001529+00:00`. The environment remains
+The current recorded candidate is owner-private Sites version 15 at source/runtime
+release `8a359398099ab9b970df1d28eb3473dcbcd6207f`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_085298ff9b9c819193d48e0df7a71631`,
+deployment `appgdep_6a7810bf6fc08191b2cb9bfb081e58c2`, and environment
+revision `17`; final deployment status is `succeeded` with provider `updated_at`
+`2026-08-09T05:31:58.490796Z`. The environment remains
 `INSTRUCTOR_ACCESS_MODE=owner_private` and `BILLING_CHECKOUT_ENABLED=false`, with
 `APPLICATION_WRITE_MODE=enabled` added as an exact fail-closed application
 containment setting.
 
-Its 63-entry/51-file local release archive is 3,047,466 bytes, contains all 11
+Its 63-entry/51-file local release archive is 3,047,495 bytes, contains all 11
 migrations, and has gzip SHA-256
-`f3c5ce7fc76a52d693f0b1f0fcdfc6385e398cd11df2898a5b66b2d67f09da51`;
+`f987afcd00f9151e4c1a698fdf7aeb06fe8d275ec778494bb7dd38f535406a31`;
 the Sites content hash is
-`sha256:734a527a2d76322ffa341acb02b3a7f52714179021383430e32e578be0193d99`
-across 51 files and 7,270,400 bytes. Version 12 remains the immediate historical
-predecessor with its immutable evidence linked above; version 11 and earlier remain
-historical as well. Version-13-to-12 rollback is class `B`: migration
+`sha256:880189d7d59994b0c72fd34c9c206b2f37328096dea41c2ebd7b4fdf9d6775ad`
+across 51 files and 7,270,400 bytes. Versions 14 and 13 are immutable historical
+predecessors. Version-15-to-14 or version-15-to-13 application/schema compatibility
+is class `N` because only packaged observability configuration changed, but neither
+target achieves the privacy objective or resolves `LOG-PRIV-001`. The historical
+version-13-to-12 path remains class `B`: migration
 `0010_steep_hemingway` is schema-backward-compatible, but rollback removes
 fail-closed global write containment and newer authoring, share, profile,
 recovery, receipt, and compare-and-swap behavior. The historical v12-to-v11 lost-
 acknowledgement regression and privacy-behavior boundary relative to version 7
 also remain recorded.
 
-Both exact-version-13 clean installs contained 501 packages with the same five
-blocked install scripts and passed 332/332 verification with no failures, skips,
+Both exact-version-15 clean installs contained 501 packages with the same five
+blocked install scripts and passed 333/333 verification with no failures, skips,
 or todos. Their 51-file builds had three expected generated raw differences and
-zero normalized differences. The pre-freeze release-integrity run inspected 297
-source/evidence files with zero findings, preserved Business Plan V1, and confirmed
-the unchanged lockfile; the production dependency audit reported zero
-vulnerabilities.
+zero normalized differences. A separate exact-version-15 release-integrity run
+covered 299 files with zero findings, and a fresh exact-version-15 production
+dependency audit reported zero vulnerabilities.
 
-The [exact-v13 local exercise record](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md)
+The historical [exact-v13 local exercise record](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md)
 records recovery through 11 migrations and 31/31 tables for two synthetic tenants,
 three R2-compatible objects totalling 199 bytes, three negative checks, environment
 isolation, and a 34,380-byte snapshot with SHA-256
@@ -57,16 +58,28 @@ isolation, and a 34,380-byte snapshot with SHA-256
 Its 104,421 ms local wall-clock duration is not an RTO and the synthetic snapshot
 is not RPO evidence. The companion bounded-capacity run completed 54 requests at
 maximum concurrency four with 44 `200`, ten `201`, zero failures, and local
-p50/p95/maximum observations of 46.60/103.30/103.62 ms. These do not supply
+p50/p95/maximum observations of 46.60/103.30/103.62 ms. These are not relabelled
+as exact-v15 results and do not supply
 approved performance targets, an SLO/SLA, hosted capacity or backup/restore,
 rollback/forward-fix, RPO/RTO, scheduler, named-operator readiness, production
 recovery, or a real-user measurement result. Historical exact-v12, v11, and v10
 evidence remains predecessor evidence.
 
-After version 13 deployed, signed-out HTTPS requests to `/`, `/app`, `/r`, and
-`/api/health` each returned the outer owner-policy `401`. The v13 probe recorded
-status only; it is not evidence for response headers, authenticated application
-behavior, or browser execution.
+After version 15 deployed, signed-out HTTPS requests to `/`, `/app`, `/r`, and
+`/api/health` each returned the outer owner-policy `401` with `no-store` and
+`no-referrer`. This is not evidence for authenticated application behavior or
+browser execution.
+
+`LOG-PRIV-001` remains open and makes public or controlled-real-user acceptance
+ineligible. Version 15's exact package configured observability, custom-log
+collection, and automatic invocation-log persistence off, yet the provider returned
+three post-success `fetch` events. The query surface returned redaction markers for
+cookie and SIWC identity fields; network-IP and request-signature fields remained
+nonempty and were not redaction markers. Collection/storage disposition behind
+the markers is unknown. Connector/tool processing was transient; no raw field
+value was surfaced in the transcript or written to the repository. Version 14 also returned three
+invocation events with `invocation_logs=false`. The provider ignores the packaged
+privacy configuration, and rollback to version 14 or 13 is not a privacy remedy.
 
 A sanitized version-8-era continuity query started at
 `2026-08-08T17:27:16.287Z`, completed at `2026-08-08T17:27:17.305Z`, requested
@@ -106,7 +119,7 @@ reliability over time, support burden, accessibility, or participant outcomes. T
 packet records no owner acceptance and authorizes no participant, analytics,
 public-access, or commercial activity.
 
-Version 13 retains the nonce and golfer-response controls and adds bounded
+Version 15 carries forward version 13's nonce, golfer-response, bounded
 ambiguous-mutation and authoring-draft recovery, stricter profile/package
 compare-and-swap handling, share revoke/reissue lifecycle controls, exact
 write-bound receipts, and global write containment. These controls improve

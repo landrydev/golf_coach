@@ -16,23 +16,55 @@ not a public launch or Aaron's acceptance. No successful hosted backup/restore o
 exercise, staffed operating assignment, alert-delivery exercise, live Stripe flow,
 qualified legal/privacy review, or controlled real-user validation is claimed.
 
-The current exact private candidate is Sites version 13 at source/runtime release
+The current exact private candidate is Sites version 15 at source/runtime release
+`8a359398099ab9b970df1d28eb3473dcbcd6207f`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_085298ff9b9c819193d48e0df7a71631`,
+deployment `appgdep_6a7810bf6fc08191b2cb9bfb081e58c2`, and provider
+deployment `site---6a76957326fc819196ebf3a0c95f1ec3`. Its owner-private
+deployment succeeded at `2026-08-09T05:31:58.490796Z` against environment
+revision `17`. The exact provider package is
+`sha256:880189d7d59994b0c72fd34c9c206b2f37328096dea41c2ebd7b4fdf9d6775ad`
+with 51 files and 7,270,400 bytes. It packages
+`observability.enabled=false`, `observability.logs.enabled=false`, and
+`observability.logs.invocation_logs=false`. The URL remains
+`https://roadmap-golf-coaching.aar-landry.chatgpt.site`; access remains
+owner-only and `BILLING_CHECKOUT_ENABLED=false`. Four signed-out route probes
+returned `401` with `no-store` and `no-referrer`. No bypass bearer was generated,
+read, displayed, persisted, or used.
+
+Sites nevertheless returned three post-success fetch invocation records for
+version 15 at `2026-08-09T05:32:32.228Z`, `05:32:33.881Z`, and
+`05:32:34.431Z` (two `200`, one handled `403`) under one new script-version
+identifier. The query surface returned redaction markers for cookie/SIWC identity
+fields, while network-IP/request-signature fields remained nonempty; collection
+and storage disposition behind those markers is unknown. This follows exact version
+14, whose package retained application
+logging but set `invocation_logs=false`: after that deployment succeeded at
+`2026-08-09T05:19:27.316512Z`, three fetch records appeared from
+`05:20:01.195Z` through `05:20:02.531Z` (two `200`, one handled `403`). Their
+value-safe classification matched the pre-remediation v13 sample. Connector/tool
+processing was transient; no raw header or log field value was surfaced in the
+transcript or written to the repository. This is a
+confirmed hosted-provider enforcement/configuration
+limitation and a **High constraint before real-user/public operation**, not an
+application-logger leak. Because the candidate is owner-only and held no customer
+data, no customer-data incident is claimed, although network and signature
+metadata persisted. Logging and alerting remain degraded; Checkout stays disabled.
+
+The superseded owner-only version-13 candidate remains immutable historical
+evidence at source/runtime release
 `f3482845a42730e87f4ff1190550511f19ea6ad5`, saved version
 `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_a050ad7d2e408191a7138c91f93f588c`,
-and deployment `appgdep_6a7801d93d6481918bc66a4df14bbe14`. Its private
-deployment succeeded at `2026-08-09T04:28:22.001529+00:00` against environment
-revision `15`; `RELEASE_ID` matches the exact commit,
-`APPLICATION_WRITE_MODE=enabled`, `INSTRUCTOR_ACCESS_MODE=owner_private`, and
-`BILLING_CHECKOUT_ENABLED=false`. Four existing secrets were retained without
-reading or recording their values. The exact verified local archive is 3,047,466
-bytes with 63 entries/51 files, all 11 migrations through
-`0010_steep_hemingway`, and gzip SHA-256
+deployment `appgdep_6a7801d93d6481918bc66a4df14bbe14`, and environment
+revision `15`. It succeeded at `2026-08-09T04:28:22.001529+00:00`. Its exact
+verified local archive is 3,047,466 bytes with 63 entries/51 files, all 11
+migrations through `0010_steep_hemingway`, and gzip SHA-256
 `f3c5ce7fc76a52d693f0b1f0fcdfc6385e398cd11df2898a5b66b2d67f09da51`.
-The provider package is
+Its provider package is
 `sha256:734a527a2d76322ffa341acb02b3a7f52714179021383430e32e578be0193d99`
-with 51 files and 7,270,400 bytes. The URL remains
-`https://roadmap-golf-coaching.aar-landry.chatgpt.site`. Checkout remains disabled
-and access remains owner-only. No bypass bearer was generated, read, or used.
+with 51 files and 7,270,400 bytes. The v13 reproducibility, recovery, capacity,
+application controls, and signed-out containment observations remain historical;
+they are not overwritten by versions 14 or 15.
 
 The superseded owner-only version-12 candidate remains immutable historical
 evidence at source/runtime release
@@ -207,7 +239,7 @@ and reported five blocked install scripts; each `npm run verify` passed 234/234
 tests. Both builds contained the same 49 paths. Strict allowlisted normalization
 of the framework-generated build identifier and matching prerender-manifest pair
 left zero differences. The [successor record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md)
-is exact to `66f5203a...`; the later exact v10 through v13 checks do not change the
+is exact to `66f5203a...`; the later exact v10 through v15 checks do not change the
 failed historical version-9 byte comparison.
 
 After version 11 deployed, four signed-out HTTPS probes to `/`, `/app`,
@@ -234,6 +266,13 @@ containment only; they do not prove signed-in identity, application CSP, deep
 health, hosted recovery, write-mode behavior, scheduler invocation, or manual
 accessibility. `OWNER-SEC-001` remains historically complete and `SEC-001`
 remains **REMEDIATED — RETEST PENDING**.
+
+After version 15 deployed, the same four signed-out routes returned owner-only
+outer-policy `401` with `Cache-Control: no-store` and
+`Referrer-Policy: no-referrer`. No bypass bearer was generated, read, displayed,
+persisted, or used. These are current anonymous-containment observations only;
+they do not supersede the missing signed-in owner, authenticated application,
+deep-health, CSP-execution, write-mode, scheduler, or manual evidence.
 
 Aaron authorized `OWNER-SEC-001` on 2026-08-08. One value-safe Sites rotation ran
 from `2026-08-08T18:32:25.588Z` through `2026-08-08T18:32:31.831Z` and succeeded;
@@ -317,6 +356,35 @@ returned six `fetch`/`info`/`ok` records: HTTP `200`, `200`, and handled `403`
 twice, with `scheduled=0`. This is not proof of complete logs, error-free operation,
 redaction, authenticated health, scheduler absence, or scheduler operation.
 
+The later privacy-focused audit changed the hosted-logging conclusion. One
+pre-remediation version-13 query returned redaction markers for cookie and SIWC
+identity fields but nonempty network-IP and request-signature fields; collection
+and storage disposition behind the markers is unknown. Exact version 14
+packaged `observability.enabled=true`, `logs.enabled=true`, and
+`invocation_logs=false`, yet after its successful deployment the provider returned
+three fetch invocations at `2026-08-09T05:20:01.195Z` through
+`2026-08-09T05:20:02.531Z` (two `200`, one handled `403`) with the same redaction
+classification. Exact version 15 packaged `observability.enabled=false`,
+`logs.enabled=false`, and `invocation_logs=false`, yet the provider returned
+three more post-success fetch invocations at `2026-08-09T05:32:32.228Z`,
+`05:32:33.881Z`, and `05:32:34.431Z` (two `200`, one handled `403`) under one new
+script-version identifier, again with query-surface redaction markers for
+cookie/SIWC identity fields and nonempty network-IP/request-signature fields.
+Connector/tool processing was transient; no raw field value was surfaced in the
+transcript or written to the repository.
+
+This is confirmed failure of the hosted provider to enforce the packaged
+invocation-log setting, not an application-logger defect. Cloudflare's
+[Workers Logs documentation](https://developers.cloudflare.com/workers/observability/logs/workers-logs/)
+says `invocation_logs=false` disables invocation logs and identifies seven days as
+the maximum Workers Logs retention. The Sites connector exposes no log-setting,
+retention, or deletion control. Treat hosted logging/alerting as degraded and the
+limitation as High before real-user/public operation. Provider support must enforce
+the control, or operations must migrate to a host that honors it, before that
+expansion. The first-party D1 audit remains required. The owner-only/no-customer-
+data state means no customer-data incident is claimed, but the persisted network
+and signature metadata still requires disposition.
+
 The packaged scheduled handler and local heartbeat evidence exist, but the bounded
 provider aggregates returned no scheduled event. A missing or unprovisioned
 production cron trigger is therefore a working suspicion, not a confirmed diagnosis:
@@ -342,9 +410,10 @@ build-generated prerender credential boundary; the bounded version-9 retrospecti
 inspection is additional continuity evidence, not a replacement exact-build
 attestation. `OWNER-SEC-001` is recorded and the exposed prior value was invalidated
 by the provider rotation contract. `SEC-001` remains **REMEDIATED — RETEST PENDING**
-until a normal signed-in owner journey and a meaningful privacy-safe hosted
-log/redaction sample pass; the original value was intentionally not recovered for
-replay. Consent-policy-registry and privacy-operator owner decisions and configuration
+until a normal signed-in owner journey passes; the original value was intentionally
+not recovered for replay. The value-safe hosted-log sample instead established the
+separate provider-enforcement limitation described above. Consent-policy-registry
+and privacy-operator owner decisions and configuration
 also remain absent; those controls fail closed and deep readiness is intentionally
 degraded.
 
@@ -408,12 +477,12 @@ The inventory records a name, purpose, environment, provider owner, last rotatio
 
 Logical D1/R2 declarations live in `.openai/hosting.json`; Sites owns real Cloudflare resource provisioning and deployment wiring. Hosted runtime values are managed through the Sites control plane. No `.env` file, dashboard export, credential screenshot, or copied webhook payload belongs in version control.
 
-For the current private version-13 environment, do not invent consent or
+For the current private version-15 environment, do not invent consent or
 privacy-operator values to make deep health green. `CONSENT_POLICY_REGISTRY_JSON`
 and the independent operator access configuration remain owner/qualified-review
 dependencies. Their absence must continue to fail the affected controls closed and
 report degraded readiness until the exact decisions and configuration are recorded.
-Revision `15` records exact `APPLICATION_WRITE_MODE=enabled`; every later
+Revision `17` records exact `APPLICATION_WRITE_MODE=enabled`; every later
 environment revision must also receive an explicit exact value. A release operator
 must not promote a missing or malformed value and must record the intended state
 without treating a value-safe configuration check as evidence that writes were
@@ -541,15 +610,20 @@ Application rollback and data recovery are distinct:
 - If capability or secret exposure is involved, revoke/rotate separately; code rollback does not remove exposed secrets.
 - If a Stripe event processor caused a bad entitlement projection, preserve accepted webhook events and rebuild/reconcile state rather than deleting billing history.
 
-Sites version 13 packages the migration journal through
-`0010_steep_hemingway`. Version 12 is the immediate deployed predecessor but lacks
-the fail-closed application-write boundary, strict general mutation receipts and
-authoring recovery, session-context response/close protection, close-specific abuse
-scopes, current share lifecycle controls, and strict profile page-version CAS.
-Treat v13-to-v12 as security/behavior class `B`; ordinary rollback is forbidden.
-Use a tested compatible forward fix or an explicitly reviewed recovery release,
-and do not reverse migration `0010` destructively. A provider version switch does
-not by itself prove that the current D1 contents and runtime behavior are safe.
+Sites versions 15, 14, and 13 package the migration journal through
+`0010_steep_hemingway`. Version 14 is the immediate predecessor and version 13 is
+the next predecessor; both retain version 15's application and schema behavior.
+The v15-to-v14/v13 application/schema path is class `N` because only packaged
+observability configuration differs, but neither predecessor resolves
+`LOG-PRIV-001`, so neither is a privacy remediation. Version 12 is the next older
+deployed predecessor and lacks the fail-closed application-write boundary, strict
+general mutation receipts and authoring recovery, session-context response/close
+protection, close-specific abuse scopes, current share lifecycle controls, and
+strict profile page-version CAS. Treat every v15/v14/v13-to-v12 path as
+security/behavior class `B`; ordinary rollback is forbidden. Use a tested
+compatible forward fix or an explicitly reviewed recovery release, and do not
+reverse migration `0010` destructively. A provider version switch does not by
+itself prove that the current D1 contents and runtime behavior are safe.
 
 Historically, Sites version 12 packages the migration journal through `0009`.
 Version 11 was its immediate deployed predecessor and had no new SQL migration to reverse, but it lacks
@@ -564,12 +638,13 @@ classified recovery path.
 The historical v11-to-v10 path remains class `B`: version 10 lacks the
 per-response CSP nonce behavior and uses `script-src 'unsafe-inline'`. That
 security regression remains historical compatibility evidence and does not create
-a fallback path from version 13.
+a fallback path from versions 15 through 13.
 
 The historical v10-to-v9 application/schema comparison remains class `N` for that
 past pair because their application/runtime source, package lock, bindings, runtime
 configuration contract, and journal matched. It does not classify a current
-v13-to-v9 action, authorize skipping versions 12, 11, and 10, or make version 9 an approved target.
+v15-to-v9 action, authorize skipping versions 14, 13, 12, 11, and 10, or make
+version 9 an approved target.
 Any authorized version selection must preserve current secret values, owner-only
 access, and `BILLING_CHECKOUT_ENABLED=false`; never restore an old environment
 revision wholesale.
@@ -582,14 +657,14 @@ but version 7 lacks the consent enforcement introduced in version 8 and retained
 by the current candidate for ordinary instructor reads/writes and golfer sharing.
 Migration `0010` extends the abuse-scope constraint for golfer-session close
 controls and must remain part of any current schema-compatibility review. After
-consent-governed real data or disclosure under version 8 through 13, rollback to
+consent-governed real data or disclosure under version 8 through 15, rollback to
 version 7 is class `B` behaviorally and forbidden as an ordinary code rollback.
 Freeze affected writes and use a tested forward fix or controlled recovery. Do not
 treat SQL shape compatibility as authorization/privacy compatibility.
 
 Exact source commit `66f5203a913f01c8da20555feebdbb99152c052c` remains the
 undeployed exact subject of the precursor normalized reproducibility exercise.
-Versions 10, 11, and 12 are later deployed descendants with their own exact release
+Versions 10 through 15 are later deployed descendants with their own exact release
 evidence; the earlier exercise does not
 make commit `66f5203a...` a saved runtime or rollback target.
 
@@ -599,7 +674,9 @@ Every rollback records trigger, decision maker, affected release/migration, cust
 
 ### Signal sources
 
-- **Sites logs:** request/runtime failures, Worker exceptions, route status, latency, deployment/version correlation, and provider diagnostics.
+- **Sites logs (degraded):** bounded value-safe provider diagnostics only. Do not
+  depend on this source for real-user monitoring while the provider persists
+  invocation metadata despite the packaged disable controls.
 - **First-party audit events:** identity mapping, resource changes, publication/share lifecycle, data requests, billing-event outcomes, and authorized operator access.
 - **Application health checks:** release identifier and safe dependency reachability; no personal data or secret echo.
 - **Stripe dashboard/webhooks:** delivery attempts, signature failures, backlog, disputes, and subscription anomalies.
@@ -620,6 +697,7 @@ Every rollback records trigger, decision maker, affected release/migration, cust
 | Cross-tenant or authorization anomaly | Treat as a security incident, contain immediately, preserve evidence, evaluate affected records |
 | Stripe signature failure or webhook backlog | Stop manual entitlement guessing, inspect endpoint/secrets, retry/reconcile from durable events |
 | Audit-write failure | Block or queue high-impact mutations according to the tested design; do not silently lose accountability |
+| Provider invocation metadata persists after logging is disabled | Keep access owner-only and Checkout disabled, avoid real-user traffic, preserve only value-safe evidence, escalate to provider support, and plan migration if enforcement cannot be demonstrated |
 | Backup missed or restore verification failed | Escalate to backup owner; do not claim recoverability until corrected and re-exercised |
 | Cost or usage anomaly | Identify route/resource/tenant pattern, contain abuse safely, preserve legitimate user access where possible |
 
@@ -632,10 +710,23 @@ No availability objective, alert threshold, response-time promise, RPO, or RTO i
 - Never log cookies, raw SIWC headers, raw share verifiers, URL fragments, request/response bodies, Stripe secrets/webhook payloads, R2 signed access, or personal roadmap content.
 - Avoid query strings in logs; golfer capability design does not use them.
 - Restrict log access to named operators and review access periodically.
-- Sample deployed Sites logs and failure paths before live acceptance; provider-generated logging may differ from application expectations.
-- Retention and export behavior must match the approved privacy/security policy.
+- Do not treat application logging discipline as control over provider-generated
+  invocation envelopes. V14 and v15 demonstrated that Sites continued returning
+  invocation records despite the packaged disable setting.
+- Retain only value-safe aggregates as evidence; do not emit, copy, or persist raw
+  hosted headers, identity, cookie, IP, signature, or credential values.
+- Seek provider support for control enforcement and disposition of already retained
+  metadata. If enforcement cannot be proved, migrate before real-user/public
+  operation.
+- Cloudflare documents a maximum seven-day Workers Logs retention and says
+  `invocation_logs=false` disables invocation logs in its
+  [Workers Logs documentation](https://developers.cloudflare.com/workers/observability/logs/workers-logs/).
+  The Sites connector exposes no configuration, retention, or deletion control.
 
-`[REAL-WORLD VALIDATION REQUIRED]` Sites log retention, redaction, access, export, and alert routing are unresolved until demonstrated in the actual production account.
+Hosted logging/alerting is currently degraded. The provider-enforcement limitation
+is High before real-user/public operation. D1 audit evidence remains required, and
+actual provider access, export, deletion/disposition, alert delivery, and operator
+response remain `[REAL-WORLD VALIDATION REQUIRED]`.
 
 ## Backup and restore
 
@@ -715,8 +806,8 @@ Immediately classify whether the event involves cross-tenant access, raw capabil
 
 ### Application write containment and recovery
 
-This runbook applies to exact version 13, which contains `OPS-CONTAIN-001`, passed
-release verification, and is privately deployed with revision-15 mode `enabled`.
+This runbook applies to exact version 15, which retains `OPS-CONTAIN-001`, passed
+release verification, and is privately deployed with revision-17 mode `enabled`.
 The configuration record alone does not prove containment: the required
 authenticated hosted `frozen`, missing/invalid, and restored-enabled exercise,
 zero-side-effect scheduled proof, owner-only operations-health observation, and
@@ -939,13 +1030,13 @@ Deployment alone, a working happy path, or a green build does not complete this 
 
 | Dependency | Current truthful status | Required operational evidence |
 |---|---|---|
-| SIWC/public-auth suitability | Selected architecture; the exposed bypass value is provider-invalidated under recorded `OWNER-SEC-001`, but normal signed-in owner operation and public production suitability remain unproven | Normal signed-in owner retest without a bypass header; hosted sign-in/recovery/sign-out, identity continuity, spoof/abuse, meaningful privacy-safe log sampling, and support evidence |
+| SIWC/public-auth suitability | Selected architecture; the exposed bypass value is provider-invalidated under recorded `OWNER-SEC-001`, but normal signed-in owner operation and public production suitability remain unproven. The value-safe log sample exposed the separate hosted invocation-log limitation. | Normal signed-in owner retest without a bypass header; hosted sign-in/recovery/sign-out, identity continuity, spoof/abuse, provider-log enforcement/disposition, and support evidence |
 | Stripe live account/price | Planned integration; Checkout disabled; production credentials and exact approved Price unavailable/unrecorded; current Sites guidance directs builders not to use Sites to enable financial transactions | Explicit provider confirmation or a verified superseding hosting decision, authorized secret/config inventory, policy alignment, reachable signed webhook, and controlled transaction evidence |
 | Domain | No approved production entry point recorded here | Authorized domain, DNS/redirect/TLS/origin checks, published support/legal destinations |
 | Legal and privacy copy | Exact qualified/owner-approved copy not recorded | Versioned review and deployed copy/behavior conformance |
 | Backup/restore | Procedure specified; exact-v13 local synthetic logical recovery passed 11 migrations, 31 tables, 2 tenants, 3 objects, 3 negative checks, and secret isolation. No successful hosted/provider backup or restore is claimed; 104,421 ms is not an RTO and snapshot age is not an RPO | Hosted D1/R2 restore evidence with integrity, measured recovery and recovery point, provider/environment separation, deletion recovery, and named owner |
 | Hosted capacity/performance | An exact-v13 single-process local exercise completed 54 requests at concurrency 4 with 44 `200`, 10 `201`, zero failures, and local p50/p95/max of 46.60/103.30/103.62 ms. It sets no business threshold, SLO/SLA, or hosted limit | Approved capacity targets plus hosted, network, contention, sustained-load, quota, failure, and representative-device evidence |
-| Sites logs/alerts and scheduling | Bounded historical sanitized fetch samples exist; access/retention/redaction/alerts remain unproven. Historical v8-v12 observations did not establish scheduled invocation. Exact-v13 package/local scheduler and write-mode tests pass, but no trigger metadata, authenticated heartbeat, frozen zero-side-effect hosted exercise, alert result, or complete hosted-log sample exists | Provider confirmation or superseding scheduler/hosting decision, hosted trigger invocation across at least three intervals, frozen no-work proof, token/PII checks, and alert delivery/response exercise |
+| Sites logs/alerts and scheduling | Hosted invocation-log control is a confirmed provider limitation: v14 returned records with `invocation_logs=false`, and v15 returned records with all packaged observability/logging settings configured off. Value-safe query results returned redaction markers for cookie/SIWC identity fields but nonempty network-IP/request-signature fields; collection/storage disposition behind the markers is unknown. Connector/tool processing was transient; no raw field value was surfaced in the transcript or written to the repository. No customer incident is claimed for the owner-only/no-customer-data candidate, and D1 audit remains required. Logging/alerting is degraded and High before real-user/public operation. Historical observations also did not establish scheduled invocation. | Provider support must enforce the logging control, establish retained-data disposition, and prove that invocation records are unavailable, or a verified host migration must replace Sites before real-user/public operation. Separately establish scheduler support/trigger state, at least three hosted intervals, frozen no-work behavior, privacy-safe access/retention/deletion/export checks, and alert delivery/response |
 | Live acceptance | No exact production release acceptance recorded | Complete evidence packet and Aaron's dated release acceptance |
 
 These dependencies determine whether affected production claims are supported. They do not retract `AUTH-005`, and they must not be described as completed until evidence exists.

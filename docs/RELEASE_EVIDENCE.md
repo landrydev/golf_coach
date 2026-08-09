@@ -3,7 +3,8 @@
 **Candidate:** `roadmap-production-saas` 1.0.0
 **Evidence opened:** 2026-08-07
 **Authority:** `AUTH-005`
-**Status:** hardened owner-only Sites version 13 succeeded; not accepted for public launch or real-user operation
+**Status:** owner-only Sites version 15 succeeded, but its hosted provider-log
+opt-out retest failed; not accepted for public launch or real-user operation
 
 This file records evidence for one exact candidate. A command result supports only
 the scope it actually exercised. A successful private deployment is not Aaron's
@@ -52,28 +53,58 @@ marketplace, AI, CRM/messaging, and unapproved analytics are excluded or disable
 
 | Check | Current result | Scope and limitation |
 |---|---|---|
-| `npm run verify` | Passed independently in two detached clean worktrees: lint, strict TypeScript, production Worker build, release-artifact integrity, and 332/332 tests in each; zero failures, skips, or todos | Exact version-13 release commit; covers source/build/automated behavior, not hosted identity, authenticated application writes, manual accessibility, policy, or real users |
-| `npm run verify:release-integrity` | Passed: 297 source/evidence text files scanned with zero secret findings; historical Business Plan V1 preserved; canonical Git-blob/SBOM `package-lock.json` SHA-256 `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d` | Exact version-13 source before post-runtime evidence files. The check intentionally excludes generated `dist`, dependencies, coverage, and work directories and is not an independent security assessment |
-| Exact-v13 artifact and submitted-archive audit | Passed: 63 safe tar entries/51 files; 25 source-mapped controls matched; all eleven migrations and the scheduler manifest were present; the archive matched a clean-worktree `dist`; expected generated credential files were confined to expected server locations with zero unexpected copies or paths | The Sites packaging shell helper was unavailable on Windows, so its exact contract was reproduced in PowerShell and the verifier proved the resulting archive. Credential material was never printed. This proves the checked local build/archive relationship, not provider-side byte identity or hosted scheduler activation |
-| Two isolated exact-commit clean installs | Each installed 501 locked packages with the same five blocked install scripts; each complete verification passed 332/332. The two 51-file builds had exactly three allowlisted raw generated-value differences and zero normalized differences | [Detailed version-13 record](release-evidence/ROADMAP-SITES-V13-2026-08-09.md). This is normalized reproducibility, not byte-for-byte identity; version 12 and the historical version-9 byte-identity failure remain preserved |
+| `npm run verify` | Passed independently in two detached clean worktrees: lint, strict TypeScript, production Worker build, release-artifact integrity, and 333/333 tests in each; zero failures, skips, or todos | Exact version-15 release commit; covers source/build/automated behavior, not hosted identity, authenticated application writes, provider adherence to packaged log settings, manual accessibility, policy, or real users |
+| `npm run verify:release-integrity` | A separate exact-version-15 run inspected 299 source/evidence text files with zero findings, preserved historical Business Plan V1, and confirmed the unchanged lockfile digest | The check intentionally excludes generated `dist`, dependencies, coverage, and work directories and is not an independent security or provider-retention assessment |
+| Exact-v15 artifact and submitted-archive audit | Passed: 63 safe tar entries/51 files; 25 source-mapped controls matched; all eleven migrations were present; the archive matched a clean-worktree `dist`; packaged `observability.enabled`, `logs.enabled`, and `invocation_logs` were all exactly `false` | This proves the checked local build/archive setting, not provider-side byte identity, provider adherence, hosted scheduler activation, or hosted deletion; the provider returned three post-success fetch events despite the all-false package configuration |
+| Two isolated exact-commit clean installs | Each installed 501 locked packages with the same five blocked install scripts; each complete verification passed 333/333. The two 51-file builds had exactly three allowlisted raw generated-value differences and zero normalized differences | [Detailed version-15 record](release-evidence/ROADMAP-SITES-V15-2026-08-09.md). This is normalized reproducibility, not byte-for-byte identity; versions 14 and 13 and the historical version-9 byte-identity failure remain preserved |
 | Full-lock SBOM inventory | Lockfile digest remains unchanged; CycloneDX 1.5 contains 676 components and SPDX 2.3 contains 677 packages | Lock-derived artifacts and hashes are recorded in [Software Supply Chain](SOFTWARE_SUPPLY_CHAIN.md); this is inventory, not provenance, license advice, or vulnerability certification |
-| `npm run audit:production` | Fresh 2026-08-09 result: zero known production vulnerabilities | Exact lock; advisory snapshot is time-bounded and not an independent assessment |
+| `npm run audit:production` | A fresh exact-version-15 check on 2026-08-09 reported zero known production vulnerabilities | Exact version-15 lock; the advisory snapshot is time-bounded and is not an independent assessment |
 | Migration `0010_steep_hemingway` | Forward migration and upgrade tests passed; the rate-limit scope constraint now admits `share_close_network` and `share_close_session` while retaining existing scopes | Exact local D1 migration evidence only; not hosted migration or rollback evidence |
 | `npm run exercise:recovery:local` | Passed at exact version-13 source: eleven migrations, 31/31 application tables, two synthetic tenants, three private R2-compatible objects/199 bytes, three negative integrity scenarios, child-process secret isolation, and 34,380-byte snapshot SHA-256 `8eaef0372bf2e4457ab651ec5c7bb3e3b22a51289495187761622fede0a1b139` | [Exact-v13 local exercise record](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md). Deterministic local synthetic evidence only; its 104,421 ms wall-clock duration is not an RTO and no hosted/provider-native recovery, RPO, operator, or alert result is claimed |
 | `npm run exercise:capacity:local` | Passed at exact version-13 source: 54 synthetic requests at maximum concurrency four, four author/edit/publish/share flows, two exports, 44 `200` plus ten `201` responses, and zero failures; local p50 46.60 ms, p95 103.30 ms, max 103.62 ms | [Exact-v13 local exercise record](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md). Single-process local synthetic evidence only; no approved SLO, tenant limit, hosted capacity, provider saturation, or real-user performance claim |
 | D1 integration journeys | Passed | Production Worker plus real local D1 exercised tenant isolation; consent grant/withdrawal and final-statement share/session race fencing; staged-save replay/races; session-scoped golfer-response replay/conflict/mixed four-way race handling; three- and four-phase lifecycles; publication/session invalidation; share expiry/revocation/response; data-request operator boundaries; scheduler/dead-letter states; Checkout/reconciliation races; webhook healing; migration upgrades; and stale provider-read fencing; not hosted SIWC or live-provider evidence |
 | `git diff --check` | Passed; no whitespace errors, with only line-ending warnings reported | Source-tree consistency check only; not behavioral evidence |
 
-The frozen exact-v13 integrity scan covered the 297-file source/evidence set that
-existed at release commit `f3482845a42730e87f4ff1190550511f19ea6ad5`.
-The version-13 evidence files and current documentation pointers were added after
-that immutable runtime commit; they do not retroactively change the exact-release
-scan count. Frozen version-12 and earlier scan results remain historical evidence.
-The post-evidence integrity rerun scanned 299 source/evidence text files with zero
-secret findings, preserved Business Plan V1, and retained the same lockfile
-digest. It validates the reconciled evidence tree, not additional runtime source.
+The separately recorded exact-version-15 release-integrity scan covered 299
+source/evidence text files with zero findings. Frozen version-14, version-13,
+and earlier scan results remain historical evidence in their exact release
+records.
+After the current evidence tree was reconciled, a second integrity run scanned
+301 source/evidence text files with zero findings, preserved historical Business
+Plan V1, and confirmed the same lockfile digest. That later check validates the
+evidence tree; it does not change the immutable runtime commit or retroactively
+enlarge the 299-file pre-evidence scan.
 
-### Version 13 normalized reproducibility and recovery controls
+### Versions 15 and 14 normalized reproducibility and provider-log mismatch
+
+Two independently created detached clean worktrees at exact version-15 release
+commit `8a359398099ab9b970df1d28eb3473dcbcd6207f` each used
+`npm ci --no-audit`, installed 501 locked packages with the same five blocked
+install scripts, and passed the complete 333-test verification. The two 51-file
+build trees had only three strictly allowlisted framework-generated raw
+differences and zero normalized differences.
+
+The exact version-15 package and archive set all three observability/log
+persistence switches to `false`. A bounded provider query nevertheless returned
+exactly three post-deployment-success `fetch` events. Version 14's exact package
+had kept observability and provider persistence of custom application logs enabled while setting
+`invocation_logs=false`; its hosted retest returned exactly three invocation
+events from `05:20:01.195Z` through `05:20:02.531Z`, with two `200` responses and
+one `403`. The query surface returned redaction markers for cookie and SIWC
+identity fields, while IP and signature fields were nonempty and not redaction
+markers. Raw field values processed transiently by the connector/tool were not
+surfaced in the transcript or written to the repository. The query representation
+does not establish collection/storage masking or retained-data disposition. A
+best-effort session-store cleanup checked 11 likely v13 key names without
+surfacing values and overwrote two matches with `null`; 34 likely v14/v15 names
+yielded no matches. Store enumeration is unavailable, so this is not exhaustive
+purge or deletion evidence.
+
+This proves a source/package control and a provider-setting mismatch, not hosted
+privacy closure. See the [exact version-15 record](release-evidence/ROADMAP-SITES-V15-2026-08-09.md)
+and [exact version-14 record](release-evidence/ROADMAP-SITES-V14-2026-08-09.md).
+
+### Historical version 13 normalized reproducibility and recovery controls
 
 Two independently created detached clean worktrees at exact release commit
 `f3482845a42730e87f4ff1190550511f19ea6ad5` each used `npm ci --no-audit`,
@@ -114,9 +145,9 @@ output. See the [exact version-12 record](release-evidence/ROADMAP-SITES-V12-202
 
 This exercise does not alter the historical version-9 clean-build result: that
 rebuild still did not byte-match its submitted archive. The reproducible successor
-control was part of saved and deployed owner-only Sites version 12; the current
-version-13 control is recorded above. Exact historical identifiers remain in the
-version-12 record. The separate
+control was part of saved and deployed owner-only Sites version 12; historical
+version-13 and current version-15 normalized results are recorded above. Exact
+historical identifiers remain in the version-12 record. The separate
 [precursor record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md)
 remains historical evidence for exact commit `66f5203a...`.
 
@@ -218,35 +249,85 @@ and real browser zoom remain explicitly unverified.
 
 | Field | Exact recorded value |
 |---|---|
-| Candidate | `ROADMAP-SITES-V13-2026-08-09` |
-| Release commit / runtime `RELEASE_ID` | `f3482845a42730e87f4ff1190550511f19ea6ad5` |
-| Local submitted archive | `outputs/roadmap-sites-v13-f348284.tar.gz`; 3,047,466 bytes; 63 tar entries/51 files; gzip SHA-256 `f3c5ce7fc76a52d693f0b1f0fcdfc6385e398cd11df2898a5b66b2d67f09da51` |
+| Candidate | `ROADMAP-SITES-V15-2026-08-09` |
+| Release commit / runtime `RELEASE_ID` | `8a359398099ab9b970df1d28eb3473dcbcd6207f` |
+| Local submitted archive | `outputs/roadmap-sites-v15-8a35939.tar.gz`; 3,047,495 bytes; 63 tar entries/51 files; gzip SHA-256 `f987afcd00f9151e4c1a698fdf7aeb06fe8d275ec778494bb7dd38f535406a31` |
 | Sites project | `appgprj_6a76957326fc819196ebf3a0c95f1ec3` (`roadmap-golf-coaching`) |
-| Saved version | Version 13, `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_a050ad7d2e408191a7138c91f93f588c` |
-| Sites archive record | Content hash `sha256:734a527a2d76322ffa341acb02b3a7f52714179021383430e32e578be0193d99`; 51 files; 7,270,400 bytes |
-| Final deployment | `appgdep_6a7801d93d6481918bc66a4df14bbe14`; final status `succeeded`; provider `updated_at` `2026-08-09T04:28:22.001529+00:00`; no failure message |
+| Saved version | Version 15, `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_085298ff9b9c819193d48e0df7a71631` |
+| Sites archive record | Content hash `sha256:880189d7d59994b0c72fd34c9c206b2f37328096dea41c2ebd7b4fdf9d6775ad`; 51 files; 7,270,400 bytes |
+| Final deployment | `appgdep_6a7810bf6fc08191b2cb9bfb081e58c2`; final status `succeeded`; provider `updated_at` `2026-08-09T05:31:58.490796Z`; no failure message |
 | Owner-only production URL | `https://roadmap-golf-coaching.aar-landry.chatgpt.site` |
-| Applied environment revision | 15 |
+| Applied environment revision | 17 |
 | Access policy | The private-deployment control verified owner-only eligibility before publishing; not a public release or real-user acceptance |
 | Billing | `BILLING_CHECKOUT_ENABLED` remained disabled; no charge was attempted |
 | Write containment | `APPLICATION_WRITE_MODE=enabled`; no hosted authenticated write/freeze exercise is claimed |
+| Packaged log persistence | `observability.enabled=false`, `observability.logs.enabled=false`, and `observability.logs.invocation_logs=false` |
 
-Environment revision 15 changed `RELEASE_ID` to the exact version-13 commit and
-added `APPLICATION_WRITE_MODE=enabled`. All four secret entries, the canonical
-app URL, `INSTRUCTOR_ACCESS_MODE=owner_private`, and
-`BILLING_CHECKOUT_ENABLED=false` were preserved.
+Environment revision 17 bound `RELEASE_ID` to the exact version-15 commit. The
+Sites access policy remained owner-only and `BILLING_CHECKOUT_ENABLED=false`.
 
 Fresh signed-out HTTPS GETs to `/`, `/app`, `/r`, and `/api/health` each returned
-`401`. This verifies only the signed-out Sites boundary. It does not prove
+`401` with `Cache-Control: no-store` and `Referrer-Policy: no-referrer`. This
+verifies only the signed-out Sites boundary. It does not prove
 authenticated application behavior, application write/freeze containment, deep
 health, SIWC lifecycle, manual accessibility, hosted recovery, or real-user
 operation. See the
-[complete version-13 record](release-evidence/ROADMAP-SITES-V13-2026-08-09.md).
+[complete version-15 record](release-evidence/ROADMAP-SITES-V15-2026-08-09.md).
+
+The hosted log opt-out retest failed. Three post-success `fetch` events appeared
+at `2026-08-09T05:32:32.228Z`, `2026-08-09T05:32:33.881Z`, and
+`2026-08-09T05:32:34.431Z`, with `ok` outcomes and respective statuses `200`,
+`200`, and `403`. All reported one new script-version identifier. The query
+surface returned redaction markers for cookie and SIWC identity fields;
+network-IP and request-signature fields were nonempty and were not redaction
+markers. Raw field values processed transiently by the connector/tool were not
+surfaced in the transcript or written to the repository. These bounded aggregates
+confirm a provider-setting mismatch; they do not prove collection/storage
+masking, privacy closure, retained-data disposition, deletion, a complete
+retention boundary, or scheduler behavior.
 
 `OWNER-SEC-001` remains historically completed. No SIWC bypass credential was
-generated, rotated, displayed, persisted, or used for version 13. `SEC-001`
+generated, rotated, read, displayed, persisted, or used for version 15. `SEC-001`
 remains **REMEDIATED — RETEST PENDING** because the normal signed-in owner and
-meaningful hosted log/redaction retest is still absent.
+authentication retest is still absent.
+
+## Predecessor version 14 exact record
+
+| Field | Exact recorded value |
+|---|---|
+| Candidate | `ROADMAP-SITES-V14-2026-08-09` |
+| Release commit / runtime `RELEASE_ID` | `5db791d0d4a7317a2913d2e65d855cb0bb31baec` |
+| Local submitted archive | `outputs/roadmap-sites-v14-5db791d.tar.gz`; 3,047,488 bytes; 63 tar entries/51 files; gzip SHA-256 `42274179e386bbbd89509fa435f0265531d72c26aca4578eb55ea8c5352fd45d` |
+| Saved version | Version 14, `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_349b3a9e27e8819189d4de12ac1a89ac` |
+| Sites archive record | Content hash `sha256:cf90909c0a45d4e276cd5da4981961cadf60c287f3cbc6244c5f7f375e9beac7`; 51 files; 7,270,400 bytes |
+| Final deployment | `appgdep_6a780dd0dfb081918e825de46a7a7a17`; final status `succeeded`; environment revision 16; provider `updated_at` `2026-08-09T05:19:27.316512Z` |
+| Packaged log persistence | Observability and provider persistence of custom application logs enabled; automatic invocation logs disabled |
+
+Version 14's four signed-out probes returned `401` with
+`no-store`/`no-referrer`. Its hosted privacy retest nevertheless returned three
+`fetch` invocation events from `05:20:01.195Z` through `05:20:02.531Z`: two
+`200` responses and one `403`. The query surface returned redaction markers for
+cookie and SIWC identity fields, while IP and signature fields were nonempty and
+not redaction markers. Raw field values processed transiently by the
+connector/tool were not surfaced in the transcript or written to the repository;
+collection/storage masking and retained-data disposition remain unknown. See the
+[complete version-14 record](release-evidence/ROADMAP-SITES-V14-2026-08-09.md).
+
+## Predecessor version 13 exact record
+
+| Field | Exact recorded value |
+|---|---|
+| Candidate | `ROADMAP-SITES-V13-2026-08-09` |
+| Release commit / runtime `RELEASE_ID` | `f3482845a42730e87f4ff1190550511f19ea6ad5` |
+| Local submitted archive | `outputs/roadmap-sites-v13-f348284.tar.gz`; 3,047,466 bytes; 63 tar entries/51 files; gzip SHA-256 `f3c5ce7fc76a52d693f0b1f0fcdfc6385e398cd11df2898a5b66b2d67f09da51` |
+| Saved version | Version 13, `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_a050ad7d2e408191a7138c91f93f588c` |
+| Sites archive record | Content hash `sha256:734a527a2d76322ffa341acb02b3a7f52714179021383430e32e578be0193d99`; 51 files; 7,270,400 bytes |
+| Final deployment | `appgdep_6a7801d93d6481918bc66a4df14bbe14`; final status `succeeded`; environment revision 15; provider `updated_at` `2026-08-09T04:28:22.001529+00:00` |
+
+Version 13 remains immutable predecessor evidence. Its four signed-out probes
+returned `401`; its product-control and local exercise evidence remain in the
+[complete version-13 record](release-evidence/ROADMAP-SITES-V13-2026-08-09.md).
+It is not relabelled as version-15 hosted evidence.
 
 ## Predecessor version 12 exact record
 
@@ -561,8 +642,9 @@ from reaching the application by design.
 | Item | Current disposition |
 |---|---|
 | General public access | Blocked; working legal/support copy explicitly limits this to controlled private release |
-| Owner-only production release | Deployed successfully as Sites version 13 at environment revision 15; final authenticated owner acceptance and controlled real journeys remain unrecorded |
+| Owner-only production release | Deployed successfully as Sites version 15 at environment revision 17; final authenticated owner acceptance and controlled real journeys remain unrecorded |
 | Deep operational readiness | Intentionally degraded because exact owner-approved consent-policy content/version and privacy-operator access configuration are absent; no authenticated deep-readiness pass is claimed |
+| Provider invocation-log privacy | Open. Version 14 returned three invocation events despite `invocation_logs=false`; version 15 returned three post-success fetch events despite all packaged observability/log-persistence settings being `false`. The query surface returned redaction markers for cookie/SIWC identity fields but nonempty, non-marker network-IP and request-signature fields. Raw field values processed transiently by the connector/tool were not surfaced in the transcript or written to the repository. Collection/storage masking, provider adherence, retention/access/deletion, and retained-data disposition are unknown. Closure requires actual provider enforcement plus retained-data disposition, or a verified migration to a host that enforces the control. |
 | SIWC bypass credential exposure | Aaron authorized `OWNER-SEC-001`; the provider rotation immediately invalidated the exposed prior value under its connector contract, the replacement was not displayed/persisted/used, and owner-only access remained unchanged. `SEC-001` is **REMEDIATED — RETEST PENDING** because signed-in owner authentication was unavailable and the empty post-operation log sample is inconclusive. |
 | New SaaS charges | Fail-closed through `BILLING_CHECKOUT_ENABLED=false` until exact price/policy approval and configuration |
 | Paid entitlement enforcement | A fail-closed, explicit-status guard exists but production remains in `owner_private`; no owner-approved failed/cancelled/unpaid consequence is selected or claimed |
