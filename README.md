@@ -30,6 +30,13 @@ package has content hash
 across 49 files and 6,737,920 bytes. Four fresh no-credential probes remained contained at the
 owner-only policy with `401`, `no-store`, and `no-referrer`.
 
+The exact deployed v11 source also passed isolated local synthetic recovery and
+bounded-capacity exercises: all ten migrations and 31/31 application tables,
+two tenants, three private R2-compatible objects, three negative integrity
+scenarios, and 54 bounded requests at maximum concurrency four with zero failures.
+See the [exact-v11 local exercise record](docs/release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md).
+These are not hosted recovery, RPO/RTO, performance, capacity, or operator evidence.
+
 The latest exact application-runtime local synthetic browser evidence records nine Chrome 151 captures of
 the landing page, instructor workspace, and golfer plan at 320, 390, and 1440 CSS
 pixels, with no root/body horizontal overflow. See the

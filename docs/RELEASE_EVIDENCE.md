@@ -53,8 +53,8 @@ marketplace, AI, CRM/messaging, and unapproved analytics are excluded or disable
 | Full-lock SBOM inventory | Lockfile digest remains unchanged; CycloneDX 1.5 contains 676 components and SPDX 2.3 contains 677 packages | Lock-derived artifacts and hashes are recorded in [Software Supply Chain](SOFTWARE_SUPPLY_CHAIN.md); this is inventory, not provenance, license advice, or vulnerability certification |
 | `npm run audit:production` | Fresh 2026-08-08 result: zero known production vulnerabilities | Exact lock; advisory snapshot is time-bounded and not an independent assessment |
 | `npm run db:generate` | The latest recorded predecessor exact-v10 run passed: `No schema changes, nothing to migrate`; v11 clean builds/package verification preserve the same schema/journal/migration set | Historical command evidence plus exact-v11 package consistency; not a fresh v11 generation run |
-| `npm run exercise:recovery:local` | The latest recorded predecessor exact-v10 run passed: ten migrations per isolated D1 database, two synthetic tenants, three private synthetic objects, child-process secret isolation, and snapshot SHA-256 `34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54` | Historical deterministic D1/R2-compatible logical-copy evidence only; not relabelled exact-v11, hosted/provider-native recovery, production data, RPO, RTO, or operator evidence |
-| `npm run exercise:capacity:local` | The latest recorded exercise passed against predecessor exact-v10 runtime source: 54 synthetic requests at maximum concurrency four, four author/edit/publish/share flows, two exports, zero failures; local p50 49.26 ms, p95 103.23 ms, max 103.63 ms | Historical local synthetic evidence only; it is not relabelled exact-v11 capacity evidence and supplies no approved SLO, hosted capacity, provider saturation, or real-user performance claim |
+| `npm run exercise:recovery:local` | Passed from a disposable detached worktree at exact deployed v11 commit `44670a64498779cf747914b4465380916a939301`: ten migrations, 31/31 application tables, two synthetic tenants, three private R2-compatible objects, three negative integrity scenarios, child-process secret isolation, and 34,380-byte snapshot SHA-256 `34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54` | [Exact-v11 local exercise record](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md). Deterministic local synthetic evidence only; not hosted/provider-native recovery, production data, deletion recovery, RPO, RTO, operator, or alert evidence |
+| `npm run exercise:capacity:local` | Passed from the same exact-v11 worktree: 54 synthetic requests at maximum concurrency four, four author/edit/publish/share flows, two exports, 44 `200` plus ten `201` responses, and zero failures; local p50 48.46 ms, p95 107.60 ms, max 107.83 ms | [Exact-v11 local exercise record](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md). Single-process local synthetic evidence only; no approved SLO, tenant limit, hosted capacity, provider saturation, or real-user performance claim |
 | D1 integration journeys | Passed | Production Worker plus real local D1 exercised tenant isolation; consent grant/withdrawal and final-statement share/session race fencing; staged-save replay/races; three- and four-phase lifecycles; publication/session invalidation; share expiry/revocation/response; data-request operator boundaries; scheduler/dead-letter states; Checkout/reconciliation races; webhook healing; migration upgrades; and stale provider-read fencing; not hosted SIWC or live-provider evidence |
 | `git diff --check` | Passed; no whitespace errors, with only line-ending warnings reported | Source-tree consistency check only; not behavioral evidence |
 
@@ -196,16 +196,25 @@ owner-private mode, and disabled Checkout state were preserved.
 
 Fresh signed-out HTTPS GETs to `/`, `/app`, `/api/health`, and
 `/api/operations/health` each returned `401`, `Cache-Control: no-store`,
-`Referrer-Policy: no-referrer`, and no redirect location. A final value-safe
-30-minute log aggregate completed at `2026-08-08T22:58:53.646Z`, 19m23s after
+`Referrer-Policy: no-referrer`, and no redirect location. The first
+post-deployment value-safe 30-minute log aggregate completed at
+`2026-08-08T22:58:53.646Z`, 19m23s after
 deployment success and after the 22:45, 22:50, and 22:55 expected boundaries. It
 returned three `fetch`/`info`/`ok` events and zero observed `scheduled` events. An
 `errors_only` aggregate returned one `fetch`/`info`/`ok` event with zero error
 fields. The result strengthens scheduler suspicion but does not prove log
 completeness, redaction, scheduler execution or absence, error absence, retention,
-or alerting. No raw messages were emitted. No signed-in browser was available, so hosted CSP and normal owner
-authentication remain unverified. See the
-[complete version-11 record](release-evidence/ROADMAP-SITES-V11-2026-08-08.md).
+or alerting. A newer 30-minute broad query and its `errors_only` companion around
+`2026-08-08T23:20:16.850Z` were empty. A later value-safe 60-minute query at
+approximately `2026-08-08T23:23:52Z` returned exactly three
+`fetch`/`info`/`ok` events (`200`, `200`, and handled `403`) and `scheduled=0`;
+its `errors_only` result was the handled `403`. No raw
+content was emitted or retained. The later sample remains equally inconclusive
+because log completeness, scheduled-event visibility, and deployed trigger
+metadata are unavailable. No signed-in browser was available, so hosted CSP and
+normal owner authentication remain unverified. See the
+[complete version-11 record](release-evidence/ROADMAP-SITES-V11-2026-08-08.md) and
+[exact-v11 local exercise record](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md).
 
 ## Predecessor version 10 exact record
 

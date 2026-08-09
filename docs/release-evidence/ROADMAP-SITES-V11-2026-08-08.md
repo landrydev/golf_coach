@@ -120,22 +120,42 @@ After deployment success, independent signed-out HTTPS `GET` requests ran from
 signed-out Sites boundary; it is not authenticated application, deep-health, CSP,
 or authorization evidence.
 
-A final value-safe 30-minute Worker-log aggregate completed at
+The first post-deployment value-safe 30-minute Worker-log aggregate completed at
 `2026-08-08T22:58:53.646Z`, 19 minutes 23 seconds after deployment success and
 after the 22:45, 22:50, and 22:55 expected five-minute boundaries. It returned
 exactly three events: all `fetch`, Worker outcome `ok`, and level `info`; zero
 events were observed as `scheduled`. A separate `errors_only` aggregate returned
 one `fetch`/`ok`/`info` event with zero error fields. That filter result is
-inconclusive rather than evidence of an application error. No raw event or message
-was emitted. Multiple expected boundaries strengthen the scheduler suspicion, but
-the bounded samples do not establish completeness, retention, redaction, error
-absence, alerting, or hosted scheduled invocation or absence.
+inconclusive rather than evidence of an application error. Multiple expected
+boundaries strengthen the scheduler suspicion, but the bounded samples do not
+establish completeness, retention, redaction, error absence, alerting, or hosted
+scheduled invocation or absence.
+
+A newer 30-minute broad query and its `errors_only` companion around
+`2026-08-08T23:20:16.850Z` were empty. A later value-safe provider observation at
+approximately
+`2026-08-08T23:23:52Z` returned the same three `fetch`/`info`/`ok` events over a
+60-minute window (`200`, `200`, and handled `403`) with `scheduled=0`;
+`errors_only` returned only the handled `403`. No raw content was emitted
+or retained. Repeated polling strengthens the suspicion but cannot resolve the
+unavailable log-completeness, scheduled-visibility, or deployed-trigger-metadata
+boundary.
 
 The supported in-app browser setup and discovery workflow found no mounted browser.
 No standalone fallback browser or bypass credential was used. Consequently the
 normal signed-in owner journey, exact hosted CSP inspection, SIWC lifecycle,
 application authorization matrix, authenticated operations health, and hosted
 accessibility evidence remain absent.
+
+After deployment, the recovery and capacity harnesses were replayed from a
+disposable detached worktree at exact runtime commit
+`44670a64498779cf747914b4465380916a939301`. Recovery passed across all ten
+migrations, 31/31 tables, two synthetic tenants, three private R2-compatible
+objects, three negative-integrity scenarios, and subprocess secret isolation.
+Capacity passed 54 bounded requests at maximum concurrency four with zero failures.
+The [exact-v11 local exercise record](ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md)
+preserves exact measurements and limitations. These results are local synthetic
+evidence, not hosted recovery, performance, RPO, RTO, capacity, or operator proof.
 
 ## Rollback and remaining limits
 

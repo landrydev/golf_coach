@@ -3,7 +3,7 @@
 **Opened:** 2026-08-08  
 **Authority:** `AUTH-005`  
 **Status:** active completion record; not a launch approval or completion certificate  
-**Companion records:** [requirements traceability](REQUIREMENTS_TRACEABILITY.md), [release evidence](RELEASE_EVIDENCE.md), [owner decisions required](OWNER_RELEASE_DECISIONS_REQUIRED.md)
+**Companion records:** [requirements traceability](REQUIREMENTS_TRACEABILITY.md), [release evidence](RELEASE_EVIDENCE.md), [exact-v11 local exercises](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md), [owner decisions required](OWNER_RELEASE_DECISIONS_REQUIRED.md)
 
 ## Current conclusion
 
@@ -63,12 +63,13 @@ before paid operation; it does not by itself prove that Sites discarded the trig
 | SaaS billing | Server-controlled Checkout/Portal, durable single-attempt idempotency, account-operation leases, provider-authoritative expiry, durable reconciliation targets, pending-sync blocking, signed-webhook leases/replay/race healing, immutable customer ownership, explicit Price/entitlement/freshness policy, scheduled GET-only recovery with fairness/backoff/dead-letter handling, and stale-provider-read fencing | Automated local D1 evidence passed; Checkout remains disabled because exact commercial configuration, public Stripe webhook ingress, and controlled live reconciliation are absent |
 | Privacy lifecycle | Tenant export with pre-load record bounds and durable manual-request fallback; immutable versioned purpose grants/withdrawals with exact-text evidence; account `golfer_record` and golfer `roadmap_sharing` enforcement; atomic capability/session revocation; correction through product edits; truthful deletion-review status; bounded privacy-operator queue/marker; request deduplication; bounded request telemetry; and stable-identifier-free runtime log fields | Exact owner-approved consent policy/content versions and privacy-operator access configuration are absent, so deep readiness is intentionally degraded; destructive fulfillment, retention schedule, qualified review, hosted operator/log sampling, and backup expiry remain unresolved |
 | Accessibility and responsive behavior | Semantic/rendered checks, reusable focusable form-error summaries, and historical exact-version-9 local synthetic Chrome captures for renderer/layout-equivalent landing/workspace/golfer UI and CSS at 320/390/1440 px; the capture review found and closed a 320 px golfer-header action compression defect | The historical local responsive retest passed without page-level horizontal overflow; it is not version-11 CSP, header, authentication, or security evidence. Interaction, human keyboard, screen reader, forced-colour, browser zoom, reduced-motion, supported-browser, real-device, and hosted acceptance remain outstanding |
-| Deployment and observability | Exact version 11 deployed owner-only from commit `44670a64498779cf747914b4465380916a939301` and the recorded archives at environment revision 13; signed-out HTTPS `/`, `/app`, `/api/health`, and `/api/operations/health` each returned `401` with `no-store`/`no-referrer`. The final exact-v11 30-minute aggregate returned three `fetch`/`info`/`ok` events, zero observed `scheduled` events after three expected boundaries, and one `errors_only` `fetch`/`info`/`ok` event with zero error fields; no raw events were emitted. | Version-11 deployment and signed-out containment passed. The bounded log result strengthens the suspected scheduler gap but proves neither version-11 error-free operation, log completeness/redaction, health, nor hosted scheduler invocation or absence because trigger metadata and scheduled-event visibility are unconfirmed. `SEC-002` nonce remediation still needs supported signed-in hosted-browser retesting. Exact local browser evidence is synthetic, deep readiness remains degraded pending exact consent/operator configuration, and authenticated mounted-browser owner smoke, owner operational-health sampling, manual accessibility, alert delivery, and hosted scheduler proof remain pending. |
-| Recoverability and operations | Runbooks document release, incident, D1 Time Travel, R2 limitations, rollback, support, and billing reconciliation; deterministic isolated D1/R2-compatible synthetic export/restore passed | Named owners, alert/cost exercises, hosted D1/R2 restore, rollback, and incident drills remain |
+| Deployment and observability | Exact version 11 deployed owner-only from commit `44670a64498779cf747914b4465380916a939301` and the recorded archives at environment revision 13; signed-out HTTPS `/`, `/app`, `/api/health`, and `/api/operations/health` each returned `401` with `no-store`/`no-referrer`. The first post-deployment exact-v11 30-minute aggregate at `2026-08-08T22:58:53.646Z` returned three `fetch`/`info`/`ok` events, zero observed `scheduled` events after three expected boundaries, and one `errors_only` `fetch`/`info`/`ok` event with zero error fields. A newer 30-minute broad query and its `errors_only` companion around `2026-08-08T23:20:16.850Z` were empty. The later 60-minute broad aggregate at approximately `2026-08-08T23:23:52Z` returned three `fetch`/`info`/`ok` events with HTTP `200`, `200`, and handled `403`, and `scheduled=0`; `errors_only` returned only the handled `403`. No raw content was emitted or retained. | Version-11 deployment and signed-out containment passed. The repeated bounded log results strengthen the suspected scheduler gap but prove neither version-11 error-free operation, log completeness/redaction, health, nor hosted scheduler invocation or absence because trigger metadata and scheduled-event visibility are unconfirmed. `SEC-002` nonce remediation still needs supported signed-in hosted-browser retesting. Exact local browser evidence is synthetic, deep readiness remains degraded pending exact consent/operator configuration, and authenticated mounted-browser owner smoke, owner operational-health sampling, manual accessibility, alert delivery, and hosted scheduler proof remain pending. |
+| Recoverability and operations | Runbooks document release, incident, D1 Time Travel, R2 limitations, rollback, support, and billing reconciliation. The [exact-v11 local exercise record](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md) records a deterministic isolated D1/R2-compatible synthetic restore across all 10 migrations and 31/31 tables, two tenants, three R2-compatible objects/199 bytes, three negative integrity scenarios, and child-process secret isolation; its separate bounded-capacity run completed 54 requests at concurrency four with zero failures. | Exact-v11 local synthetic recovery/capacity passed within its recorded scope. Hosted D1/R2 backup/restore, rollback or forward-fix, RPO/RTO, approved performance targets, scheduler, named operators, alert/cost exercises, and incident drills remain open. |
 | Commercial and public operation | `[PRICING HYPOTHESIS — REQUIRES VALIDATION]` and `[REAL-WORLD VALIDATION REQUIRED]` remain attached accurately | Exact offer, Stripe Price, tax/refund/failure/cancel/pause rules, domain, contacts, and policies require Aaron/external input |
 | Acceptance | No exact-release acceptance decision is recorded | `[OWNER INPUT REQUIRED]` |
 
-The in-app browser backend remained unavailable for the exact version-11 candidate.
+The supported Browser list was empty, so browser review remained unavailable for the
+exact version-11 candidate.
 Version-9 local headless Chrome evidence covers only the renderer/layout-equivalent
 UI and CSS at its recorded commit; it does not establish version-11 CSP, headers,
 authentication, or other Worker security behavior. It is predecessor evidence and does not supply
@@ -101,6 +102,20 @@ Version 9 and earlier provider observations remain historical predecessor eviden
   Raw variation was limited to three validated generated-value files; strict
   allowlisted normalization left zero differences. This proves the recorded
   normalized-reproducibility control, not byte-for-byte identity.
+- The [exact-version-11 local exercise record](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md)
+  binds both synthetic exercises to deployed source commit
+  `44670a64498779cf747914b4465380916a939301`. Recovery passed in 103,656 ms of
+  local wall-clock time across all ten migrations and 31/31 application tables,
+  restored two synthetic tenants and three R2-compatible objects totalling 199
+  bytes, matched the 34,380-byte snapshot SHA-256
+  `34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54`,
+  detected a modified D1 snapshot, a missing object, and an object checksum
+  mismatch, and kept secret-shaped variables out of the Wrangler subprocess.
+  The bounded-capacity exercise completed 54 requests at maximum concurrency four
+  with 44 `200`, ten `201`, zero failures, and local observations of p50 48.46 ms,
+  p95 107.60 ms, and maximum 107.83 ms. The wall-clock duration is not an RTO,
+  the snapshot age is not an RPO, and the timings are not a performance target,
+  SLO, SLA, sustained-load, or hosted-capacity result.
 - Historical exact-version-10 local evidence includes a post-deployment
   `npm run db:generate` result confirming
   31 tables and no migration drift. The local synthetic capacity exercise
@@ -126,12 +141,12 @@ Version 9 and earlier provider observations remain historical predecessor eviden
   behavioral reproducibility is proved but deterministic byte identity is not. A
   post-runtime `.gitattributes` control pins future text checkouts to LF. It is not
   version-9 evidence; the separate successor exercise below tests that later control.
-- `npm run exercise:recovery:local`: two synthetic tenants and three private
+- Historical exact-version-9 `npm run exercise:recovery:local`: two synthetic tenants and three private
   synthetic objects matched after isolated D1/R2-compatible logical restore; the
   snapshot SHA-256 was
   `34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54`; the
   Wrangler child-process probe inherited no secret-shaped parent variables.
-- `npm run exercise:capacity:local`: 54 synthetic requests at maximum concurrency
+- Historical exact-version-9 `npm run exercise:capacity:local`: 54 synthetic requests at maximum concurrency
   four, four author/edit/publish/share flows, two exports, and zero failures; local
   p50 was 42.75 ms, p95 107.09 ms, and max 107.99 ms. This is not hosted capacity or
   an approved SLO.

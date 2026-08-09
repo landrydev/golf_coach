@@ -947,12 +947,44 @@ export async function endShareSession(
 export async function recordGolferResponse(input: {
   rawSessionToken: string;
   responseType: GolferResponseType;
+  idempotencyKey: string;
   requestId?: string | null;
-}): Promise<PlanResponseSummary> {
+}): Promise<{ response: PlanResponseSummary; replayed: boolean }> {
   const resolved = await resolveShareSession(input.rawSessionToken);
   if (!resolved) {
     throw new RequestError(404, "plan_unavailable", "This private plan is unavailable.");
   }
+  const [receiptId, responseId, inputFingerprint] = await Promise.all([
+    hashToken(
+      JSON.stringify([
+        "golfer-response-audit-receipt-v1",
+        resolved.accountId,
+        resolved.sessionId,
+        input.idempotencyKey,
+      ]),
+    ),
+    hashToken(
+      JSON.stringify([
+        "golfer-response-record-receipt-v1",
+        resolved.accountId,
+        resolved.sessionId,
+        input.idempotencyKey,
+      ]),
+    ),
+    hashToken(
+      JSON.stringify(["golfer-response-input-v1", input.responseType]),
+    ),
+  ]);
+  const replay = await replayGolferResponseReceipt({
+    accountId: resolved.accountId,
+    planId: resolved.model.plan.id,
+    shareId: resolved.shareId,
+    receiptId,
+    responseId,
+    responseType: input.responseType,
+    inputFingerprint,
+  });
+  if (replay) return replay;
   if (
     input.responseType === "external_action_opened" &&
     !resolved.model.coachingPackage
@@ -975,9 +1007,11 @@ export async function recordGolferResponse(input: {
   }
 
   const db = getDb();
-  const id = newId();
   const occurredAt = new Date();
   const consentRequirements = configuredRoadmapAccessRequirements(resolved.golferId);
+  await pauseAtSyntheticConcurrencyBarrier(
+    "golfer-response-after-replay-preflight",
+  );
   try {
     await db.batch([
       consentGrantTransactionGuard(
@@ -1017,7 +1051,7 @@ export async function recordGolferResponse(input: {
         ),
       ),
       db.insert(golferPlanResponses).values({
-      id,
+      id: responseId,
       accountId: resolved.accountId,
       planId: resolved.model.plan.id,
       shareLinkId: resolved.shareId,
@@ -1027,7 +1061,7 @@ export async function recordGolferResponse(input: {
       occurredAt,
     }),
       db.insert(auditEvents).values({
-      id: newId(),
+      id: receiptId,
       accountId: resolved.accountId,
       actorType: "golfer_share",
       actorReference: resolved.shareId,
@@ -1039,10 +1073,22 @@ export async function recordGolferResponse(input: {
       metadata: {
         responseType: input.responseType,
         externalOutcomeObserved: false,
+        inputFingerprint,
+        responseId,
       },
       }),
     ]);
   } catch (error) {
+    const racedReplay = await replayGolferResponseReceipt({
+      accountId: resolved.accountId,
+      planId: resolved.model.plan.id,
+      shareId: resolved.shareId,
+      receiptId,
+      responseId,
+      responseType: input.responseType,
+      inputFingerprint,
+    });
+    if (racedReplay) return racedReplay;
     if (!(await resolveShareSession(input.rawSessionToken))) {
       throw new RequestError(404, "plan_unavailable", "This private plan is unavailable.");
     }
@@ -1050,9 +1096,99 @@ export async function recordGolferResponse(input: {
   }
 
   return {
-    id,
-    responseType: input.responseType,
-    occurredAt: occurredAt.getTime(),
+    response: {
+      id: responseId,
+      responseType: input.responseType,
+      occurredAt: occurredAt.getTime(),
+    },
+    replayed: false,
+  };
+}
+
+async function replayGolferResponseReceipt(input: {
+  accountId: string;
+  planId: string;
+  shareId: string;
+  receiptId: string;
+  responseId: string;
+  responseType: GolferResponseType;
+  inputFingerprint: string;
+}): Promise<{ response: PlanResponseSummary; replayed: true } | null> {
+  const db = getDb();
+  const [receipt] = await db
+    .select({
+      targetId: auditEvents.targetId,
+      metadata: auditEvents.metadata,
+    })
+    .from(auditEvents)
+    .where(
+      and(
+        eq(auditEvents.id, input.receiptId),
+        eq(auditEvents.accountId, input.accountId),
+        eq(auditEvents.actorType, "golfer_share"),
+        eq(auditEvents.actorReference, input.shareId),
+        eq(auditEvents.action, "golfer.response_recorded"),
+        eq(auditEvents.outcome, "success"),
+      ),
+    )
+    .limit(1);
+  if (!receipt) return null;
+  if (receipt.metadata?.inputFingerprint !== input.inputFingerprint) {
+    throw new RequestError(
+      409,
+      "idempotency_key_reused",
+      "This Idempotency-Key was already used for a different golfer response.",
+    );
+  }
+  if (
+    receipt.targetId !== input.planId ||
+    receipt.metadata?.responseId !== input.responseId
+  ) {
+    throw new Error("The golfer response receipt target is invalid.");
+  }
+
+  const [stored] = await db
+    .select({
+      id: golferPlanResponses.id,
+      accountId: golferPlanResponses.accountId,
+      planId: golferPlanResponses.planId,
+      shareLinkId: golferPlanResponses.shareLinkId,
+      responseType: golferPlanResponses.responseType,
+      occurredAt: golferPlanResponses.occurredAt,
+    })
+    .from(golferPlanResponses)
+    .where(
+      and(
+        eq(golferPlanResponses.id, input.responseId),
+        eq(golferPlanResponses.accountId, input.accountId),
+      ),
+    )
+    .limit(1);
+  if (
+    !stored ||
+    stored.planId !== input.planId ||
+    stored.shareLinkId !== input.shareId
+  ) {
+    throw new Error("The golfer response receipt target is unavailable.");
+  }
+  if (stored.responseType !== input.responseType) {
+    throw new RequestError(
+      409,
+      "idempotency_key_reused",
+      "This Idempotency-Key was already used for a different golfer response.",
+    );
+  }
+  const occurredAt = toMillis(stored.occurredAt);
+  if (occurredAt === null) {
+    throw new Error("The golfer response receipt timestamp is invalid.");
+  }
+  return {
+    response: {
+      id: stored.id,
+      responseType: stored.responseType as GolferResponseType,
+      occurredAt,
+    },
+    replayed: true,
   };
 }
 

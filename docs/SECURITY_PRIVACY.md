@@ -302,6 +302,7 @@ record by itself does not activate them.
 - Rate-limit capability exchanges by a privacy-safe combination of share ID and network signals; do not expose whether a share ID exists.
 - Scope each capability to one instructor, one golfer roadmap/publication, read-only actions, and its approved lifetime.
 - Support explicit revoke and rotate. Revocation atomically marks the capability and every still-open child session revoked and records the instructor action in the audit ledger.
+- Require a bounded, safe-character idempotency key for each golfer response. Scope its deterministic HMAC receipts to the resolved account and share session; replay the same payload without a second response or audit event, and reject changed payload. Never persist the raw key server-side or log it. The browser uses a bounded request timeout and retains a pending ambiguous key only in per-tab session storage until a definitive result or tab closure, allowing a same-tab reload to retry truthfully without creating durable cross-tab state.
 - Keep capability pages free of third-party scripts, pixels, fonts, embeds, and asset origins that could receive URL or behavior data.
 - Prevent indexing and caching of private pages with appropriate response headers.
 - Never put raw capabilities in Sites logs, first-party events, error reports, support tickets, or screenshots.

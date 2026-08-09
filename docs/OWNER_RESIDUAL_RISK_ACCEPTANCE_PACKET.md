@@ -4,7 +4,8 @@
 **Purpose:** Record informed, bounded, time-limited acceptance for one exact release
 **Related:** [Findings ledger](FINDINGS_RETEST_LEDGER.md),
 [security/privacy](SECURITY_PRIVACY.md), and
-[provider/exit record](PROVIDER_RESPONSIBILITY_COST_AND_EXIT.md)
+[provider/exit record](PROVIDER_RESPONSIBILITY_COST_AND_EXIT.md), plus the
+[exact-v11 local exercises](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md)
 
 A residual risk is what remains after implemented controls and applicable evidence
 pass. Missing evidence, an unresolved critical incident, unknown customer harm, or a
@@ -66,6 +67,22 @@ exact version-11 release record binds that result to the candidate. The separate
 and version-9 byte-identity failure remain historical; none of these results
 establishes owner acceptance or rollback eligibility.
 
+The [exact-v11 local exercise record](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md)
+adds exact-commit synthetic recovery and bounded-capacity evidence. Recovery passed
+across all ten migrations and 31/31 application tables, two synthetic tenants, and
+three R2-compatible objects totalling 199 bytes; it matched the 34,380-byte D1
+snapshot SHA-256
+`34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54`,
+detected three negative integrity scenarios, and isolated secret-shaped variables
+from the Wrangler subprocess. Its 103,656 ms local wall-clock duration is not an
+RTO and the synthetic snapshot age is not an RPO. Capacity completed 54 requests
+at maximum concurrency four with 44 `200`, ten `201`, zero failures, and local
+p50/p95/maximum observations of 48.46/107.60/107.83 ms. Those timings are not
+performance targets, an SLO/SLA, sustained-load evidence, or hosted capacity.
+Neither exercise makes hosted restore, rollback/forward-fix, scheduler operation,
+alerting, named-operator readiness, public operation, real-user behavior, or
+acceptance eligible for inference.
+
 ## Required risk record
 
 | Field | Required value |
@@ -86,7 +103,7 @@ Ratings below are recommendations for review, not Aaron's decisions.
 | Risk | Proposed residual rating | Implemented containment/evidence | Required disposition and trigger |
 |---|---|---|---|
 | `RR-CAP-001`: an intended golfer can forward a bearer capability | Medium | 256-bit verifier, HMAC fingerprint at rest, fragment/body exchange, short scoped session, neutral failures, expiry, rotation/revocation, no third-party analytics | Accept only after hosted exchange/revoke/session tests and approved sharing copy. Stop on token logging, cross-golfer access, unexplained forwarding harm, or inadequate revocation. |
-| `RR-PROVIDER-001`: Sites/Worker, SIWC, D1/R2, and deployment/control-plane concentration increases provider-exit impact | Medium | Versioned source/migrations, logical recovery path, immutable internal instructor IDs, private object metadata, and exact v11/v10/v9/v8 artifacts are recorded. Exact v11 passed two independent clean builds with zero differences after strict allowlisted generated-value normalization; v9's earlier byte-identity failure remains historical. Historical local recovery passed, but no hosted rollback, restore, or portability exercise exists. | Name owner and portability cadence. Revisit on terms/region/support/cost/recovery failure, unsupported runtime, a future deterministic-build control failure, or failed export/restore/portability exercise. |
+| `RR-PROVIDER-001`: Sites/Worker, SIWC, D1/R2, and deployment/control-plane concentration increases provider-exit impact | Medium | Versioned source/migrations, logical recovery path, immutable internal instructor IDs, private object metadata, and exact v11/v10/v9/v8 artifacts are recorded. Exact v11 passed two independent clean builds with zero differences after strict allowlisted generated-value normalization. Its exact-commit local synthetic recovery passed all 10 migrations and 31/31 tables, two tenants, three R2-compatible objects/199 bytes, snapshot and object integrity including three negative scenarios, and subprocess secret isolation; bounded local capacity passed 54 requests at concurrency four with zero failures. V9's earlier byte-identity failure remains historical. No hosted backup/restore, rollback/forward-fix, portability, RPO/RTO, approved performance-target, or named-operator exercise exists. | Name owner and portability cadence. Revisit on terms/region/support/cost/recovery failure, unsupported runtime, a future deterministic-build control failure, or failed export/restore/portability exercise. |
 | `RR-EXTERNAL-001`: Roadmap cannot verify the instructor's external booking/purchase/contact destination or outcome | Medium | HTTPS validation, preview, explicit leave-site warning, separate SaaS billing, no sale/booking attribution, visible ask/wait/decline choices | Confirm truthful copy and support owner. Stop on unsafe/misleading destination reports, pressure pattern, or user belief that Roadmap processed the coach transaction. |
 
 ## Items not currently eligible for residual-risk acceptance
@@ -94,8 +111,9 @@ Ratings below are recommendations for review, not Aaron's decisions.
 - `SEC-001` post-rotation retest: normal signed-in owner operation without a bypass
   header and a meaningful privacy-safe hosted log/redaction sample remain missing;
 - `SEC-002` hosted retest: exact version 11 removes script `'unsafe-inline'` through
-  per-response nonces, but a supported signed-in hosted browser has not verified CSP
-  enforcement, hydration, navigation, and representative interactions;
+  per-response nonces, but the supported Browser list was empty, so no signed-in
+  hosted browser verified CSP enforcement, hydration, navigation, and representative
+  interactions;
 - missing hosted identity/spoof/recovery evidence before public authentication;
 - missing qualified privacy/legal, retention/deletion, and public-copy decisions
   before real customer/golfer data;
@@ -106,11 +124,17 @@ Ratings below are recommendations for review, not Aaron's decisions.
   unchanged UI/CSS only, while exact-v11 automated regression passed; neither body of evidence
   establish keyboard, screen-reader, real-zoom, device, or human acceptance;
 - `OPS-CRON-001`: suspected hosted scheduler deployment gap before paid operation.
-  Predecessor-v8 through v10 observations supplied no scheduled event. The final
-  exact-v11 30-minute aggregate returned three `fetch`/`info`/`ok` events, zero
+  Predecessor-v8 through v10 observations supplied no scheduled event. The first
+  post-deployment exact-v11 30-minute aggregate at
+  `2026-08-08T22:58:53.646Z` returned three `fetch`/`info`/`ok` events, zero
   observed `scheduled` events after three expected boundaries, and one
-  `errors_only` `fetch`/`info`/`ok` event with zero error fields. No raw events
-  were emitted. Multiple boundaries strengthen suspicion, but log completeness,
+  `errors_only` `fetch`/`info`/`ok` event with zero error fields. A newer
+  30-minute broad query and its `errors_only` companion around
+  `2026-08-08T23:20:16.850Z` were empty. The later 60-minute broad aggregate at
+  approximately `2026-08-08T23:23:52Z` returned three `fetch`/`info`/`ok` events
+  with HTTP `200`, `200`, and handled `403`, and `scheduled=0`; `errors_only`
+  returned only the handled `403`. No raw content was emitted or retained.
+  Repeated bounded observations strengthen suspicion, but log completeness,
   scheduled-event visibility, and deployed-trigger metadata are unavailable, so
   neither scheduler absence nor error-free operation is proved and the finding
   remains open;
@@ -122,8 +146,10 @@ Ratings below are recommendations for review, not Aaron's decisions.
   was added after the v9 runtime commit. Exact v11 now closes `SUPPLY-EVID-001` for
   the current normalized reproducibility control, but cannot retroactively prove v9
   byte identity;
-- missing hosted rollback/restore, authenticated health, alert, incident, and
-  staffed-operator evidence for the affected operating scope;
+- exact-v11 local synthetic recovery/capacity now passes within its recorded scope,
+  but hosted backup/restore, rollback/forward-fix, measured RPO/RTO, approved
+  performance targets, authenticated health, scheduler, alert, incident, and
+  staffed-operator evidence remains missing for the affected operating scope;
 - missing billing policy/configuration/webhook/controlled-transaction evidence before
   paid operation; and
 - missing authorized real-account journeys and Aaron's exact-release acceptance.

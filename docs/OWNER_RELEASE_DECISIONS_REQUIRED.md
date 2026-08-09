@@ -69,6 +69,12 @@ The version-11 release record preserves version 10 and version 9 history and doe
 not make version 11 public or accepted. Its nonce CSP is a security/behavior delta,
 so rollback from version 11 to version 10 would be a regression, not class `N`.
 
+The [exact-v11 local exercise record](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md)
+also records local synthetic recovery across all ten migrations and 31/31 tables,
+plus a 54-request bounded-capacity run with zero failures. It does not establish
+hosted restore, rollback, RPO/RTO, performance targets, operator readiness, or
+public-release suitability.
+
 **Viable choices:** approve the exact bounded baseline with recorded conditions, require specified modifications and a new candidate, or defer approval while owner-only engineering continues.
 
 **Exact proposed decision wording:**

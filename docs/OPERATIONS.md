@@ -12,7 +12,7 @@
 An owner-only Sites production release now exists. Its exact URL, source commit,
 version, deployment, access policy, environment revision, hashes, and bounded smoke
 results are recorded in [Release Evidence](RELEASE_EVIDENCE.md). That deployment is
-not a public launch or Aaron's acceptance. No successful backup/restore or rollback
+not a public launch or Aaron's acceptance. No successful hosted backup/restore or rollback
 exercise, staffed operating assignment, alert-delivery exercise, live Stripe flow,
 qualified legal/privacy review, or controlled real-user validation is claimed.
 
@@ -62,6 +62,20 @@ files and strict allowlisted normalization left zero differences. The production
 dependency audit reported zero vulnerabilities, and the release-integrity scan
 covered 259 source/evidence text files with zero findings while preserving
 historical Business Plan V1. This is normalized reproducibility, not byte identity.
+
+Two additional exact-version-11 local synthetic exercises passed against release
+`44670a64498779cf747914b4465380916a939301`. The recovery exercise applied all 10
+migrations, covered all 31 application tables across 2 synthetic tenants, restored
+3 private synthetic objects, and matched a 34,380-byte D1 snapshot with SHA-256
+`34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54`.
+All three negative integrity checks passed and the subprocess secret-isolation
+boundary held. Its 103,656 ms duration is local wall-clock time, not an RTO.
+The capacity exercise completed 54 requests at maximum concurrency 4 with
+44 `200`, 10 `201`, and 0 failures; its local overall latency was p50 48.46 ms,
+p95 107.60 ms, and maximum 107.83 ms. These are exact-commit local observations,
+not hosted recovery, RPO/RTO, provider backup, rollback, production capacity,
+SLO/SLA, sustained-load, or network-latency evidence. See the
+[canonical exact-version-11 local exercise record](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md).
 
 The earlier successor-source exercise at commit
 `66f5203a913f01c8da20555feebdbb99152c052c` used two independently created
@@ -131,7 +145,7 @@ visibility are unconfirmed. The empty sample does not establish error-free opera
 redaction, alert delivery, or authenticated health and adds no closure evidence for
 `SEC-001`, `AUTH-EVID-001`, `OPS-CRON-001`, or `OPS-EVID-002`.
 
-The final post-version-11 provider-log aggregate was captured at
+The initial post-version-11 provider-log aggregate was captured at
 `2026-08-08T22:58:53.646Z`, 19 minutes 23 seconds after deployment success and
 after the `22:45`, `22:50`, and `22:55` expected five-minute boundaries. Its
 30-minute broad window returned exactly three events: `fetch=3`, `outcome ok=3`,
@@ -140,6 +154,17 @@ exactly one `fetch`/`info`/`ok` event with zero error fields. Neither query emit
 raw events. This strengthens the `OPS-CRON-001` suspicion but remains inconclusive:
 provider-log completeness, scheduled-event visibility, and trigger metadata were
 unavailable. It does not prove scheduler absence or error-free operation.
+
+A later value-safe audit added two bounded observations. A newer 30-minute broad
+query and its `errors_only` companion completed around
+`2026-08-08T23:20:16.850Z` and returned no events. The 60-minute aggregate captured
+at `2026-08-08T23:23:52.288Z` returned exactly three `fetch`/`info`/`ok` events
+with HTTP statuses `200`, `200`, and handled `403`, and `scheduled=0`; its
+`errors_only` companion returned the single handled `fetch`/`info`/`ok` `403`.
+No raw events or raw content were emitted or retained. The different bounded
+windows do not establish completeness, absence, or error-free operation. Provider
+log completeness, scheduled-event visibility, and trigger metadata remained
+unavailable, so the later observations remain inconclusive for `OPS-CRON-001`.
 
 The exact version-11 archive verifier confirmed the scheduler-manifest invariant:
 the packaged Worker configuration contains the expected five-minute cron. That is
@@ -466,10 +491,17 @@ No availability objective, alert threshold, response-time promise, RPO, or RTO i
 
 For a repeatable pre-production check of the repository's logical-copy path, run
 `npm run exercise:recovery:local` and follow
-[Local synthetic recovery exercise](LOCAL_SYNTHETIC_RECOVERY_EXERCISE.md). Its
-result is labelled `LOCAL SYNTHETIC EVIDENCE — NOT HOSTED BACKUP/RESTORE
-EVIDENCE`; it exercises only temporary fake D1/R2-compatible state and must not
-be entered as provider or production recovery evidence.
+[Local synthetic recovery exercise](LOCAL_SYNTHETIC_RECOVERY_EXERCISE.md). The
+exact-version-11 run passed all 10 migrations and 31 application tables for 2
+synthetic tenants and 3 private synthetic objects. It matched a 34,380-byte D1
+snapshot with SHA-256
+`34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54`,
+passed all 3 negative integrity checks and the child-process secret-isolation
+check, and took 103,656 ms of local wall-clock time. That duration is not an RTO,
+and the result remains labelled `LOCAL SYNTHETIC EVIDENCE — NOT HOSTED
+BACKUP/RESTORE EVIDENCE`; it must not be entered as provider or production
+recovery evidence. The exact record is
+[here](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md).
 
 `[REAL-WORLD VALIDATION REQUIRED]` No successful hosted D1/R2 restore exercise is claimed here. Provider-native backup and restore, real environment separation, operator execution, alerting, deletion recovery, and measured RPO/RTO remain unresolved operational evidence, not a reason to stop implementation work.
 
@@ -642,8 +674,9 @@ Deployment alone, a working happy path, or a green build does not complete this 
 | Stripe live account/price | Planned integration; Checkout disabled; production credentials and exact approved Price unavailable/unrecorded; current Sites guidance directs builders not to use Sites to enable financial transactions | Explicit provider confirmation or a verified superseding hosting decision, authorized secret/config inventory, policy alignment, reachable signed webhook, and controlled transaction evidence |
 | Domain | No approved production entry point recorded here | Authorized domain, DNS/redirect/TLS/origin checks, published support/legal destinations |
 | Legal and privacy copy | Exact qualified/owner-approved copy not recorded | Versioned review and deployed copy/behavior conformance |
-| Backup/restore | Procedure specified; no successful exercise claimed | D1/R2 restore evidence with integrity, measured recovery, and named owner |
-| Sites logs/alerts and scheduling | Bounded sanitized fetch samples exist; access/retention/redaction/alerts remain unproven. The final post-v11 aggregate returned three `fetch`/`info`/`ok` events and `scheduled=0`, while its `errors_only` result returned one non-error aggregate and no raw events. Completeness, scheduled-event visibility, trigger metadata, and official background-service support remain unresolved | Provider confirmation or superseding scheduler/hosting decision, hosted trigger invocation, token/PII checks, alert delivery and response exercise |
+| Backup/restore | Procedure specified; an exact-v11 local synthetic logical-copy exercise passed 10 migrations, 31 tables, 2 tenants, 3 objects, 3 negative checks, and secret isolation. No successful hosted/provider restore is claimed, and 103,656 ms is not an RTO | Hosted D1/R2 restore evidence with integrity, measured recovery and recovery point, provider/environment separation, and named owner |
+| Hosted capacity/performance | An exact-v11 single-process local exercise completed 54 requests at concurrency 4 with 44 `200`, 10 `201`, 0 failures, and local p50/p95/max of 48.46/107.60/107.83 ms. It sets no business threshold, SLO/SLA, or hosted limit | Approved capacity targets plus hosted, network, contention, sustained-load, quota, failure, and representative-device evidence |
+| Sites logs/alerts and scheduling | Bounded sanitized fetch samples exist; access/retention/redaction/alerts remain unproven. The initial post-v11 30-minute aggregate returned three `fetch`/`info`/`ok` events and `scheduled=0`; the later 60-minute aggregate again returned three such events with HTTP `200`, `200`, and handled `403`, while `errors_only` returned the handled `403`. A newer 30-minute query was empty. No raw events were retained. Completeness, scheduled-event visibility, trigger metadata, and official background-service support remain unresolved | Provider confirmation or superseding scheduler/hosting decision, hosted trigger invocation, token/PII checks, alert delivery and response exercise |
 | Live acceptance | No exact production release acceptance recorded | Complete evidence packet and Aaron's dated release acceptance |
 
 These dependencies determine whether affected production claims are supported. They do not retract `AUTH-005`, and they must not be described as completed until evidence exists.

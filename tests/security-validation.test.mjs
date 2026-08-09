@@ -342,7 +342,7 @@ test("share-session source keeps verifiers out of cookies and scopes session con
   assert.doesNotMatch(sessionRoute, /\$\{SHARE_COOKIE\}=\$\{shareVerifier\}/);
   assert.match(sessionRoute, /"Cache-Control": "private, no-store, max-age=0"/);
   assert.match(responseRoute, /rawSessionToken/);
-  assert.match(choices, /fetch\("\/r\/response"/);
+  assert.match(choices, /requestGolferResponse\(responseType, attemptKey\)/);
   assert.match(closeControl, /fetch\("\/r\/session", \{ method: "DELETE" \}\)/);
   assert.match(publishRoute, /\/r#token=/);
   assert.doesNotMatch(publishRoute, /\/r\?token=/);

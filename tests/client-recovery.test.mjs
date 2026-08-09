@@ -3,7 +3,9 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   attemptExternalHandoffRecord,
+  createGolferResponseAttemptRegistry,
   isRetryableShareExchangeStatus,
+  requestGolferResponse,
   requestShareExchange,
 } from "../lib/client-recovery.ts";
 
@@ -13,8 +15,12 @@ test("external coach handoff tracking is non-blocking, keepalive, and failure to
     calls.push({ input, init });
     return Promise.reject(new Error("offline"));
   });
+  attemptExternalHandoffRecord((input, init) => {
+    calls.push({ input, init });
+    return Promise.reject(new Error("offline again"));
+  });
 
-  assert.equal(calls.length, 1);
+  assert.equal(calls.length, 2);
   assert.equal(calls[0].input, "/r/response");
   assert.equal(calls[0].init.method, "POST");
   assert.equal(calls[0].init.keepalive, true);
@@ -22,6 +28,13 @@ test("external coach handoff tracking is non-blocking, keepalive, and failure to
   assert.deepEqual(JSON.parse(calls[0].init.body), {
     responseType: "external_action_opened",
   });
+  const handoffKeys = calls.map(
+    ({ init }) => init.headers["Idempotency-Key"],
+  );
+  for (const key of handoffKeys) {
+    assert.match(key, /^[A-Za-z0-9][A-Za-z0-9._:-]{19,127}$/);
+  }
+  assert.notEqual(handoffKeys[0], handoffKeys[1]);
 
   assert.doesNotThrow(() =>
     attemptExternalHandoffRecord(() => {
@@ -29,6 +42,146 @@ test("external coach handoff tracking is non-blocking, keepalive, and failure to
     }),
   );
   await new Promise((resolve) => setImmediate(resolve));
+});
+
+test("explicit golfer responses use the supplied operation key and validate the stored result", async () => {
+  const operationKey = "golfer-response-operation-key-0001";
+  let captured;
+  const result = await requestGolferResponse(
+    "wait",
+    operationKey,
+    async (input, init) => {
+      captured = { input, init };
+      return Response.json(
+        {
+          response: {
+            id: "stored-response-id",
+            responseType: "wait",
+            occurredAt: 1_784_000_000_000,
+          },
+          idempotentReplay: false,
+        },
+        { status: 201 },
+      );
+    },
+  );
+
+  assert.deepEqual(result, {
+    kind: "success",
+    response: {
+      id: "stored-response-id",
+      responseType: "wait",
+      occurredAt: 1_784_000_000_000,
+    },
+    idempotentReplay: false,
+  });
+  assert.equal(captured.input, "/r/response");
+  assert.equal(captured.init.method, "POST");
+  assert.equal(captured.init.headers["Idempotency-Key"], operationKey);
+  assert.equal(captured.init.cache, "no-store");
+  assert.equal(captured.init.credentials, "same-origin");
+  assert.ok(captured.init.signal instanceof AbortSignal);
+  assert.deepEqual(JSON.parse(captured.init.body), { responseType: "wait" });
+});
+
+test("golfer response attempts retain unknown keys and rotate after definitive outcomes", () => {
+  let sequence = 0;
+  const registry = createGolferResponseAttemptRegistry(
+    () => `synthetic-operation-key-${String(++sequence).padStart(4, "0")}`,
+  );
+
+  const first = registry.keyFor("wait");
+  assert.equal(registry.keyFor("wait"), first);
+  registry.settle("wait", first, "outcome_unknown");
+  assert.equal(registry.keyFor("wait"), first);
+
+  registry.settle("wait", first, "success");
+  const afterSuccess = registry.keyFor("wait");
+  assert.notEqual(afterSuccess, first);
+
+  registry.settle("wait", afterSuccess, "rejected");
+  assert.notEqual(registry.keyFor("wait"), afterSuccess);
+});
+
+test("ambiguous golfer response attempts survive a same-tab remount and clear after success", () => {
+  const values = new Map();
+  const storage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+    removeItem: (key) => values.delete(key),
+  };
+  let sequence = 0;
+  const createKey = () =>
+    `synthetic-persisted-operation-${String(++sequence).padStart(4, "0")}`;
+
+  const firstMount = createGolferResponseAttemptRegistry(createKey, storage);
+  const firstKey = firstMount.keyFor("request_reassessment");
+  firstMount.settle(
+    "request_reassessment",
+    firstKey,
+    "outcome_unknown",
+  );
+
+  const remounted = createGolferResponseAttemptRegistry(createKey, storage);
+  assert.equal(remounted.keyFor("request_reassessment"), firstKey);
+  remounted.settle("request_reassessment", firstKey, "success");
+  assert.equal(values.size, 0);
+
+  const afterSuccess = createGolferResponseAttemptRegistry(createKey, storage);
+  assert.notEqual(afterSuccess.keyFor("request_reassessment"), firstKey);
+});
+
+test("golfer response failures distinguish definitive rejection from outcome unknown", async () => {
+  const rejected = await requestGolferResponse(
+    "decline",
+    "golfer-response-rejected-key-0001",
+    async () =>
+      Response.json(
+        { error: { message: "This response was rejected." } },
+        { status: 409 },
+      ),
+  );
+  assert.deepEqual(rejected, {
+    kind: "rejected",
+    message: "This response was rejected.",
+  });
+
+  for (const response of [
+    new Response(null, { status: 503 }),
+    Response.json({ unexpected: true }, { status: 200 }),
+  ]) {
+    assert.deepEqual(
+      await requestGolferResponse(
+        "decline",
+        "golfer-response-ambiguous-key-0001",
+        async () => response,
+      ),
+      { kind: "outcome_unknown" },
+    );
+  }
+});
+
+test("golfer response timeout aborts at the bounded wait and remains outcome unknown", async () => {
+  let aborted = false;
+  const result = await requestGolferResponse(
+    "request_reassessment",
+    "golfer-response-timeout-key-0001",
+    async (_input, init) =>
+      new Promise((_resolve, reject) => {
+        init.signal.addEventListener(
+          "abort",
+          () => {
+            aborted = true;
+            reject(new Error("aborted"));
+          },
+          { once: true },
+        );
+      }),
+    5,
+  );
+
+  assert.deepEqual(result, { kind: "outcome_unknown" });
+  assert.equal(aborted, true);
 });
 
 test("external coach handoff is a native link with explicit best-effort disclosure", async () => {

@@ -33,7 +33,7 @@ Authenticated routes may additionally emit the cross-cutting identity actions `a
 | `POST` | `/api/plans/[planId]/publish` | `publishPlanAndCreateShare` | `plan.publish_and_share` | `lib/plans.ts` | — |
 | `PUT` | `/api/profile` | `saveProfile` | `profile.saved` | `lib/repository.ts` | — |
 | `DELETE` | `/api/shares/[shareId]` | `revokeShareLink` | `share.revoke` | `lib/plans.ts` | `[IDEMPOTENT NO-OP]` An already inactive link changes no state and emits no duplicate revocation event. |
-| `POST` | `/r/response` | `recordGolferResponse` | `golfer.response_recorded` | `lib/plans.ts` | — |
+| `POST` | `/r/response` | `recordGolferResponse` | `golfer.response_recorded` | `lib/plans.ts` | `[IDEMPOTENT NO-OP]` The required key is scoped to the resolved account and share session. A same-payload retry returns the immutable response without another response or audit row; changed payload returns conflict. Deterministic HMAC receipts bind the response and audit rows. The raw key is never persisted server-side or logged; a pending ambiguous attempt is retained only in per-tab browser session storage until a definitive result or tab closure. |
 | `DELETE` | `/r/session` | `endShareSession` | `share.session_ended` | `lib/plans.ts` | `[TRANSPORT-ONLY]` Clearing the browser cookie when no live server session exists is client transport cleanup with no durable target to audit. |
 | `POST` | `/r/session` | `endShareSession`<br>`createShareSession` | `share.session_ended`<br>`share.session_created`<br>`share.access` | `lib/plans.ts` | The end event is conditional on replacing a live prior session; every successful new exchange emits the create and access events atomically. |
 <!-- AUDIT_EVENT_MATRIX_END -->

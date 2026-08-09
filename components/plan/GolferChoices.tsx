@@ -1,7 +1,11 @@
 "use client";
 
 import { useId, useState } from "react";
-import { attemptExternalHandoffRecord } from "@/lib/client-recovery";
+import {
+  attemptExternalHandoffRecord,
+  createGolferResponseAttemptRegistry,
+  requestGolferResponse,
+} from "@/lib/client-recovery";
 import { buildCoachContactMailtoUri } from "@/lib/mailto";
 import type { GolferResponseType } from "@/lib/plans";
 import styles from "./plan.module.css";
@@ -27,6 +31,9 @@ const CONFIRMATIONS: Record<RecordedChoice, string> = {
     "Independent practice was recorded. Use only the coach-authored direction in this plan and ask when anything is unclear.",
 };
 
+const OUTCOME_UNKNOWN_MESSAGE =
+  "Roadmap could not confirm whether this choice was recorded. Check your connection, then retry the same choice on this page; Roadmap will reuse this attempt rather than add another response.";
+
 export function GolferChoices({
   coachName,
   coachEmail,
@@ -34,6 +41,9 @@ export function GolferChoices({
   preview = false,
 }: ChoiceProps) {
   const externalHandoffNoteId = useId();
+  const [attemptRegistry] = useState(() =>
+    createGolferResponseAttemptRegistry(),
+  );
   const [saving, setSaving] = useState<RecordedChoice | null>(null);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
@@ -46,18 +56,19 @@ export function GolferChoices({
     setIsError(false);
 
     try {
-      const response = await fetch("/r/response", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ responseType }),
-      });
-      const result = (await response.json()) as {
-        error?: { message?: string };
-      };
-      if (!response.ok) {
-        throw new Error(
-          result.error?.message || "Your choice could not be recorded. Please try again.",
-        );
+      const attemptKey = attemptRegistry.keyFor(responseType);
+      const result = await requestGolferResponse(responseType, attemptKey);
+      attemptRegistry.settle(responseType, attemptKey, result.kind);
+
+      if (result.kind === "outcome_unknown") {
+        setIsError(true);
+        setMessage(OUTCOME_UNKNOWN_MESSAGE);
+        return;
+      }
+      if (result.kind === "rejected") {
+        setIsError(true);
+        setMessage(result.message);
+        return;
       }
 
       setMessage(CONFIRMATIONS[responseType]);
@@ -65,13 +76,9 @@ export function GolferChoices({
       if (responseType === "ask_question" && coachMailtoUri) {
         window.location.assign(coachMailtoUri);
       }
-    } catch (error) {
+    } catch {
       setIsError(true);
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "Your choice could not be recorded. Please try again.",
-      );
+      setMessage(OUTCOME_UNKNOWN_MESSAGE);
     } finally {
       setSaving(null);
     }

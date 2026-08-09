@@ -6,7 +6,7 @@ analytics reuse is approved by this document
 **Authority:** [Business Plan V2](../../00_source/BUSINESS_PLAN_V2.md) governs; its
 numeric targets and commercial expectations remain hypotheses
 **Related:** [Owner release decisions](OWNER_RELEASE_DECISIONS_REQUIRED.md) and
-[findings ledger](FINDINGS_RETEST_LEDGER.md)
+[findings ledger](FINDINGS_RETEST_LEDGER.md); [exact-v11 local exercises](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md)
 
 `[SUPPORTED BY BUSINESS PLAN V2]` Roadmap is a self-serve B2B SaaS for individual
 instructors. Measurement must separate real self-service from founder assistance,
@@ -37,11 +37,20 @@ Both exact-version-11 clean installs contained 501 packages with the same five
 blocked install scripts and passed 237/237 verification. Their 49-file builds had
 three controlled raw differences and zero normalized differences. Release integrity
 inspected 259 source/evidence files with zero findings and preserved Business Plan V1;
-the production dependency audit reported zero vulnerabilities. Historical exact-v10
-local capacity completed 54 synthetic requests with zero failures, and historical
-local recovery matched 2 synthetic tenants and 3 objects after all 10 migrations.
-These do not supply an approved SLO, exact-v11 hosted capacity, production recovery,
-or real-user measurement result. Historical version-9 smoke recorded plain HTTP `/`
+the production dependency audit reported zero vulnerabilities. The
+[exact-v11 local exercise record](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md)
+records recovery passing all 10 migrations and 31/31 tables, two synthetic tenants,
+three R2-compatible objects totalling 199 bytes, the 34,380-byte snapshot SHA-256
+`34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54`,
+three negative integrity scenarios, and subprocess secret isolation. Its 103,656 ms
+local wall-clock duration is not an RTO and the synthetic snapshot age is not an
+RPO. The companion bounded-capacity run completed 54 requests at maximum concurrency
+four with 44 `200`, ten `201`, zero failures, and local p50/p95/maximum observations
+of 48.46/107.60/107.83 ms. These do not supply approved performance targets, an
+SLO/SLA, hosted capacity or backup/restore, rollback/forward-fix, RPO/RTO, scheduler,
+named-operator readiness, production recovery, or a real-user measurement result.
+Historical exact-v10 exercises remain predecessor evidence. Historical version-9
+smoke recorded plain HTTP `/`
 redirecting to HTTPS. After version 11 deployed, signed-out HTTPS requests to `/`,
 `/app`, `/api/health`, and `/api/operations/health` each returned the outer
 owner-policy `401` with `Cache-Control: no-store` and
@@ -67,13 +76,20 @@ working suspicion; provider support and trigger configuration are not confirmed.
 Do not use these samples as an analytics feed or depend on hosted scheduling for
 measurement.
 
-The final exact-version-11 30-minute provider-log aggregate returned three
-`fetch`/`info`/`ok` events and zero observed `scheduled` events after three
-expected five-minute boundaries; its `errors_only` aggregate returned one
-`fetch`/`info`/`ok` event with zero error fields. No raw events were emitted. This
-strengthens the scheduler suspicion but does not establish log completeness or
-redaction, hosted scheduling or absence, authenticated success, reliability, or
-alerting. Historical version-8 through version-10 observations remain preserved.
+The first post-deployment exact-version-11 30-minute provider-log aggregate at
+`2026-08-08T22:58:53.646Z` returned three `fetch`/`info`/`ok` events and zero
+observed `scheduled` events after three expected five-minute boundaries; its
+`errors_only` aggregate returned one `fetch`/`info`/`ok` event with zero error
+fields. A newer 30-minute broad query and its `errors_only` companion around
+`2026-08-08T23:20:16.850Z` were empty. The later 60-minute broad aggregate at
+approximately `2026-08-08T23:23:52Z` returned three `fetch`/`info`/`ok` events
+with HTTP `200`, `200`, and handled `403`, and `scheduled=0`; `errors_only`
+returned only the handled `403`. No raw content was emitted or retained. These
+bounded observations strengthen the scheduler suspicion but do not establish log
+completeness or redaction, hosted scheduling or absence, authenticated success,
+reliability, or alerting because scheduled-event visibility and deployed trigger
+metadata remain unavailable. Historical version-8 through version-10 observations
+remain preserved.
 
 No authenticated browser journey, manual accessibility review, authorized real
 instructor/golfer protocol, or real-world measurement exists. Deep readiness remains
@@ -83,8 +99,9 @@ reliability over time, support burden, accessibility, or participant outcomes. T
 packet records no owner acceptance and authorizes no participant, analytics,
 public-access, or commercial activity.
 
-Version 11's nonce remediation passed automated coverage, but no supported signed-in
-hosted browser was available for CSP, hydration, navigation, or interaction retesting.
+Version 11's nonce remediation passed automated coverage, but the supported Browser
+list was empty, so no signed-in hosted browser was available for CSP, hydration,
+navigation, or interaction retesting.
 `SEC-002` is **REMEDIATED — HOSTED RETEST PENDING**. Historical `OWNER-SEC-001`
 authorization is complete, while `SEC-001` remains **REMEDIATED — RETEST PENDING**.
 

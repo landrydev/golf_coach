@@ -395,6 +395,7 @@ function recordResponse(worker, cookie) {
     method: "POST",
     headers: {
       "content-type": "application/json",
+      "idempotency-key": crypto.randomUUID(),
       origin: testOrigin,
       "sec-fetch-site": "same-origin",
       cookie,

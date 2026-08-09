@@ -23,7 +23,14 @@ test(
   "production Worker completes the tenant-owned D1 plan sharing journey",
   { timeout: 60_000 },
   async (context) => {
-    const worker = await startD1Worker();
+    const responseBarrier = syntheticConcurrentBarrier(
+      "golfer-response-after-replay-preflight",
+      4,
+    );
+    const worker = await startD1Worker(
+      {},
+      { concurrencyBarrier: responseBarrier.handler },
+    );
     context.after(() => worker.dispose());
 
     const unauthenticated = await worker.dispatch("/api/profile");
@@ -329,19 +336,122 @@ test(
     assert.equal(privatePlanHtml.includes(firstSessionToken), false);
     assert.doesNotMatch(privatePlanHtml, /coach\.b@example\.test/i);
 
-    const golferChoice = await worker.dispatch("/r/response", {
+    const missingResponseKey = await worker.dispatch("/r/response", {
       method: "POST",
       headers: {
         "content-type": "application/json",
         origin: testOrigin,
         "sec-fetch-site": "same-origin",
-        cookie: browserCookieForPath(setCookie, "/r/response"),
+        cookie: firstSessionCookie,
       },
       body: JSON.stringify({ responseType: "wait" }),
     });
+    assert.equal(missingResponseKey.status, 400);
+    assert.equal(
+      (await missingResponseKey.json()).error.code,
+      "idempotency_key_required",
+    );
+
+    for (const invalidKey of [
+      "too-short",
+      `${"A".repeat(19)}!`,
+      `A${"b".repeat(128)}`,
+    ]) {
+      const invalidResponseKey = await golferResponse(
+        worker,
+        firstSessionCookie,
+        invalidKey,
+        "wait",
+      );
+      assert.equal(invalidResponseKey.status, 400);
+      assert.equal(
+        (await invalidResponseKey.json()).error.code,
+        "idempotency_key_required",
+      );
+    }
+
+    const responseOperationKey = "R".repeat(128);
+    const golferChoice = await golferResponse(
+      worker,
+      firstSessionCookie,
+      responseOperationKey,
+      "wait",
+    );
     assert.equal(golferChoice.status, 201);
     assertPrivateApiResponse(golferChoice);
-    assert.equal((await golferChoice.json()).response.responseType, "wait");
+    const golferChoiceBody = await golferChoice.json();
+    assert.equal(golferChoiceBody.response.responseType, "wait");
+    assert.equal(golferChoiceBody.idempotentReplay, false);
+
+    const golferChoiceReplay = await golferResponse(
+      worker,
+      firstSessionCookie,
+      responseOperationKey,
+      "wait",
+    );
+    assert.equal(golferChoiceReplay.status, 200);
+    const golferChoiceReplayBody = await golferChoiceReplay.json();
+    assert.equal(golferChoiceReplayBody.idempotentReplay, true);
+    assert.deepEqual(golferChoiceReplayBody.response, golferChoiceBody.response);
+
+    const reusedResponseKey = await golferResponse(
+      worker,
+      firstSessionCookie,
+      responseOperationKey,
+      "decline",
+    );
+    assert.equal(reusedResponseKey.status, 409);
+    assert.equal(
+      (await reusedResponseKey.json()).error.code,
+      "idempotency_key_reused",
+    );
+
+    const concurrentResponseKey = "C".repeat(20);
+    responseBarrier.arm();
+    const pendingConcurrentChoices = ["decline", "wait", "decline", "wait"].map(
+      (responseType) =>
+      golferResponse(
+        worker,
+        firstSessionCookie,
+        concurrentResponseKey,
+        responseType,
+      ),
+    );
+    await responseBarrier.reached;
+    responseBarrier.release();
+    const concurrentChoices = await Promise.all(pendingConcurrentChoices);
+    assert.deepEqual(
+      concurrentChoices.map(({ status }) => status).sort(),
+      [200, 201, 409, 409],
+    );
+    const concurrentChoiceBodies = await Promise.all(
+      concurrentChoices.map((response) => response.json()),
+    );
+    const committedConcurrentChoices = concurrentChoiceBodies.filter(
+      (body) => body.response,
+    );
+    assert.equal(
+      new Set(committedConcurrentChoices.map(({ response }) => response.id)).size,
+      1,
+    );
+    assert.deepEqual(
+      committedConcurrentChoices
+        .map(({ idempotentReplay }) => idempotentReplay)
+        .sort(),
+      [false, true],
+    );
+    assert.equal(
+      new Set(
+        committedConcurrentChoices.map(({ response }) => response.responseType),
+      ).size,
+      1,
+    );
+    assert.deepEqual(
+      concurrentChoiceBodies
+        .filter((body) => body.error)
+        .map(({ error }) => error.code),
+      ["idempotency_key_reused", "idempotency_key_reused"],
+    );
 
     const [closeResponse, closeRetry] = await Promise.all(
       Array.from({ length: 2 }, () =>
@@ -383,6 +493,20 @@ test(
     assert.notEqual(replacedSessionToken, token);
     assert.notEqual(replacedSessionToken, firstSessionToken);
 
+    const crossSessionChoice = await golferResponse(
+      worker,
+      replacedSessionCookie,
+      responseOperationKey,
+      "wait",
+    );
+    assert.equal(crossSessionChoice.status, 201);
+    const crossSessionChoiceBody = await crossSessionChoice.json();
+    assert.equal(crossSessionChoiceBody.idempotentReplay, false);
+    assert.notEqual(
+      crossSessionChoiceBody.response.id,
+      golferChoiceBody.response.id,
+    );
+
     const replacementExchange = await worker.dispatch("/r/session", {
       method: "POST",
       headers: {
@@ -421,6 +545,7 @@ test(
       method: "POST",
       headers: {
         "content-type": "application/json",
+        "idempotency-key": "expired-session-response-operation-0001",
         origin: testOrigin,
         "sec-fetch-site": "same-origin",
         cookie: activeSessionCookie,
@@ -506,6 +631,7 @@ test(
       method: "POST",
       headers: {
         "content-type": "application/json",
+        "idempotency-key": "revoked-session-response-operation-0001",
         origin: testOrigin,
         "sec-fetch-site": "same-origin",
         cookie: linkExpirySessionCookie,
@@ -550,7 +676,11 @@ test(
         params: [workspace.golfer.id, workspace.plan.id],
       },
       {
-        sql: "select response_type, external_outcome_observed from golfer_plan_responses where plan_id = ? order by occurred_at",
+        sql: "select id, response_type, external_outcome_observed from golfer_plan_responses where plan_id = ? order by occurred_at, id",
+        params: [workspace.plan.id],
+      },
+      {
+        sql: "select id, target_id, request_id, metadata from audit_events where action = 'golfer.response_recorded' and target_id = ? order by occurred_at, id",
         params: [workspace.plan.id],
       },
       {
@@ -605,10 +735,39 @@ test(
       [0, 0, 0, 0],
     );
     assert.ok(inspection[5].results[0].count >= 3);
-    assert.deepEqual(inspection[6].results, [
-      { response_type: "wait", external_outcome_observed: 0 },
+    assert.equal(inspection[6].results.length, 3);
+    assert.deepEqual(
+      inspection[6].results.map(({ response_type }) => response_type).sort(),
+      [
+        committedConcurrentChoices[0].response.responseType,
+        "wait",
+        "wait",
+      ].sort(),
+    );
+    assert.ok(
+      inspection[6].results.every(
+        ({ id, external_outcome_observed }) =>
+          /^[0-9a-f]{64}$/.test(id) && external_outcome_observed === 0,
+      ),
+    );
+    assert.equal(inspection[7].results.length, 3);
+    const responseIds = new Set(inspection[6].results.map(({ id }) => id));
+    for (const audit of inspection[7].results) {
+      assert.match(audit.id, /^[0-9a-f]{64}$/);
+      assert.equal(audit.target_id, workspace.plan.id);
+      assert.match(audit.request_id, /^[0-9a-f-]{36}$/);
+      const metadata = JSON.parse(audit.metadata);
+      assert.match(metadata.inputFingerprint, /^[0-9a-f]{64}$/);
+      assert.ok(responseIds.has(metadata.responseId));
+      assert.equal(metadata.externalOutcomeObserved, false);
+    }
+    const persistedResponseEvidence = JSON.stringify([
+      inspection[6].results,
+      inspection[7].results,
     ]);
-    assert.equal(inspection[7].results[0].count, 2);
+    assert.equal(persistedResponseEvidence.includes(responseOperationKey), false);
+    assert.equal(persistedResponseEvidence.includes(concurrentResponseKey), false);
+    assert.equal(inspection[8].results[0].count, 2);
   },
 );
 
@@ -663,4 +822,50 @@ function browserCookieForPath(setCookie, requestPath) {
     (requestPath.startsWith(cookiePath) &&
       (cookiePath.endsWith("/") || requestPath.charAt(cookiePath.length) === "/"));
   return pathMatches ? parts[0] : null;
+}
+
+function golferResponse(worker, cookie, idempotencyKey, responseType) {
+  return worker.dispatch("/r/response", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "idempotency-key": idempotencyKey,
+      origin: testOrigin,
+      "sec-fetch-site": "same-origin",
+      cookie,
+    },
+    body: JSON.stringify({ responseType }),
+  });
+}
+
+function syntheticConcurrentBarrier(expectedCheckpoint, arrivalsRequired) {
+  let signalReached;
+  let releaseBarrier;
+  const reached = new Promise((resolve) => {
+    signalReached = resolve;
+  });
+  const released = new Promise((resolve) => {
+    releaseBarrier = resolve;
+  });
+  let armed = false;
+  let arrivals = 0;
+  return {
+    reached,
+    arm: () => {
+      armed = true;
+    },
+    release: () => releaseBarrier(),
+    handler: async (request) => {
+      const checkpoint = decodeURIComponent(
+        new URL(request.url).pathname.split("/").at(-1) ?? "",
+      );
+      if (!armed || checkpoint !== expectedCheckpoint) {
+        return new Response("skipped");
+      }
+      arrivals += 1;
+      if (arrivals === arrivalsRequired) signalReached();
+      await released;
+      return new Response("released");
+    },
+  };
 }

@@ -35,6 +35,7 @@ export async function POST(request: Request): Promise<Response> {
       ABUSE_LIMITS.shareResponseNetwork,
       clientNetworkSubject(request),
     );
+    const idempotencyKey = validatedIdempotencyKey(request);
     const value = await readJson<unknown>(request);
     if (!value || typeof value !== "object" || Array.isArray(value)) {
       throw new RequestError(400, "invalid_body", "Request body must be a JSON object.");
@@ -65,13 +66,17 @@ export async function POST(request: Request): Promise<Response> {
     const response = await recordGolferResponse({
       rawSessionToken,
       responseType: payload.responseType as GolferResponseType,
+      idempotencyKey,
       requestId,
     });
 
     return Response.json(
-      { response },
       {
-        status: 201,
+        response: response.response,
+        idempotentReplay: response.replayed,
+      },
+      {
+        status: response.replayed ? 200 : 201,
         headers: {
           "Cache-Control": "private, no-store, max-age=0",
           "X-Request-ID": requestId,
@@ -83,4 +88,16 @@ export async function POST(request: Request): Promise<Response> {
     response.headers.set("X-Request-ID", requestId);
     return response;
   }
+}
+
+function validatedIdempotencyKey(request: Request): string {
+  const value = request.headers.get("idempotency-key")?.trim() ?? "";
+  if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{19,127}$/.test(value)) {
+    throw new RequestError(
+      400,
+      "idempotency_key_required",
+      "Provide a stable Idempotency-Key of 20 to 128 safe characters.",
+    );
+  }
+  return value;
 }

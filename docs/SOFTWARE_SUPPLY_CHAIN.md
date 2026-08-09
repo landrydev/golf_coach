@@ -56,7 +56,21 @@ and Sites package record bind the checked candidate to the saved version and
 successful revision-13 deployment; they do not prove provider-side byte identity,
 hosted scheduler operation, or create an exact shipped-artifact SBOM.
 
-A separate final provider-log aggregate was captured at
+Two exact-commit local synthetic exercises were also run in a disposable detached
+worktree at version-11 source/runtime release
+`44670a64498779cf747914b4465380916a939301` using the lock-aligned installed
+dependency graph. Recovery passed all 10 migrations and 31 application tables for
+2 tenants and 3 private objects; the 34,380-byte D1 snapshot had SHA-256
+`34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54`,
+all 3 negative integrity checks passed, child-process secret isolation held, and
+the 103,656 ms local duration is not an RTO. Capacity completed 54 requests at
+maximum concurrency 4 with 44 `200`, 10 `201`, 0 failures, and local p50/p95/max
+latency of 48.46/107.60/107.83 ms. These observations do not establish a hosted
+restore, provider backup, RPO/RTO, rollback, hosted capacity, business threshold,
+SLO/SLA, or supply-chain certification. See the
+[canonical exact-version-11 local exercise record](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md).
+
+An initial provider-log aggregate was captured at
 `2026-08-08T22:58:53.646Z`, 19 minutes 23 seconds after deployment success and
 after the `22:45`, `22:50`, and `22:55` expected five-minute boundaries. Its
 30-minute broad window returned exactly three events: `fetch=3`, `outcome ok=3`,
@@ -66,6 +80,16 @@ This aggregate is not package-identity evidence. It strengthens the `OPS-CRON-00
 suspicion but cannot prove scheduler absence or error-free operation because
 provider-log completeness, scheduled-event visibility, and trigger metadata were
 unavailable.
+
+A later value-safe audit found an empty newer 30-minute broad query and empty
+`errors_only` companion around `2026-08-08T23:20:16.850Z`. Its 60-minute
+aggregate at `2026-08-08T23:23:52.288Z` returned exactly three
+`fetch`/`info`/`ok` events with HTTP statuses `200`, `200`, and handled `403`,
+and `scheduled=0`; the `errors_only` companion returned the handled
+`fetch`/`info`/`ok` `403`. No raw events or content were emitted or retained.
+These samples are likewise not package-identity evidence and remain inconclusive
+because provider-log completeness, scheduled-event visibility, and trigger
+metadata were unavailable.
 
 Version 11 binds framework scripts to per-response CSP nonces and removes
 `script-src 'unsafe-inline'`. Four signed-out probes from
