@@ -36,6 +36,16 @@ const localBindingConfig = {
     // existing provider-backed work after a crash or exhausted webhook retry.
     crons: ["*/5 * * * *"],
   },
+  observability: {
+    enabled: true,
+    logs: {
+      enabled: true,
+      // Cloudflare invocation logs include the request, response, metadata, and
+      // request headers. Keep only the application's allowlisted structured
+      // console events in persisted Workers Logs.
+      invocation_logs: false,
+    },
+  },
 };
 
 export default defineConfig(async () => {

@@ -15,6 +15,10 @@ import {
 } from "../scripts/verify-release-archive.mjs";
 
 const SYNTHETIC_SECRET = "ab".repeat(32);
+const PRIVACY_SAFE_OBSERVABILITY = {
+  enabled: true,
+  logs: { enabled: true, invocation_logs: false },
+};
 
 test("the exact build keeps its generated prerender credential server-only", async () => {
   const report = await assertReleaseArtifacts(
@@ -27,6 +31,8 @@ test("the exact build keeps its generated prerender credential server-only", asy
   assert.equal(report.unexpectedCredentialPathCopies, 0);
   assert.equal(report.productionPrerenderBindingConfigured, false);
   assert.equal(report.expectedSchedulerConfigured, true);
+  assert.equal(report.structuredApplicationLogsEnabled, true);
+  assert.equal(report.automaticInvocationLogsDisabled, true);
 });
 
 test("artifact audit rejects credential copies outside the server manifests without disclosing them", async (context) => {
@@ -121,6 +127,34 @@ test("artifact audit requires the exact packaged billing-recovery schedule", asy
   assert.equal(report.expectedSchedulerConfigured, true);
 });
 
+test("artifact audit requires structured logs without automatic invocation logs", async (context) => {
+  for (const observability of [
+    undefined,
+    { enabled: false, logs: { enabled: true, invocation_logs: false } },
+    { enabled: true, logs: { enabled: false, invocation_logs: false } },
+    { enabled: true, logs: { enabled: true, invocation_logs: true } },
+  ]) {
+    const root = await createSyntheticArtifacts(context, { observability });
+    const report = await auditReleaseArtifacts(root);
+    assert.equal(
+      report.structuredApplicationLogsEnabled &&
+        report.automaticInvocationLogsDisabled,
+      false,
+    );
+    assert.ok(
+      report.findings.some((finding) =>
+        finding.includes("automatic invocation logs must be disabled"),
+      ),
+    );
+  }
+
+  const root = await createSyntheticArtifacts(context);
+  const report = await auditReleaseArtifacts(root);
+  assert.equal(report.structuredApplicationLogsEnabled, true);
+  assert.equal(report.automaticInvocationLogsDisabled, true);
+  assert.doesNotMatch(report.findings.join("\n"), /automatic invocation logs/i);
+});
+
 test("archive entry validation rejects traversal, links, and portable-path collisions", () => {
   assert.doesNotThrow(() =>
     validateArchiveEntries(
@@ -213,12 +247,16 @@ async function createSyntheticArtifacts(context, workerConfig = { vars: {} }) {
   context.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(path.join(root, "server", "ssr"), { recursive: true });
   const manifest = `${JSON.stringify({ prerenderSecret: SYNTHETIC_SECRET })}\n`;
+  const effectiveWorkerConfig = {
+    observability: PRIVACY_SAFE_OBSERVABILITY,
+    ...workerConfig,
+  };
   await Promise.all([
     writeFile(path.join(root, "server", "vinext-server.json"), manifest),
     writeFile(path.join(root, "server", "ssr", "vinext-server.json"), manifest),
     writeFile(
       path.join(root, "server", "wrangler.json"),
-      `${JSON.stringify(workerConfig)}\n`,
+      `${JSON.stringify(effectiveWorkerConfig)}\n`,
     ),
     writeFile(path.join(root, "server", "index.js"), "export default {};\n"),
   ]);
@@ -272,7 +310,10 @@ async function createSyntheticReleaseFixture(context) {
     writeFile(path.join(dist, "server", "index.js"), "export default {};\n"),
     writeFile(
       path.join(dist, "server", "wrangler.json"),
-      '{"triggers":{"crons":["*/5 * * * *"]}}\n',
+      `${JSON.stringify({
+        observability: PRIVACY_SAFE_OBSERVABILITY,
+        triggers: { crons: ["*/5 * * * *"] },
+      })}\n`,
     ),
     writeFile(path.join(dist, "server", "vinext-server.json"), manifest),
     writeFile(path.join(dist, "server", "ssr", "vinext-server.json"), manifest),

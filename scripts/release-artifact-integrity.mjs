@@ -79,6 +79,8 @@ export async function auditReleaseArtifacts(rootDirectory) {
   const workerConfigPath = path.join(root, "server", "wrangler.json");
   let productionPrerenderBindingConfigured = false;
   let expectedSchedulerConfigured = false;
+  let structuredApplicationLogsEnabled = false;
+  let automaticInvocationLogsDisabled = false;
   try {
     const workerConfig = JSON.parse(await readFile(workerConfigPath, "utf8"));
     productionPrerenderBindingConfigured = containsConfigurationToken(
@@ -99,6 +101,19 @@ export async function auditReleaseArtifacts(rootDirectory) {
         "server/wrangler.json: expected billing-recovery schedule is missing or changed",
       );
     }
+    structuredApplicationLogsEnabled =
+      workerConfig.observability?.enabled === true &&
+      workerConfig.observability?.logs?.enabled === true;
+    automaticInvocationLogsDisabled =
+      workerConfig.observability?.logs?.invocation_logs === false;
+    if (
+      !structuredApplicationLogsEnabled ||
+      !automaticInvocationLogsDisabled
+    ) {
+      findings.push(
+        "server/wrangler.json: automatic invocation logs must be disabled while structured application logs remain enabled",
+      );
+    }
   } catch {
     findings.push("server/wrangler.json: required packaged Worker configuration is missing or malformed");
   }
@@ -112,6 +127,8 @@ export async function auditReleaseArtifacts(rootDirectory) {
     unexpectedCredentialPathCopies,
     productionPrerenderBindingConfigured,
     expectedSchedulerConfigured,
+    structuredApplicationLogsEnabled,
+    automaticInvocationLogsDisabled,
     findings: findings.map((finding) =>
       redactKnownCredentials(finding, credentialValues),
     ),
@@ -215,6 +232,10 @@ async function runCli() {
       productionPrerenderBindingConfigured:
         report.productionPrerenderBindingConfigured,
       expectedSchedulerConfigured: report.expectedSchedulerConfigured,
+      structuredApplicationLogsEnabled:
+        report.structuredApplicationLogsEnabled,
+      automaticInvocationLogsDisabled:
+        report.automaticInvocationLogsDisabled,
     });
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
