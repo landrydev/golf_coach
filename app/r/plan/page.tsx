@@ -11,10 +11,18 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, nocache: true },
 };
 
-export default async function SharedPlanPage() {
+type SharedPlanPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function SharedPlanPage({ searchParams }: SharedPlanPageProps) {
+  const expectedSessionContext = exactSessionContext(await searchParams);
   const cookieStore = await cookies();
   const token = cookieStore.get("roadmap_share")?.value;
-  const resolved = token ? await resolveShareSession(token) : null;
+  const resolved =
+    token && expectedSessionContext
+      ? await resolveShareSession(token, expectedSessionContext)
+      : null;
 
   if (!resolved) {
     return (
@@ -33,5 +41,21 @@ export default async function SharedPlanPage() {
     );
   }
 
-  return <PlanView model={resolved.model} />;
+  return (
+    <PlanView
+      model={resolved.model}
+      sessionContext={resolved.sessionContext}
+    />
+  );
+}
+
+function exactSessionContext(
+  searchParams: Record<string, string | string[] | undefined>,
+): string | null {
+  const keys = Object.keys(searchParams);
+  if (keys.length !== 1 || keys[0] !== "context") return null;
+  const context = searchParams.context;
+  return typeof context === "string" && /^[0-9a-f]{64}$/.test(context)
+    ? context
+    : null;
 }

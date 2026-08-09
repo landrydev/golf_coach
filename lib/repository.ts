@@ -318,12 +318,16 @@ export async function getProfile(accountId: string): Promise<ProfileView | null>
 export async function saveProfile(
   accountId: string,
   input: SaveProfileInput,
+  expectedUpdatedAt: number | null,
   requestId?: string,
 ): Promise<ProfileSaveResult> {
   const db = getDb();
   const existing = await getProfile(accountId);
 
   if (!existing) {
+    if (expectedUpdatedAt !== null) {
+      throw staleProfileUpdate();
+    }
     const now = new Date();
     try {
       await db.batch([
@@ -361,10 +365,15 @@ export async function saveProfile(
       throw error;
     }
 
-    const profile = await getProfile(accountId);
-    if (!profile) throw new Error("The saved profile could not be loaded.");
+    await pauseAtSyntheticConcurrencyBarrier(
+      "profile-create-after-write-before-response",
+    );
     return {
-      profile,
+      profile: profileViewFromInput(
+        input,
+        now.getTime(),
+        now.getTime(),
+      ),
       changedFields: [...PROFILE_MUTABLE_FIELDS],
       publicationImpact: emptyProfilePublicationImpact(false),
     };
@@ -373,6 +382,12 @@ export async function saveProfile(
   const changedFields = PROFILE_MUTABLE_FIELDS.filter(
     (field) => existing[field] !== input[field],
   );
+  if (
+    expectedUpdatedAt === null ||
+    existing.updatedAt !== expectedUpdatedAt
+  ) {
+    throw staleProfileUpdate();
+  }
   if (changedFields.length === 0) {
     return {
       profile: existing,
@@ -405,7 +420,7 @@ export async function saveProfile(
           // Make the observed profile timestamp a transactional compare-and-swap
           // sentinel. A lost race writes NULL to a NOT NULL field, aborting the
           // entire batch before any capability or plan can be left half-reset.
-          displayName: sql<string>`case when ${instructorProfiles.updatedAt} = ${existing.updatedAt} then ${input.displayName} else null end`,
+          displayName: sql<string>`case when ${instructorProfiles.updatedAt} = ${expectedUpdatedAt} then ${input.displayName} else null end`,
           businessName: input.businessName,
           professionalTitle: input.professionalTitle,
           philosophy: input.philosophy,
@@ -494,26 +509,35 @@ export async function saveProfile(
       await requireGolferRecordProcessingConsent(accountId);
     }
     const current = await getProfile(accountId);
-    if (!current || current.updatedAt !== existing.updatedAt) {
-      throw new RequestError(
-        409,
-        "stale_profile_update",
-        "The coach profile changed while this save was in progress. Refresh before saving again.",
-      );
+    if (!current || current.updatedAt !== expectedUpdatedAt) {
+      throw staleProfileUpdate();
     }
     throw error;
   }
 
-  const profile = await getProfile(accountId);
-  if (!profile) throw new Error("The saved profile could not be loaded.");
+  await pauseAtSyntheticConcurrencyBarrier(
+    "profile-update-after-write-before-response",
+  );
   return {
-    profile,
+    profile: profileViewFromInput(
+      input,
+      existing.setupCompletedAt ?? now.getTime(),
+      now.getTime(),
+    ),
     changedFields,
     publicationImpact: {
       invalidated: true,
       ...impact,
     },
   };
+}
+
+function staleProfileUpdate(): RequestError {
+  return new RequestError(
+    409,
+    "stale_profile_update",
+    "The coach profile changed after this page was loaded. Refresh before saving again.",
+  );
 }
 
 const PROFILE_MUTABLE_FIELDS = [
@@ -539,6 +563,23 @@ function emptyProfilePublicationImpact(
     affectedPlans: 0,
     revokedShareLinks: 0,
     revokedShareSessions: 0,
+  };
+}
+
+function profileViewFromInput(
+  input: SaveProfileInput,
+  setupCompletedAt: number,
+  updatedAt: number,
+): ProfileView {
+  const location = [input.city, input.provinceOrTerritory]
+    .filter(Boolean)
+    .join(", ");
+  return {
+    ...input,
+    bio: input.philosophy,
+    location: location || null,
+    setupCompletedAt,
+    updatedAt,
   };
 }
 
@@ -960,6 +1001,7 @@ export async function updateCoachingPackage(
   accountId: string,
   packageId: string,
   input: CreatePackageInput,
+  expectedUpdatedAt: number,
   requestId?: string,
 ): Promise<PackageLifecycleResult> {
   if (input.status === "archived") {
@@ -980,9 +1022,12 @@ export async function updateCoachingPackage(
       "Archived packages cannot be edited or restored here.",
     );
   }
+  if (existing.updatedAt !== expectedUpdatedAt) {
+    throw stalePackageVersion();
+  }
 
   const db = getDb();
-  const now = new Date();
+  const now = new Date(Math.max(Date.now(), existing.updatedAt + 1));
   const impact = await getPackagePlanImpact(accountId, packageId);
   await pauseAtSyntheticConcurrencyBarrier("package-update-after-impact-preflight");
   const consentRequirements = impact.affectedPlans > 0
@@ -1002,6 +1047,10 @@ export async function updateCoachingPackage(
     .update(coachingPackages)
     .set({
       ...input,
+      // The observed version is a transactional sentinel. A concurrent edit
+      // writes NULL into this NOT NULL field and rolls back the entire D1
+      // batch, including plan invalidation and the success audit.
+      name: sql<string>`case when ${coachingPackages.updatedAt} = ${expectedUpdatedAt} then ${input.name} else null end`,
       externalActionVerifiedAt: null,
       archivedAt: null,
       updatedAt: now,
@@ -1076,13 +1125,15 @@ export async function updateCoachingPackage(
     if (currentImpact.affectedPlans > 0) {
       await requireGolferRecordProcessingConsent(accountId);
     }
+    const current = await getPackageById(accountId, packageId);
+    if (!current || current.updatedAt !== expectedUpdatedAt) {
+      throw stalePackageVersion();
+    }
     throw error;
   }
 
-  const updated = await getPackageById(accountId, packageId);
-  if (!updated) throw new Error("The updated coaching package could not be loaded.");
   return {
-    package: updated,
+    package: packageViewFromInput(existing, input, now.getTime()),
     affectedPlans: impact.affectedPlans,
     revokedShareLinks: impact.revokedShareLinks,
   };
@@ -1091,6 +1142,7 @@ export async function updateCoachingPackage(
 export async function archiveCoachingPackage(
   accountId: string,
   packageId: string,
+  expectedUpdatedAt: number,
   requestId?: string,
 ): Promise<PackageLifecycleResult> {
   const existing = await getPackageById(accountId, packageId);
@@ -1100,9 +1152,12 @@ export async function archiveCoachingPackage(
   if (existing.status === "archived") {
     return { package: existing, affectedPlans: 0, revokedShareLinks: 0 };
   }
+  if (existing.updatedAt !== expectedUpdatedAt) {
+    throw stalePackageVersion();
+  }
 
   const db = getDb();
-  const now = new Date();
+  const now = new Date(Math.max(Date.now(), existing.updatedAt + 1));
   const impact = await getPackagePlanImpact(accountId, packageId);
   await pauseAtSyntheticConcurrencyBarrier("package-archive-after-impact-preflight");
   const consentRequirements = impact.affectedPlans > 0
@@ -1129,6 +1184,9 @@ export async function archiveCoachingPackage(
       db
         .update(coachingPackages)
         .set({
+          // Archive is also version-bound so an old confirmation cannot
+          // silently retire a package whose facts changed in another tab.
+          name: sql<string>`case when ${coachingPackages.updatedAt} = ${expectedUpdatedAt} then ${existing.name} else null end`,
           status: "archived",
           isDefault: false,
           externalActionVerifiedAt: null,
@@ -1169,15 +1227,62 @@ export async function archiveCoachingPackage(
     if (currentImpact.affectedPlans > 0) {
       await requireGolferRecordProcessingConsent(accountId);
     }
+    const current = await getPackageById(accountId, packageId);
+    if (!current || current.updatedAt !== expectedUpdatedAt) {
+      throw stalePackageVersion();
+    }
     throw error;
   }
 
-  const archived = await getPackageById(accountId, packageId);
-  if (!archived) throw new Error("The archived coaching package could not be loaded.");
   return {
-    package: archived,
+    package: {
+      ...existing,
+      status: "archived",
+      isDefault: false,
+      updatedAt: now.getTime(),
+    },
     affectedPlans: impact.affectedPlans,
     revokedShareLinks: impact.revokedShareLinks,
+  };
+}
+
+function stalePackageVersion(): RequestError {
+  return new RequestError(
+    409,
+    "stale_package_version",
+    "This coaching package changed after the page was loaded. Reload before changing it again.",
+  );
+}
+
+function packageViewFromInput(
+  existing: PackageView,
+  input: CreatePackageInput,
+  updatedAt: number,
+): PackageView {
+  return {
+    id: existing.id,
+    title: input.name,
+    name: input.name,
+    description: input.fitDescription,
+    purpose: input.purpose,
+    fitDescription: input.fitDescription,
+    status: input.status,
+    priceCents: input.priceAmountMinor,
+    priceAmountMinor: input.priceAmountMinor,
+    currency: input.currency,
+    currentDetailsText: input.currentDetailsText,
+    inclusions: [...input.inclusions],
+    cadence: input.cadence,
+    practiceExpectation: input.practiceExpectation,
+    evaluationDescription: input.evaluationDescription,
+    terms: input.termsSummary,
+    termsSummary: input.termsSummary,
+    externalActionType: input.externalActionType,
+    externalActionLabel: input.externalActionLabel,
+    externalActionUrl: input.externalActionUrl,
+    isDefault: input.isDefault,
+    createdAt: existing.createdAt,
+    updatedAt,
   };
 }
 

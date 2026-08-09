@@ -162,38 +162,34 @@ test(
   },
 );
 
-test("package form retains one client key until a definitive success", async () => {
+test("package form persists one exact client attempt until reconciliation", async () => {
   const source = await readFile(
     new URL("../app/app/packages/PackageForm.tsx", import.meta.url),
     "utf8",
   );
-  assert.match(source, /const idempotencyKeyRef = useRef\(""\)/);
-  assert.match(source, /idempotencyKeyRef\.current = crypto\.randomUUID\(\)/);
-  assert.match(source, /"Idempotency-Key": idempotencyKeyRef\.current/);
+  assert.match(source, /pendingAttemptRef = useRef<KeyedAttemptRecord/);
+  assert.match(source, /persistKeyedAttempt\([\s\S]*key: crypto\.randomUUID\(\)/);
+  assert.match(source, /"Idempotency-Key": attempt\.key/);
+  assert.match(source, /body: attempt\.body/);
   assert.match(source, /@\/lib\/client-mutation-recovery/);
 
-  const assignment = source.indexOf(
-    "idempotencyKeyRef.current = crypto.randomUUID()",
-  );
+  const assignment = source.indexOf("pendingAttemptRef.current = persistKeyedAttempt");
   const capturedForm = source.indexOf("const formElement = event.currentTarget");
   const request = source.indexOf('requestClientMutation("/api/packages"');
-  const rejected = source.indexOf("if (!response.ok)");
-  const confirmed = source.indexOf('typeof result.package?.id !== "string"');
-  const reset = source.indexOf('idempotencyKeyRef.current = ""');
+  const confirmed = source.indexOf("hasPackageCreateResponse");
+  const clear = source.indexOf(
+    "clearKeyedAttempt(attempt)",
+    request,
+  );
   const formReset = source.indexOf("formElement.reset()");
   assert.ok(capturedForm >= 0 && capturedForm < request);
   assert.ok(assignment >= 0 && assignment < request);
-  assert.ok(request < rejected);
-  assert.ok(rejected < confirmed);
-  assert.ok(confirmed < formReset);
-  assert.ok(formReset < reset);
-  assert.equal(
-    source.match(/idempotencyKeyRef\.current\s*=\s*""/g)?.length,
-    1,
-  );
+  assert.ok(request < confirmed);
+  assert.ok(confirmed < clear);
+  assert.ok(clear < formReset);
   assert.doesNotMatch(
     source,
-    /finally\s*\{[^}]*idempotencyKeyRef\.current\s*=\s*""/s,
+    /finally\s*\{[^}]*clearKeyedAttempt/s,
   );
   assert.doesNotMatch(source, /event\.currentTarget\.reset\(\)/);
 });

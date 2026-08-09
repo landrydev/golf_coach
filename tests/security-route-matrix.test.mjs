@@ -6,7 +6,9 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import {
   grantSyntheticGolferRecordConsent,
+  identityHeaders,
   startD1Worker,
+  testOrigin,
   writeHeaders,
 } from "./support/d1-worker.mjs";
 
@@ -79,6 +81,7 @@ test(
             body: "{",
           },
           {
+            APPLICATION_WRITE_MODE: "enabled",
             INSTRUCTOR_ACCESS_MODE: "owner_private",
             OWNER_PRIVATE_ACCESS_PEPPER:
               "synthetic-owner-access-pepper-for-tests-only-2026-08-07",
@@ -96,6 +99,288 @@ test(
           "cross_origin_request",
           `${mutation.method} ${mutation.routePath} did not fail at Origin validation for ${scenario.label}`,
         );
+      }
+    }
+  },
+);
+
+test(
+  "the central write control freezes every discovered write-capable request without exposing its state",
+  { timeout: 120_000 },
+  async (context) => {
+    const worker = await startD1Worker({
+      APPLICATION_WRITE_MODE: "frozen",
+    });
+    context.after(() => worker.dispose());
+    const mutations = await discoverBrowserMutations();
+    assert.ok(mutations.length >= 25);
+
+    for (const mutation of mutations) {
+      const response = await worker.dispatch(
+        materializeDynamicPath(mutation.routePath),
+        {
+          method: mutation.method,
+          headers: {
+            ...writeHeaders("coach.a@example.test", "Coach Avery"),
+            accept: "application/json",
+          },
+          body: "{}",
+        },
+      );
+      assert.equal(
+        response.status,
+        503,
+        `${mutation.method} ${mutation.routePath} bypassed the write freeze`,
+      );
+      assert.match(response.headers.get("cache-control") ?? "", /no-store/i);
+      assert.equal(response.headers.get("retry-after"), "60");
+      assert.deepEqual(await response.json(), {
+        error: {
+          code: "application_writes_unavailable",
+          message: "Changes are temporarily unavailable. Try again later.",
+        },
+      });
+    }
+
+    const instructorPages = await discoverInstructorPages();
+    assert.deepEqual(
+      instructorPages,
+      [
+        "/app",
+        "/app/billing",
+        "/app/golfers",
+        "/app/golfers/[golferId]",
+        "/app/golfers/[golferId]/complete",
+        "/app/golfers/[golferId]/edit",
+        "/app/golfers/[golferId]/settings",
+        "/app/golfers/new",
+        "/app/packages",
+        "/app/settings",
+        "/app/settings/data",
+        "/app/settings/shares",
+      ].sort(),
+    );
+    for (const routePath of instructorPages) {
+      const path = materializeDynamicPath(routePath);
+      await assertWriteUnavailable(
+        worker,
+        path,
+        { method: "GET", headers: frozenReadHeaders("application/json") },
+        `GET ${routePath}`,
+      );
+      await assertWriteUnavailable(
+        worker,
+        `${path}.rsc`,
+        {
+          method: "GET",
+          headers: frozenReadHeaders("text/x-component"),
+        },
+        `GET ${routePath}.rsc`,
+      );
+      await assertWriteUnavailable(
+        worker,
+        path,
+        { method: "HEAD", headers: frozenReadHeaders("application/json") },
+        `HEAD ${routePath}`,
+      );
+      await assertWriteUnavailable(
+        worker,
+        `${path}.rsc`,
+        { method: "HEAD", headers: frozenReadHeaders("text/x-component") },
+        `HEAD ${routePath}.rsc`,
+      );
+    }
+
+    const writeCapableGetApis = await discoverWriteCapableGetApis();
+    assert.deepEqual(
+      writeCapableGetApis,
+      [
+        "/api/account/shares",
+        "/api/consents",
+        "/api/data-requests",
+        "/api/golfers",
+        "/api/operations/data-requests",
+        "/api/operations/data-requests/[requestId]",
+        "/api/packages",
+        "/api/profile",
+      ].sort(),
+    );
+    for (const routePath of writeCapableGetApis) {
+      const path = materializeDynamicPath(routePath);
+      for (const method of ["GET", "HEAD"]) {
+        await assertWriteUnavailable(
+          worker,
+          path,
+          { method, headers: frozenReadHeaders("application/json") },
+          `${method} ${routePath}`,
+        );
+      }
+    }
+
+    await assertWriteUnavailable(
+      worker,
+      "/%",
+      { method: "GET", headers: frozenReadHeaders("application/json") },
+      "GET invalid normalized API path",
+    );
+
+    const htmlResponse = await worker.dispatch("/api/profile", {
+      method: "PUT",
+      headers: {
+        ...writeHeaders("coach.a@example.test", "Coach Avery"),
+        accept: "text/html,application/xhtml+xml",
+      },
+      body: "{}",
+    });
+    assert.equal(htmlResponse.status, 503);
+    assert.match(
+      htmlResponse.headers.get("content-type") ?? "",
+      /^text\/html/i,
+    );
+    const html = await htmlResponse.text();
+    assert.match(html, /<main>/i);
+    assert.match(html, /<h1>Changes temporarily unavailable<\/h1>/i);
+    assert.match(html, /href="\/support"/i);
+    assert.doesNotMatch(html, /frozen|invalid|APPLICATION_WRITE_MODE/i);
+
+    const missingIdentity = await worker.dispatch("/api/profile", {
+      method: "GET",
+      headers: {
+        accept: "application/json",
+      },
+    });
+    assert.equal(missingIdentity.status, 401);
+    assert.notEqual(missingIdentity.headers.get("retry-after"), "60");
+    assert.equal(
+      (await missingIdentity.json()).error.code,
+      "authentication_required",
+    );
+
+    const unauthorizedIdentity = await worker.dispatch("/api/profile", {
+      method: "HEAD",
+      headers: {
+        ...identityHeaders("not.allowed@example.test", "Unknown Coach"),
+        accept: "application/json",
+      },
+    });
+    assert.equal(unauthorizedIdentity.status, 403);
+    assert.notEqual(unauthorizedIdentity.headers.get("retry-after"), "60");
+
+    const nonCanonical = await worker.dispatch(
+      "https://noncanonical.test/api/profile",
+      {
+        method: "GET",
+        headers: { accept: "application/json" },
+      },
+    );
+    assert.equal(nonCanonical.status, 421);
+    assert.notEqual(nonCanonical.headers.get("retry-after"), "60");
+    assert.equal(
+      (await nonCanonical.json()).error.code,
+      "non_canonical_origin",
+    );
+
+    const publicRedirect = await worker.dispatch(
+      "https://noncanonical.test/privacy",
+      { redirect: "manual" },
+    );
+    assert.equal(publicRedirect.status, 308);
+    assert.equal(publicRedirect.headers.get("location"), `${testOrigin}/privacy`);
+
+    const publicHealth = await worker.dispatch("/api/health");
+    assert.equal(publicHealth.status, 200);
+    const publicHealthBody = await publicHealth.json();
+    assert.equal(publicHealthBody.status, "live");
+    assert.doesNotMatch(
+      JSON.stringify(publicHealthBody),
+      /writeControl|applicationWrites|frozen|invalid/i,
+    );
+
+    for (const path of ["/", "/privacy", "/support", "/terms", "/r", "/r/plan"]) {
+      for (const method of ["GET", "HEAD"]) {
+        const response = await worker.dispatch(path, {
+          method,
+          headers: { accept: "text/html" },
+        });
+        assert.equal(response.status, 200, `${method} ${path} was not readable`);
+        assert.notEqual(response.headers.get("retry-after"), "60");
+      }
+    }
+
+    const allowedOptions = await worker.dispatch("/api/profile", {
+      method: "OPTIONS",
+      headers: identityHeaders("coach.a@example.test", "Coach Avery"),
+    });
+    assert.notEqual(allowedOptions.status, 503);
+    assert.notEqual(allowedOptions.headers.get("retry-after"), "60");
+
+    const operationalHealth = await worker.dispatch(
+      "/api/operations/health",
+      {
+        headers: identityHeaders("coach.a@example.test", "Coach Avery"),
+      },
+    );
+    assert.equal(operationalHealth.status, 503);
+    const operationalBody = await operationalHealth.json();
+    assert.deepEqual(operationalBody.application.writeControl, {
+      state: "frozen",
+    });
+    assert.equal(
+      operationalBody.application.checks.applicationWritesEnabled,
+      false,
+    );
+
+    await assertNoContainmentWrites(worker);
+  },
+);
+
+test(
+  "missing, malformed, and padded write modes freeze incidental reads and scheduled work",
+  { timeout: 120_000 },
+  async () => {
+    for (const testCase of [
+      { label: "missing", bindings: {} },
+      {
+        label: "malformed",
+        bindings: { APPLICATION_WRITE_MODE: "ENABLED" },
+      },
+      {
+        label: "padded",
+        bindings: { APPLICATION_WRITE_MODE: " enabled " },
+      },
+    ]) {
+      const worker = await startD1Worker(testCase.bindings, {
+        applicationWriteModeDefault: false,
+        triggerHandlers: true,
+      });
+      try {
+        await assertWriteUnavailable(
+          worker,
+          "/api/profile",
+          { method: "GET", headers: frozenReadHeaders("application/json") },
+          `${testCase.label} GET /api/profile`,
+        );
+        await assertWriteUnavailable(
+          worker,
+          "/app.rsc",
+          {
+            method: "GET",
+            headers: frozenReadHeaders("text/x-component"),
+          },
+          `${testCase.label} GET /app.rsc`,
+        );
+        await assertWriteUnavailable(
+          worker,
+          "/app",
+          { method: "HEAD", headers: frozenReadHeaders("application/json") },
+          `${testCase.label} HEAD /app`,
+        );
+
+        const scheduled = await worker.dispatchScheduled();
+        assert.equal(scheduled.status, 200, testCase.label);
+        await assertNoContainmentWrites(worker);
+      } finally {
+        await worker.dispose();
       }
     }
   },
@@ -128,6 +413,8 @@ test("Worker access classification covers every instructor page, RSC request, an
     "/api/billing/webhook",
   ]);
   const accountApiPaths = new Set([
+    "/api/account/shares",
+    "/api/account/shares/[shareId]",
     "/api/profile",
     "/api/data-export",
     "/api/data-requests",
@@ -280,6 +567,89 @@ async function discoverBrowserMutations() {
       `${right.routePath}:${right.method}`,
     ),
   );
+}
+
+async function discoverInstructorPages() {
+  const routes = await discoverAppRoutes();
+  return routes
+    .filter(
+      ({ filename, routePath }) =>
+        filename.endsWith("page.tsx") &&
+        (routePath === "/app" || routePath.startsWith("/app/")),
+    )
+    .map(({ routePath }) => routePath)
+    .sort();
+}
+
+async function discoverWriteCapableGetApis() {
+  const routes = await discoverAppRoutes();
+  const healthRoutes = new Set([
+    "/api/health",
+    "/api/operations/health",
+  ]);
+  const paths = [];
+  for (const route of routes.filter(
+    ({ filename, routePath }) =>
+      filename.endsWith("route.ts") &&
+      routePath.startsWith("/api/") &&
+      !healthRoutes.has(routePath),
+  )) {
+    const source = await readFile(route.filename, "utf8");
+    if (/export\s+async\s+function\s+GET\s*\(/.test(source)) {
+      paths.push(route.routePath);
+    }
+  }
+  return paths.sort();
+}
+
+function frozenReadHeaders(accept) {
+  return {
+    ...identityHeaders("coach.a@example.test", "Coach Avery"),
+    accept,
+  };
+}
+
+async function assertWriteUnavailable(worker, path, init, label) {
+  const response = await worker.dispatch(path, init);
+  assert.equal(response.status, 503, `${label} bypassed the write freeze`);
+  assert.match(response.headers.get("cache-control") ?? "", /no-store/i);
+  assert.equal(response.headers.get("retry-after"), "60");
+  if (init.method.toUpperCase() === "HEAD") {
+    assert.equal(await response.text(), "", `${label} returned a HEAD body`);
+    return;
+  }
+  assert.deepEqual(await response.json(), {
+    error: {
+      code: "application_writes_unavailable",
+      message: "Changes are temporarily unavailable. Try again later.",
+    },
+  });
+}
+
+async function assertNoContainmentWrites(worker) {
+  const [persisted] = await worker.inspect([
+    {
+      sql: `select
+        (select count(*) from accounts) as accounts,
+        (select count(*) from audit_events) as audit_events,
+        (select count(*) from abuse_rate_limits) as rate_counters,
+        (select count(*) from golfer_plan_responses) as golfer_responses,
+        (select count(*) from data_requests) as data_requests,
+        (select count(*) from billing_events) as billing_events,
+        (select count(*) from scheduler_heartbeat) as scheduler_heartbeats`,
+    },
+  ]);
+  assert.deepEqual(persisted.results, [
+    {
+      accounts: 0,
+      audit_events: 0,
+      rate_counters: 0,
+      golfer_responses: 0,
+      data_requests: 0,
+      billing_events: 0,
+      scheduler_heartbeats: 0,
+    },
+  ]);
 }
 
 async function discoverAppRoutes() {

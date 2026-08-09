@@ -421,7 +421,7 @@ test(
   },
 );
 
-test("data-request controls retain retry keys only while the result is ambiguous", async () => {
+test("data-request controls persist exact keyed attempts until reconciliation", async () => {
   const source = await readFile(
     new URL(
       "../app/app/settings/data/DataRequestControls.tsx",
@@ -430,34 +430,15 @@ test("data-request controls retain retry keys only while the result is ambiguous
     "utf8",
   );
 
-  assert.match(source, /const deletionIdempotencyKeyRef = useRef\(""\)/);
-  assert.match(source, /const manualReviewIdempotencyRef = useRef</);
+  assert.match(source, /const deletionAttemptRef = useRef<KeyedAttemptRecord/);
+  assert.match(source, /const manualReviewAttemptRef = useRef<KeyedAttemptRecord/);
   assert.equal(source.match(/"Idempotency-Key":/g)?.length, 2);
-  assert.match(
-    source,
-    /"Idempotency-Key": deletionIdempotencyKeyRef\.current/,
-  );
-  assert.match(
-    source,
-    /"Idempotency-Key": manualReviewIdempotencyRef\.current\.key/,
-  );
-  assert.match(source, /const intent = JSON\.stringify\(\[reviewType, details\]\)/);
-  assert.match(
-    source,
-    /if \(definitiveOutcome\) deletionIdempotencyKeyRef\.current = ""/,
-  );
-  assert.match(
-    source,
-    /if \(definitiveOutcome\) manualReviewIdempotencyRef\.current = null/,
-  );
-  assert.doesNotMatch(
-    source,
-    /finally\s*\{\s*deletionIdempotencyKeyRef\.current = ""/s,
-  );
-  assert.doesNotMatch(
-    source,
-    /finally\s*\{\s*manualReviewIdempotencyRef\.current = null/s,
-  );
+  assert.match(source, /operation: "data_request_deletion_create"/);
+  assert.match(source, /operation: "data_request_manual_create"/);
+  assert.match(source, /body: attempt\.body/g);
+  assert.match(source, /keyedAttemptMutationDisposition\(requestError\)/g);
+  assert.match(source, /keyedAttemptReceiptBlockedMessage/g);
+  assert.equal(source.match(/clearKeyedAttempt\(attempt\)/g)?.length, 4);
 });
 
 async function submitDeletionReview(

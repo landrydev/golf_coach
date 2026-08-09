@@ -1,44 +1,93 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import {
+  AuthoringDraftRecovery,
+  authoringDraftStateBlocksMutation,
+  type AuthoringDraftUiState,
+} from "@/components/forms/AuthoringDraftRecovery";
 import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
+import {
+  canonicalAuthoringValues,
+  captureAuthoringDraftValues,
+  clearAuthoringDraft,
+  discardAuthoringDraft,
+  persistAuthoringDraft,
+  reconcileAuthoringDraft,
+  restoreAuthoringDraftValues,
+  type AuthoringDraftScope,
+} from "@/lib/client-authoring-draft-recovery";
 import {
   clientMutationErrorMessage,
   requestClientMutation,
 } from "@/lib/client-mutation-recovery";
+import { requiresAuthoritativeMutationReload } from "@/lib/client-terminal-mutation";
+import {
+  isPlanEditorMutationResponse,
+  requireExactClientMutationJson,
+} from "@/lib/instructor-mutation-response-contracts";
 import type { PlanViewModel } from "@/components/plan/types";
 import styles from "../../../workspace.module.css";
-
-type EditResponse = {
-  plan?: {
-    id?: string;
-    status?: string;
-    revision?: number;
-  };
-  revokedShareLinks?: number;
-  error?: { message?: string };
-};
 
 const ERROR_SUMMARY_ID = "plan-editor-form-error-summary";
 
 export function PlanEditorForm({
   golferId,
   model,
+  recoveryScope,
 }: {
   golferId: string;
   model: PlanViewModel;
+  recoveryScope: string;
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
-  const [state, setState] = useState<"idle" | "saving" | "error">("idle");
+  const mutationTerminalRef = useRef(false);
+  const [state, setState] = useState<
+    "idle" | "saving" | "saved" | "error" | "reload_required"
+  >("idle");
   const [message, setMessage] = useState("");
+  const [confirmedDestination, setConfirmedDestination] = useState<string | null>(null);
+  const [draftRecovery, setDraftRecovery] =
+    useState<AuthoringDraftUiState>({ kind: "checking" });
+  const draftScope = useMemo<AuthoringDraftScope>(
+    () => ({
+      accountScope: recoveryScope,
+      resourceId: model.plan.id,
+      action: "plan_core_edit",
+    }),
+    [model.plan.id, recoveryScope],
+  );
+  const authoritativeDraftState = useMemo(
+    () => canonicalAuthoringValues(planEditorDraftValues(model)),
+    [model],
+  );
+  const isLocked =
+    state === "saving" ||
+    state === "reload_required" ||
+    state === "saved" ||
+    authoringDraftStateBlocksMutation(draftRecovery);
   const orderedPhases = Array.from(
     { length: model.phases.length },
     (_, index) => index + 1,
   ).map((number) =>
     model.phases.find((phase) => phase.number === number),
   );
+
+  useEffect(() => {
+    let current = true;
+    void reconcileAuthoringDraft({
+      scope: draftScope,
+      currentRevision: model.plan.revision,
+      currentState: authoritativeDraftState,
+    }).then((result) => {
+      if (current) setDraftRecovery(result);
+    });
+    return () => {
+      current = false;
+    };
+  }, [authoritativeDraftState, draftScope, model.plan.revision]);
 
   if (
     !model.priority ||
@@ -59,39 +108,67 @@ export function PlanEditorForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (mutationTerminalRef.current) return;
+    if (authoringDraftStateBlocksMutation(draftRecovery)) return;
+    mutationTerminalRef.current = true;
     setState("saving");
     setMessage("");
 
-    const form = new FormData(event.currentTarget);
+    const values = captureAuthoringDraftValues(event.currentTarget);
+    if (!values) {
+      mutationTerminalRef.current = false;
+      setState("error");
+      setMessage("The plan draft could not be captured safely. No request was sent.");
+      return;
+    }
+    const savedDraft = await persistAuthoringDraft({
+      scope: draftScope,
+      baseRevision: model.plan.revision,
+      baseState: authoritativeDraftState,
+      appliedState: canonicalAuthoringValues(values),
+      values,
+      ui: { phaseCount: model.phases.length },
+    });
+    if (savedDraft.kind === "blocked") {
+      mutationTerminalRef.current = false;
+      setDraftRecovery(savedDraft);
+      setState("error");
+      setMessage(
+        "Roadmap could not safely preserve this plan draft in the browser tab. No request was sent.",
+      );
+      return;
+    }
+
     const payload = {
       expectedRevision: model.plan.revision,
-      title: form.get("title"),
+      title: values.title,
       goal: {
-        statement: form.get("goalStatement"),
-        why: form.get("goalWhy"),
-        context: form.get("goalContext"),
+        statement: values.goalStatement,
+        why: values.goalWhy,
+        context: values.goalContext,
       },
       assessment: {
-        summary: form.get("assessmentSummary"),
-        strengths: form.get("assessmentStrengths"),
-        primaryPattern: form.get("assessmentPrimaryPattern"),
-        limitations: form.get("assessmentLimitations"),
+        summary: values.assessmentSummary,
+        strengths: values.assessmentStrengths,
+        primaryPattern: values.assessmentPrimaryPattern,
+        limitations: values.assessmentLimitations,
       },
       priority: {
-        title: form.get("priorityTitle"),
-        rationale: form.get("priorityRationale"),
+        title: values.priorityTitle,
+        rationale: values.priorityRationale,
       },
       phases: phases.map((phase) => ({
         number: phase.number,
-        title: form.get(`phase${phase.number}Title`),
-        purpose: form.get(`phase${phase.number}Purpose`),
-        rationale: form.get(`phase${phase.number}Rationale`),
+        title: values[`phase${phase.number}Title`],
+        purpose: values[`phase${phase.number}Purpose`],
+        rationale: values[`phase${phase.number}Rationale`],
         progressSignals: lineItems(
-          form.get(`phase${phase.number}ProgressSignals`),
+          values[`phase${phase.number}ProgressSignals`],
         ),
       })),
     };
 
+    let destination: string | null = null;
     try {
       const response = await requestClientMutation(
         `/api/plans/${encodeURIComponent(model.plan.id)}`,
@@ -101,15 +178,25 @@ export function PlanEditorForm({
           body: JSON.stringify(payload),
         },
       );
-      const result = (await response.json()) as EditResponse;
-      if (!response.ok || result.plan?.status !== "draft") {
-        throw new Error(result.error?.message || "The plan changes could not be saved.");
-      }
-
-      router.push(`/app/golfers/${encodeURIComponent(golferId)}`);
-      router.refresh();
+      await requireExactClientMutationJson(
+        response,
+        200,
+        (value) =>
+          isPlanEditorMutationResponse(value, {
+            planId: model.plan.id,
+            revision: model.plan.revision + 1,
+          }),
+        "The plan changes could not be saved.",
+      );
+      destination = `/app/golfers/${encodeURIComponent(golferId)}`;
+      setConfirmedDestination(destination);
+      setState("saved");
+      setMessage("Plan changes saved.");
+      clearAuthoringDraft(savedDraft.draft);
     } catch (error) {
-      setState("error");
+      const reloadRequired = requiresAuthoritativeMutationReload(error);
+      if (!reloadRequired) mutationTerminalRef.current = false;
+      setState(reloadRequired ? "reload_required" : "error");
       setMessage(
         clientMutationErrorMessage(
           error,
@@ -118,6 +205,16 @@ export function PlanEditorForm({
           "The plan changes could not be saved.",
         ),
       );
+      if (!reloadRequired) setDraftRecovery({ kind: "restored" });
+      return;
+    }
+
+    if (!destination) return;
+    try {
+      router.push(destination);
+      router.refresh();
+    } catch {
+      // The confirmed plan save remains successful if navigation fails.
     }
   }
 
@@ -126,10 +223,45 @@ export function PlanEditorForm({
       ref={formRef}
       className={styles.form}
       aria-describedby={ERROR_SUMMARY_ID}
+      method="post"
       onSubmit={handleSubmit}
     >
+      <AuthoringDraftRecovery
+        state={draftRecovery}
+        label="plan edit"
+        noticeClassName={styles.notice}
+        actionsClassName={styles.actions}
+        buttonClassName={styles.secondaryButton}
+        onRestore={() => {
+          if (
+            draftRecovery.kind !== "unchanged" ||
+            !formRef.current ||
+            !restoreAuthoringDraftValues(
+              formRef.current,
+              draftRecovery.draft.envelope.values,
+            )
+          ) {
+            setDraftRecovery({ kind: "blocked", reason: "invalid" });
+            return;
+          }
+          setDraftRecovery({ kind: "restored" });
+        }}
+        onDiscard={() => {
+          const reload =
+            draftRecovery.kind === "blocked" || draftRecovery.kind === "diverged";
+          if (!discardAuthoringDraft(draftScope)) {
+            setDraftRecovery({ kind: "blocked", reason: "unavailable" });
+            return;
+          }
+          setDraftRecovery({ kind: "empty" });
+          if (reload) window.location.reload();
+        }}
+      />
       <section className={styles.formCard}>
-        <fieldset className={styles.formSection} disabled={state === "saving"}>
+        <fieldset
+          className={styles.formSection}
+          disabled={isLocked}
+        >
           <legend>Plan and primary goal</legend>
           <div className={styles.fieldGrid}>
             <label className={styles.fullField}>
@@ -179,7 +311,10 @@ export function PlanEditorForm({
       </section>
 
       <section className={styles.formCard}>
-        <fieldset className={styles.formSection} disabled={state === "saving"}>
+        <fieldset
+          className={styles.formSection}
+          disabled={isLocked}
+        >
           <legend>Starting assessment</legend>
           <div className={styles.fieldGrid}>
             <label className={styles.fullField}>
@@ -230,7 +365,10 @@ export function PlanEditorForm({
       </section>
 
       <section className={styles.formCard}>
-        <fieldset className={styles.formSection} disabled={state === "saving"}>
+        <fieldset
+          className={styles.formSection}
+          disabled={isLocked}
+        >
           <legend>Current priority</legend>
           <div className={styles.fieldGrid}>
             <label className={styles.field}>
@@ -256,7 +394,10 @@ export function PlanEditorForm({
       </section>
 
       <section className={styles.formCard}>
-        <fieldset className={styles.formSection} disabled={state === "saving"}>
+        <fieldset
+          className={styles.formSection}
+          disabled={isLocked}
+        >
           <legend>{phases.length} directional development phases</legend>
           <p className={styles.muted}>
             Keep the existing {phases.length}-phase structure. Later phases are direction and may change as new evidence develops.
@@ -311,10 +452,37 @@ export function PlanEditorForm({
 
       <FormErrorSummary
         id={ERROR_SUMMARY_ID}
-        message={state === "error" ? message : ""}
+        message={
+          state === "error" || state === "reload_required" ? message : ""
+        }
         formRef={formRef}
         className={styles.errorStatus}
       />
+      {state === "saved" ? (
+        <div className={styles.formStatus} role="status">
+          {message}
+          {confirmedDestination ? (
+            <a className={styles.secondaryButton} href={confirmedDestination}>
+              Open the confirmed roadmap
+            </a>
+          ) : null}
+        </div>
+      ) : null}
+      {state === "reload_required" ? (
+        <div className={styles.notice} role="alert">
+          <strong>Reload before editing this plan again.</strong>
+          <span>
+            The draft controls are locked until the authoritative revision is loaded.
+          </span>
+          <button
+            className={styles.secondaryButton}
+            type="button"
+            onClick={() => window.location.reload()}
+          >
+            Reload and check plan revision
+          </button>
+        </div>
+      ) : null}
       <div className={styles.notice} role="note">
         <strong>This save revokes current private links.</strong>
         <span>
@@ -325,14 +493,14 @@ export function PlanEditorForm({
         <button
           className={styles.primaryButton}
           type="submit"
-          disabled={state === "saving"}
+          disabled={isLocked}
         >
           {state === "saving" ? "Saving new draft…" : "Save as a new draft revision"}
         </button>
         <button
           className={styles.secondaryButton}
           type="button"
-          disabled={state === "saving"}
+          disabled={isLocked}
           onClick={() => router.back()}
         >
           Cancel
@@ -342,9 +510,32 @@ export function PlanEditorForm({
   );
 }
 
-function lineItems(value: FormDataEntryValue | null): string[] {
+function lineItems(value: string | undefined): string[] {
   return String(value ?? "")
     .split(/\r?\n/)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function planEditorDraftValues(model: PlanViewModel): Record<string, string> {
+  return {
+    title: model.plan.title,
+    goalStatement: model.goal.statement,
+    goalWhy: model.goal.why ?? "",
+    goalContext: model.goal.context ?? "",
+    assessmentSummary: model.assessment.summary,
+    assessmentStrengths: model.assessment.strengths ?? "",
+    assessmentPrimaryPattern: model.assessment.primaryPattern ?? "",
+    assessmentLimitations: model.assessment.limitations,
+    priorityTitle: model.priority?.title ?? "",
+    priorityRationale: model.priority?.rationale ?? "",
+    ...Object.fromEntries(
+      model.phases.flatMap((phase) => [
+        [`phase${phase.number}Title`, phase.title],
+        [`phase${phase.number}Purpose`, phase.purpose],
+        [`phase${phase.number}Rationale`, phase.rationale ?? ""],
+        [`phase${phase.number}ProgressSignals`, phase.progressSignals.join("\n")],
+      ]),
+    ),
+  };
 }

@@ -38,6 +38,10 @@ const server = createServer(async (request, response) => {
         body: JSON.stringify({ token: fixture.token }),
       });
       assertStatus(exchangeResponse, 200, "visual share-session exchange");
+      const exchangeBody = await exchangeResponse.json();
+      if (!/^[0-9a-f]{64}$/u.test(exchangeBody.sessionContext)) {
+        throw new Error("Visual share-session exchange returned an invalid context.");
+      }
       const sessionCookie = exchangeResponse.headers.get("set-cookie");
       if (!sessionCookie) {
         throw new Error("Visual share-session exchange did not return a cookie.");
@@ -52,7 +56,10 @@ const server = createServer(async (request, response) => {
         "Set-Cookie",
         sessionCookie.replace(/;\s*Secure\b/gi, ""),
       );
-      response.setHeader("Location", "/r/plan");
+      response.setHeader(
+        "Location",
+        `/r/plan?context=${exchangeBody.sessionContext}`,
+      );
       response.end();
       return;
     }

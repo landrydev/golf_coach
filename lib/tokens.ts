@@ -9,6 +9,12 @@ export type ShareSessionToken = {
   hash: string;
 };
 
+export type ShareSessionContextInput = {
+  accountId: string;
+  shareId: string;
+  sessionId: string;
+};
+
 const MINIMUM_SHARE_TOKEN_PEPPER_LENGTH = 32;
 
 export function shareTokenPepperConfigurationReady(
@@ -39,6 +45,38 @@ export async function createShareSessionToken(): Promise<ShareSessionToken> {
 
 export function hashShareSessionToken(raw: string): Promise<string> {
   return hashToken(`share-session-v1:${raw}`);
+}
+
+/**
+ * Produces a browser-safe, non-reversible binding for one exact share session.
+ * The context is not a bearer by itself; routes require both the HttpOnly
+ * session cookie and this independently supplied value.
+ */
+export function hashShareSessionContext(
+  input: ShareSessionContextInput,
+): Promise<string> {
+  return hashToken(
+    JSON.stringify([
+      "share-session-context-v1",
+      input.accountId,
+      input.shareId,
+      input.sessionId,
+    ]),
+  );
+}
+
+export function shareSessionContextsEqual(
+  candidate: string,
+  expected: string,
+): boolean {
+  if (!/^[0-9a-f]{64}$/.test(candidate) || !/^[0-9a-f]{64}$/.test(expected)) {
+    return false;
+  }
+  let difference = 0;
+  for (let index = 0; index < expected.length; index += 1) {
+    difference |= candidate.charCodeAt(index) ^ expected.charCodeAt(index);
+  }
+  return difference === 0;
 }
 
 export async function hashToken(raw: string): Promise<string> {

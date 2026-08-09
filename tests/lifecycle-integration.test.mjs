@@ -52,7 +52,10 @@ test(
       `/api/packages/${packageOne.id}`,
       "PUT",
       coachB,
-      packagePayload("Cross-tenant mutation"),
+      {
+        ...packagePayload("Cross-tenant mutation"),
+        expectedUpdatedAt: packageOne.updatedAt,
+      },
     );
     assert.equal(crossTenantPackageEdit.status, 404);
     assert.equal(
@@ -66,7 +69,10 @@ test(
       `/api/packages/${packageOne.id}`,
       "PUT",
       coachA,
-      packagePayload("Flight Window Series — revised"),
+      {
+        ...packagePayload("Flight Window Series — revised"),
+        expectedUpdatedAt: packageOne.updatedAt,
+      },
     );
     assert.equal(packageEdit.status, 200);
     const packageEditResult = await packageEdit.json();
@@ -101,7 +107,10 @@ test(
       `/api/packages/${packageOne.id}`,
       "DELETE",
       coachB,
-      { confirmation: "archive_package" },
+      {
+        confirmation: "archive_package",
+        expectedUpdatedAt: packageEditResult.package.updatedAt,
+      },
     );
     assert.equal(crossTenantPackageArchive.status, 404);
     assert.equal(
@@ -115,7 +124,10 @@ test(
       `/api/packages/${packageOne.id}`,
       "DELETE",
       coachA,
-      { confirmation: "archive_package" },
+      {
+        confirmation: "archive_package",
+        expectedUpdatedAt: packageEditResult.package.updatedAt,
+      },
     );
     assert.equal(packageArchive.status, 200);
     const packageArchiveResult = await packageArchive.json();
@@ -142,7 +154,10 @@ test(
       `/api/packages/${packageOne.id}`,
       "PUT",
       coachA,
-      packagePayload("Attempted archived-package edit"),
+      {
+        ...packagePayload("Attempted archived-package edit"),
+        expectedUpdatedAt: packageArchiveResult.package.updatedAt,
+      },
     );
     assert.equal(archivedPackageEdit.status, 409);
     assert.equal((await archivedPackageEdit.json()).error.code, "package_archived");
@@ -165,7 +180,7 @@ test(
       1,
       "Jordan Original, adult golfer",
     );
-    const identityCookie = await assertShareAvailable(worker, identityShare.token);
+    const identitySession = await assertShareAvailable(worker, identityShare.token);
 
     const crossTenantIdentityEdit = await jsonWrite(
       worker,
@@ -193,8 +208,8 @@ test(
       (await staleIdentityEdit.json()).error.code,
       "stale_plan_revision",
     );
-    const unchangedPlan = await worker.dispatch("/r/plan", {
-      headers: { accept: "text/html", cookie: identityCookie },
+    const unchangedPlan = await worker.dispatch(identitySession.planPath, {
+      headers: { accept: "text/html", cookie: identitySession.cookie },
     });
     assert.equal(unchangedPlan.status, 200);
     const unchangedPlanHtml = await unchangedPlan.text();
@@ -225,7 +240,7 @@ test(
       "stale_plan_revision",
     );
     await assertShareUnavailable(worker, identityShare.token);
-    await assertCookieUnavailable(worker, identityCookie);
+    await assertCookieUnavailable(worker, identitySession);
 
     const archiveShare = await publish(
       worker,
@@ -234,7 +249,7 @@ test(
       2,
       "Jordan Corrected, adult golfer",
     );
-    const archiveCookie = await assertShareAvailable(worker, archiveShare.token);
+    const archiveSession = await assertShareAvailable(worker, archiveShare.token);
 
     const crossTenantGolferArchive = await jsonWrite(
       worker,
@@ -260,7 +275,7 @@ test(
     assert.equal(golferArchive.status, 204);
     assert.equal(await golferArchive.text(), "");
     await assertShareUnavailable(worker, archiveShare.token);
-    await assertCookieUnavailable(worker, archiveCookie);
+    await assertCookieUnavailable(worker, archiveSession);
 
     const archivedCoachView = await worker.dispatch(
       `/app/golfers/${golferWorkspace.golfer.id}`,
@@ -598,10 +613,14 @@ async function assertShareAvailable(worker, token) {
     token,
   });
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { redirectTo: "/r/plan" });
+  const body = await response.json();
+  assert.match(body.sessionContext, /^[0-9a-f]{64}$/);
   const cookie = response.headers.get("set-cookie")?.split(";", 1)[0];
   assert.match(cookie ?? "", /^roadmap_share=/);
-  return cookie;
+  return {
+    cookie,
+    planPath: `/r/plan?context=${body.sessionContext}`,
+  };
 }
 
 async function assertShareUnavailable(worker, token) {
@@ -612,9 +631,9 @@ async function assertShareUnavailable(worker, token) {
   assert.equal((await response.json()).error.code, "plan_unavailable");
 }
 
-async function assertCookieUnavailable(worker, cookie) {
-  const response = await worker.dispatch("/r/plan", {
-    headers: { accept: "text/html", cookie },
+async function assertCookieUnavailable(worker, session) {
+  const response = await worker.dispatch(session.planPath, {
+    headers: { accept: "text/html", cookie: session.cookie },
   });
   assert.equal(response.status, 200);
   const html = await response.text();

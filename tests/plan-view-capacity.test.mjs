@@ -93,10 +93,13 @@ test(
       token: rawShareToken,
     });
     assert.equal(exchangeResponse.status, 200);
+    const exchangeBody = await exchangeResponse.json();
+    assert.match(exchangeBody.sessionContext, /^[0-9a-f]{64}$/);
+    const golferPlanPath = `/r/plan?context=${exchangeBody.sessionContext}`;
     const shareCookie = exchangeResponse.headers.get("set-cookie")?.split(";", 1)[0];
     assert.match(shareCookie ?? "", /^roadmap_share=[A-Za-z0-9_-]{40,64}$/);
 
-    const golferPage = await worker.dispatch("/r/plan", {
+    const golferPage = await worker.dispatch(golferPlanPath, {
       headers: { accept: "text/html", cookie: shareCookie },
     });
     assert.equal(golferPage.status, 200);
@@ -120,7 +123,7 @@ test(
       /CAP-(?:LESSON|PRACTICE|EVIDENCE)-/,
     );
 
-    const overPhaseGolferPage = await worker.dispatch("/r/plan", {
+    const overPhaseGolferPage = await worker.dispatch(golferPlanPath, {
       headers: { accept: "text/html", cookie: shareCookie },
     });
     assert.equal(overPhaseGolferPage.status, 200);

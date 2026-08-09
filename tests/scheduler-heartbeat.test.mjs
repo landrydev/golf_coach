@@ -119,6 +119,151 @@ test(
     assert.equal(Object.hasOwn(publicBody, "scheduler"), false);
     assert.equal(Object.hasOwn(publicBody, "billingReconciliation"), false);
     assert.equal(JSON.stringify(publicBody).includes("deadLetter"), false);
+    assert.equal(Object.hasOwn(publicBody, "application"), false);
+    assert.doesNotMatch(
+      JSON.stringify(publicBody),
+      /writeControl|applicationWrites|APPLICATION_WRITE_MODE/i,
+    );
+  },
+);
+
+test(
+  "frozen or invalid write policy skips scheduled D1 and provider work",
+  { timeout: 120_000 },
+  async () => {
+    const cases = [
+      {
+        label: "frozen",
+        bindings: { APPLICATION_WRITE_MODE: "frozen" },
+        runtimeOptions: {},
+        expectedState: "frozen",
+      },
+      {
+        label: "missing",
+        bindings: {},
+        runtimeOptions: { applicationWriteModeDefault: false },
+        expectedState: "invalid",
+      },
+      {
+        label: "padded",
+        bindings: { APPLICATION_WRITE_MODE: " enabled " },
+        runtimeOptions: {},
+        expectedState: "invalid",
+      },
+    ];
+
+    for (const testCase of cases) {
+      let providerCalls = 0;
+      const priceId = `price_write_control_${testCase.label}`;
+      const worker = await startD1Worker(
+        {
+          BILLING_CHECKOUT_ENABLED: "false",
+          RELEASE_ID: releaseId,
+          STRIPE_CHECKOUT_PRICE_ID: priceId,
+          STRIPE_CHECKOUT_SESSION_LIFETIME_SECONDS: "3600",
+          STRIPE_RECOGNIZED_PRICE_IDS: priceId,
+          STRIPE_SECRET_KEY: "sk_test_write_control_synthetic_only",
+          STRIPE_WEBHOOK_SECRET: "whsec_write_control_synthetic_only",
+          SUBSCRIPTION_ENTITLEMENT_PRICE_IDS: priceId,
+          SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS: "3600",
+          ...testCase.bindings,
+        },
+        {
+          triggerHandlers: true,
+          outboundService: async () => {
+            providerCalls += 1;
+            return Response.json(
+              { error: { code: "unexpected_provider_call" } },
+              { status: 500 },
+            );
+          },
+          ...testCase.runtimeOptions,
+        },
+      );
+      try {
+        const accountId = `account-write-control-${testCase.label}`;
+        const customerId = `cus_write_control_${testCase.label}`;
+        const subscriptionId = `sub_write_control_${testCase.label}`;
+        const lastProviderSyncAt = Date.now() - 7_200_000;
+        await worker.inspect([
+          {
+            sql: `insert into accounts (
+              id, auth_provider, auth_subject, primary_email,
+              normalized_email, status
+            ) values (?, 'siwc', ?, ?, ?, 'active')`,
+            params: [
+              accountId,
+              `write-control-${testCase.label}@example.test`,
+              `write-control-${testCase.label}@example.test`,
+              `write-control-${testCase.label}@example.test`,
+            ],
+          },
+          {
+            sql: `insert into billing_customers (
+              provider, provider_customer_id, account_id
+            ) values ('stripe', ?, ?)`,
+            params: [customerId, accountId],
+          },
+          {
+            sql: `insert into subscriptions (
+              id, account_id, provider, provider_customer_id,
+              provider_subscription_id, provider_price_id, product_code,
+              status, billing_interval, currency, unit_amount_minor,
+              last_provider_sync_at, projection_revision
+            ) values (?, ?, 'stripe', ?, ?, ?, 'solo', 'active', 'month',
+              'CAD', 7500, ?, 1)`,
+            params: [
+              `subscription-write-control-${testCase.label}`,
+              accountId,
+              customerId,
+              subscriptionId,
+              priceId,
+              lastProviderSyncAt,
+            ],
+          },
+        ]);
+
+        const scheduled = await worker.dispatchScheduled();
+        assert.equal(scheduled.status, 200);
+        assert.equal(providerCalls, 0);
+
+        const inspected = await worker.inspect([
+          { sql: "select count(*) as count from scheduler_heartbeat" },
+          {
+            sql: "select count(*) as count from billing_reconciliation_targets",
+          },
+          { sql: "select count(*) as count from billing_events" },
+          { sql: "select count(*) as count from audit_events" },
+          {
+            sql: `select projection_revision, last_provider_sync_at
+              from subscriptions where account_id = ?`,
+            params: [accountId],
+          },
+        ]);
+        assert.deepEqual(
+          inspected.slice(0, 4).map((result) => result.results[0].count),
+          [0, 0, 0, 0],
+        );
+        assert.deepEqual(inspected[4].results, [
+          {
+            projection_revision: 1,
+            last_provider_sync_at: lastProviderSyncAt,
+          },
+        ]);
+
+        const health = await operationalHealth(worker);
+        assert.equal(health.response.status, 503);
+        assert.deepEqual(health.body.application.writeControl, {
+          state: testCase.expectedState,
+        });
+        assert.equal(
+          health.body.application.checks.applicationWritesEnabled,
+          false,
+        );
+      } finally {
+        await worker.dispose();
+      }
+    }
   },
 );
 

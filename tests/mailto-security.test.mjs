@@ -66,7 +66,8 @@ test("both plan contact surfaces use the centralized mailto builder", async () =
     golferChoices,
     /const coachMailtoUri = buildCoachContactMailtoUri\(coachEmail\);/,
   );
-  assert.match(golferChoices, /window\.location\.assign\(coachMailtoUri\);/);
+  assert.match(golferChoices, /mailtoHandoffUri = coachMailtoUri;/);
+  assert.match(golferChoices, /window\.location\.assign\(mailtoHandoffUri\);/);
   assert.doesNotMatch(planView, /`mailto:\$\{/);
   assert.doesNotMatch(golferChoices, /`mailto:\$\{/);
 });

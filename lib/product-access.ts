@@ -51,6 +51,7 @@ const PUBLIC_API_PATHS = new Set([
 ]);
 
 const ACCOUNT_API_PATHS = new Set([
+  "/api/account/shares",
   "/api/profile",
   "/api/data-export",
   "/api/data-requests",
@@ -89,6 +90,7 @@ export function instructorAccessScopeForPath(
   if (PUBLIC_API_PATHS.has(pathname)) return null;
   if (
     ACCOUNT_API_PATHS.has(pathname) ||
+    pathname.startsWith("/api/account/shares/") ||
     pathname.startsWith("/api/operations/data-requests/")
   ) {
     return "account";
@@ -266,7 +268,7 @@ export function productAccessDeniedResponse(
 
   const billingLink =
     decision === "subscription_required"
-      ? '<p><a href="/app/billing">Review plan and billing</a></p>'
+      ? '<p><a href="/app/billing">Review plan and billing</a></p><p><a href="/app/settings/shares">Review or revoke active private access</a></p>'
       : "";
   return new Response(
     `<!doctype html><html lang="en-CA"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${details.heading} | Roadmap</title></head><body><main><h1>${details.heading}</h1><p>${details.message}</p>${billingLink}<p><a href="/support">Contact support</a></p></main></body></html>`,

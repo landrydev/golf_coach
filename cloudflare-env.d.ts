@@ -3,6 +3,7 @@ declare namespace Cloudflare {
     DB: D1Database;
     MEDIA: R2Bucket;
     APP_URL?: string;
+    APPLICATION_WRITE_MODE?: string;
     STRIPE_SECRET_KEY?: string;
     STRIPE_WEBHOOK_SECRET?: string;
     STRIPE_CHECKOUT_PRICE_ID?: string;

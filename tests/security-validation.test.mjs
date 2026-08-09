@@ -18,9 +18,11 @@ import {
 import {
   createShareSessionToken,
   createShareToken,
+  hashShareSessionContext,
   hashShareSessionToken,
   hashToken,
   newId,
+  shareSessionContextsEqual,
 } from "../lib/tokens.ts";
 import {
   identityHeaders,
@@ -223,6 +225,24 @@ test("share tokens are high-entropy bearer values with deterministic peppered ha
     assert.equal(await hashShareSessionToken(session.raw), session.hash);
     assert.notEqual(await hashToken(session.raw), session.hash);
 
+    const sessionContext = await hashShareSessionContext({
+      accountId: "account-a",
+      shareId: "share-a",
+      sessionId: "session-a",
+    });
+    const otherSessionContext = await hashShareSessionContext({
+      accountId: "account-a",
+      shareId: "share-a",
+      sessionId: "session-b",
+    });
+    assert.match(sessionContext, /^[0-9a-f]{64}$/);
+    assert.equal(shareSessionContextsEqual(sessionContext, sessionContext), true);
+    assert.equal(shareSessionContextsEqual(sessionContext, otherSessionContext), false);
+    assert.equal(
+      shareSessionContextsEqual(sessionContext.toUpperCase(), sessionContext),
+      false,
+    );
+
     process.env.SHARE_TOKEN_PEPPER = "test-pepper-two-with-sufficient-separation";
     assert.notEqual(await hashToken(first.raw), first.hash);
     assert.notEqual(await hashShareSessionToken(session.raw), session.hash);
@@ -320,9 +340,19 @@ test("network abuse subjects trust only a canonical Cloudflare address", async (
   }
 });
 
-test("share-session source keeps verifiers out of cookies and scopes session consumers beneath /r", async () => {
-  const [sessionRoute, responseRoute, choices, closeControl, publishRoute] = await Promise.all([
+test("share-session source keeps verifiers out of cookies and binds plan reads beneath /r", async () => {
+  const [
+    sessionRoute,
+    planPage,
+    responseRoute,
+    choices,
+    closeControl,
+    publishRoute,
+    shareOrigin,
+    clientRecovery,
+  ] = await Promise.all([
     readFile(new URL("../app/r/session/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/r/plan/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/r/response/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../components/plan/GolferChoices.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/plan/CloseRoadmap.tsx", import.meta.url), "utf8"),
@@ -330,6 +360,8 @@ test("share-session source keeps verifiers out of cookies and scopes session con
       new URL("../app/api/plans/[planId]/publish/route.ts", import.meta.url),
       "utf8",
     ),
+    readFile(new URL("../lib/share-origin.ts", import.meta.url), "utf8"),
+    readFile(new URL("../lib/client-recovery.ts", import.meta.url), "utf8"),
   ]);
 
   assert.match(sessionRoute, /assertSameOrigin\(request\)/);
@@ -339,20 +371,41 @@ test("share-session source keeps verifiers out of cookies and scopes session con
   assert.match(sessionRoute, /SHARE_SESSION_MAX_SECONDS/);
   assert.match(sessionRoute, /createShareSession\(/);
   assert.match(sessionRoute, /endShareSession\(/);
+  assert.doesNotMatch(sessionRoute, /expiredSessionCookie/);
+  assert.match(sessionRoute, /\{ sessionContext: session\.sessionContext \}/);
+  assert.doesNotMatch(sessionRoute, /redirectTo/);
   assert.doesNotMatch(sessionRoute, /\$\{SHARE_COOKIE\}=\$\{shareVerifier\}/);
   assert.match(sessionRoute, /"Cache-Control": "private, no-store, max-age=0"/);
+  assert.match(planPage, /Object\.keys\(searchParams\)/);
+  assert.match(planPage, /keys\.length !== 1 \|\| keys\[0\] !== "context"/);
+  assert.match(planPage, /\^\[0-9a-f\]\{64\}\$/);
+  assert.match(
+    planPage,
+    /resolveShareSession\(token, expectedSessionContext\)/,
+  );
+  assert.match(
+    clientRecovery,
+    /redirectTo: `\$\{SHARE_PLAN_PATH\}\?context=\$\{payload\.sessionContext\}`/,
+  );
+  assert.doesNotMatch(clientRecovery, /payload\.redirectTo/);
   assert.match(responseRoute, /rawSessionToken/);
-  assert.match(choices, /requestGolferResponse\(responseType, attemptKey\)/);
-  assert.match(closeControl, /fetch\("\/r\/session", \{ method: "DELETE" \}\)/);
-  assert.match(publishRoute, /\/r#token=/);
-  assert.doesNotMatch(publishRoute, /\/r\?token=/);
+  assert.match(
+    choices,
+    /requestGolferResponse\([\s\S]*?responseType,[\s\S]*?attemptKey,[\s\S]*?sessionContext/,
+  );
+  assert.match(responseRoute, /assertExactObjectKeys\(payload, \["responseType", "sessionContext"\]\)/);
+  assert.match(closeControl, /requestClientMutation\("\/r\/session"/);
+  assert.match(closeControl, /body: JSON\.stringify\(\{ sessionContext \}\)/);
+  assert.match(publishRoute, /shareMutationEnvelope\(result, origin\)/);
+  assert.match(shareOrigin, /\/r#token=/);
+  assert.doesNotMatch(shareOrigin, /\/r\?token=/);
 });
 
 test("golfer capability documentation matches the implemented fragment URL contract", async () => {
-  const [architecture, publishRoute, shareAccess] = await Promise.all([
+  const [architecture, shareOrigin, shareAccess] = await Promise.all([
     readFile(new URL("../docs/ARCHITECTURE.md", import.meta.url), "utf8"),
     readFile(
-      new URL("../app/api/plans/[planId]/publish/route.ts", import.meta.url),
+      new URL("../lib/share-origin.ts", import.meta.url),
       "utf8",
     ),
     readFile(new URL("../app/r/ShareAccess.tsx", import.meta.url), "utf8"),
@@ -360,30 +413,28 @@ test("golfer capability documentation matches the implemented fragment URL contr
 
   assert.match(architecture, /`\/r#token=\{verifier\}`/);
   assert.doesNotMatch(architecture, /\/g\/\{publicShareId\}#t=/);
-  assert.match(publishRoute, /\/r#token=\$\{encodeURIComponent\(result\.rawToken\)\}/);
+  assert.match(shareOrigin, /\/r#token=\$\{encodeURIComponent\(receipt\.rawToken\)\}/);
   assert.match(shareAccess, /fragment\.get\("token"\)/);
 });
 
-test("built share-session endpoint clears only its scoped secure cookie", async () => {
-  const response = await fetchBuiltApp("/r/session", {
+test("built share-session close never mutates a potentially newer browser cookie", async (context) => {
+  const worker = await startD1Worker();
+  context.after(() => worker.dispose());
+  const response = await worker.dispatch("/r/session", {
     method: "DELETE",
     headers: {
-      origin: "https://roadmap.example",
+      "content-type": "application/json",
+      origin: testOrigin,
       "sec-fetch-site": "same-origin",
     },
+    body: JSON.stringify({ sessionContext: "a".repeat(64) }),
   });
   assert.equal(response.status, 204);
   const cacheControl = response.headers.get("cache-control") ?? "";
   assert.match(cacheControl, /(?:^|,)\s*private\s*(?:,|$)/i);
   assert.match(cacheControl, /(?:^|,)\s*no-store\s*(?:,|$)/i);
   assert.match(cacheControl, /(?:^|,)\s*max-age=0\s*(?:,|$)/i);
-  const cookie = response.headers.get("set-cookie") ?? "";
-  assert.match(cookie, /^roadmap_share=/);
-  assert.match(cookie, /Path=\/r/i);
-  assert.match(cookie, /Max-Age=0/i);
-  assert.match(cookie, /HttpOnly/i);
-  assert.match(cookie, /SameSite=Lax/i);
-  assert.match(cookie, /Secure/i);
+  assert.equal(response.headers.get("set-cookie"), null);
 });
 
 test("built share-session endpoint rejects cross-origin and malformed exchanges neutrally", async (context) => {
@@ -422,13 +473,8 @@ test("built share-session endpoint rejects cross-origin and malformed exchanges 
       message: "This private plan is unavailable.",
     },
   });
-  const clearedCookie = malformed.headers.get("set-cookie") ?? "";
-  assert.match(clearedCookie, /^roadmap_share=;/);
-  assert.match(clearedCookie, /Path=\/r/i);
-  assert.match(clearedCookie, /Max-Age=0/i);
-  assert.match(clearedCookie, /HttpOnly/i);
-  assert.match(clearedCookie, /SameSite=Lax/i);
-  assert.match(clearedCookie, /Secure/i);
+  assert.equal(malformed.headers.get("set-cookie"), null);
+  assert.match(malformed.headers.get("cache-control") ?? "", /no-store/i);
 });
 
 function restoreEnvironment(name, previousValue) {
@@ -443,6 +489,7 @@ async function fetchBuiltApp(path, init) {
   return worker.fetch(
     new Request(new URL(path, "https://roadmap.example"), init),
     {
+      APPLICATION_WRITE_MODE: "enabled",
       ASSETS: {
         fetch: async () => new Response("Not found", { status: 404 }),
       },

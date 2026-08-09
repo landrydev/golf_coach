@@ -77,6 +77,56 @@ exact replay, and `409` for changed input under the same key; raw keys are not
 server-persisted or logged. External-handoff clicks use fresh keys and are not
 cross-click deduplicated.
 
+An unreleased successor working tree adds `OPS-CONTAIN-001`,
+`CLIENT-RECOVERY-002`, and `RESP-RECOVERY-002` remediations. These are local
+implementation claims only: no immutable successor candidate, saved Sites version,
+deployment, environment revision, archive, or hosted result has been assigned.
+They do not alter the exact version-12 evidence above.
+
+The successor introduces an exact application-write control. Only
+`APPLICATION_WRITE_MODE=enabled` permits application-owned writes. Exact
+`frozen`, a missing value, and every malformed, padded, or case-variant value
+fail closed. The request gate runs after canonical-origin and product-access
+decisions but before framework routing. It blocks all non-`OPTIONS` mutations,
+plus `GET`/`HEAD` for `/app` and every `/api` route except the two exact health
+endpoints, because those nominal reads can provision identity, reconcile state,
+rate-limit, or audit. It returns a generic private/no-store `503` with
+`Retry-After: 60` and does not disclose whether the mode is frozen or invalid.
+Non-application public/golfer `GET`/`HEAD` reads and the health endpoints remain
+outside this write-capable classifier. The scheduled handler uses the same
+parser and returns before D1 or provider work unless the mode is exactly
+`enabled`; operational readiness reports the normalized state and degrades,
+while public health omits the control.
+
+The successor also bounds interactive browser mutation acknowledgement end to
+end; deliberately non-blocking external-handoff telemetry remains best-effort.
+One 10-second deadline covers request dispatch, response headers, and complete
+body consumption; the largest accepted body is 8 MiB. There is no automatic
+replay. Timeout, transport failure, `408`, `425`, `429`, any `5xx`, an oversized
+body, or an unreadable/structurally invalid successful JSON acknowledgement is
+outcome unknown. A malformed non-2xx body is a definitive failure with safe
+fallback copy. Controls backed by a stable idempotency attempt instruct a retry
+of that same attempt; other controls instruct the user to reload and inspect
+authoritative state before repeating the action. The 8 MiB value is an accepted
+response-body limit, not a peak-memory promise: chunk buffering and the final
+contiguous copy can coexist transiently, in addition to runtime overhead.
+
+Golfer response and close actions additionally carry an opaque HMAC context for
+the exact account, share, and session alongside the path-scoped `HttpOnly`
+cookie. A stale tab receives `409 share_session_changed`; it cannot write a
+golfer response or `golfer.response_recorded` audit and cannot expire the active
+replacement cookie. Per-tab recovery retains one context-bound unresolved
+explicit choice. Contextless legacy, malformed, invalid-context, or
+storage-unavailable recovery state blocks new response recording until the
+session is explicitly retired/replaced. A mismatched current-format attempt is
+removed as state from another session. A successful exchange atomically creates
+the new session and retires the prior one; invalid, throttled, timed-out, or
+otherwise retryable exchange leaves the prior cookie/session intact. A tokenless
+`/r` view is display-only and does not automatically delete a shared cookie.
+Once an exchange or close succeeds server-side, local storage, history, or
+scripted-navigation failure cannot turn it back into an outcome-unknown request;
+the confirmed state renders a normal-link fallback.
+
 Version 12 was independently checked in two detached clean worktrees. Each
 `npm ci --no-audit` installed 501 locked packages and reported five blocked
 install scripts; each `npm run verify` passed 242/242 tests. Both builds contained
@@ -286,6 +336,7 @@ The inventory records a name, purpose, environment, provider owner, last rotatio
 | Data-request operator email digests | Runtime configuration | Unique comma-separated HMAC-SHA-256 digests of normalized SIWC email only; missing/invalid configuration fails the operator API closed and never falls back to owner or subscriber status |
 | Subscription access statuses | Runtime configuration | Explicit owner-approved status list; there is no code default |
 | Checkout enabled policy | Runtime configuration | `BILLING_CHECKOUT_ENABLED` must be the exact canonical `true` or `false`; missing or malformed values fail health and keep Checkout unavailable |
+| Application write mode | Runtime configuration | `APPLICATION_WRITE_MODE` must be exact `enabled` for normal application-owned writes or exact `frozen` for incident/recovery containment. Missing, padded, case-variant, or any other value is `invalid`; both `frozen` and `invalid` fail closed. Never rely on a default. |
 | Consent policy registry | Runtime configuration | `CONSENT_POLICY_REGISTRY_JSON` contains only exact owner-approved purpose versions, descriptions, and subject types. Missing/invalid/unlisted entries grant nothing; a wording change requires a version change. Configuration permits recording choices but does not enable optional processing. |
 | Stripe secret key | Runtime secret | Test/live modes separated; least privilege where provider permits; rotate on suspected exposure |
 | Stripe webhook secret | Runtime secret | Endpoint- and environment-specific; verify against raw body; rotate with overlap/replay plan |
@@ -304,6 +355,11 @@ privacy-operator values to make deep health green. `CONSENT_POLICY_REGISTRY_JSON
 and the independent operator access configuration remain owner/qualified-review
 dependencies. Their absence must continue to fail the affected controls closed and
 report degraded readiness until the exact decisions and configuration are recorded.
+The unreleased successor must also receive an explicit
+`APPLICATION_WRITE_MODE` value in every environment. A release operator must not
+promote it with the variable absent or malformed, and must record the intended
+state without treating a value-safe configuration check as evidence that writes
+were exercised.
 
 ### Instructor product-access configuration
 
@@ -319,9 +375,12 @@ For `subscription_required`, explicitly configure one or more of `incomplete`,
 This is owner-approved commercial/operations policy, not a code default.
 Missing, empty, duplicate, or unknown values fail closed. Verify that account,
 billing, and data controls remain reachable without an eligible subscription;
-core pages/APIs return the generic subscription-required response; approved
-signed-webhook states grant core access; and public health, webhook, and golfer
-routes remain separate.
+the minimized `/app/settings/shares` and `/api/account/shares` access-control
+surface can list live owned capability metadata and explicitly revoke an owned
+link; core pages/APIs and the ordinary plan/share APIs return the generic
+subscription-required response; approved signed-webhook states grant core access;
+and public health, webhook, and golfer routes remain separate. Do not treat an
+entitlement transition as authorization to revoke capabilities automatically.
 
 ## Release procedure
 
@@ -332,6 +391,10 @@ The release operator records every step and attaches evidence to an immutable re
 - Confirm the intended V1 scope and exclusions against [Requirements Traceability](REQUIREMENTS_TRACEABILITY.md).
 - Review repository changes and dependency-lock changes; exclude unrelated or generated secrets.
 - Confirm production configuration names, binding presence, canonical origin, Stripe mode/Price, and feature flags without printing secret values.
+- For a successor containing the application-write control, record whether
+  `APPLICATION_WRITE_MODE` is intentionally `frozen` or `enabled`; reject missing,
+  padded, case-variant, or otherwise malformed values rather than repairing them
+  silently during deployment.
 - Review schema migration SQL, rollback/forward-fix approach, expected lock/write behavior, and backup point.
 - Confirm approved public, legal, privacy, billing, support, and error copy matches the release behavior.
 - Record known defects and residual risks with owner/disposition; an unresolved critical risk is not hidden by deployment urgency.
@@ -364,6 +427,9 @@ than assume their coverage.
 - Apply migration through the approved Sites/D1 process and record its version/result.
 - Deploy the immutable application release through Sites.
 - Verify actual D1/R2 bindings, environment identity, secret/config presence, and release identifier.
+- Verify the deployed application-write mode through owner-only operational
+  health before any controlled mutation; public health intentionally cannot
+  disclose it.
 - Do not send customer communications, create real charges, or exercise destructive data paths outside an approved controlled test.
 
 ### 4. Production smoke checks
@@ -372,12 +438,21 @@ Use authorized test accounts and data. Confirm:
 
 - public landing, sample, privacy/support/legal destinations, and canonical redirects;
 - SIWC start, callback ownership, authenticated page, sign-out, unauthorized response, and tenant isolation;
-- instructor setup, draft save/return, preview, publish, capability creation, exchange, view, revoke, and neutral invalid state;
+- instructor setup, draft save/return, preview, publish, capability creation,
+  exchange, view, revoke, and neutral invalid state;
+- revoked/expired same-published-revision reissue with a new bounded expiry,
+  exact source-history confirmation, one active HMAC-only replacement, and a
+  conflicting concurrent reissue/edit/revoke producing no partial state;
+- subscription-ineligible owner access to only minimized live-link metadata and
+  explicit owned-link revocation, while core content remains `402` and another
+  tenant's link remains unavailable;
 - Now, Goal, Roadmap, Lessons, Practice, Evidence, and Phase Review rendering, including no-media and narrow-screen behavior;
 - external coach action warning and handoff without any claim that booking/payment completed;
 - Stripe test or specifically authorized controlled live Checkout/Portal/webhook flow;
 - first-party audit events, Sites log correlation, alerts, and privacy-safe log content;
 - health, D1/R2 access, error handling, caching, security headers, and release identifier.
+- the intended application-write mode, route-aware `503` behavior while frozen,
+  scheduler no-work behavior, and controlled write recovery after re-enabling.
 
 ### 5. Observe and close
 
@@ -466,6 +541,7 @@ Every rollback records trigger, decision maker, affected release/migration, cust
 | Condition | Initial response |
 |---|---|
 | Sustained public/instructor/golfer 5xx or unavailable health | Confirm release/provider scope, pause changes, rollback when change-correlated |
+| Unexpected application-write `503` or `writeControl.state=invalid` | Treat as fail-closed configuration/containment, preserve current state, inspect the exact value without printing unrelated configuration, and do not bypass the edge gate |
 | D1 write/read or migration failure | Protect writes, inspect integrity, preserve evidence, invoke database recovery path |
 | R2 private-read/upload/delete failure | Keep text experience available, stop unsafe uploads/deletes, reconcile metadata/objects |
 | Authentication spike or hosted SIWC outage | Verify provider state and spoofing indicators, present privacy-safe status, avoid account workarounds |
@@ -565,6 +641,76 @@ Immediately classify whether the event involves cross-tenant access, raw capabil
 
 ## Focused operational runbooks
 
+### Application write containment and recovery
+
+This runbook applies only after an exact release containing `OPS-CONTAIN-001`
+has passed release verification. Deployed version 12 does not contain this
+control, so changing an environment variable alone cannot add it to that
+runtime.
+
+To contain suspected data-integrity, authorization, billing, audit, or recovery
+harm:
+
+1. Record the incident time, affected release/environment, reason, operator, and
+   correlation IDs without copying personal content.
+2. Preserve the current non-secret configuration inventory, then set
+   `APPLICATION_WRITE_MODE` to exact `frozen` and complete the provider's
+   required environment/deployment activation. Do not use whitespace, uppercase,
+   an empty value, or deletion as an informal mode; those values also fail closed
+   but are recorded as `invalid`, indicating configuration error rather than an
+   intentional freeze.
+3. Confirm owner-only `/api/operations/health` is degraded, reports
+   `application.writeControl.state` as `frozen`, and reports
+   `applicationWritesEnabled=false`. Public `/api/health` must contain no write-
+   mode or scheduler detail.
+4. With synthetic/authorized records, confirm a representative mutation, an
+   instructor page/RSC request, and a non-health API read each return the generic
+   private/no-store `503` with `Retry-After: 60`. Confirm an unaffected public or
+   golfer read and both exact health routes are not blocked by the write
+   classifier. Outer access policy may still deny a signed-out probe before the
+   application is reached.
+5. Trigger or observe the scheduled boundary only through an approved safe
+   exercise. While frozen, it must emit only the fixed safe
+   `Scheduled application writes unavailable` message and return before D1
+   heartbeat/reconciliation or outbound-provider work. Do not treat the absence
+   of a new heartbeat as scheduler success; the application-write readiness check
+   is the explicit containment signal.
+6. Investigate and recover through read-only/provider-native paths that do not
+   bypass tenant, consent, capability, or secret controls. Preserve ambiguous
+   browser-operation evidence; do not tell a user that a timed-out action failed
+   unless authoritative state proves it. Treat an unreadable or structurally
+   invalid `2xx` JSON acknowledgement as equally ambiguous; a successful status
+   can accompany a committed write even when its response body is truncated.
+
+To restore writes, first verify integrity and the corrective release/configuration,
+record the accountable decision, set exact `APPLICATION_WRITE_MODE=enabled`, and
+complete the required activation. Confirm operational health now reports
+`enabled`/`applicationWritesEnabled=true`; then perform a read-only check followed
+by one controlled idempotent or compare-and-swap mutation. Confirm its durable
+state and audit result before expanding traffic. If health remains degraded for
+another dependency, do not describe the application as ready merely because
+writes are enabled.
+
+For browser outcome-unknown messages, follow the recovery instruction attached to
+that exact control:
+
+- **Retry the same attempt:** use the same visible control and unchanged intent;
+  its stable idempotency key is retained. Do not start a different action while
+  that attempt is unresolved.
+- **Reload before retry:** reload and inspect authoritative current state before
+  deciding whether to submit again. The client deliberately did not replay the
+  action automatically.
+
+For a golfer `share_session_changed` response, reload the active private plan.
+Do not interpret the stale tab's `409` as a failed write on the replacement
+session, and do not ask the golfer to use the stale tab to close it. If response
+controls report recovery blocked because older/contextless, malformed, or
+unavailable per-tab state cannot be safely matched, use the explicit close action
+from the active plan or a fresh valid private link. An invalid or retryable new
+share exchange preserves the prior session; only a confirmed successful exchange
+retires it. Never clear a retained capability fragment for a retryable exchange,
+copy it into support records, or place it in logs.
+
 ### SIWC unavailable or identity mismatch
 
 - Confirm provider/system status and release correlation without bypassing authentication.
@@ -576,7 +722,14 @@ Immediately classify whether the event involves cross-tenant access, raw capabil
 ### Golfer link reported exposed
 
 - Verify the requesting instructor through SIWC and ownership.
-- Revoke the capability and its scoped sessions; create a new verifier only after explicit instructor action.
+- Revoke the capability and its scoped sessions. An ineligible subscriber can use
+  the account-level private-link control for this action without regaining core
+  content access; entitlement loss by itself must not trigger revocation.
+- Create a new verifier only after explicit instructor action. If the same
+  published revision is still current and its latest link is revoked or expired,
+  require the exact observed source history, deliberate same-revision
+  confirmation, and a newly chosen expiry; otherwise use the normal publish or
+  inaccessible-link replacement path.
 - Review capability exchange/audit events and Sites logs using opaque IDs.
 - Explain that prior recipients may have retained viewed/copied content; do not promise retroactive erasure.
 - Escalate if exposure may involve unauthorized personal data.

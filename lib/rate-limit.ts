@@ -5,6 +5,8 @@ type AbuseLimit = {
   scope:
     | "share_exchange_network"
     | "share_exchange_capability"
+    | "share_close_network"
+    | "share_close_session"
     | "share_response_network"
     | "share_response_capability"
     | "plan_publish_account"
@@ -26,6 +28,8 @@ type AbuseLimit = {
 export const ABUSE_LIMITS = {
   shareExchangeNetwork: limit("share_exchange_network", 30, 60),
   shareExchangeCapability: limit("share_exchange_capability", 12, 5 * 60),
+  shareCloseNetwork: limit("share_close_network", 60, 60),
+  shareCloseSession: limit("share_close_session", 20, 10 * 60),
   shareResponseNetwork: limit("share_response_network", 60, 60),
   shareResponseCapability: limit("share_response_capability", 20, 10 * 60),
   planPublishAccount: limit("plan_publish_account", 12, 60 * 60),

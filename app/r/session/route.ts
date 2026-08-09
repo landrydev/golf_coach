@@ -37,14 +37,6 @@ export async function POST(request: Request) {
 
     const cookieStore = await cookies();
     const existingSessionToken = cookieStore.get(SHARE_COOKIE)?.value;
-    if (existingSessionToken) {
-      await endShareSession(
-        existingSessionToken,
-        "replaced by a new share exchange",
-        requestId,
-      );
-    }
-
     const shareVerifier = cleanText(payload.token, "token", {
       required: true,
       max: 96,
@@ -56,6 +48,7 @@ export async function POST(request: Request) {
     const session = await createShareSession(
       shareVerifier,
       requestId,
+      existingSessionToken,
     );
     if (!session) {
       throw new RequestError(404, "plan_unavailable", "This private plan is unavailable.");
@@ -69,7 +62,7 @@ export async function POST(request: Request) {
     const maxAge = Math.min(SHARE_SESSION_MAX_SECONDS, expirySeconds);
 
     return Response.json(
-      { redirectTo: "/r/plan" },
+      { sessionContext: session.sessionContext },
       {
         headers: {
           "Cache-Control": "private, no-store, max-age=0",
@@ -83,7 +76,6 @@ export async function POST(request: Request) {
     response.headers.set("X-Request-ID", requestId);
     if (sameOriginAccepted) {
       response.headers.set("Cache-Control", "private, no-store, max-age=0");
-      response.headers.set("Set-Cookie", expiredSessionCookie(request));
     }
     return response;
   }
@@ -91,17 +83,30 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   const requestId = requestCorrelationId(request);
-  let sameOriginAccepted = false;
   try {
     assertSameOrigin(request);
-    sameOriginAccepted = true;
+    await enforceAbuseLimit(
+      ABUSE_LIMITS.shareCloseNetwork,
+      clientNetworkSubject(request),
+    );
+    const payload = asObject(await readJson<unknown>(request));
+    assertExactObjectKeys(payload, ["sessionContext"]);
+    const sessionContext = validatedSessionContext(payload.sessionContext);
     const cookieStore = await cookies();
     const sessionToken = cookieStore.get(SHARE_COOKIE)?.value;
     if (sessionToken) {
+      // The limiter persists only its keyed digest. Repeated requests against
+      // an already-revoked cookie remain bounded without retaining raw bearer
+      // material or requiring the session row to still be live.
+      await enforceAbuseLimit(
+        ABUSE_LIMITS.shareCloseSession,
+        sessionToken,
+      );
       await endShareSession(
         sessionToken,
         "closed by golfer",
         requestId,
+        sessionContext,
       );
     }
 
@@ -109,19 +114,26 @@ export async function DELETE(request: Request) {
       status: 204,
       headers: {
         "Cache-Control": "private, no-store, max-age=0",
-        "Set-Cookie": expiredSessionCookie(request),
         "X-Request-ID": requestId,
       },
     });
   } catch (error) {
     const response = errorResponse(error);
     response.headers.set("X-Request-ID", requestId);
-    if (sameOriginAccepted) {
-      response.headers.set("Cache-Control", "private, no-store, max-age=0");
-      response.headers.set("Set-Cookie", expiredSessionCookie(request));
-    }
+    response.headers.set("Cache-Control", "private, no-store, max-age=0");
     return response;
   }
+}
+
+function validatedSessionContext(value: unknown): string {
+  if (typeof value !== "string" || !/^[0-9a-f]{64}$/.test(value)) {
+    throw new RequestError(
+      400,
+      "session_context_required",
+      "Reload this private plan before closing it.",
+    );
+  }
+  return value;
 }
 
 function asObject(value: unknown): Record<string, unknown> {
@@ -136,20 +148,6 @@ function sessionCookie(request: Request, value: string, maxAge: number): string 
     `${SHARE_COOKIE}=${value}`,
     "Path=/r",
     `Max-Age=${maxAge}`,
-    "HttpOnly",
-    "SameSite=Lax",
-    isSecureRequest(request) ? "Secure" : "",
-  ]
-    .filter(Boolean)
-    .join("; ");
-}
-
-function expiredSessionCookie(request: Request): string {
-  return [
-    `${SHARE_COOKIE}=`,
-    "Path=/r",
-    "Max-Age=0",
-    "Expires=Thu, 01 Jan 1970 00:00:00 GMT",
     "HttpOnly",
     "SameSite=Lax",
     isSecureRequest(request) ? "Secure" : "",

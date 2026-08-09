@@ -290,9 +290,13 @@ test(
 
 test("every selected high-risk route invokes its dedicated abuse-control scope", async () => {
   const routes = {
-    "r/session": "shareExchangeNetwork|shareExchangeCapability",
+    "r/session": "shareExchangeNetwork|shareExchangeCapability|shareCloseNetwork|shareCloseSession",
     "r/response": "shareResponseNetwork|shareResponseCapability",
     "api/plans/[planId]/publish": "planPublishAccount",
+    "api/plans/[planId]/publish/replace-inaccessible": "planPublishAccount",
+    "api/plans/[planId]/publish/reissue": "planPublishAccount",
+    "api/account/shares": "shareRevokeAccount",
+    "api/account/shares/[shareId]": "shareRevokeAccount",
     "api/shares/[shareId]": "shareRevokeAccount",
     "api/billing/checkout": "billingCheckoutAccount",
     "api/billing/portal": "billingPortalAccount",
@@ -311,6 +315,18 @@ test("every selected high-risk route invokes its dedicated abuse-control scope",
       assert.match(source, new RegExp(`ABUSE_LIMITS\\.${scope}`));
     }
   }
+
+  const sessionRoute = await readFile(
+    new URL("../app/r/session/route.ts", import.meta.url),
+    "utf8",
+  );
+  const closeRoute = sessionRoute.slice(
+    sessionRoute.indexOf("export async function DELETE"),
+  );
+  assert.match(
+    closeRoute,
+    /ABUSE_LIMITS\.shareCloseNetwork[\s\S]*readJson[\s\S]*ABUSE_LIMITS\.shareCloseSession[\s\S]*endShareSession/,
+  );
 });
 
 test("every operator read and transition is limited before inventory or audit work", async () => {

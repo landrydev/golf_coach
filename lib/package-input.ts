@@ -162,6 +162,34 @@ export function parsePackageInput(
   };
 }
 
+export function parsePackageUpdateInput(value: unknown): Readonly<{
+  input: CreatePackageInput;
+  expectedUpdatedAt: number;
+}> {
+  const payload = asObject(value);
+  rejectClientAccountId(payload);
+  assertExactObjectKeys(payload, [...PACKAGE_FIELDS, "expectedUpdatedAt"]);
+  if (
+    !Number.isSafeInteger(payload.expectedUpdatedAt) ||
+    (payload.expectedUpdatedAt as number) < 0
+  ) {
+    throw new RequestError(
+      400,
+      "invalid_field",
+      "expectedUpdatedAt must be a non-negative whole number.",
+    );
+  }
+  const packagePayload = { ...payload };
+  delete packagePayload.expectedUpdatedAt;
+  return {
+    input: parsePackageInput(packagePayload, {
+      allowArchived: false,
+      defaultStatus: "active",
+    }),
+    expectedUpdatedAt: payload.expectedUpdatedAt as number,
+  };
+}
+
 function asObject(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new RequestError(

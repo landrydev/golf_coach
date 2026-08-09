@@ -176,7 +176,10 @@ test(
       `/api/packages/${coachingPackage.id}`,
       "DELETE",
       coachA,
-      { confirmation: "archive_package" },
+      {
+        confirmation: "archive_package",
+        expectedUpdatedAt: coachingPackage.updatedAt,
+      },
     );
     assert.equal(archived.status, 200);
 
@@ -194,15 +197,18 @@ test(
   },
 );
 
-test("complete authoring form retains one client key across ambiguous retries", async () => {
+test("complete authoring form persists one exact attempt across reloads", async () => {
   const source = await readFile(
     new URL("../app/app/golfers/new/NewGolferForm.tsx", import.meta.url),
     "utf8",
   );
-  assert.match(source, /const idempotencyKeyRef = useRef\(""\)/);
-  assert.match(source, /idempotencyKeyRef\.current = crypto\.randomUUID\(\)/);
-  assert.match(source, /"Idempotency-Key": idempotencyKeyRef\.current/);
-  assert.doesNotMatch(source, /finally\s*\{[^}]*idempotencyKeyRef\.current\s*=\s*""/s);
+  assert.match(source, /pendingAttemptRef = useRef<KeyedAttemptRecord/);
+  assert.match(source, /persistKeyedAttempt\([\s\S]*key: crypto\.randomUUID\(\)/);
+  assert.match(source, /"Idempotency-Key": attempt\.key/);
+  assert.match(source, /body: attempt\.body/);
+  assert.match(source, /loadKeyedAttempt\(recoveryScope, "golfer_full_create"\)/);
+  assert.match(source, /keyedAttemptReceiptBlockedMessage/);
+  assert.doesNotMatch(source, /finally\s*\{[^}]*clearKeyedAttempt/s);
 });
 
 function createGolfer(worker, identity, idempotencyKey, body) {

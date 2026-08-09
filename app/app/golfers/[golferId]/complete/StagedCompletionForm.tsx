@@ -1,12 +1,32 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { flushSync } from "react-dom";
+import {
+  AuthoringDraftRecovery,
+  authoringDraftStateBlocksMutation,
+  type AuthoringDraftUiState,
+} from "@/components/forms/AuthoringDraftRecovery";
 import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
+import {
+  captureAuthoringDraftValues,
+  clearAuthoringDraft,
+  discardAuthoringDraft,
+  persistAuthoringDraft,
+  reconcileAuthoringDraft,
+  restoreAuthoringDraftValues,
+  type AuthoringDraftScope,
+} from "@/lib/client-authoring-draft-recovery";
 import {
   clientMutationErrorMessage,
   requestClientMutation,
 } from "@/lib/client-mutation-recovery";
+import { requiresAuthoritativeMutationReload } from "@/lib/client-terminal-mutation";
+import {
+  isStagedCompletionMutationResponse,
+  requireExactClientMutationJson,
+} from "@/lib/instructor-mutation-response-contracts";
 import styles from "../../../workspace.module.css";
 
 type PackageOption = {
@@ -22,37 +42,107 @@ export function StagedCompletionForm({
   planId,
   expectedRevision,
   packages,
+  recoveryScope,
 }: {
   golferId: string;
   planId: string;
   expectedRevision: number;
   packages: PackageOption[];
+  recoveryScope: string;
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
+  const mutationTerminalRef = useRef(false);
   const [phaseCount, setPhaseCount] = useState<3 | 4>(4);
-  const [state, setState] = useState<"idle" | "saving" | "error">("idle");
+  const [state, setState] = useState<
+    "idle" | "saving" | "saved" | "error" | "reload_required"
+  >("idle");
   const [message, setMessage] = useState("");
+  const [confirmedDestination, setConfirmedDestination] = useState<string | null>(null);
+  const [draftRecovery, setDraftRecovery] =
+    useState<AuthoringDraftUiState>({ kind: "checking" });
+  const draftScope = useMemo<AuthoringDraftScope>(
+    () => ({
+      accountScope: recoveryScope,
+      resourceId: planId,
+      action: "staged_plan_complete",
+    }),
+    [planId, recoveryScope],
+  );
+  const authoritativeDraftState = useMemo(
+    () => ({
+      authoringState: "staged",
+      planId,
+      revision: expectedRevision,
+      availablePackageIds: packages.map((item) => item.id).sort(),
+    }),
+    [expectedRevision, packages, planId],
+  );
+  const isLocked =
+    state === "saving" ||
+    state === "reload_required" ||
+    state === "saved" ||
+    authoringDraftStateBlocksMutation(draftRecovery);
+
+  useEffect(() => {
+    let current = true;
+    void reconcileAuthoringDraft({
+      scope: draftScope,
+      currentRevision: expectedRevision,
+      currentState: authoritativeDraftState,
+    }).then((result) => {
+      if (current) setDraftRecovery(result);
+    });
+    return () => {
+      current = false;
+    };
+  }, [authoritativeDraftState, draftScope, expectedRevision]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (mutationTerminalRef.current) return;
+    if (authoringDraftStateBlocksMutation(draftRecovery)) return;
+    mutationTerminalRef.current = true;
     setState("saving");
     setMessage("");
-    const form = new FormData(event.currentTarget);
+    const values = captureAuthoringDraftValues(event.currentTarget);
+    if (!values) {
+      mutationTerminalRef.current = false;
+      setState("error");
+      setMessage("The staged roadmap draft could not be captured safely. No request was sent.");
+      return;
+    }
+    const savedDraft = await persistAuthoringDraft({
+      scope: draftScope,
+      baseRevision: expectedRevision,
+      baseState: authoritativeDraftState,
+      values,
+      ui: { phaseCount },
+    });
+    if (savedDraft.kind === "blocked") {
+      mutationTerminalRef.current = false;
+      setDraftRecovery(savedDraft);
+      setState("error");
+      setMessage(
+        "Roadmap could not safely preserve this staged roadmap draft in the browser tab. No request was sent.",
+      );
+      return;
+    }
     const phases = Array.from({ length: phaseCount }, (_, index) => {
       const number = index + 1;
       return {
         number,
-        title: form.get(`phase${number}Title`),
-        purpose: form.get(`phase${number}Purpose`),
-        rationale: number === 1 ? form.get("firstPhaseRationale") : null,
+        title: values[`phase${number}Title`],
+        purpose: values[`phase${number}Purpose`],
+        rationale: number === 1 ? values.firstPhaseRationale : null,
         progressSignals:
           number === 1
-            ? splitLines(String(form.get("firstPhaseProgressSignals") ?? ""))
+            ? splitLines(values.firstPhaseProgressSignals ?? "")
             : [],
       };
     });
 
+    let destination: string | null = null;
     try {
       const response = await requestClientMutation(
         `/api/golfers/${encodeURIComponent(golferId)}/complete`,
@@ -63,33 +153,41 @@ export function StagedCompletionForm({
             expectedPlanId: planId,
             expectedRevision,
             assessment: {
-              summary: form.get("assessmentSummary"),
-              strengths: form.get("assessmentStrengths"),
-              primaryPattern: form.get("assessmentPrimaryPattern"),
-              limitations: form.get("assessmentLimitations"),
+              summary: values.assessmentSummary,
+              strengths: values.assessmentStrengths,
+              primaryPattern: values.assessmentPrimaryPattern,
+              limitations: values.assessmentLimitations,
             },
             priority: {
-              title: form.get("priorityTitle"),
-              rationale: form.get("priorityRationale"),
+              title: values.priorityTitle,
+              rationale: values.priorityRationale,
             },
             phases,
-            firstPhasePackageId: form.get("firstPhasePackageId") || null,
+            firstPhasePackageId: values.firstPhasePackageId || null,
           }),
         },
       );
-      const result = (await response.json()) as {
-        completed?: boolean;
-        error?: { message?: string };
-      };
-      if (!response.ok || result.completed !== true) {
-        throw new Error(
-          result.error?.message || "The staged roadmap could not be completed.",
-        );
-      }
-      router.push(`/app/golfers/${encodeURIComponent(golferId)}`);
-      router.refresh();
+      await requireExactClientMutationJson(
+        response,
+        200,
+        (value) =>
+          isStagedCompletionMutationResponse(value, {
+            golferId,
+            planId,
+            revision: expectedRevision + 1,
+            phaseCount,
+          }),
+        "The staged roadmap could not be completed.",
+      );
+      destination = `/app/golfers/${encodeURIComponent(golferId)}`;
+      setConfirmedDestination(destination);
+      setState("saved");
+      setMessage("Staged roadmap completed.");
+      clearAuthoringDraft(savedDraft.draft);
     } catch (error) {
-      setState("error");
+      const reloadRequired = requiresAuthoritativeMutationReload(error);
+      if (!reloadRequired) mutationTerminalRef.current = false;
+      setState(reloadRequired ? "reload_required" : "error");
       setMessage(
         clientMutationErrorMessage(
           error,
@@ -98,6 +196,16 @@ export function StagedCompletionForm({
           "The staged roadmap could not be completed.",
         ),
       );
+      if (!reloadRequired) setDraftRecovery({ kind: "restored" });
+      return;
+    }
+
+    if (!destination) return;
+    try {
+      router.push(destination);
+      router.refresh();
+    } catch {
+      // The confirmed completion remains successful if navigation fails.
     }
   }
 
@@ -106,10 +214,53 @@ export function StagedCompletionForm({
       ref={formRef}
       className={styles.form}
       aria-describedby={ERROR_SUMMARY_ID}
+      method="post"
       onSubmit={submit}
     >
+      <AuthoringDraftRecovery
+        state={draftRecovery}
+        label="staged roadmap"
+        noticeClassName={styles.notice}
+        actionsClassName={styles.actions}
+        buttonClassName={styles.secondaryButton}
+        onRestore={() => {
+          if (draftRecovery.kind !== "unchanged" || !formRef.current) {
+            setDraftRecovery({ kind: "blocked", reason: "invalid" });
+            return;
+          }
+          const restoredPhaseCount = draftRecovery.draft.envelope.ui.phaseCount;
+          if (restoredPhaseCount !== 3 && restoredPhaseCount !== 4) {
+            setDraftRecovery({ kind: "blocked", reason: "invalid" });
+            return;
+          }
+          flushSync(() => setPhaseCount(restoredPhaseCount));
+          if (
+            !restoreAuthoringDraftValues(
+              formRef.current,
+              draftRecovery.draft.envelope.values,
+            )
+          ) {
+            setDraftRecovery({ kind: "blocked", reason: "invalid" });
+            return;
+          }
+          setDraftRecovery({ kind: "restored" });
+        }}
+        onDiscard={() => {
+          const reload =
+            draftRecovery.kind === "blocked" || draftRecovery.kind === "diverged";
+          if (!discardAuthoringDraft(draftScope)) {
+            setDraftRecovery({ kind: "blocked", reason: "unavailable" });
+            return;
+          }
+          setDraftRecovery({ kind: "empty" });
+          if (reload) window.location.reload();
+        }}
+      />
       <section className={styles.formCard}>
-        <fieldset className={styles.formSection} disabled={state === "saving"}>
+        <fieldset
+          className={styles.formSection}
+          disabled={isLocked}
+        >
           <legend>Starting assessment</legend>
           <div className={styles.fieldGrid}>
             <label className={styles.fullField}>
@@ -134,7 +285,10 @@ export function StagedCompletionForm({
       </section>
 
       <section className={styles.formCard}>
-        <fieldset className={styles.formSection} disabled={state === "saving"}>
+        <fieldset
+          className={styles.formSection}
+          disabled={isLocked}
+        >
           <legend>Current priority</legend>
           <div className={styles.fieldGrid}>
             <label className={styles.field}>
@@ -150,7 +304,10 @@ export function StagedCompletionForm({
       </section>
 
       <section className={styles.formCard}>
-        <fieldset className={styles.formSection} disabled={state === "saving"}>
+        <fieldset
+          className={styles.formSection}
+          disabled={isLocked}
+        >
           <legend>Directional phases</legend>
           <label className={styles.field}>
             Number of phases
@@ -196,7 +353,10 @@ export function StagedCompletionForm({
       </section>
 
       <section className={styles.formCard}>
-        <fieldset className={styles.formSection} disabled={state === "saving"}>
+        <fieldset
+          className={styles.formSection}
+          disabled={isLocked}
+        >
           <legend>Optional first-phase package</legend>
           <label className={styles.fullField}>
             Existing active package
@@ -218,10 +378,38 @@ export function StagedCompletionForm({
 
       <FormErrorSummary
         id={ERROR_SUMMARY_ID}
-        message={state === "error" ? message : ""}
+        message={
+          state === "error" || state === "reload_required" ? message : ""
+        }
         formRef={formRef}
         className={styles.errorStatus}
       />
+      {state === "saved" ? (
+        <div className={styles.formStatus} role="status">
+          {message}
+          {confirmedDestination ? (
+            <a className={styles.secondaryButton} href={confirmedDestination}>
+              Open the confirmed roadmap
+            </a>
+          ) : null}
+        </div>
+      ) : null}
+      {state === "reload_required" ? (
+        <div className={styles.notice} role="alert">
+          <strong>Reload before completing or changing this staged roadmap.</strong>
+          <span>
+            The draft fields are locked until Roadmap reloads the authoritative completion
+            state.
+          </span>
+          <button
+            className={styles.secondaryButton}
+            type="button"
+            onClick={() => window.location.reload()}
+          >
+            Reload and check staged roadmap
+          </button>
+        </div>
+      ) : null}
       <div className={styles.notice} role="note">
         <strong>Completion creates the first reviewable draft.</strong>
         <span>
@@ -233,14 +421,14 @@ export function StagedCompletionForm({
         <button
           className={styles.primaryButton}
           type="submit"
-          disabled={state === "saving"}
+          disabled={isLocked}
         >
           {state === "saving" ? "Completing draft…" : "Complete roadmap draft"}
         </button>
         <button
           className={styles.secondaryButton}
           type="button"
-          disabled={state === "saving"}
+          disabled={isLocked}
           onClick={() => router.push("/app/golfers")}
         >
           Save and return later

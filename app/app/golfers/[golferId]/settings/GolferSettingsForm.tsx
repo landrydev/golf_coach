@@ -6,7 +6,13 @@ import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
 import {
   clientMutationErrorMessage,
   requestClientMutation,
+  requireClientMutationSuccess,
 } from "@/lib/client-mutation-recovery";
+import { requiresAuthoritativeMutationReload } from "@/lib/client-terminal-mutation";
+import {
+  isGolferUpdatedResponse,
+  requireExactClientMutationJson,
+} from "@/lib/instructor-mutation-response-contracts";
 import styles from "../../../workspace.module.css";
 
 const ERROR_SUMMARY_ID = "golfer-settings-form-error-summary";
@@ -23,12 +29,20 @@ export function GolferSettingsForm(props: {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const summaryOnlyRef = useRef<HTMLFormElement>(null);
+  const mutationTerminalRef = useRef(false);
   const [busy, setBusy] = useState<"save" | "archive" | null>(null);
   const [errorFocus, setErrorFocus] = useState<"form" | "summary">("form");
   const [message, setMessage] = useState("");
+  const [reloadRequired, setReloadRequired] = useState(false);
+  const [confirmedDestination, setConfirmedDestination] = useState<string | null>(null);
+  const isLocked =
+    busy !== null || reloadRequired || confirmedDestination !== null;
+  const golferDestination = `/app/golfers/${encodeURIComponent(props.golferId)}`;
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (mutationTerminalRef.current) return;
+    mutationTerminalRef.current = true;
     setErrorFocus("form");
     setBusy("save");
     setMessage("");
@@ -45,11 +59,20 @@ export function GolferSettingsForm(props: {
           expectedPlanRevision: props.planRevision,
         }),
       });
-      const result = (await response.json()) as { error?: { message?: string } };
-      if (!response.ok) throw new Error(result.error?.message || "Golfer details could not be saved.");
-      router.push(`/app/golfers/${encodeURIComponent(props.golferId)}`);
-      router.refresh();
+      await requireExactClientMutationJson(
+        response,
+        200,
+        isGolferUpdatedResponse,
+        "Golfer details could not be saved.",
+      );
     } catch (error) {
+      const authoritativeReloadRequired =
+        requiresAuthoritativeMutationReload(error);
+      if (authoritativeReloadRequired) {
+        setReloadRequired(true);
+      } else {
+        mutationTerminalRef.current = false;
+      }
       setMessage(
         clientMutationErrorMessage(
           error,
@@ -59,11 +82,25 @@ export function GolferSettingsForm(props: {
         ),
       );
       setBusy(null);
+      return;
+    }
+
+    const destination = golferDestination;
+    setConfirmedDestination(destination);
+    setMessage("Golfer details saved. Open the authoritative golfer view to continue.");
+    setBusy(null);
+    try {
+      router.push(destination);
+      router.refresh();
+    } catch {
+      // The confirmed edit remains terminal; the native destination stays available.
     }
   }
 
   async function archive() {
+    if (mutationTerminalRef.current) return;
     if (!window.confirm("Archive this golfer and revoke every active private link?")) return;
+    mutationTerminalRef.current = true;
     setErrorFocus("summary");
     setBusy("archive");
     setMessage("");
@@ -73,13 +110,19 @@ export function GolferSettingsForm(props: {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ confirmation: "archive_golfer_and_revoke_access" }),
       });
-      if (!response.ok) {
-        const result = (await response.json()) as { error?: { message?: string } };
-        throw new Error(result.error?.message || "The golfer could not be archived.");
-      }
-      router.push("/app/golfers");
-      router.refresh();
+      await requireClientMutationSuccess(
+        response,
+        "The golfer could not be archived.",
+        [204],
+      );
     } catch (error) {
+      const authoritativeReloadRequired =
+        requiresAuthoritativeMutationReload(error);
+      if (authoritativeReloadRequired) {
+        setReloadRequired(true);
+      } else {
+        mutationTerminalRef.current = false;
+      }
       setMessage(
         clientMutationErrorMessage(
           error,
@@ -89,6 +132,20 @@ export function GolferSettingsForm(props: {
         ),
       );
       setBusy(null);
+      return;
+    }
+
+    const destination = golferDestination;
+    setConfirmedDestination(destination);
+    setMessage(
+      "Golfer archived and private access revoked. Open the authoritative archived golfer state to continue.",
+    );
+    setBusy(null);
+    try {
+      router.push(destination);
+      router.refresh();
+    } catch {
+      // The confirmed archive remains terminal; the native destination stays available.
     }
   }
 
@@ -96,12 +153,16 @@ export function GolferSettingsForm(props: {
     <div className={styles.form}>
       {props.status === "active" ? (
       <form
+        method="post"
         ref={formRef}
         className={styles.formCard}
         aria-describedby={ERROR_SUMMARY_ID}
         onSubmit={save}
       >
-        <fieldset className={styles.formSection} disabled={busy !== null}>
+        <fieldset
+          className={styles.formSection}
+          disabled={isLocked}
+        >
           <legend>Golfer identity and contact</legend>
           <div className={styles.fieldGrid}>
             <label className={styles.field}>
@@ -124,7 +185,11 @@ export function GolferSettingsForm(props: {
           <span>Identity appears in the private view, so all active links are revoked and a fresh review is required.</span>
         </div>
         <div className={styles.actions}>
-          <button className={styles.primaryButton} type="submit" disabled={busy !== null}>
+          <button
+            className={styles.primaryButton}
+            type="submit"
+            disabled={isLocked}
+          >
             {busy === "save" ? "Saving…" : "Save golfer details"}
           </button>
         </div>
@@ -142,16 +207,44 @@ export function GolferSettingsForm(props: {
           Archiving is reversible only through a future supported recovery process. It hides
           active work and immediately revokes private links; it is not a deletion claim.
         </p>
-        <button className={styles.dangerButton} type="button" disabled={busy !== null} onClick={archive}>
+        <button
+          className={styles.dangerButton}
+          type="button"
+          disabled={isLocked}
+          onClick={archive}
+        >
           {busy === "archive" ? "Archiving…" : "Archive golfer and revoke access"}
         </button>
       </section> : null}
       <FormErrorSummary
         id={ERROR_SUMMARY_ID}
-        message={message}
+        message={confirmedDestination ? "" : message}
         formRef={errorFocus === "form" ? formRef : summaryOnlyRef}
         className={styles.errorStatus}
       />
+      {confirmedDestination ? (
+        <div className={styles.formStatus} role="status">
+          <span>{message}</span>
+          <a className={styles.secondaryButton} href={confirmedDestination}>
+            Continue to confirmed state
+          </a>
+        </div>
+      ) : null}
+      {reloadRequired ? (
+        <div className={styles.notice} role="alert">
+          <strong>Reload before changing or archiving this golfer.</strong>
+          <span>
+            All mutation controls are locked until the authoritative golfer state is loaded.
+          </span>
+          <button
+            className={styles.secondaryButton}
+            type="button"
+            onClick={() => window.location.reload()}
+          >
+            Reload and check golfer state
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

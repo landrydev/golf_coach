@@ -158,6 +158,8 @@ test("abuse counters contain only constrained digests and expiring fixed windows
   assert.match(migration, /abuse_rate_limits_expires_idx/);
   assert.match(migration, /abuse_rate_limits_hash_check/);
   assert.match(migration, /abuse_rate_limits_window_check/);
+  assert.match(migration, /share_close_network/);
+  assert.match(migration, /share_close_session/);
   assert.doesNotMatch(combined, /abuse_rate_limits[^;]+(?:raw_ip|ip_address|raw_token)/i);
   assert.match(schema, /Raw identifiers are never/);
 });

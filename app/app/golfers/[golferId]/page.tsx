@@ -2,13 +2,14 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ConsentPurposeControl } from "@/components/consent/ConsentPurposeControl";
+import { StagedCompletionDraftResolution } from "@/components/forms/StagedCompletionDraftResolution";
 import { PlanView } from "@/components/plan/PlanView";
 import { listConsentCurrentState } from "@/lib/consent-repository";
 import { requirePageIdentity } from "@/lib/identity";
 import {
   getCoachPlanForGolfer,
+  getPlanSharingState,
   listPlanResponses,
-  listPlanShares,
   type GolferResponseType,
 } from "@/lib/plans";
 import { publicationBlockers } from "@/lib/publication-readiness";
@@ -56,8 +57,8 @@ export default async function GolferPlanPage({
   }
   const model = await getCoachPlanForGolfer(account.id, golferId);
   if (!model) notFound();
-  const [shares, responses, golferConsentStates] = await Promise.all([
-    listPlanShares(account.id, model.plan.id),
+  const [sharingState, responses, golferConsentStates] = await Promise.all([
+    getPlanSharingState(account.id, model.plan.id),
     listPlanResponses(account.id, model.plan.id),
     listConsentCurrentState(account.id, { type: "golfer", golferId }),
   ]);
@@ -96,11 +97,22 @@ export default async function GolferPlanPage({
             </Link>
           </div>
         </header>
+        <StagedCompletionDraftResolution
+          recoveryScope={account.id}
+          planId={model.plan.id}
+          planRevision={model.plan.revision}
+          noticeClassName={styles.notice}
+          actionsClassName={styles.actions}
+          buttonClassName={styles.secondaryButton}
+        />
         {editable ? (
           <>
             <LivingPlanForms
+              key={`${model.plan.id}:${model.plan.revision}`}
               planId={model.plan.id}
               planRevision={model.plan.revision}
+              planStatus={model.plan.status}
+              recoveryScope={account.id}
               phases={model.phases}
               lessons={model.lessons}
               practiceItems={model.practiceItems}
@@ -139,7 +151,9 @@ export default async function GolferPlanPage({
               planRevision={model.plan.revision}
               golferName={model.golfer.displayName}
               blockers={publishBlockers.map((blocker) => blocker.message)}
-              initialShares={shares}
+              initialShares={sharingState.shares}
+              publishedRevision={sharingState.publishedRevision}
+              lastSharedAt={sharingState.lastSharedAt}
             />
           </>
         ) : null}

@@ -35,6 +35,7 @@ import {
 } from "@/lib/stripe";
 import {
   applicationOrigin,
+  billingBrowserRecoveryRedirect,
   billingRedirect,
   hostedBillingUrl,
   requestId,
@@ -274,7 +275,14 @@ export async function POST(request: Request) {
       "Checkout is temporarily unavailable. No new charge was started.",
     );
   } catch (error) {
-    return errorResponse(asRequestError(error));
+    const requestError = asRequestError(error);
+    const recovery = billingBrowserRecoveryRedirect(
+      request,
+      requestError,
+      "checkout",
+    );
+    if (recovery) return recovery;
+    return errorResponse(requestError);
   } finally {
     if (operationLease) {
       await releaseBillingAccountOperationLeaseBestEffort(operationLease);

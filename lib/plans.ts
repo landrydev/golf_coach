@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import {
   assessments,
@@ -36,9 +36,11 @@ import { pauseAtSyntheticConcurrencyBarrier } from "./synthetic-concurrency-barr
 import {
   createShareSessionToken,
   createShareToken,
+  hashShareSessionContext,
   hashShareSessionToken,
   hashToken,
   newId,
+  shareSessionContextsEqual,
 } from "./tokens";
 
 const DEFAULT_SHARE_DAYS = 30;
@@ -54,12 +56,61 @@ const PLAN_EVIDENCE_SNAPSHOT_CAP = 20;
 
 export type PlanShareSummary = {
   id: string;
-  status: string;
+  status: "active" | "revoked" | "expired";
   planRevision: number;
+  createdAt: number;
+  updatedAt: number;
+  expiresAt: number | null;
+  lastAccessedAt: number | null;
+  accessCount: number;
+};
+
+export type PlanSharingState = {
+  publishedRevision: number | null;
+  lastSharedAt: number | null;
+  shares: PlanShareSummary[];
+};
+
+export type AccountActiveShareControl = {
+  id: string;
+  planRevision: number;
+  status: "active";
   createdAt: number;
   expiresAt: number | null;
   lastAccessedAt: number | null;
   accessCount: number;
+  activeSessionCount: number;
+};
+
+export type ShareMutationIntentReceipt =
+  | Readonly<{
+      operation: "plan.publish_and_share";
+      expiresInDays: number;
+    }>
+  | Readonly<{
+      operation: "share.replace_inaccessible_link";
+      sourceShareId: string;
+    }>
+  | Readonly<{
+      operation: "share.reissue_same_revision";
+      sourceShareId: string;
+      sourceStatus: "revoked" | "expired";
+      sourceUpdatedAt: number;
+      expiresInDays: number;
+    }>;
+
+export type ShareMutationReceipt = {
+  intent: ShareMutationIntentReceipt;
+  shareId: string;
+  rawToken: string;
+  planId: string;
+  planRevision: number;
+  status: "active";
+  createdAt: Date;
+  updatedAt: Date;
+  expiresAt: Date | null;
+  lastAccessedAt: null;
+  accessCount: 0;
 };
 
 export type GolferResponseType =
@@ -80,38 +131,125 @@ export async function listPlanShares(
   accountId: string,
   planId: string,
 ): Promise<PlanShareSummary[]> {
+  return (await getPlanSharingState(accountId, planId)).shares;
+}
+
+export async function getPlanSharingState(
+  accountId: string,
+  planId: string,
+): Promise<PlanSharingState> {
   await requireGolferRecordProcessingConsent(accountId);
   const db = getDb();
+  const [[plan], rows] = await Promise.all([
+    db
+      .select({
+        publishedRevision: developmentPlans.publishedRevision,
+        lastSharedAt: developmentPlans.lastSharedAt,
+      })
+      .from(developmentPlans)
+      .where(
+        and(
+          eq(developmentPlans.accountId, accountId),
+          eq(developmentPlans.id, planId),
+        ),
+      )
+      .limit(1),
+    db
+      .select({
+        id: shareLinks.id,
+        status: shareLinks.status,
+        planRevision: shareLinks.planRevision,
+        createdAt: shareLinks.createdAt,
+        updatedAt: shareLinks.updatedAt,
+        expiresAt: shareLinks.expiresAt,
+        lastAccessedAt: shareLinks.lastAccessedAt,
+        accessCount: shareLinks.accessCount,
+      })
+      .from(shareLinks)
+      .where(
+        and(eq(shareLinks.accountId, accountId), eq(shareLinks.planId, planId)),
+      )
+      .orderBy(desc(shareLinks.createdAt), desc(shareLinks.id))
+      .limit(20),
+  ]);
+  if (!plan) throw new RequestError(404, "plan_not_found", "Plan not found.");
+
+  const now = Date.now();
+
+  return {
+    publishedRevision: plan.publishedRevision,
+    lastSharedAt: toMillis(plan.lastSharedAt),
+    shares: rows.map((row) => ({
+      id: row.id,
+      status: effectiveShareStatus(row, now),
+      planRevision: row.planRevision,
+      createdAt: requiredShareTimestamp(row.createdAt),
+      updatedAt: requiredShareTimestamp(row.updatedAt),
+      expiresAt: toMillis(row.expiresAt),
+      lastAccessedAt: toMillis(row.lastAccessedAt),
+      accessCount: row.accessCount,
+    })),
+  };
+}
+
+/**
+ * Account-control inventory for access containment after entitlement loss.
+ * It deliberately excludes golfer, plan, recipient, bearer, and session IDs.
+ * Revoking the returned link ID terminates every session beneath it.
+ */
+export async function listAccountActiveShareControls(
+  accountId: string,
+): Promise<AccountActiveShareControl[]> {
+  const db = getDb();
+  const now = new Date();
   const rows = await db
     .select({
       id: shareLinks.id,
-      status: shareLinks.status,
       planRevision: shareLinks.planRevision,
       createdAt: shareLinks.createdAt,
       expiresAt: shareLinks.expiresAt,
       lastAccessedAt: shareLinks.lastAccessedAt,
       accessCount: shareLinks.accessCount,
+      activeSessionCount: count(shareSessions.id),
     })
     .from(shareLinks)
-    .where(
-      and(eq(shareLinks.accountId, accountId), eq(shareLinks.planId, planId)),
+    .leftJoin(
+      shareSessions,
+      and(
+        eq(shareSessions.accountId, shareLinks.accountId),
+        eq(shareSessions.shareLinkId, shareLinks.id),
+        isNull(shareSessions.revokedAt),
+        gt(shareSessions.expiresAt, now),
+      ),
     )
-    .orderBy(desc(shareLinks.createdAt))
-    .limit(20);
-
-  const now = Date.now();
+    .where(
+      and(
+        eq(shareLinks.accountId, accountId),
+        eq(shareLinks.status, "active"),
+        isNull(shareLinks.revokedAt),
+        or(isNull(shareLinks.expiresAt), gt(shareLinks.expiresAt, now)),
+      ),
+    )
+    .groupBy(
+      shareLinks.id,
+      shareLinks.planRevision,
+      shareLinks.createdAt,
+      shareLinks.expiresAt,
+      shareLinks.lastAccessedAt,
+      shareLinks.accessCount,
+    )
+    .orderBy(desc(shareLinks.createdAt), desc(shareLinks.id))
+    .limit(100);
 
   return rows.map((row) => ({
-    ...row,
-    status:
-      row.status === "active" &&
-      row.expiresAt !== null &&
-      (toMillis(row.expiresAt) ?? 0) <= now
-        ? "expired"
-        : row.status,
-    createdAt: toMillis(row.createdAt) ?? Date.now(),
+    id: row.id,
+    planRevision: row.planRevision,
+    status: "active",
+    createdAt: requiredShareTimestamp(row.createdAt),
     expiresAt: toMillis(row.expiresAt),
     lastAccessedAt: toMillis(row.lastAccessedAt),
+    accessCount: row.accessCount,
+    activeSessionCount: Number(row.activeSessionCount),
   }));
 }
 
@@ -187,7 +325,7 @@ export async function publishPlanAndCreateShare(input: {
   intendedRecipientContext: string;
   expiresInDays?: number;
   requestId?: string | null;
-}): Promise<{ shareId: string; rawToken: string; expiresAt: Date }> {
+}): Promise<ShareMutationReceipt> {
   const db = getDb();
   const [plan] = await db
     .select()
@@ -311,6 +449,8 @@ export async function publishPlanAndCreateShare(input: {
       planRevision: revision,
       intendedRecipientContext: input.intendedRecipientContext,
       expiresAt,
+      createdAt: now,
+      updatedAt: now,
     }),
       db.insert(auditEvents).values({
       id: newId(),
@@ -341,7 +481,531 @@ export async function publishPlanAndCreateShare(input: {
     await rethrowPublishConflict(input, previousLastSharedAt, error);
   }
 
-  return { shareId, rawToken: share.raw, expiresAt };
+  return {
+    intent: {
+      operation: "plan.publish_and_share",
+      expiresInDays: days,
+    },
+    shareId,
+    rawToken: share.raw,
+    planId: input.planId,
+    planRevision: revision,
+    status: "active",
+    createdAt: now,
+    updatedAt: now,
+    expiresAt,
+    lastAccessedAt: null,
+    accessCount: 0,
+  };
+}
+
+/**
+ * Replaces a live one-time share bearer that the instructor can no longer
+ * access (for example, after a committed publish acknowledgement was lost).
+ *
+ * The caller must name the exact active sharing record it observed. That
+ * record ID and the plan's last_shared_at value form the transaction guard, so
+ * two tabs acting from the same rendered state cannot both create live links.
+ * The new raw bearer is returned once and is never persisted.
+ */
+export async function replaceInaccessiblePlanShare(input: {
+  accountId: string;
+  planId: string;
+  expectedRevision: number;
+  expectedShareId: string;
+  requestId?: string | null;
+}): Promise<ShareMutationReceipt> {
+  const db = getDb();
+  const [plan] = await db
+    .select()
+    .from(developmentPlans)
+    .where(
+      and(
+        eq(developmentPlans.accountId, input.accountId),
+        eq(developmentPlans.id, input.planId),
+      ),
+    )
+    .limit(1);
+  if (!plan) throw new RequestError(404, "plan_not_found", "Plan not found.");
+  assertShareReplacementPlanState(plan, input.expectedRevision);
+
+  const consentRequirements = await requireRoadmapSharingConsent(
+    input.accountId,
+    plan.golferId,
+  );
+  const publishModel = await assemblePlanView(input.accountId, plan);
+  if (!publishModel) {
+    throw new RequestError(
+      409,
+      "plan_not_ready",
+      "The complete golfer view could not be prepared.",
+    );
+  }
+  assertPublicationReady(publishModel);
+
+  const observedAt = new Date();
+  const [sourceLink] = await db
+    .select({
+      id: shareLinks.id,
+      intendedRecipientContext: shareLinks.intendedRecipientContext,
+      expiresAt: shareLinks.expiresAt,
+    })
+    .from(shareLinks)
+    .where(
+      and(
+        eq(shareLinks.accountId, input.accountId),
+        eq(shareLinks.id, input.expectedShareId),
+        eq(shareLinks.planId, input.planId),
+        eq(shareLinks.planRevision, input.expectedRevision),
+        eq(shareLinks.status, "active"),
+        isNull(shareLinks.revokedAt),
+        or(isNull(shareLinks.expiresAt), gt(shareLinks.expiresAt, observedAt)),
+      ),
+    )
+    .limit(1);
+  if (!sourceLink) throw shareReplacementUnavailable();
+
+  const previousLastSharedAt = toMillis(plan.lastSharedAt);
+  const now = new Date(Math.max(Date.now(), (previousLastSharedAt ?? -1) + 1));
+  if (
+    sourceLink.expiresAt !== null &&
+    (toMillis(sourceLink.expiresAt) ?? 0) <= now.getTime()
+  ) {
+    throw shareReplacementUnavailable();
+  }
+  const replacement = await createShareToken();
+  const replacementShareId = newId();
+  const replacementGuard = and(
+    eq(developmentPlans.revision, input.expectedRevision),
+    eq(developmentPlans.publishedRevision, input.expectedRevision),
+    plan.lastSharedAt === null
+      ? isNull(developmentPlans.lastSharedAt)
+      : eq(developmentPlans.lastSharedAt, plan.lastSharedAt),
+    inArray(developmentPlans.status, ["published", "paused", "completed"]),
+    sql`exists (
+      select 1 from ${shareLinks}
+      where ${shareLinks.accountId} = ${input.accountId}
+        and ${shareLinks.id} = ${input.expectedShareId}
+        and ${shareLinks.planId} = ${input.planId}
+        and ${shareLinks.planRevision} = ${input.expectedRevision}
+        and ${shareLinks.status} = 'active'
+        and ${shareLinks.revokedAt} is null
+        and (${shareLinks.expiresAt} is null or ${shareLinks.expiresAt} > ${now.getTime()})
+    )`,
+  );
+
+  try {
+    await db.batch([
+      consentGrantTransactionGuard(input.accountId, consentRequirements),
+      db
+        .update(developmentPlans)
+        .set({
+          // title is NOT NULL. A stale plan/link observation therefore aborts
+          // the complete D1 batch, including revocations and the new insert.
+          title: sql<string>`case when ${replacementGuard} then ${developmentPlans.title} else null end`,
+          lastSharedAt: now,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(developmentPlans.accountId, input.accountId),
+            eq(developmentPlans.id, input.planId),
+          ),
+        ),
+      db
+        .update(shareSessions)
+        .set({
+          revokedAt: now,
+          revokeReason: "share link replaced after inaccessible-link recovery",
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(shareSessions.accountId, input.accountId),
+            isNull(shareSessions.revokedAt),
+            sql`exists (
+              select 1 from ${shareLinks}
+              where ${shareLinks.accountId} = ${shareSessions.accountId}
+                and ${shareLinks.id} = ${shareSessions.shareLinkId}
+                and ${shareLinks.planId} = ${input.planId}
+                and ${shareLinks.status} = 'active'
+            )`,
+          ),
+        ),
+      db
+        .update(shareLinks)
+        .set({
+          status: "revoked",
+          revokedAt: now,
+          revokeReason: "replaced after inaccessible-link recovery",
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(shareLinks.accountId, input.accountId),
+            eq(shareLinks.planId, input.planId),
+            eq(shareLinks.status, "active"),
+          ),
+        ),
+      db.insert(shareLinks).values({
+        id: replacementShareId,
+        accountId: input.accountId,
+        planId: input.planId,
+        tokenHash: replacement.hash,
+        tokenHashAlgorithm: "hmac-sha256-v1",
+        status: "active",
+        scope: "golfer_plan_read",
+        planRevision: input.expectedRevision,
+        intendedRecipientContext: sourceLink.intendedRecipientContext,
+        expiresAt: sourceLink.expiresAt,
+        createdAt: now,
+        updatedAt: now,
+      }),
+      db.insert(auditEvents).values({
+        id: newId(),
+        accountId: input.accountId,
+        actorType: "account",
+        actorAccountId: input.accountId,
+        action: "share.replace_inaccessible_link",
+        targetType: "development_plan",
+        targetId: input.planId,
+        outcome: "success",
+        requestId: input.requestId ?? null,
+        metadata: {
+          previousShareId: sourceLink.id,
+          replacementShareId,
+          expiresAt: sourceLink.expiresAt?.toISOString() ?? null,
+          planRevision: input.expectedRevision,
+        },
+      }),
+    ]);
+  } catch (error) {
+    if (
+      !(await consentGrantRequirementsCurrent(
+        input.accountId,
+        consentRequirements,
+      ))
+    ) {
+      throw new RequestError(
+        409,
+        "current_consent_required",
+        "A current configured authorization is required for this action.",
+      );
+    }
+    await rethrowShareReplacementConflict(input, previousLastSharedAt, error);
+  }
+
+  return {
+    intent: {
+      operation: "share.replace_inaccessible_link",
+      sourceShareId: sourceLink.id,
+    },
+    shareId: replacementShareId,
+    rawToken: replacement.raw,
+    planId: input.planId,
+    planRevision: input.expectedRevision,
+    status: "active",
+    createdAt: now,
+    updatedAt: now,
+    expiresAt: sourceLink.expiresAt,
+    lastAccessedAt: null,
+    accessCount: 0,
+  };
+}
+
+/**
+ * Issues a new bearer for the already-published revision only after the
+ * instructor has rendered and named the exact terminal history record at the
+ * head of that revision. Unlike inaccessible-link replacement, this path is
+ * available only when no live link remains and always selects a fresh bounded
+ * future expiry.
+ */
+export async function reissuePublishedPlanShare(input: {
+  accountId: string;
+  planId: string;
+  expectedRevision: number;
+  expectedLastSharedAt: number;
+  expectedSourceShareId: string;
+  expectedSourceStatus: "revoked" | "expired";
+  expectedSourceUpdatedAt: number;
+  expiresInDays: number;
+  requestId?: string | null;
+}): Promise<ShareMutationReceipt> {
+  if (![1, 7, 30, 90].includes(input.expiresInDays)) {
+    throw new RequestError(
+      400,
+      "invalid_expiry",
+      "Share expiry must be 1, 7, 30, or 90 days.",
+    );
+  }
+
+  const db = getDb();
+  const [plan] = await db
+    .select()
+    .from(developmentPlans)
+    .where(
+      and(
+        eq(developmentPlans.accountId, input.accountId),
+        eq(developmentPlans.id, input.planId),
+      ),
+    )
+    .limit(1);
+  if (!plan) throw new RequestError(404, "plan_not_found", "Plan not found.");
+  assertShareReissuePlanState(plan, input.expectedRevision);
+
+  const previousLastSharedAt = toMillis(plan.lastSharedAt);
+  if (
+    previousLastSharedAt === null ||
+    previousLastSharedAt !== input.expectedLastSharedAt
+  ) {
+    throw shareReissueConflict();
+  }
+
+  const consentRequirements = await requireRoadmapSharingConsent(
+    input.accountId,
+    plan.golferId,
+  );
+  const publishModel = await assemblePlanView(input.accountId, plan);
+  if (!publishModel) {
+    throw new RequestError(
+      409,
+      "plan_not_ready",
+      "The complete golfer view could not be prepared.",
+    );
+  }
+  assertPublicationReady(publishModel);
+
+  const observedAt = new Date();
+  const [[sourceLink], [liveLink]] = await Promise.all([
+    db
+      .select({
+        id: shareLinks.id,
+        status: shareLinks.status,
+        planRevision: shareLinks.planRevision,
+        intendedRecipientContext: shareLinks.intendedRecipientContext,
+        expiresAt: shareLinks.expiresAt,
+        revokedAt: shareLinks.revokedAt,
+        createdAt: shareLinks.createdAt,
+        updatedAt: shareLinks.updatedAt,
+      })
+      .from(shareLinks)
+      .where(
+        and(
+          eq(shareLinks.accountId, input.accountId),
+          eq(shareLinks.planId, input.planId),
+          eq(shareLinks.planRevision, input.expectedRevision),
+        ),
+      )
+      .orderBy(desc(shareLinks.createdAt), desc(shareLinks.id))
+      .limit(1),
+    db
+      .select({ id: shareLinks.id })
+      .from(shareLinks)
+      .where(
+        and(
+          eq(shareLinks.accountId, input.accountId),
+          eq(shareLinks.planId, input.planId),
+          eq(shareLinks.status, "active"),
+          isNull(shareLinks.revokedAt),
+          or(isNull(shareLinks.expiresAt), gt(shareLinks.expiresAt, observedAt)),
+        ),
+      )
+      .limit(1),
+  ]);
+  if (liveLink) throw shareReissueLiveLinkExists();
+  if (
+    !sourceLink ||
+    sourceLink.id !== input.expectedSourceShareId ||
+    sourceLink.planRevision !== input.expectedRevision ||
+    requiredShareTimestamp(sourceLink.updatedAt) !==
+      input.expectedSourceUpdatedAt ||
+    effectiveShareStatus(sourceLink, observedAt.getTime()) !==
+      input.expectedSourceStatus
+  ) {
+    throw shareReissueConflict();
+  }
+
+  const sourceCreatedAt = requiredShareTimestamp(sourceLink.createdAt);
+  const sourceUpdatedAt = requiredShareTimestamp(sourceLink.updatedAt);
+  const now = new Date(
+    Math.max(Date.now(), previousLastSharedAt + 1, sourceUpdatedAt + 1),
+  );
+  const expiresAt = new Date(
+    now.getTime() + input.expiresInDays * 86_400_000,
+  );
+  const replacement = await createShareToken();
+  const replacementShareId = newId();
+  const observedSourceState =
+    input.expectedSourceStatus === "revoked"
+      ? sql`${shareLinks.status} = 'revoked'`
+      : sql`(
+          ${shareLinks.status} = 'expired'
+          or (
+            ${shareLinks.status} = 'active'
+            and ${shareLinks.revokedAt} is null
+            and ${shareLinks.expiresAt} is not null
+            and ${shareLinks.expiresAt} <= ${observedAt.getTime()}
+          )
+        )`;
+  const reissueGuard = and(
+    eq(developmentPlans.revision, input.expectedRevision),
+    eq(developmentPlans.publishedRevision, input.expectedRevision),
+    eq(developmentPlans.lastSharedAt, plan.lastSharedAt!),
+    inArray(developmentPlans.status, ["published", "paused", "completed"]),
+    sql`exists (
+      select 1 from ${shareLinks}
+       where ${shareLinks.accountId} = ${input.accountId}
+         and ${shareLinks.id} = ${input.expectedSourceShareId}
+         and ${shareLinks.planId} = ${input.planId}
+         and ${shareLinks.planRevision} = ${input.expectedRevision}
+         and ${shareLinks.updatedAt} = ${sourceUpdatedAt}
+         and ${observedSourceState}
+    )`,
+    sql`not exists (
+      select 1 from share_links as newer
+       where newer.account_id = ${input.accountId}
+         and newer.plan_id = ${input.planId}
+         and newer.plan_revision = ${input.expectedRevision}
+         and (
+           newer.created_at > ${sourceCreatedAt}
+           or (newer.created_at = ${sourceCreatedAt} and newer.id > ${input.expectedSourceShareId})
+         )
+    )`,
+    sql`not exists (
+      select 1 from ${shareLinks}
+       where ${shareLinks.accountId} = ${input.accountId}
+         and ${shareLinks.planId} = ${input.planId}
+         and ${shareLinks.status} = 'active'
+         and ${shareLinks.revokedAt} is null
+         and (${shareLinks.expiresAt} is null or ${shareLinks.expiresAt} > ${now.getTime()})
+    )`,
+  );
+
+  await pauseAtSyntheticConcurrencyBarrier(
+    "share-reissue-after-source-observation",
+  );
+
+  try {
+    await db.batch([
+      consentGrantTransactionGuard(input.accountId, consentRequirements),
+      db
+        .update(developmentPlans)
+        .set({
+          // title is NOT NULL, so a stale plan, history head, or newly live
+          // link aborts this complete batch before any replacement survives.
+          title: sql<string>`case when ${reissueGuard} then ${developmentPlans.title} else null end`,
+          lastSharedAt: now,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(developmentPlans.accountId, input.accountId),
+            eq(developmentPlans.id, input.planId),
+          ),
+        ),
+      db
+        .update(shareSessions)
+        .set({
+          revokedAt: now,
+          revokeReason: "share history superseded by same-revision reissue",
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(shareSessions.accountId, input.accountId),
+            isNull(shareSessions.revokedAt),
+            sql`exists (
+              select 1 from ${shareLinks}
+               where ${shareLinks.accountId} = ${shareSessions.accountId}
+                 and ${shareLinks.id} = ${shareSessions.shareLinkId}
+                 and ${shareLinks.planId} = ${input.planId}
+            )`,
+          ),
+        ),
+      db
+        .update(shareLinks)
+        .set({
+          status: "revoked",
+          revokedAt: now,
+          revokeReason: "superseded by same-revision reissue",
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(shareLinks.accountId, input.accountId),
+            eq(shareLinks.planId, input.planId),
+            eq(shareLinks.status, "active"),
+          ),
+        ),
+      db.insert(shareLinks).values({
+        id: replacementShareId,
+        accountId: input.accountId,
+        planId: input.planId,
+        tokenHash: replacement.hash,
+        tokenHashAlgorithm: "hmac-sha256-v1",
+        status: "active",
+        scope: "golfer_plan_read",
+        planRevision: input.expectedRevision,
+        intendedRecipientContext: sourceLink.intendedRecipientContext,
+        expiresAt,
+        createdAt: now,
+        updatedAt: now,
+      }),
+      db.insert(auditEvents).values({
+        id: newId(),
+        accountId: input.accountId,
+        actorType: "account",
+        actorAccountId: input.accountId,
+        action: "share.reissue_same_revision",
+        targetType: "development_plan",
+        targetId: input.planId,
+        outcome: "success",
+        requestId: input.requestId ?? null,
+        metadata: {
+          sourceShareId: sourceLink.id,
+          sourceObservedStatus: input.expectedSourceStatus,
+          replacementShareId,
+          expiresAt: expiresAt.toISOString(),
+          expiryDays: input.expiresInDays,
+          planRevision: input.expectedRevision,
+        },
+      }),
+    ]);
+  } catch (error) {
+    if (
+      !(await consentGrantRequirementsCurrent(
+        input.accountId,
+        consentRequirements,
+      ))
+    ) {
+      throw new RequestError(
+        409,
+        "current_consent_required",
+        "A current configured authorization is required for this action.",
+      );
+    }
+    await rethrowShareReissueConflict(input, previousLastSharedAt, error);
+  }
+
+  return {
+    intent: {
+      operation: "share.reissue_same_revision",
+      sourceShareId: sourceLink.id,
+      sourceStatus: input.expectedSourceStatus,
+      sourceUpdatedAt,
+      expiresInDays: input.expiresInDays,
+    },
+    shareId: replacementShareId,
+    rawToken: replacement.raw,
+    planId: input.planId,
+    planRevision: input.expectedRevision,
+    status: "active",
+    createdAt: now,
+    updatedAt: now,
+    expiresAt,
+    lastAccessedAt: null,
+    accessCount: 0,
+  };
 }
 
 export async function revokeShareLink(input: {
@@ -468,6 +1132,215 @@ async function rethrowPublishConflict(
       "publish_conflict",
       "Another publish completed first. Refresh the sharing record before creating another link.",
     );
+  }
+  throw error;
+}
+
+function assertShareReplacementPlanState(
+  plan: Pick<
+    typeof developmentPlans.$inferSelect,
+    "revision" | "publishedRevision" | "status"
+  >,
+  expectedRevision: number,
+): void {
+  if (plan.revision !== expectedRevision) {
+    throw new RequestError(
+      409,
+      "stale_plan_revision",
+      "This plan changed after the sharing record loaded. Refresh before replacing its link.",
+    );
+  }
+  if (
+    plan.publishedRevision !== expectedRevision ||
+    !["published", "paused", "completed"].includes(plan.status)
+  ) {
+    throw shareReplacementUnavailable();
+  }
+}
+
+function shareReplacementUnavailable(): RequestError {
+  return new RequestError(
+    409,
+    "share_replacement_unavailable",
+    "That exact active sharing record is no longer available. Reload before replacing a link.",
+  );
+}
+
+async function rethrowShareReplacementConflict(
+  input: {
+    accountId: string;
+    planId: string;
+    expectedRevision: number;
+    expectedShareId: string;
+  },
+  previousLastSharedAt: number | null,
+  error: unknown,
+): Promise<never> {
+  const db = getDb();
+  const [plan] = await db
+    .select({
+      revision: developmentPlans.revision,
+      status: developmentPlans.status,
+      publishedRevision: developmentPlans.publishedRevision,
+      lastSharedAt: developmentPlans.lastSharedAt,
+    })
+    .from(developmentPlans)
+    .where(
+      and(
+        eq(developmentPlans.accountId, input.accountId),
+        eq(developmentPlans.id, input.planId),
+      ),
+    )
+    .limit(1);
+  if (!plan) throw new RequestError(404, "plan_not_found", "Plan not found.");
+  assertShareReplacementPlanState(plan, input.expectedRevision);
+
+  const [sourceLink] = await db
+    .select({ id: shareLinks.id })
+    .from(shareLinks)
+    .where(
+      and(
+        eq(shareLinks.accountId, input.accountId),
+        eq(shareLinks.id, input.expectedShareId),
+        eq(shareLinks.planId, input.planId),
+        eq(shareLinks.planRevision, input.expectedRevision),
+        eq(shareLinks.status, "active"),
+        isNull(shareLinks.revokedAt),
+      ),
+    )
+    .limit(1);
+  if (
+    !sourceLink ||
+    toMillis(plan.lastSharedAt) !== previousLastSharedAt
+  ) {
+    throw new RequestError(
+      409,
+      "share_replacement_conflict",
+      "Another link change completed first. Reload the sharing record before replacing anything else.",
+    );
+  }
+  throw error;
+}
+
+function assertShareReissuePlanState(
+  plan: Pick<
+    typeof developmentPlans.$inferSelect,
+    "revision" | "publishedRevision" | "status"
+  >,
+  expectedRevision: number,
+): void {
+  if (plan.revision !== expectedRevision) {
+    throw new RequestError(
+      409,
+      "stale_plan_revision",
+      "This plan changed after the sharing history loaded. Refresh before reissuing access.",
+    );
+  }
+  if (
+    plan.publishedRevision !== expectedRevision ||
+    !["published", "paused", "completed"].includes(plan.status)
+  ) {
+    throw new RequestError(
+      409,
+      "share_reissue_unavailable",
+      "That exact plan revision is not currently published. Reload before reissuing access.",
+    );
+  }
+}
+
+function shareReissueConflict(): RequestError {
+  return new RequestError(
+    409,
+    "share_reissue_conflict",
+    "The sharing history changed. Reload it before reissuing private access.",
+  );
+}
+
+function shareReissueLiveLinkExists(): RequestError {
+  return new RequestError(
+    409,
+    "share_reissue_live_link_exists",
+    "A live private link already exists. Reload the sharing history before making another change.",
+  );
+}
+
+async function rethrowShareReissueConflict(
+  input: {
+    accountId: string;
+    planId: string;
+    expectedRevision: number;
+    expectedSourceShareId: string;
+    expectedSourceStatus: "revoked" | "expired";
+    expectedSourceUpdatedAt: number;
+  },
+  previousLastSharedAt: number,
+  error: unknown,
+): Promise<never> {
+  const db = getDb();
+  const [plan] = await db
+    .select({
+      revision: developmentPlans.revision,
+      status: developmentPlans.status,
+      publishedRevision: developmentPlans.publishedRevision,
+      lastSharedAt: developmentPlans.lastSharedAt,
+    })
+    .from(developmentPlans)
+    .where(
+      and(
+        eq(developmentPlans.accountId, input.accountId),
+        eq(developmentPlans.id, input.planId),
+      ),
+    )
+    .limit(1);
+  if (!plan) throw new RequestError(404, "plan_not_found", "Plan not found.");
+  assertShareReissuePlanState(plan, input.expectedRevision);
+  if (toMillis(plan.lastSharedAt) !== previousLastSharedAt) {
+    throw shareReissueConflict();
+  }
+
+  const now = new Date();
+  const [[sourceLink], [liveLink]] = await Promise.all([
+    db
+      .select({
+        id: shareLinks.id,
+        status: shareLinks.status,
+        expiresAt: shareLinks.expiresAt,
+        updatedAt: shareLinks.updatedAt,
+      })
+      .from(shareLinks)
+      .where(
+        and(
+          eq(shareLinks.accountId, input.accountId),
+          eq(shareLinks.planId, input.planId),
+          eq(shareLinks.planRevision, input.expectedRevision),
+        ),
+      )
+      .orderBy(desc(shareLinks.createdAt), desc(shareLinks.id))
+      .limit(1),
+    db
+      .select({ id: shareLinks.id })
+      .from(shareLinks)
+      .where(
+        and(
+          eq(shareLinks.accountId, input.accountId),
+          eq(shareLinks.planId, input.planId),
+          eq(shareLinks.status, "active"),
+          isNull(shareLinks.revokedAt),
+          or(isNull(shareLinks.expiresAt), gt(shareLinks.expiresAt, now)),
+        ),
+      )
+      .limit(1),
+  ]);
+  if (liveLink) throw shareReissueLiveLinkExists();
+  if (
+    !sourceLink ||
+    sourceLink.id !== input.expectedSourceShareId ||
+    requiredShareTimestamp(sourceLink.updatedAt) !==
+      input.expectedSourceUpdatedAt ||
+    effectiveShareStatus(sourceLink, now.getTime()) !==
+      input.expectedSourceStatus
+  ) {
+    throw shareReissueConflict();
   }
   throw error;
 }
@@ -678,7 +1551,12 @@ async function shareSessionCapabilityCurrent(input: {
 export async function createShareSession(
   rawShareToken: string,
   requestId?: string | null,
-): Promise<{ rawToken: string; expiresAt: Date } | null> {
+  existingRawSessionToken?: string | null,
+): Promise<{
+  rawToken: string;
+  sessionContext: string;
+  expiresAt: Date;
+} | null> {
   const resolved = await resolveShareToken(rawShareToken);
   if (!resolved) return null;
 
@@ -695,7 +1573,16 @@ export async function createShareSession(
   const db = getDb();
   const session = await createShareSessionToken();
   const sessionId = newId();
+  const sessionContext = await hashShareSessionContext({
+    accountId: resolved.accountId,
+    shareId: resolved.shareId,
+    sessionId,
+  });
   const consentRequirements = configuredRoadmapAccessRequirements(resolved.golferId);
+  const replacedSession = await activeShareSessionForReplacement(
+    existingRawSessionToken,
+    now,
+  );
   try {
     await db.batch([
       consentGrantTransactionGuard(
@@ -740,6 +1627,39 @@ export async function createShareSession(
       tokenHashAlgorithm: "hmac-sha256-session-v1",
       expiresAt,
     }),
+      ...(replacedSession
+        ? [
+            db
+              .update(shareSessions)
+              .set({
+                tokenHash: sql<string>`case when ${shareSessions.revokedAt} is null and ${shareSessions.expiresAt} > ${now.getTime()} then ${shareSessions.tokenHash} else null end`,
+                revokedAt: now,
+                revokeReason: "replaced by a new share exchange",
+                updatedAt: now,
+              })
+              .where(
+                and(
+                  eq(shareSessions.accountId, replacedSession.accountId),
+                  eq(shareSessions.id, replacedSession.id),
+                ),
+              ),
+            db.insert(auditEvents).values({
+              id: newId(),
+              accountId: replacedSession.accountId,
+              actorType: "golfer_share",
+              actorReference: replacedSession.shareLinkId,
+              action: "share.session_ended",
+              targetType: "share_session",
+              targetId: replacedSession.id,
+              outcome: "success",
+              requestId: requestId ?? null,
+              metadata: {
+                shareId: replacedSession.shareLinkId,
+                reason: "replaced by a new share exchange",
+              },
+            }),
+          ]
+        : []),
       db.insert(auditEvents).values({
       id: newId(),
       accountId: resolved.accountId,
@@ -770,20 +1690,63 @@ export async function createShareSession(
     throw error;
   }
 
-  return { rawToken: session.raw, expiresAt };
+  return {
+    rawToken: session.raw,
+    sessionContext,
+    expiresAt,
+  };
+}
+
+async function activeShareSessionForReplacement(
+  rawSessionToken: string | null | undefined,
+  now: Date,
+): Promise<{
+  id: string;
+  accountId: string;
+  shareLinkId: string;
+} | null> {
+  if (!rawSessionToken || !/^[A-Za-z0-9_-]{40,64}$/.test(rawSessionToken)) {
+    return null;
+  }
+  const tokenHash = await hashShareSessionToken(rawSessionToken);
+  const [session] = await getDb()
+    .select({
+      id: shareSessions.id,
+      accountId: shareSessions.accountId,
+      shareLinkId: shareSessions.shareLinkId,
+    })
+    .from(shareSessions)
+    .where(
+      and(
+        eq(shareSessions.tokenHash, tokenHash),
+        eq(shareSessions.tokenHashAlgorithm, "hmac-sha256-session-v1"),
+        isNull(shareSessions.revokedAt),
+        gt(shareSessions.expiresAt, now),
+      ),
+    )
+    .limit(1);
+  return session ?? null;
 }
 
 export async function resolveShareSession(
   rawSessionToken: string,
+  expectedSessionContext?: string,
 ): Promise<{
   model: PlanViewModel;
   accountId: string;
   golferId: string;
   shareId: string;
   sessionId: string;
+  sessionContext: string;
   expiresAt: Date;
 } | null> {
   if (!/^[A-Za-z0-9_-]{40,64}$/.test(rawSessionToken)) return null;
+  if (
+    expectedSessionContext !== undefined &&
+    !/^[0-9a-f]{64}$/.test(expectedSessionContext)
+  ) {
+    return null;
+  }
 
   const db = getDb();
   const tokenHash = await hashShareSessionToken(rawSessionToken);
@@ -801,6 +1764,18 @@ export async function resolveShareSession(
     )
     .limit(1);
   if (!session) return null;
+
+  const sessionContext = await hashShareSessionContext({
+    accountId: session.accountId,
+    shareId: session.shareLinkId,
+    sessionId: session.id,
+  });
+  if (
+    expectedSessionContext !== undefined &&
+    !shareSessionContextsEqual(expectedSessionContext, sessionContext)
+  ) {
+    return null;
+  }
 
   const [link] = await db
     .select()
@@ -868,6 +1843,7 @@ export async function resolveShareSession(
     golferId: plan.golferId,
     shareId: link.id,
     sessionId: session.id,
+    sessionContext,
     expiresAt: session.expiresAt,
   };
 }
@@ -876,6 +1852,7 @@ export async function endShareSession(
   rawSessionToken: string,
   reason: "closed by golfer" | "replaced by a new share exchange",
   requestId?: string | null,
+  expectedSessionContext?: string,
 ): Promise<void> {
   if (!/^[A-Za-z0-9_-]{40,64}$/.test(rawSessionToken)) return;
 
@@ -896,7 +1873,22 @@ export async function endShareSession(
       ),
     )
     .limit(1);
-  if (!session || session.revokedAt) return;
+  if (!session) return;
+  if (expectedSessionContext !== undefined) {
+    const actualSessionContext = await hashShareSessionContext({
+      accountId: session.accountId,
+      shareId: session.shareLinkId,
+      sessionId: session.id,
+    });
+    if (!shareSessionContextsEqual(expectedSessionContext, actualSessionContext)) {
+      throw new RequestError(
+        409,
+        "share_session_changed",
+        "This private plan session changed. Reload before trying again.",
+      );
+    }
+  }
+  if (session.revokedAt) return;
 
   const now = new Date();
   try {
@@ -946,6 +1938,7 @@ export async function endShareSession(
 
 export async function recordGolferResponse(input: {
   rawSessionToken: string;
+  sessionContext: string;
   responseType: GolferResponseType;
   idempotencyKey: string;
   requestId?: string | null;
@@ -953,6 +1946,13 @@ export async function recordGolferResponse(input: {
   const resolved = await resolveShareSession(input.rawSessionToken);
   if (!resolved) {
     throw new RequestError(404, "plan_unavailable", "This private plan is unavailable.");
+  }
+  if (!shareSessionContextsEqual(input.sessionContext, resolved.sessionContext)) {
+    throw new RequestError(
+      409,
+      "share_session_changed",
+      "This private plan session changed. Reload before choosing again.",
+    );
   }
   const [receiptId, responseId, inputFingerprint] = await Promise.all([
     hashToken(
@@ -1427,4 +2427,37 @@ async function assemblePlanView(
 function toMillis(value: Date | number | null | undefined): number | null {
   if (value == null) return null;
   return value instanceof Date ? value.getTime() : value;
+}
+
+function requiredShareTimestamp(value: Date | number): number {
+  const epoch = toMillis(value);
+  if (
+    epoch === null ||
+    !Number.isSafeInteger(epoch) ||
+    epoch < 0
+  ) {
+    throw new RequestError(
+      503,
+      "share_history_unavailable",
+      "The authoritative sharing history is temporarily unavailable.",
+    );
+  }
+  return epoch;
+}
+
+function effectiveShareStatus(
+  row: {
+    status: "active" | "revoked" | "expired";
+    expiresAt: Date | number | null;
+  },
+  nowMs: number,
+): "active" | "revoked" | "expired" {
+  if (
+    row.status === "active" &&
+    row.expiresAt !== null &&
+    requiredShareTimestamp(row.expiresAt) <= nowMs
+  ) {
+    return "expired";
+  }
+  return row.status;
 }

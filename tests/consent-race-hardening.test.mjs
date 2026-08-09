@@ -44,11 +44,12 @@ test(
 for (const race of [
   {
     label: "profile invalidation",
-    mutate: (worker) =>
+    mutate: (worker, fixture) =>
       jsonWrite(worker, "/api/profile", "PUT", {
         displayName: "Changed During Assembly",
         businessName: "Changed private profile content",
         contactEmail: coach.email,
+        expectedUpdatedAt: fixture.profileUpdatedAt,
       }),
   },
   {
@@ -58,7 +59,10 @@ for (const race of [
         worker,
         `/api/packages/${fixture.packageId}`,
         "PUT",
-        packagePayload("Changed package during assembly"),
+        {
+          ...packagePayload("Changed package during assembly"),
+          expectedUpdatedAt: fixture.packageUpdatedAt,
+        },
       ),
   },
   {
@@ -83,11 +87,16 @@ for (const race of [
       const fixture = await sharedPlanFixture(worker, race.label);
       const session = await exchange(worker, fixture.token);
       assert.equal(session.status, 200);
+      const sessionBody = await session.json();
+      assert.match(sessionBody.sessionContext, /^[0-9a-f]{64}$/);
       const cookie = sessionCookie(session);
 
-      const pendingRead = worker.dispatch("/r/plan", {
+      const pendingRead = worker.dispatch(
+        `/r/plan?context=${sessionBody.sessionContext}`,
+        {
         headers: { accept: "text/html", cookie },
-      });
+        },
+      );
       await barrier.reached;
       const mutation = await race.mutate(worker, fixture);
       assert.ok([200, 201].includes(mutation.status));
@@ -109,11 +118,12 @@ for (const operation of [
     checkpoint: "profile-after-impact-preflight",
     auditAction: "profile.saved",
     expectedSuccessAudits: 1,
-    start: (worker) =>
+    start: (worker, fixture) =>
       jsonWrite(worker, "/api/profile", "PUT", {
         displayName: "Forbidden raced profile",
         businessName: "Must not commit",
         contactEmail: coach.email,
+        expectedUpdatedAt: fixture.profileUpdatedAt,
       }),
     assertUnchanged: async (worker, fixture) => {
       const [profile] = await worker.inspect([
@@ -140,7 +150,10 @@ for (const operation of [
         worker,
         `/api/packages/${fixture.packageId}`,
         "PUT",
-        packagePayload("Forbidden raced package update"),
+        {
+          ...packagePayload("Forbidden raced package update"),
+          expectedUpdatedAt: fixture.packageUpdatedAt,
+        },
       ),
     assertUnchanged: assertOriginalPackage,
   },
@@ -154,7 +167,10 @@ for (const operation of [
         worker,
         `/api/packages/${fixture.packageId}`,
         "DELETE",
-        { confirmation: "archive_package" },
+        {
+          confirmation: "archive_package",
+          expectedUpdatedAt: fixture.packageUpdatedAt,
+        },
       ),
     assertUnchanged: assertOriginalPackage,
   },
@@ -241,9 +257,11 @@ test(
       businessName: "Zero Link Golf",
     });
     assert.equal(initialProfile.status, 200);
+    const initialProfileBody = await initialProfile.json();
     const profileUpdate = await saveProfile(worker, {
       displayName: "Zero Link Coach Updated",
       businessName: "Zero Link Golf Updated",
+      expectedUpdatedAt: initialProfileBody.profile.updatedAt,
     });
     assert.equal(profileUpdate.status, 200);
 
@@ -253,14 +271,20 @@ test(
       worker,
       `/api/packages/${firstPackage.id}`,
       "PUT",
-      packagePayload("Zero link package one updated"),
+      {
+        ...packagePayload("Zero link package one updated"),
+        expectedUpdatedAt: firstPackage.updatedAt,
+      },
     );
     assert.equal(packageUpdate.status, 200);
     const packageArchive = await jsonWrite(
       worker,
       `/api/packages/${secondPackage.id}`,
       "DELETE",
-      { confirmation: "archive_package" },
+      {
+        confirmation: "archive_package",
+        expectedUpdatedAt: secondPackage.updatedAt,
+      },
     );
     assert.equal(packageArchive.status, 200);
   },
@@ -311,13 +335,17 @@ async function zeroPlanFixture(worker) {
     businessName: "Deterministic Race Golf",
   });
   assert.equal(profile.status, 200);
-  const accountId = (await profile.json()).profile
-    ? await accountIdFor(worker)
-    : null;
+  const profileBody = await profile.json();
+  const accountId = profileBody.profile ? await accountIdFor(worker) : null;
   assert.ok(accountId);
   const coachingPackage = await createPackage(worker, "Original race package");
   await grantSyntheticGolferRecordConsent(worker, coach);
-  return { accountId, packageId: coachingPackage.id };
+  return {
+    accountId,
+    profileUpdatedAt: profileBody.profile.updatedAt,
+    packageId: coachingPackage.id,
+    packageUpdatedAt: coachingPackage.updatedAt,
+  };
 }
 
 async function accountIdFor(worker) {

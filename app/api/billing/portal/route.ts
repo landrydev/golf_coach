@@ -7,6 +7,7 @@ import { ABUSE_LIMITS, enforceAbuseLimit } from "@/lib/rate-limit";
 import { billingConfigured, createBillingPortalSession } from "@/lib/stripe";
 import {
   applicationOrigin,
+  billingBrowserRecoveryRedirect,
   billingRedirect,
   hostedBillingUrl,
   requestId,
@@ -50,6 +51,8 @@ export async function POST(request: Request) {
     });
     return billingRedirect(location);
   } catch (error) {
+    const recovery = billingBrowserRecoveryRedirect(request, error, "portal");
+    if (recovery) return recovery;
     return errorResponse(error);
   }
 }

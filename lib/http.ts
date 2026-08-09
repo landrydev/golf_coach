@@ -1,6 +1,9 @@
 import { safeErrorType } from "./log-safety.ts";
 import { isSafeMailtoAddress } from "./mailto.ts";
 import { resolveApplicationOrigin } from "./canonical-origin.ts";
+import { isCanonicalPublicHttpsUrl } from "./external-url-policy.ts";
+
+export { isPublicHostname } from "./external-url-policy.ts";
 
 const MAX_JSON_BYTES = 64 * 1024;
 
@@ -181,7 +184,7 @@ export function cleanExternalUrl(value: unknown, field: string): string {
       `${field} must not include embedded credentials.`,
     );
   }
-  if (!isPublicHostname(parsed.hostname)) {
+  if (!isCanonicalPublicHttpsUrl(parsed.toString())) {
     throw new RequestError(
       400,
       "invalid_field",
@@ -189,42 +192,6 @@ export function cleanExternalUrl(value: unknown, field: string): string {
     );
   }
   return parsed.toString();
-}
-
-export function isPublicHostname(value: string): boolean {
-  const hostname = value.toLowerCase().replace(/^\[|\]$/g, "");
-  if (!hostname || hostname.length > 253 || !hostname.includes(".")) return false;
-
-  // Coach actions are browser destinations, not infrastructure endpoints. A
-  // domain requirement avoids ambiguous IPv4/IPv6 parsing and blocks literal
-  // loopback, private, link-local, and documentation addresses by construction.
-  if (hostname.includes(":") || /^\d+(?:\.\d+){3}$/.test(hostname)) return false;
-
-  const blockedSuffixes = [
-    "localhost",
-    "local",
-    "internal",
-    "home.arpa",
-    "test",
-    "invalid",
-    "example",
-  ];
-  if (
-    blockedSuffixes.some(
-      (suffix) => hostname === suffix || hostname.endsWith(`.${suffix}`),
-    )
-  ) {
-    return false;
-  }
-
-  return hostname
-    .split(".")
-    .every(
-      (label) =>
-        label.length > 0 &&
-        label.length <= 63 &&
-        /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label),
-    );
 }
 
 export function errorResponse(error: unknown): Response {

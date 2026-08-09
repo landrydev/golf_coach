@@ -11,6 +11,7 @@ import {
 import { publishPlanAndCreateShare } from "@/lib/plans";
 import { ABUSE_LIMITS, enforceAbuseLimit } from "@/lib/rate-limit";
 import { requestCorrelationId } from "@/lib/request-correlation";
+import { shareMutationEnvelope, shareOrigin } from "@/lib/share-origin";
 
 const PUBLISH_FIELDS = [
   "intendedRecipientContext",
@@ -28,6 +29,9 @@ export async function POST(
     assertSameOrigin(request);
     const authentication = await requireApiIdentity();
     if (authentication.response) return authentication.response;
+    // Resolve the one permitted URL origin before account creation, abuse
+    // counters, or the publish transaction can write anything.
+    const origin = shareOrigin(request);
     const account = await getOrCreateAccountForIdentity(authentication.identity);
     const { planId } = await context.params;
     await enforceAbuseLimit(ABUSE_LIMITS.planPublishAccount, account.id);
@@ -61,17 +65,8 @@ export async function POST(
       expiresInDays,
       requestId,
     });
-    const origin = shareOrigin(request);
-    const shareUrl = `${origin.replace(/\/$/, "")}/r#token=${encodeURIComponent(result.rawToken)}`;
-
     return Response.json(
-      {
-        share: {
-          id: result.shareId,
-          url: shareUrl,
-          expiresAt: result.expiresAt.toISOString(),
-        },
-      },
+      shareMutationEnvelope(result, origin),
       {
         status: 201,
         headers: {
@@ -95,41 +90,4 @@ function asObject(value: unknown): Record<string, unknown> {
 function withRequestId(response: Response, requestId: string): Response {
   response.headers.set("X-Request-ID", requestId);
   return response;
-}
-
-function shareOrigin(request: Request): string {
-  const configured = process.env.APP_URL?.trim();
-  const candidate = configured || new URL(request.url).origin;
-  let origin: URL;
-  try {
-    origin = new URL(candidate);
-  } catch {
-    throw new RequestError(
-      503,
-      "application_origin_invalid",
-      "Private links are unavailable because the application origin is invalid.",
-    );
-  }
-
-  const localDevelopment =
-    process.env.NODE_ENV !== "production" &&
-    origin.protocol === "http:" &&
-    ["localhost", "127.0.0.1", "[::1]"].includes(origin.hostname);
-  if (
-    (!configured && process.env.NODE_ENV === "production") ||
-    (origin.protocol !== "https:" && !localDevelopment) ||
-    origin.username ||
-    origin.password ||
-    origin.search ||
-    origin.hash ||
-    !["", "/"].includes(origin.pathname)
-  ) {
-    throw new RequestError(
-      503,
-      "application_origin_invalid",
-      "Private links are unavailable because the application origin is invalid.",
-    );
-  }
-
-  return origin.origin;
 }

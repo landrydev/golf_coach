@@ -160,8 +160,10 @@ test(
     for (const path of [
       "/api/profile",
       "/api/consents",
+      "/api/account/shares",
       "/app/billing",
       "/app/settings",
+      "/app/settings/shares",
       "/app/settings/data.rsc",
     ]) {
       const response = await worker.dispatch(path, { headers });

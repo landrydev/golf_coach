@@ -30,6 +30,7 @@ const PROFILE_FIELDS = [
   "provinceOrTerritory",
   "location",
   "accentColor",
+  "expectedUpdatedAt",
 ] as const;
 
 export async function GET(): Promise<Response> {
@@ -58,7 +59,10 @@ export async function GET(): Promise<Response> {
         updatedAt: account.updatedAt.getTime(),
       };
 
-    return json({ profile });
+    return json({
+      profile,
+      expectedUpdatedAt: storedProfile?.updatedAt ?? null,
+    });
   } catch (error) {
     return noStore(errorResponse(error));
   }
@@ -74,6 +78,7 @@ export async function PUT(request: Request): Promise<Response> {
     const payload = asObject(await readJson<unknown>(request));
     rejectClientAccountId(payload);
     assertExactObjectKeys(payload, PROFILE_FIELDS);
+    const expectedUpdatedAt = expectedProfileUpdatedAt(payload.expectedUpdatedAt);
     const account = await getOrCreateAccountForIdentity(auth.identity);
 
     const displayName = cleanText(payload.displayName, "displayName", {
@@ -131,6 +136,7 @@ export async function PUT(request: Request): Promise<Response> {
         city: city || null,
         accentColor: accentColor || null,
       },
+      expectedUpdatedAt,
       requestId,
     );
 
@@ -138,6 +144,21 @@ export async function PUT(request: Request): Promise<Response> {
   } catch (error) {
     return noStore(errorResponse(error), requestId);
   }
+}
+
+function expectedProfileUpdatedAt(value: unknown): number | null {
+  // Missing is interpreted as an initial-create expectation for existing
+  // internal fixtures and older unopened pages. It can never update a profile
+  // that already exists because the repository compares it with the row.
+  if (value === undefined || value === null) return null;
+  if (!Number.isSafeInteger(value) || (value as number) < 0) {
+    throw new RequestError(
+      400,
+      "invalid_profile_version",
+      "expectedUpdatedAt must be null or a non-negative whole number.",
+    );
+  }
+  return value as number;
 }
 
 function asObject(value: unknown): Record<string, unknown> {

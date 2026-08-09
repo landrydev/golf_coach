@@ -18,6 +18,7 @@ export const dynamic = "force-dynamic";
 type BillingPageProps = {
   searchParams: Promise<{
     checkout?: string | string[];
+    portal?: string | string[];
     reconcile?: string | string[];
   }>;
 };
@@ -38,6 +39,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   const canOpenPortal = isConfigured && Boolean(subscription?.providerCustomerId);
   const checkoutReturn = firstValue(query.checkout);
   const returnNotice = checkoutReturnNotice(checkoutReturn);
+  const portalNotice = billingPortalNotice(firstValue(query.portal));
   const reconciliationNotice = billingReconciliationNotice(
     firstValue(query.reconcile),
     subscription?.lastProviderSyncAt ?? null,
@@ -68,6 +70,13 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
         <div className={styles.notice} role="status">
           <strong>{reconciliationNotice.title}</strong>
           <span>{reconciliationNotice.message}</span>
+        </div>
+      ) : null}
+
+      {portalNotice ? (
+        <div className={styles.notice} role="status">
+          <strong>{portalNotice.title}</strong>
+          <span>{portalNotice.message}</span>
         </div>
       ) : null}
 
@@ -250,6 +259,55 @@ function checkoutReturnNotice(value: string | null): {
       title: "Checkout was canceled or closed.",
       message:
         "This return does not change billing state. The latest provider-authoritative Stripe state is shown below.",
+    };
+  }
+  if (value === "review_required") {
+    return {
+      title: "Checkout did not open.",
+      message:
+        "Review the saved billing status below before trying again. Another billing operation or provider-confirmed state may need to finish; this notice does not prove a charge or subscription change.",
+    };
+  }
+  if (value === "rate_limited") {
+    return {
+      title: "Checkout is temporarily paused.",
+      message:
+        "Too many Checkout requests were made. Wait before trying again; no new Checkout should be inferred from this notice.",
+    };
+  }
+  if (value === "unavailable") {
+    return {
+      title: "Checkout could not be opened.",
+      message:
+        "Review the saved billing status below and try again later. This notice is not proof that a charge or subscription was created.",
+    };
+  }
+  return null;
+}
+
+function billingPortalNotice(value: string | null): {
+  title: string;
+  message: string;
+} | null {
+  if (value === "not_available") {
+    return {
+      title: "Billing management did not open.",
+      message:
+        "Review the saved billing status below. A billing profile or another provider state may not be available yet; no subscription change is implied.",
+    };
+  }
+  if (value === "rate_limited") {
+    return {
+      title: "Billing management is temporarily paused.",
+      message:
+        "Too many billing-management requests were made. Wait before trying again; the saved billing status remains unchanged by this notice.",
+    };
+  }
+  if (value === "unavailable") {
+    return {
+      title: "Billing management could not be opened.",
+      message:
+        "Review the saved billing status below and try again later. This notice does not claim a payment-method or subscription change.",
     };
   }
   return null;

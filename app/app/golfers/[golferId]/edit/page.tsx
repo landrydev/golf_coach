@@ -64,7 +64,11 @@ export default async function EditGolferPlanPage({
         </span>
       </div>
 
-      <PlanEditorForm golferId={golferId} model={model} />
+      <PlanEditorForm
+        golferId={golferId}
+        model={model}
+        recoveryScope={account.id}
+      />
     </div>
   );
 }

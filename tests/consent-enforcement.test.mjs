@@ -23,6 +23,7 @@ test(
       contactEmail: coach.email,
     });
     assert.equal(profile.status, 200);
+    const initialProfile = (await profile.json()).profile;
 
     const packageCreate = await jsonWrite(
       worker,
@@ -35,8 +36,10 @@ test(
     const zeroPlanProfileUpdate = await jsonWrite(worker, "/api/profile", "PUT", {
       displayName: `${coach.name} Updated`,
       contactEmail: coach.email,
+      expectedUpdatedAt: initialProfile.updatedAt,
     });
     assert.equal(zeroPlanProfileUpdate.status, 200);
+    const currentProfile = (await zeroPlanProfileUpdate.json()).profile;
 
     const deniedCreate = await createGolfer(worker, "Pre-grant");
     await assertApiError(deniedCreate, 409, "current_consent_required");
@@ -88,8 +91,11 @@ test(
     await grantSyntheticRoadmapSharingConsent(worker, coach, first.golfer.id);
     const firstExchange = await exchange(worker, firstToken);
     assert.equal(firstExchange.status, 200);
+    const firstExchangeBody = await firstExchange.json();
+    assert.match(firstExchangeBody.sessionContext, /^[0-9a-f]{64}$/);
+    const firstPlanPath = `/r/plan?context=${firstExchangeBody.sessionContext}`;
     const firstCookie = sessionCookie(firstExchange);
-    const currentRead = await readSharedPlan(worker, firstCookie);
+    const currentRead = await readSharedPlan(worker, firstCookie, firstPlanPath);
     assert.match(currentRead, /Lifecycle One Golfer/);
 
     const beforeWithdrawal = await currentPurpose(
@@ -98,7 +104,7 @@ test(
       "roadmap_sharing",
     );
     const [racedRead, sharingWithdrawal] = await Promise.all([
-      worker.dispatch("/r/plan", {
+      worker.dispatch(firstPlanPath, {
         headers: { accept: "text/html", cookie: firstCookie },
       }),
       withdraw(worker, beforeWithdrawal, {
@@ -133,7 +139,10 @@ test(
       "roadmap sharing authorization withdrawn",
     );
     await assertApiError(await exchange(worker, firstToken), 404, "plan_unavailable");
-    assert.match(await readSharedPlan(worker, firstCookie), /Plan unavailable/);
+    assert.match(
+      await readSharedPlan(worker, firstCookie, firstPlanPath),
+      /Plan unavailable/,
+    );
     await assertApiError(
       await recordResponse(worker, firstCookie),
       404,
@@ -194,7 +203,16 @@ test(
     assert.equal(exchangeWithdrawal.status, 201);
     await assertApiError(await exchange(worker, thirdToken), 404, "plan_unavailable");
     if (racedExchange.status === 200) {
-      assert.match(await readSharedPlan(worker, sessionCookie(racedExchange)), /Plan unavailable/);
+      const racedExchangeBody = await racedExchange.json();
+      assert.match(racedExchangeBody.sessionContext, /^[0-9a-f]{64}$/);
+      assert.match(
+        await readSharedPlan(
+          worker,
+          sessionCookie(racedExchange),
+          `/r/plan?context=${racedExchangeBody.sessionContext}`,
+        ),
+        /Plan unavailable/,
+      );
     }
 
     const accountState = await currentPurpose(
@@ -230,6 +248,7 @@ test(
       await jsonWrite(worker, "/api/profile", "PUT", {
         displayName: "Linked plan profile mutation must not commit",
         contactEmail: coach.email,
+        expectedUpdatedAt: currentProfile.updatedAt,
       }),
       409,
       "current_consent_required",
@@ -239,7 +258,10 @@ test(
         worker,
         `/api/packages/${coachingPackage.id}`,
         "PUT",
-        packagePayload("Linked plan package mutation must not commit"),
+        {
+          ...packagePayload("Linked plan package mutation must not commit"),
+          expectedUpdatedAt: coachingPackage.updatedAt,
+        },
       ),
       409,
       "current_consent_required",
@@ -249,7 +271,10 @@ test(
         worker,
         `/api/packages/${coachingPackage.id}`,
         "DELETE",
-        { confirmation: "archive_package" },
+        {
+          confirmation: "archive_package",
+          expectedUpdatedAt: coachingPackage.updatedAt,
+        },
       ),
       409,
       "current_consent_required",
@@ -400,12 +425,15 @@ function recordResponse(worker, cookie) {
       "sec-fetch-site": "same-origin",
       cookie,
     },
-    body: JSON.stringify({ responseType: "wait" }),
+    body: JSON.stringify({
+      responseType: "wait",
+      sessionContext: "a".repeat(64),
+    }),
   });
 }
 
-async function readSharedPlan(worker, cookie) {
-  const response = await worker.dispatch("/r/plan", {
+async function readSharedPlan(worker, cookie, planPath) {
+  const response = await worker.dispatch(planPath, {
     headers: { accept: "text/html", cookie },
   });
   assert.equal(response.status, 200);

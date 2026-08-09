@@ -19,6 +19,11 @@ import {
 } from "../lib/request-telemetry";
 import { safeErrorType } from "../lib/log-safety";
 import { withTrustedRequestCorrelation } from "../lib/request-correlation";
+import {
+  readApplicationWriteControl,
+  requestMayReachApplicationWrites,
+  SCHEDULED_WRITES_UNAVAILABLE_LOG,
+} from "../lib/application-write-control";
 
 interface Env {
   ASSETS: Fetcher;
@@ -36,6 +41,7 @@ interface Env {
   STRIPE_RECOGNIZED_PRICE_IDS?: string;
   SUBSCRIPTION_ENTITLEMENT_PRICE_IDS?: string;
   SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS?: string;
+  APPLICATION_WRITE_MODE?: string;
   RELEASE_ID?: string;
 }
 
@@ -131,6 +137,28 @@ const worker = {
         return response;
       }
 
+      const writeControl = readApplicationWriteControl(
+        env.APPLICATION_WRITE_MODE,
+      );
+      if (
+        requestMayReachApplicationWrites(request.method, applicationPath) &&
+        !writeControl.writesEnabled
+      ) {
+        const response = withSecurityHeaders(
+          applicationWritesUnavailableResponse(request),
+          request,
+          requestId,
+          contentSecurityPolicy,
+        );
+        emitRequestTelemetry({
+          request,
+          requestId,
+          status: response.status,
+          startedAt,
+        });
+        return response;
+      }
+
       const trustedRequest = withTrustedRequestCorrelation(
         request,
         requestId,
@@ -185,6 +213,11 @@ const worker = {
     }
   },
   async scheduled(controller: ScheduledController, env: Env): Promise<void> {
+    if (!readApplicationWriteControl(env.APPLICATION_WRITE_MODE).writesEnabled) {
+      console.info(SCHEDULED_WRITES_UNAVAILABLE_LOG);
+      return;
+    }
+
     const attempt = await beginBillingSchedulerAttempt({
       database: env.DB,
       releaseId: env.RELEASE_ID,
@@ -220,6 +253,43 @@ const worker = {
     }
   },
 };
+
+function applicationWritesUnavailableResponse(request: Request): Response {
+  const headers = {
+    "Cache-Control": "private, no-store, max-age=0",
+    Pragma: "no-cache",
+    "Retry-After": "60",
+    Vary: "Accept",
+    "X-Robots-Tag": "noindex, nofollow, noarchive",
+  };
+  const message = "Changes are temporarily unavailable. Try again later.";
+
+  if (acceptsHtml(request)) {
+    return new Response(
+      `<!doctype html><html lang="en-CA"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Changes temporarily unavailable | Roadmap</title></head><body><main><h1>Changes temporarily unavailable</h1><p>${message}</p><p><a href="/support">Review support options</a></p></main></body></html>`,
+      {
+        status: 503,
+        headers: { ...headers, "Content-Type": "text/html; charset=utf-8" },
+      },
+    );
+  }
+
+  return Response.json(
+    {
+      error: {
+        code: "application_writes_unavailable",
+        message,
+      },
+    },
+    { status: 503, headers },
+  );
+}
+
+function acceptsHtml(request: Request): boolean {
+  return (request.headers.get("accept") ?? "")
+    .split(",")
+    .some((value) => value.trim().split(";", 1)[0] === "text/html");
+}
 
 function canonicalRequestResponse(
   decision: Exclude<ReturnType<typeof evaluateCanonicalRequest>, { action: "allow" }>,

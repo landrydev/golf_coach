@@ -3,8 +3,12 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { startD1Worker } from "./support/d1-worker.mjs";
 
-const migrationUrl = new URL(
+const operatorMigrationUrl = new URL(
   "../drizzle/0008_reflective_mystique.sql",
+  import.meta.url,
+);
+const closeMigrationUrl = new URL(
+  "../drizzle/0010_steep_hemingway.sql",
   import.meta.url,
 );
 
@@ -30,7 +34,7 @@ test(
       });
     }
 
-    await applyMigration(database);
+    await applyMigration(database, operatorMigrationUrl);
 
     const preserved = await database
       .prepare(
@@ -128,7 +132,88 @@ test(
   },
 );
 
-async function applyMigration(database) {
+test(
+  "share-close abuse-scope migration preserves prior counters and constraints",
+  { timeout: 60_000 },
+  async (context) => {
+    const worker = await startD1Worker({}, { migrationThroughIndex: 9 });
+    context.after(() => worker.dispose());
+    const database = await worker.database();
+    const windowStartedAt = 1_786_203_000_000;
+    const priorRows = [
+      ["share_exchange_network", "8".repeat(64), 4],
+      ["data_request_operator_identity", "9".repeat(64), 2],
+    ];
+    for (const [scope, hash, requestCount] of priorRows) {
+      await insertCounter(database, {
+        scope,
+        hash,
+        requestCount,
+        windowStartedAt,
+      });
+    }
+
+    await applyMigration(database, closeMigrationUrl);
+
+    const preserved = await database
+      .prepare(
+        `select scope, subject_key_hash, window_started_at,
+                window_expires_at, request_count, last_request_at
+           from abuse_rate_limits
+          order by scope`,
+      )
+      .all();
+    assert.deepEqual(
+      preserved.results,
+      [...priorRows]
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([scope, hash, requestCount]) => ({
+          scope,
+          subject_key_hash: hash,
+          window_started_at: windowStartedAt,
+          window_expires_at: windowStartedAt + 300_000,
+          request_count: requestCount,
+          last_request_at: windowStartedAt + 1_000,
+        })),
+    );
+
+    await insertCounter(database, {
+      scope: "share_close_network",
+      hash: "a".repeat(64),
+      requestCount: 1,
+      windowStartedAt,
+    });
+    await insertCounter(database, {
+      scope: "share_close_session",
+      hash: "b".repeat(64),
+      requestCount: 1,
+      windowStartedAt,
+    });
+    await assert.rejects(
+      insertCounter(database, {
+        scope: "unknown_close_scope",
+        hash: "c".repeat(64),
+        requestCount: 1,
+        windowStartedAt,
+      }),
+      /constraint failed/i,
+    );
+
+    const table = await database
+      .prepare(
+        "select sql from sqlite_master where type = 'table' and name = 'abuse_rate_limits'",
+      )
+      .first();
+    assert.match(table.sql, /share_close_network/);
+    assert.match(table.sql, /share_close_session/);
+    assert.deepEqual(
+      (await database.prepare("pragma foreign_key_check").all()).results,
+      [],
+    );
+  },
+);
+
+async function applyMigration(database, migrationUrl) {
   const migration = await readFile(migrationUrl, "utf8");
   const statements = migration
     .split("--> statement-breakpoint")

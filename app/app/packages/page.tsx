@@ -76,7 +76,10 @@ export default async function PackagesPage({
                   </small>
                 </div>
                 <span className={styles.status}>{item.status}</span>
-                <PackageLifecycleControls item={item} />
+                <PackageLifecycleControls
+                  key={`${item.id}:${item.updatedAt}`}
+                  item={item}
+                />
               </li>
             ))}
           </ul>
@@ -111,7 +114,10 @@ export default async function PackagesPage({
           ) : null}
         </nav>
       ) : null}
-      <PackageForm />
+      <PackageForm
+        key={`package-create:${account.id}`}
+        recoveryScope={account.id}
+      />
     </div>
   );
 }

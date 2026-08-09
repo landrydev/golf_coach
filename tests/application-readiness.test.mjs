@@ -12,6 +12,7 @@ const VALID_CONSENT_POLICY_REGISTRY = JSON.stringify({
 
 const READY_ENVIRONMENT = {
   ABUSE_LIMIT_PEPPER: "synthetic-abuse-pepper-for-readiness-tests",
+  APPLICATION_WRITE_MODE: "enabled",
   APP_URL: "https://roadmap.example",
   BILLING_CHECKOUT_ENABLED: "false",
   CONSENT_POLICY_REGISTRY_JSON: VALID_CONSENT_POLICY_REGISTRY,
@@ -37,6 +38,7 @@ test("application readiness marks reachable D1 and R2 dependencies ready", async
     });
 
     assert.equal(readiness.status, "ready");
+    assert.deepEqual(readiness.writeControl, { state: "enabled" });
     assert.deepEqual(readiness.checks, {
       database: true,
       media: true,
@@ -47,6 +49,7 @@ test("application readiness marks reachable D1 and R2 dependencies ready", async
       instructorAccessPolicy: true,
       consentPolicy: true,
       dataRequestOperatorAccessPolicy: true,
+      applicationWritesEnabled: true,
     });
     assert.ok(
       Object.values(readiness.checks).every(
@@ -175,6 +178,32 @@ test("application readiness accepts normalized unique operator digests without t
         ` ${VALID_OPERATOR_DIGEST.toUpperCase()} , ${"cd".repeat(32)} `,
     },
   );
+});
+
+test("application readiness exposes only a normalized fail-closed write state", async () => {
+  for (const testCase of [
+    { value: "frozen", expectedState: "frozen" },
+    { value: undefined, expectedState: "invalid" },
+    { value: "invalid", expectedState: "invalid" },
+    { value: " enabled ", expectedState: "invalid" },
+    { value: " frozen ", expectedState: "invalid" },
+  ]) {
+    await withReadyEnvironment(
+      async () => {
+        const readiness = await readyApplicationReadiness();
+        assert.equal(readiness.status, "degraded");
+        assert.equal(readiness.checks.applicationWritesEnabled, false);
+        assert.deepEqual(readiness.writeControl, {
+          state: testCase.expectedState,
+        });
+        assert.equal(
+          JSON.stringify(readiness).includes(String(testCase.value)),
+          testCase.value === testCase.expectedState,
+        );
+      },
+      { APPLICATION_WRITE_MODE: testCase.value },
+    );
+  }
 });
 
 function databaseReturning(result) {

@@ -41,6 +41,57 @@ definitive result or tab close. Raw keys are not server-persisted or logged;
 external-handoff clicks intentionally use fresh keys and are not deduplicated
 across clicks.
 
+### Successor controls under local verification
+
+The working tree contains additional containment and recovery controls that are
+not part of deployed Sites version 12. They have no saved Sites version,
+deployment, environment revision, archive, or exact-release evidence yet. Until
+an immutable successor is verified and deployed, every hosted claim above remains
+the version-12 boundary.
+
+The successor requires `APPLICATION_WRITE_MODE` to be exactly `enabled` before
+application-owned writes can run. Exact `frozen`, a missing value, or any malformed,
+padded, or case-variant value fails closed. After canonical-origin and product-access
+checks, and before framework routing, the Worker returns a generic, private,
+non-cacheable `503` for every non-`OPTIONS` mutation and for `GET`/`HEAD` requests
+under `/app` or non-health `/api` routes, because some nominal reads can provision,
+reconcile, rate-limit, or audit. Exact `/api/health` and
+`/api/operations/health`, plus non-application public and golfer `GET`/`HEAD`
+reads, remain outside that write-capable classifier. The scheduled handler uses
+the same fail-closed parser and exits before D1 or provider work when writes are
+not enabled. Owner-only operational health reports the normalized
+`enabled`/`frozen`/`invalid` state and degrades when writes are disabled; public
+health discloses none of it.
+
+Interactive browser mutation controls in the successor use bounded recovery
+helpers (the deliberately non-blocking external-handoff telemetry remains
+best-effort). The general helper's
+10-second deadline covers both receiving the response and consuming the complete
+response body; an accepted body may be at most 8 MiB. It never automatically
+replays a request. Timeout, transport failure, `408`, `425`, `429`, any `5xx`,
+an oversized response, or an unreadable/structurally invalid successful JSON
+acknowledgement becomes an explicit outcome-unknown result. A malformed non-2xx
+body remains a definitive failure with safe fallback copy. A control with a stable
+idempotency attempt tells the user to retry that same attempt; a control that
+cannot prove replay safety tells the user to reload and inspect current state
+before trying again.
+
+Golfer recovery in the successor is bound to an opaque HMAC context for the exact
+account, share, and browser session, supplied alongside the `HttpOnly` cookie for
+response and close requests. A stale tab cannot apply its pending choice to a
+replacement session: a context mismatch returns `409`, creates no response or
+`golfer.response_recorded` audit, and does not expire the active replacement
+cookie. Per-tab
+recovery stores one context-bound unresolved explicit choice. Contextless legacy,
+malformed, invalid-context, or unavailable-storage state blocks response controls
+instead of silently discarding ambiguity. Only a successful replacement exchange
+retires the prior session and clears recovery state; invalid, throttled, timed-out,
+or otherwise retryable exchanges preserve the prior cookie/session. Opening `/r`
+without a token no longer performs an automatic session delete. After a
+definitive exchange or close succeeds server-side, blocked local storage, history,
+or scripted navigation does not relabel that result as failure; the UI leaves a
+normal-link fallback.
+
 The superseded exact deployed v11 source also passed isolated local synthetic recovery and
 bounded-capacity exercises: all ten migrations and 31/31 application tables,
 two tenants, three private R2-compatible objects, three negative integrity
@@ -101,6 +152,10 @@ Public, non-secret variables:
 
 - `APP_URL`: exact HTTPS origin, without a path or trailing slash
 - `RELEASE_ID`: immutable release label used by health and release evidence
+- `APPLICATION_WRITE_MODE` (unreleased successor): exact `enabled` for normal
+  application-owned writes or exact `frozen` for incident/recovery containment;
+  missing, padded, case-variant, or otherwise malformed values fail closed as
+  `invalid`
 - `INSTRUCTOR_ACCESS_MODE`: exactly `owner_private` or `subscription_required`
 - `OWNER_PRIVATE_EMAIL_DIGESTS`: comma-separated HMAC-SHA-256 digests of
   trimmed, lowercased owner SIWC emails; never plaintext emails
@@ -153,7 +208,9 @@ immutable release identifier and does not touch D1 or R2. The owner-only
 `/api/operations/health` endpoint performs the deeper D1, R2, origin,
 share-token-pepper, abuse-limit-pepper, explicit Checkout-policy, selected
 instructor-access-policy, required consent-policy coverage, privacy-operator
-access configuration, and scheduler-readiness checks. Missing or invalid
+access configuration, and scheduler-readiness checks. The unreleased successor
+also includes application-write-control state in this owner-only readiness view.
+Missing or invalid
 consent or operator configuration degrades readiness. The response exposes
 only safe boolean statuses, never policy text or versions, an access mode,
 allowlist, digest, pepper, or email.

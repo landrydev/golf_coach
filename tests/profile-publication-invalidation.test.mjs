@@ -31,7 +31,7 @@ test(
       contactEmail: "before@example.test",
       accentColor: "#176b55",
     });
-    await saveProfile(worker, coachA, originalProfile);
+    const originalSave = await saveProfile(worker, coachA, originalProfile);
     const workspaceA = await createGolfer(worker, coachA, "Profile Golfer A");
     const shareA = await publish(
       worker,
@@ -71,7 +71,10 @@ test(
       "/api/profile",
       "PUT",
       coachA,
-      changedProfile,
+      {
+        ...changedProfile,
+        expectedUpdatedAt: originalSave.profile.updatedAt,
+      },
     );
     assert.equal(updateResponse.status, 200);
     const update = await updateResponse.json();
@@ -127,7 +130,7 @@ test(
       "/api/profile",
       "PUT",
       coachA,
-      changedProfile,
+      { ...changedProfile, expectedUpdatedAt: update.profile.updatedAt },
     );
     assert.equal(noOpResponse.status, 200);
     const noOp = await noOpResponse.json();
@@ -208,7 +211,7 @@ test(
     const worker = await startD1Worker();
     context.after(() => worker.dispose());
 
-    await saveProfile(
+    const initialProfile = await saveProfile(
       worker,
       coachA,
       profilePayload(coachA, {
@@ -242,6 +245,7 @@ test(
       profilePayload(coachA, {
         displayName: "Preview Coach After",
         businessName: "Preview After Golf",
+        expectedUpdatedAt: initialProfile.profile.updatedAt,
       }),
     );
     assert.equal(profileUpdate.status, 200);
@@ -301,7 +305,7 @@ test(
     const before = profilePayload(coachA, {
       businessName: "Lifecycle Profile Before Golf",
     });
-    await saveProfile(worker, coachA, before);
+    const initialProfile = await saveProfile(worker, coachA, before);
     const pausedWorkspace = await createGolfer(
       worker,
       coachA,
@@ -343,7 +347,11 @@ test(
       "/api/profile",
       "PUT",
       coachA,
-      { ...before, businessName: "Lifecycle Profile After Golf" },
+      {
+        ...before,
+        businessName: "Lifecycle Profile After Golf",
+        expectedUpdatedAt: initialProfile.profile.updatedAt,
+      },
     );
     assert.equal(update.status, 200);
     assert.deepEqual((await update.json()).publicationImpact, {
@@ -489,14 +497,19 @@ async function exchange(worker, token) {
     token,
   });
   assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.match(body.sessionContext, /^[0-9a-f]{64}$/);
   const cookie = response.headers.get("set-cookie")?.split(";", 1)[0];
   assert.match(cookie ?? "", /^roadmap_share=[A-Za-z0-9_-]{40,64}$/);
-  return cookie;
+  return {
+    cookie,
+    planPath: `/r/plan?context=${body.sessionContext}`,
+  };
 }
 
-async function renderPlan(worker, cookie) {
-  const response = await worker.dispatch("/r/plan", {
-    headers: { accept: "text/html", cookie },
+async function renderPlan(worker, session) {
+  const response = await worker.dispatch(session.planPath, {
+    headers: { accept: "text/html", cookie: session.cookie },
   });
   assert.equal(response.status, 200);
   return response.text();

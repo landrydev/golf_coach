@@ -825,6 +825,7 @@ async function fetchBuiltApp(path, init) {
   return worker.fetch(
     new Request(new URL(path, "https://roadmap.example"), init),
     {
+      APPLICATION_WRITE_MODE: "enabled",
       ASSETS: {
         fetch: async () => new Response("Not found", { status: 404 }),
       },

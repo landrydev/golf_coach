@@ -92,7 +92,7 @@ test("first-party instructor mutation surfaces use the shared error summary with
       path: "../app/app/golfers/[golferId]/PublishControls.tsx",
       summaryId: "publish-controls-error-summary",
       describedBy: /aria-describedby=\{ERROR_SUMMARY_ID\}/g,
-      associations: 1,
+      associations: 3,
       successStatus: true,
     },
     {
@@ -150,6 +150,8 @@ test("first-party instructor mutation surfaces use the shared error summary with
     {
       path: "../app/app/golfers/[golferId]/PublishControls.tsx",
       summaryActions: 1,
+      focusRef:
+        /formRef=\{\s*errorFocus === "form"\s*\? formRef\s*: errorFocus === "replacement"\s*\? replacementFormRef\s*: errorFocus === "reissue"\s*\? reissueFormRef\s*: summaryOnlyRef\s*\}/,
     },
     {
       path: "../app/app/golfers/[golferId]/settings/GolferSettingsForm.tsx",
@@ -168,7 +170,8 @@ test("first-party instructor mutation surfaces use the shared error summary with
     assert.match(source, /const summaryOnlyRef = useRef<HTMLFormElement>\(null\);/);
     assert.match(
       source,
-      /formRef=\{errorFocus === "form" \? formRef : summaryOnlyRef\}/,
+      surface.focusRef ??
+        /formRef=\{errorFocus === "form" \? formRef : summaryOnlyRef\}/,
     );
     assert.equal(
       source.match(/setErrorFocus\("summary"\)/g)?.length,

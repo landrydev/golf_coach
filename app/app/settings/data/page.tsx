@@ -49,7 +49,11 @@ export default async function DataSettingsPage() {
         subjectType="account"
       />
       <div style={{ height: "1rem" }} />
-      <DataRequestControls initialRequests={requests} />
+      <DataRequestControls
+        key={`data-requests:${account.id}`}
+        initialRequests={requests}
+        recoveryScope={account.id}
+      />
     </div>
   );
 }

@@ -3,13 +3,27 @@
 import { useRef, useState, type FormEvent } from "react";
 import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
 import {
+  clientMutationMalformedSuccess,
   clientMutationErrorMessage,
+  isClientMutationOutcomeUnknown,
   requestClientMutation,
+  requireClientMutationJson,
+  requireClientMutationSuccess,
 } from "@/lib/client-mutation-recovery";
 import type { PlanShareSummary } from "@/lib/plans";
+import {
+  isShareMutationEnvelope,
+  type ShareMutationEnvelope,
+} from "@/lib/share-client-response";
 import styles from "../../workspace.module.css";
 
 const ERROR_SUMMARY_ID = "publish-controls-error-summary";
+
+type RevealedShare = Readonly<{
+  shareId: string;
+  url: string;
+  expiresAt: string;
+}>;
 
 export function PublishControls({
   planId,
@@ -17,75 +31,124 @@ export function PublishControls({
   golferName,
   blockers,
   initialShares,
+  publishedRevision,
+  lastSharedAt,
 }: {
   planId: string;
   planRevision: number;
   golferName: string;
   blockers: string[];
   initialShares: PlanShareSummary[];
+  publishedRevision: number | null;
+  lastSharedAt: number | null;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
+  const replacementFormRef = useRef<HTMLFormElement>(null);
+  const reissueFormRef = useRef<HTMLFormElement>(null);
   const summaryOnlyRef = useRef<HTMLFormElement>(null);
-  const [state, setState] = useState<"idle" | "publishing" | "ready" | "error">("idle");
-  const [errorFocus, setErrorFocus] = useState<"form" | "summary">("form");
+  const shareMutationInFlightRef = useRef(false);
+  const [state, setState] = useState<
+    | "idle"
+    | "publishing"
+    | "replacing"
+    | "reissuing"
+    | "ready"
+    | "error"
+    | "reconcile_required"
+  >("idle");
+  const [errorFocus, setErrorFocus] = useState<
+    "form" | "replacement" | "reissue" | "summary"
+  >("form");
   const [message, setMessage] = useState("");
-  const [shareUrl, setShareUrl] = useState("");
-  const [expiresAt, setExpiresAt] = useState("");
+  const [revealedShare, setRevealedShare] = useState<RevealedShare | null>(
+    null,
+  );
   const [shares, setShares] = useState(initialShares);
+  const [publishedRevisionState, setPublishedRevisionState] = useState(
+    publishedRevision,
+  );
+  const [lastSharedAtState, setLastSharedAtState] = useState(lastSharedAt);
+  const [historyRequiresReload, setHistoryRequiresReload] = useState(false);
   const [revokingId, setRevokingId] = useState<string | null>(null);
+  const activeCurrentShare = shares.find(
+    (share) => share.planRevision === planRevision && share.status === "active",
+  );
+  const replacementAvailable = Boolean(
+    activeCurrentShare && revealedShare?.shareId !== activeCurrentShare.id,
+  );
+  const currentRevisionPublished = publishedRevisionState === planRevision;
+  const reissueSource = shares.find(
+    (share) =>
+      share.planRevision === planRevision &&
+      (share.status === "revoked" || share.status === "expired"),
+  );
+  const reissueAvailable = Boolean(
+    currentRevisionPublished &&
+      !activeCurrentShare &&
+      reissueSource &&
+      lastSharedAtState !== null &&
+      !historyRequiresReload,
+  );
+  const reconciliationRequired = state === "reconcile_required";
+  const shareMutationPending =
+    state === "publishing" ||
+    state === "replacing" ||
+    state === "reissuing" ||
+    revokingId !== null;
+
+  function startShareMutation(): boolean {
+    if (shareMutationInFlightRef.current || reconciliationRequired) return false;
+    shareMutationInFlightRef.current = true;
+    return true;
+  }
+
+  function finishShareMutation(): void {
+    shareMutationInFlightRef.current = false;
+  }
 
   async function publish(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (activeCurrentShare || currentRevisionPublished || !startShareMutation()) return;
     setErrorFocus("form");
     setState("publishing");
     setMessage("");
-    setShareUrl("");
     const form = new FormData(event.currentTarget);
+    const expiresInDays = Number(form.get("expiresInDays"));
 
+    let result: ShareMutationEnvelope;
     try {
       const response = await requestClientMutation(`/api/plans/${encodeURIComponent(planId)}/publish`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           intendedRecipientContext: form.get("intendedRecipientContext"),
-          expiresInDays: Number(form.get("expiresInDays")),
+          expiresInDays,
           expectedRevision: planRevision,
           confirmation: form.get("confirmation"),
         }),
       });
-      const result = (await response.json()) as {
-        share?: { id?: string; url?: string; expiresAt?: string };
-        error?: { message?: string };
-      };
-      if (!response.ok || !result.share?.url) {
-        throw new Error(result.error?.message || "The private link could not be created.");
+      if (response.ok && response.status !== 201) {
+        throw clientMutationMalformedSuccess(response.status);
       }
-      setShareUrl(result.share.url);
-      setExpiresAt(result.share.expiresAt || "");
-      if (result.share.id) {
-        setShares((current) => [
-          {
-            id: result.share!.id!,
-            status: "active",
+      result = await requireClientMutationJson<ShareMutationEnvelope>(
+        response,
+        (value) =>
+          isShareMutationEnvelope(
+            value,
+            window.location.origin,
+            planId,
             planRevision,
-            createdAt: Date.now(),
-            expiresAt: result.share?.expiresAt
-              ? new Date(result.share.expiresAt).getTime()
-              : null,
-            lastAccessedAt: null,
-            accessCount: 0,
-          },
-          ...current.map((share) =>
-            share.status === "active" ? { ...share, status: "revoked" } : share,
+            {
+              operation: "plan.publish_and_share",
+              expiresInDays,
+            },
           ),
-        ]);
-      }
-      setState("ready");
-      setMessage(
-        "Private link created. Copy it now; Roadmap stores only a one-way fingerprint and cannot show this exact link again.",
+        "The private link could not be created.",
       );
     } catch (error) {
-      setState("error");
+      setState(
+        isClientMutationOutcomeUnknown(error) ? "reconcile_required" : "error",
+      );
       setMessage(
         clientMutationErrorMessage(
           error,
@@ -94,11 +157,217 @@ export function PublishControls({
           "The private link could not be created.",
         ),
       );
+      finishShareMutation();
+      return;
     }
+
+    setRevealedShare({
+      shareId: result.share.id,
+      url: result.share.url,
+      expiresAt: result.share.expiresAt || "",
+    });
+    addReplacementShare(result.share);
+    setPublishedRevisionState(planRevision);
+    setState("ready");
+    setMessage(
+      "Private link created. Copy it now; Roadmap stores only a one-way fingerprint and cannot show this exact link again.",
+    );
+    finishShareMutation();
+  }
+
+  async function replaceInaccessibleLink(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!startShareMutation()) return;
+    setErrorFocus("replacement");
+    setMessage("");
+    const sourceShare = activeCurrentShare;
+    if (!sourceShare) {
+      setState("error");
+      setMessage("The active sharing record changed. Reload before replacing a link.");
+      finishShareMutation();
+      return;
+    }
+    const form = new FormData(event.currentTarget);
+    setState("replacing");
+
+    let result: ShareMutationEnvelope;
+    try {
+      const response = await requestClientMutation(
+        `/api/plans/${encodeURIComponent(planId)}/publish/replace-inaccessible`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            expectedRevision: planRevision,
+            expectedShareId: sourceShare.id,
+            confirmation: form.get("replacementConfirmation"),
+          }),
+        },
+      );
+      if (response.ok && response.status !== 201) {
+        throw clientMutationMalformedSuccess(response.status);
+      }
+      result = await requireClientMutationJson<ShareMutationEnvelope>(
+        response,
+        (value) =>
+          isShareMutationEnvelope(
+            value,
+            window.location.origin,
+            planId,
+            planRevision,
+            {
+              operation: "share.replace_inaccessible_link",
+              sourceShareId: sourceShare.id,
+            },
+          ),
+        "The inaccessible private link could not be replaced.",
+      );
+    } catch (error) {
+      setState(
+        isClientMutationOutcomeUnknown(error) ? "reconcile_required" : "error",
+      );
+      setMessage(
+        clientMutationErrorMessage(
+          error,
+          "the inaccessible private link was replaced",
+          "reload_before_retry",
+          "The inaccessible private link could not be replaced.",
+        ),
+      );
+      finishShareMutation();
+      return;
+    }
+
+    setRevealedShare({
+      shareId: result.share.id,
+      url: result.share.url,
+      expiresAt: result.share.expiresAt || "",
+    });
+    addReplacementShare(result.share);
+    setState("ready");
+    setMessage(
+      "Replacement private link created. The previously active link and all of its open sessions were revoked. Copy this new one-time link now.",
+    );
+    finishShareMutation();
+  }
+
+  async function reissueSameRevision(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!startShareMutation()) return;
+    setErrorFocus("reissue");
+    setMessage("");
+    const sourceShare = reissueSource;
+    const observedLastSharedAt = lastSharedAtState;
+    if (
+      !reissueAvailable ||
+      !sourceShare ||
+      (sourceShare.status !== "revoked" && sourceShare.status !== "expired") ||
+      observedLastSharedAt === null
+    ) {
+      setState("error");
+      setMessage("The sharing history changed. Reload before reissuing access.");
+      finishShareMutation();
+      return;
+    }
+    const sourceStatus = sourceShare.status;
+    const form = new FormData(event.currentTarget);
+    const expiresInDays = Number(form.get("reissueExpiresInDays"));
+    setState("reissuing");
+
+    let result: ShareMutationEnvelope;
+    try {
+      const response = await requestClientMutation(
+        `/api/plans/${encodeURIComponent(planId)}/publish/reissue`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            expectedRevision: planRevision,
+            expectedLastSharedAt: observedLastSharedAt,
+            expectedSourceShareId: sourceShare.id,
+            expectedSourceStatus: sourceStatus,
+            expectedSourceUpdatedAt: sourceShare.updatedAt,
+            expiresInDays,
+            confirmation: form.get("reissueConfirmation"),
+          }),
+        },
+      );
+      if (response.ok && response.status !== 201) {
+        throw clientMutationMalformedSuccess(response.status);
+      }
+      result = await requireClientMutationJson<ShareMutationEnvelope>(
+        response,
+        (value) =>
+          isShareMutationEnvelope(
+            value,
+            window.location.origin,
+            planId,
+            planRevision,
+            {
+              operation: "share.reissue_same_revision",
+              sourceShareId: sourceShare.id,
+              sourceStatus,
+              sourceUpdatedAt: sourceShare.updatedAt,
+              expiresInDays,
+            },
+          ),
+        "Private access could not be reissued.",
+      );
+    } catch (error) {
+      setState(
+        isClientMutationOutcomeUnknown(error) ? "reconcile_required" : "error",
+      );
+      setMessage(
+        clientMutationErrorMessage(
+          error,
+          "private access was reissued",
+          "reload_before_retry",
+          "Private access could not be reissued.",
+        ),
+      );
+      finishShareMutation();
+      return;
+    }
+
+    setRevealedShare({
+      shareId: result.share.id,
+      url: result.share.url,
+      expiresAt: result.share.expiresAt || "",
+    });
+    addReplacementShare(result.share);
+    setState("ready");
+    setMessage(
+      "Private access reissued for the same published revision. Prior sessions and residual links were revoked. Copy this new one-time link now.",
+    );
+    finishShareMutation();
+  }
+
+  function addReplacementShare(share: ShareMutationEnvelope["share"]) {
+    setShares((current) => [
+      {
+        id: share.id,
+        status: share.status,
+        planRevision: share.planRevision,
+        createdAt: new Date(share.createdAt).getTime(),
+        updatedAt: new Date(share.updatedAt).getTime(),
+        expiresAt: share.expiresAt ? new Date(share.expiresAt).getTime() : null,
+        lastAccessedAt: share.lastAccessedAt,
+        accessCount: share.accessCount,
+      },
+      ...current.map((existing) =>
+        existing.status === "active"
+          ? { ...existing, status: "revoked" as const }
+          : existing,
+      ),
+    ]);
+    setLastSharedAtState(new Date(share.createdAt).getTime());
+    setHistoryRequiresReload(false);
   }
 
   async function revoke(shareId: string) {
+    if (shareMutationInFlightRef.current || reconciliationRequired) return;
     if (!window.confirm("Revoke this private access link now?")) return;
+    if (!startShareMutation()) return;
     setErrorFocus("summary");
     setRevokingId(shareId);
     setMessage("");
@@ -108,22 +377,15 @@ export function PublishControls({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason: "Revoked by instructor" }),
       });
-      if (!response.ok) {
-        const result = (await response.json()) as { error?: { message?: string } };
-        throw new Error(result.error?.message || "The private link could not be revoked.");
-      }
-      setShares((current) =>
-        current.map((share) =>
-          share.id === shareId ? { ...share, status: "revoked" } : share,
-        ),
+      await requireClientMutationSuccess(
+        response,
+        "The private link could not be revoked.",
+        [204],
       );
-      if (shares.some((share) => share.id === shareId && share.status === "active")) {
-        setShareUrl("");
-      }
-      setState("ready");
-      setMessage("Private access revoked. An already-open page will fail its next authorization check.");
     } catch (error) {
-      setState("error");
+      setState(
+        isClientMutationOutcomeUnknown(error) ? "reconcile_required" : "error",
+      );
       setMessage(
         clientMutationErrorMessage(
           error,
@@ -132,14 +394,34 @@ export function PublishControls({
           "The private link could not be revoked.",
         ),
       );
-    } finally {
       setRevokingId(null);
+      finishShareMutation();
+      return;
     }
+
+    setShares((current) =>
+      current.map((share) =>
+        share.id === shareId
+          ? { ...share, status: "revoked" as const }
+          : share,
+      ),
+    );
+    setRevealedShare((current) =>
+      current?.shareId === shareId ? null : current,
+    );
+    setState("ready");
+    setHistoryRequiresReload(true);
+    setMessage(
+      "Private access revoked. An already-open page will fail its next authorization check. Reload the authoritative history before reissuing access.",
+    );
+    setRevokingId(null);
+    finishShareMutation();
   }
 
   async function copyLink() {
+    if (!revealedShare || shareMutationInFlightRef.current) return;
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(revealedShare.url);
       setMessage("Private link copied.");
     } catch {
       setMessage("Copy was unavailable. Select and copy the complete link below.");
@@ -166,11 +448,22 @@ export function PublishControls({
       ) : null}
       <form
         ref={formRef}
+        method="post"
         className={styles.form}
         aria-describedby={ERROR_SUMMARY_ID}
         onSubmit={publish}
       >
-        <label className={styles.fullField}>
+        <fieldset
+          className={styles.formSection}
+          disabled={
+            shareMutationPending ||
+            reconciliationRequired ||
+            Boolean(activeCurrentShare) ||
+            currentRevisionPublished
+          }
+        >
+          <legend>Private link details</legend>
+          <label className={styles.fullField}>
           Intended recipient and context
           <input
             name="intendedRecipientContext"
@@ -179,8 +472,8 @@ export function PublishControls({
             maxLength={240}
           />
           <small>Confirm who should receive this exact private view. Roadmap does not send it automatically.</small>
-        </label>
-        <label className={styles.field}>
+          </label>
+          <label className={styles.field}>
           Link expiry
           <select name="expiresInDays" defaultValue="30">
             <option value="1">1 day</option>
@@ -189,8 +482,8 @@ export function PublishControls({
             <option value="90">90 days</option>
           </select>
           <small>You can revoke access sooner from the sharing record.</small>
-        </label>
-        <label className={styles.confirmRow}>
+          </label>
+          <label className={styles.confirmRow}>
           <input
             name="confirmation"
             type="checkbox"
@@ -201,38 +494,201 @@ export function PublishControls({
             I reviewed the exact goal, assessment, evidence limits, phase sequence, package
             facts, and external-action wording shown below.
           </span>
-        </label>
-        <div className={styles.actions}>
-          <button
-            className={styles.primaryButton}
-            type="submit"
-            disabled={state === "publishing" || blockers.length > 0}
-          >
-            {state === "publishing"
-              ? "Publishing…"
-              : blockers.length
-                ? "Resolve blockers before publishing"
-                : "Publish and create private link"}
-          </button>
-        </div>
+          </label>
+          <div className={styles.actions}>
+            <button
+              className={styles.primaryButton}
+              type="submit"
+              disabled={blockers.length > 0}
+            >
+              {state === "publishing"
+                ? "Publishing…"
+                : activeCurrentShare
+                  ? "Current revision already has private access"
+                  : currentRevisionPublished
+                    ? "Current revision is already published"
+                  : blockers.length
+                    ? "Resolve blockers before publishing"
+                    : "Publish and create private link"}
+            </button>
+          </div>
+        </fieldset>
       </form>
+      {replacementAvailable ? (
+        <form
+          ref={replacementFormRef}
+          method="post"
+          className={styles.form}
+          aria-labelledby="replace-inaccessible-link-heading"
+          aria-describedby={ERROR_SUMMARY_ID}
+          onSubmit={replaceInaccessibleLink}
+        >
+          <fieldset
+            className={styles.formSection}
+            disabled={
+              shareMutationPending ||
+              reconciliationRequired
+            }
+          >
+            <legend>Inaccessible-link replacement</legend>
+            <div className={styles.notice} role="note">
+            <strong id="replace-inaccessible-link-heading">
+              Cannot access the one-time link shown after publishing?
+            </strong>
+            <span>
+              Reload and inspect the sharing record first if a publish response was lost.
+              Roadmap stores only a one-way fingerprint, so it cannot recover the old link.
+              This action revokes the currently active link and every open session, then
+              creates one replacement with the same recipient context and expiry.
+            </span>
+            </div>
+            <label className={styles.confirmRow}>
+            <input
+              name="replacementConfirmation"
+              type="checkbox"
+              value="replace_inaccessible_private_link"
+              required
+            />
+            <span>
+              I cannot access the current private link and understand that replacing it
+              immediately invalidates that link and its open sessions.
+            </span>
+            </label>
+            <div className={styles.actions}>
+              <button className={styles.dangerButton} type="submit">
+                {state === "replacing"
+                  ? "Replacing inaccessible link…"
+                  : "Revoke and replace inaccessible link"}
+              </button>
+            </div>
+          </fieldset>
+        </form>
+      ) : null}
+      {reissueAvailable && reissueSource ? (
+        <form
+          ref={reissueFormRef}
+          method="post"
+          className={styles.form}
+          aria-labelledby="same-revision-reissue-heading"
+          aria-describedby={ERROR_SUMMARY_ID}
+          onSubmit={reissueSameRevision}
+        >
+          <fieldset
+            className={styles.formSection}
+            disabled={
+              shareMutationPending ||
+              reconciliationRequired ||
+              blockers.length > 0
+            }
+          >
+            <legend>Same-revision access reissue</legend>
+            <div className={styles.notice} role="note">
+              <strong id="same-revision-reissue-heading">
+                The latest link for this published revision is {reissueSource.status}.
+              </strong>
+              <span>
+                Reissuing does not republish or change the golfer view. It creates one new
+                private capability with a newly selected expiry and invalidates residual
+                sessions and inactive link state from the observed history.
+              </span>
+            </div>
+            <label className={styles.field}>
+              New link expiry
+              <select name="reissueExpiresInDays" defaultValue="30">
+                <option value="1">1 day</option>
+                <option value="7">7 days</option>
+                <option value="30">30 days</option>
+                <option value="90">90 days</option>
+              </select>
+              <small>The new expiry starts only if this exact history record still matches.</small>
+            </label>
+            <label className={styles.confirmRow}>
+              <input
+                name="reissueConfirmation"
+                type="checkbox"
+                value="reissue_same_published_revision"
+                required
+              />
+              <span>
+                I reviewed revision {planRevision} and sharing record reference{" "}
+                {reissueSource.id.slice(-8).toUpperCase()}, and I intend to create one new
+                private link without changing the published content.
+              </span>
+            </label>
+            <div className={styles.actions}>
+              <button className={styles.primaryButton} type="submit">
+                {state === "reissuing"
+                  ? "Reissuing private access…"
+                  : "Reissue private access"}
+              </button>
+            </div>
+          </fieldset>
+        </form>
+      ) : null}
       <FormErrorSummary
         id={ERROR_SUMMARY_ID}
-        message={state === "error" ? message : ""}
-        formRef={errorFocus === "form" ? formRef : summaryOnlyRef}
+        message={
+          state === "error" || state === "reconcile_required" ? message : ""
+        }
+        formRef={
+          errorFocus === "form"
+            ? formRef
+            : errorFocus === "replacement"
+              ? replacementFormRef
+              : errorFocus === "reissue"
+                ? reissueFormRef
+                : summaryOnlyRef
+        }
         className={styles.errorStatus}
       />
-      {state !== "error" && message ? (
+      {reconciliationRequired ? (
+        <div className={styles.notice} role="alert">
+          <strong>Reload is required before another sharing change.</strong>
+          <span>
+            The last response did not prove whether the server committed. Publishing,
+            replacement, reissue, and revocation remain locked until this page reloads the
+            authoritative sharing record.
+          </span>
+          <div className={styles.actions}>
+            <button
+              className={styles.secondaryButton}
+              type="button"
+              onClick={() => window.location.reload()}
+            >
+              Reload sharing record
+            </button>
+          </div>
+        </div>
+      ) : null}
+      {historyRequiresReload && !reconciliationRequired ? (
+        <div className={styles.notice} role="note">
+          <strong>Reload to use the new terminal sharing record.</strong>
+          <span>
+            Revocation succeeded, but its authoritative history timestamp was not inferred
+            from this browser. Reissue remains unavailable until a reload reads that value.
+          </span>
+          <div className={styles.actions}>
+            <button
+              className={styles.secondaryButton}
+              type="button"
+              onClick={() => window.location.reload()}
+            >
+              Reload sharing record
+            </button>
+          </div>
+        </div>
+      ) : null}
+      {state !== "error" && state !== "reconcile_required" && message ? (
         <div className={styles.formStatus} role="status">
           {message}
         </div>
       ) : null}
-      {shareUrl ? (
+      {revealedShare && !reconciliationRequired && !shareMutationPending ? (
         <div className={styles.form} style={{ marginTop: "1rem" }}>
           <label className={styles.fullField}>
             Complete private link
-            <textarea readOnly value={shareUrl} rows={3} onFocus={(event) => event.currentTarget.select()} />
-            {expiresAt ? <small>Expires {new Date(expiresAt).toLocaleString("en-CA")}</small> : null}
+            <textarea readOnly value={revealedShare.url} rows={3} onFocus={(event) => event.currentTarget.select()} />
+            {revealedShare.expiresAt ? <small>Expires {new Date(revealedShare.expiresAt).toLocaleString("en-CA")}</small> : null}
           </label>
           <div className={styles.actions}>
             <button className={styles.secondaryButton} type="button" onClick={copyLink}>
@@ -266,7 +722,7 @@ export function PublishControls({
                 <button
                   className={styles.dangerButton}
                   type="button"
-                  disabled={revokingId !== null}
+                  disabled={shareMutationPending || reconciliationRequired}
                   onClick={() => revoke(share.id)}
                 >
                   {revokingId === share.id ? "Revoking…" : "Revoke access"}

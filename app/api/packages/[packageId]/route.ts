@@ -7,7 +7,7 @@ import {
   RequestError,
 } from "@/lib/http";
 import { requireApiIdentity } from "@/lib/identity";
-import { parsePackageInput } from "@/lib/package-input";
+import { parsePackageUpdateInput } from "@/lib/package-input";
 import {
   archiveCoachingPackage,
   getOrCreateAccountForIdentity,
@@ -24,16 +24,14 @@ export async function PUT(
     assertSameOrigin(request);
     const auth = await requireApiIdentity();
     if (auth.response) return noStore(auth.response, requestId);
-    const input = parsePackageInput(await readJson<unknown>(request), {
-      allowArchived: false,
-      defaultStatus: "active",
-    });
+    const update = parsePackageUpdateInput(await readJson<unknown>(request));
     const packageId = await packageIdFrom(context);
     const account = await getOrCreateAccountForIdentity(auth.identity);
     const result = await updateCoachingPackage(
       account.id,
       packageId,
-      input,
+      update.input,
+      update.expectedUpdatedAt,
       requestId,
     );
     return json(result, requestId);
@@ -53,12 +51,22 @@ export async function DELETE(
     if (auth.response) return noStore(auth.response, requestId);
     const payload = asObject(await readJson<unknown>(request));
     rejectClientAccountId(payload);
-    assertExactObjectKeys(payload, ["confirmation"]);
+    assertExactObjectKeys(payload, ["confirmation", "expectedUpdatedAt"]);
     if (payload.confirmation !== "archive_package") {
       throw new RequestError(
         400,
         "archive_confirmation_required",
         "Confirm the package archive action.",
+      );
+    }
+    if (
+      !Number.isSafeInteger(payload.expectedUpdatedAt) ||
+      (payload.expectedUpdatedAt as number) < 0
+    ) {
+      throw new RequestError(
+        400,
+        "invalid_field",
+        "expectedUpdatedAt must be a non-negative whole number.",
       );
     }
 
@@ -67,6 +75,7 @@ export async function DELETE(
     const result = await archiveCoachingPackage(
       account.id,
       packageId,
+      payload.expectedUpdatedAt as number,
       requestId,
     );
     return json(result, requestId);

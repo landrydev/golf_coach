@@ -104,6 +104,7 @@ export default async function CompleteStagedGolferPage({
             golferId={staged.golfer.id}
             planId={staged.plan.id}
             expectedRevision={staged.plan.revision}
+            recoveryScope={account.id}
             packages={packages.map((coachingPackage) => ({
               id: coachingPackage.id,
               name: coachingPackage.name,

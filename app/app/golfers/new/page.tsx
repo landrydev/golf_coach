@@ -93,7 +93,10 @@ export default async function NewGolferPage() {
         </div>
       ) : (
         <>
-      <StagedGolferForm />
+      <StagedGolferForm
+        key={`staged-golfer:${account.id}`}
+        recoveryScope={account.id}
+      />
       {packagePage.hasMore ? (
         <div className={styles.notice} role="note">
           <strong>Package selection is bounded.</strong>
@@ -111,7 +114,11 @@ export default async function NewGolferPage() {
           assessment, current priority, and phase sequence.
         </span>
       </div>
-      <NewGolferForm packages={packages} />
+      <NewGolferForm
+        key={`full-golfer:${account.id}`}
+        packages={packages}
+        recoveryScope={account.id}
+      />
         </>
       )}
     </div>

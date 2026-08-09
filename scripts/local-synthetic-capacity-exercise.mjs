@@ -274,7 +274,7 @@ async function runCriticalFlow(runtime, identity, flowNumber) {
         body: JSON.stringify({ token: rawToken }),
       }),
     validate(body, response) {
-      assert.equal(body.redirectTo, "/r/plan");
+      assert.match(body.sessionContext, /^[0-9a-f]{64}$/u);
       assert.match(
         response.headers.get("set-cookie") ?? "",
         /^roadmap_share=[A-Za-z0-9_-]{40,64};/u,

@@ -7,11 +7,17 @@ import { buildCoachContactMailtoUri } from "@/lib/mailto";
 
 type PlanViewProps = {
   model: PlanViewModel;
+  sessionContext?: string;
   preview?: boolean;
   embedded?: boolean;
 };
 
-export function PlanView({ model, preview = false, embedded = false }: PlanViewProps) {
+export function PlanView({
+  model,
+  sessionContext,
+  preview = false,
+  embedded = false,
+}: PlanViewProps) {
   const currentPhase =
     model.phases.find((phase) => phase.status === "active") ??
     model.phases.find((phase) => phase.status === "paused") ??
@@ -49,7 +55,9 @@ export function PlanView({ model, preview = false, embedded = false }: PlanViewP
             <span>Private coaching plan</span>
             <strong>{model.golfer.displayName}</strong>
           </div>
-          {!preview && model.access ? <CloseRoadmap /> : null}
+          {!preview && model.access ? (
+            <CloseRoadmap sessionContext={sessionContext ?? ""} />
+          ) : null}
         </div>
       </header>
       <nav className={styles.nav} aria-label="Coaching plan sections">
@@ -427,6 +435,7 @@ export function PlanView({ model, preview = false, embedded = false }: PlanViewP
               coachName={model.coach.displayName}
               coachEmail={model.coach.contactEmail}
               externalActionUrl={model.coachingPackage?.externalActionUrl}
+              sessionContext={sessionContext}
               preview={preview}
             />
           ) : coachMailtoUri ? (

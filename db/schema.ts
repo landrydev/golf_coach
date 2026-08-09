@@ -170,6 +170,8 @@ export const dataRequestStatuses = [
 export const abuseLimitScopes = [
   "share_exchange_network",
   "share_exchange_capability",
+  "share_close_network",
+  "share_close_session",
   "share_response_network",
   "share_response_capability",
   "plan_publish_account",
@@ -2124,7 +2126,7 @@ export const abuseRateLimits = sqliteTable(
     index("abuse_rate_limits_expires_idx").on(table.windowExpiresAt),
     check(
       "abuse_rate_limits_scope_check",
-      sql`${table.scope} in ('share_exchange_network', 'share_exchange_capability', 'share_response_network', 'share_response_capability', 'plan_publish_account', 'share_revoke_account', 'billing_checkout_account', 'billing_portal_account', 'billing_reconcile_account', 'data_export_account', 'data_request_account', 'data_request_operator_network', 'data_request_operator_identity')`,
+      sql`${table.scope} in ('share_exchange_network', 'share_exchange_capability', 'share_close_network', 'share_close_session', 'share_response_network', 'share_response_capability', 'plan_publish_account', 'share_revoke_account', 'billing_checkout_account', 'billing_portal_account', 'billing_reconcile_account', 'data_export_account', 'data_request_account', 'data_request_operator_network', 'data_request_operator_identity')`,
     ),
     check(
       "abuse_rate_limits_hash_check",

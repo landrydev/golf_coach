@@ -1,23 +1,54 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { flushSync } from "react-dom";
+import {
+  AuthoringDraftRecovery,
+  type AuthoringDraftUiState,
+} from "@/components/forms/AuthoringDraftRecovery";
 import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
 import {
+  captureAuthoringDraftValues,
+  clearAuthoringDraft,
+  discardAuthoringDraft,
+  persistAuthoringDraft,
+  reconcileAuthoringDraft,
+  restoreAuthoringDraftValues,
+  type AuthoringDraftAction,
+  type AuthoringDraftScope,
+} from "@/lib/client-authoring-draft-recovery";
+import {
   clientMutationErrorMessage,
+  isClientMutationApiError,
+  isClientMutationOutcomeUnknown,
   requestClientMutation,
 } from "@/lib/client-mutation-recovery";
+import {
+  isPlanContentCreatedResponse,
+  isPlanContentWithdrawnResponse,
+  requireExactClientMutationJson,
+  type PlanContentKind,
+  type WithdrawablePlanContentKind,
+} from "@/lib/instructor-mutation-response-contracts";
 import styles from "../../workspace.module.css";
 
 type PhaseOption = { id: string; number: number; title: string; purpose: string; status: string };
 type ReviewTransition = "continue" | "pause" | "advance" | "complete_plan";
 type ContentItem = { id: string; title: string };
-type WithdrawableContentKind = "lesson" | "practice" | "evidence";
 const ERROR_SUMMARY_ID = "living-plan-forms-error-summary";
+const CONTENT_KINDS: readonly PlanContentKind[] = [
+  "lesson",
+  "practice",
+  "evidence",
+  "review",
+];
 
 export function LivingPlanForms({
   planId,
   planRevision,
+  planStatus,
+  recoveryScope,
   phases,
   lessons,
   practiceItems,
@@ -25,6 +56,8 @@ export function LivingPlanForms({
 }: {
   planId: string;
   planRevision: number;
+  planStatus: string;
+  recoveryScope: string;
   phases: PhaseOption[];
   lessons: ContentItem[];
   practiceItems: ContentItem[];
@@ -32,10 +65,42 @@ export function LivingPlanForms({
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
+  const authoringFormRefs = useRef<Partial<Record<PlanContentKind, HTMLFormElement>>>({});
+  const mutationInFlightRef = useRef(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState(false);
+  const [reloadRequired, setReloadRequired] = useState(false);
   const [reviewTransition, setReviewTransition] = useState<ReviewTransition>("continue");
+  const [draftRecoveries, setDraftRecoveries] = useState<
+    Record<PlanContentKind, AuthoringDraftUiState>
+  >({
+    lesson: { kind: "checking" },
+    practice: { kind: "checking" },
+    evidence: { kind: "checking" },
+    review: { kind: "checking" },
+  });
+  const draftScopes = useMemo<Record<PlanContentKind, AuthoringDraftScope>>(
+    () => ({
+      lesson: livingDraftScope(recoveryScope, planId, "lesson"),
+      practice: livingDraftScope(recoveryScope, planId, "practice"),
+      evidence: livingDraftScope(recoveryScope, planId, "evidence"),
+      review: livingDraftScope(recoveryScope, planId, "review"),
+    }),
+    [planId, recoveryScope],
+  );
+  const authoritativeDraftState = useMemo(
+    () => ({
+      planId,
+      revision: planRevision,
+      status: planStatus,
+      phases: phases.map(({ id, number, status }) => ({ id, number, status })),
+      lessons: lessons.map(({ id, title }) => ({ id, title })),
+      practiceItems: practiceItems.map(({ id, title }) => ({ id, title })),
+      evidenceItems: evidenceItems.map(({ id, title }) => ({ id, title })),
+    }),
+    [evidenceItems, lessons, phases, planId, planRevision, planStatus, practiceItems],
+  );
   const currentPhase =
     phases.find((phase) => phase.status === "active") ??
     phases.find((phase) => phase.status === "paused");
@@ -43,7 +108,7 @@ export function LivingPlanForms({
     ? phases.find((phase) => phase.number === currentPhase.number + 1 && phase.status === "planned")
     : undefined;
   const contentGroups: Array<{
-    kind: WithdrawableContentKind;
+    kind: WithdrawablePlanContentKind;
     heading: string;
     action: string;
     items: ContentItem[];
@@ -59,16 +124,104 @@ export function LivingPlanForms({
   ];
   const hasPublishedContent = contentGroups.some((group) => group.items.length > 0);
 
-  async function submit(event: FormEvent<HTMLFormElement>, kind: string) {
+  useEffect(() => {
+    let current = true;
+    void Promise.all(
+      CONTENT_KINDS.map(async (kind) => [
+        kind,
+        await reconcileAuthoringDraft({
+          scope: draftScopes[kind],
+          currentRevision: planRevision,
+          currentState: authoritativeDraftState,
+        }),
+      ] as const),
+    ).then((entries) => {
+      if (current) {
+        setDraftRecoveries(Object.fromEntries(entries) as Record<PlanContentKind, AuthoringDraftUiState>);
+      }
+    });
+    return () => {
+      current = false;
+    };
+  }, [authoritativeDraftState, draftScopes, planRevision]);
+
+  function actionCanMutate(kind?: PlanContentKind): boolean {
+    return CONTENT_KINDS.every((candidate) => {
+      const recovery = draftRecoveries[candidate];
+      if (recovery.kind === "empty" || recovery.kind === "applied") return true;
+      return candidate === kind && recovery.kind === "restored";
+    });
+  }
+
+  function startMutation(kind?: PlanContentKind): boolean {
+    if (
+      mutationInFlightRef.current ||
+      busy !== null ||
+      reloadRequired ||
+      !actionCanMutate(kind)
+    ) {
+      return false;
+    }
+    mutationInFlightRef.current = true;
+    return true;
+  }
+
+  function handleMutationFailure(failure: unknown): void {
+    const authoritativeReloadRequired =
+      isClientMutationOutcomeUnknown(failure) ||
+      (isClientMutationApiError(failure) && failure.status === 409);
+    if (authoritativeReloadRequired) {
+      setReloadRequired(true);
+    } else {
+      mutationInFlightRef.current = false;
+    }
+    setError(true);
+    setBusy(null);
+  }
+
+  async function submit(
+    event: FormEvent<HTMLFormElement>,
+    kind: PlanContentKind,
+  ) {
     event.preventDefault();
+    if (!startMutation(kind)) return;
     formRef.current = event.currentTarget;
     setBusy(kind);
     setMessage("");
     setError(false);
     const form = event.currentTarget;
+    const values = captureAuthoringDraftValues(form);
+    if (!values) {
+      mutationInFlightRef.current = false;
+      setBusy(null);
+      setError(true);
+      setMessage("The living-plan draft could not be captured safely. No request was sent.");
+      return;
+    }
+    const savedDraft = await persistAuthoringDraft({
+      scope: draftScopes[kind],
+      baseRevision: planRevision,
+      baseState: authoritativeDraftState,
+      values,
+      ui: kind === "review" ? { reviewTransition } : {},
+    });
+    if (savedDraft.kind === "blocked") {
+      mutationInFlightRef.current = false;
+      setDraftRecoveries((current) => ({ ...current, [kind]: savedDraft }));
+      setBusy(null);
+      setError(true);
+      setMessage(
+        "Roadmap could not safely preserve this living-plan draft in the browser tab. No request was sent.",
+      );
+      return;
+    }
+    setDraftRecoveries((current) => ({
+      ...current,
+      [kind]: { kind: "restored" },
+    }));
     const payload = {
       kind,
-      ...Object.fromEntries(new FormData(form).entries()),
+      ...values,
       expectedRevision: planRevision,
     };
     try {
@@ -77,15 +230,19 @@ export function LivingPlanForms({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const result = (await response.json()) as { error?: { message?: string } };
-      if (!response.ok) throw new Error(result.error?.message || "The plan update could not be saved.");
-      form.reset();
-      setMessage(
-        "Plan updated. Any previous share link was revoked; review the refreshed golfer view before publishing again.",
+      await requireExactClientMutationJson(
+        response,
+        201,
+        (value) =>
+          isPlanContentCreatedResponse(value, {
+            kind,
+            revision: planRevision + 1,
+          }),
+        "The plan update could not be saved.",
       );
-      router.refresh();
+      clearAuthoringDraft(savedDraft.draft);
     } catch (submitError) {
-      setError(true);
+      handleMutationFailure(submitError);
       setMessage(
         clientMutationErrorMessage(
           submitError,
@@ -94,17 +251,47 @@ export function LivingPlanForms({
           "The plan update could not be saved.",
         ),
       );
-    } finally {
-      setBusy(null);
+      return;
+    }
+
+    try {
+      form.reset();
+    } catch {
+      // The confirmed plan update remains successful if local cleanup fails.
+    }
+    setMessage(
+      "Plan updated. Any previous share link was revoked; review the refreshed golfer view before publishing again.",
+    );
+    setReloadRequired(true);
+    setBusy(null);
+    try {
+      router.refresh();
+    } catch {
+      // The confirmed plan update remains successful if refresh fails.
     }
   }
 
   async function withdraw(
     event: FormEvent<HTMLFormElement>,
-    kind: WithdrawableContentKind,
+    kind: WithdrawablePlanContentKind,
     itemId: string,
+    itemTitle: string,
   ) {
     event.preventDefault();
+    if (
+      mutationInFlightRef.current ||
+      busy !== null ||
+      reloadRequired ||
+      !actionCanMutate()
+    ) return;
+    if (
+      !window.confirm(
+        `Withdraw the exact ${kind} item "${itemTitle}" from this golfer view? This creates plan revision ${planRevision + 1} and revokes current private access.`,
+      )
+    ) {
+      return;
+    }
+    if (!startMutation()) return;
     formRef.current = event.currentTarget;
     const operation = `withdraw:${kind}:${itemId}`;
     setBusy(operation);
@@ -124,18 +311,19 @@ export function LivingPlanForms({
           }),
         },
       );
-      const result = (await response.json()) as { error?: { message?: string } };
-      if (!response.ok) {
-        throw new Error(
-          result.error?.message || "The plan content could not be withdrawn.",
-        );
-      }
-      setMessage(
-        "Content withdrawn from the golfer view. Previous access was revoked; add a corrected replacement if needed, then review before republishing.",
+      await requireExactClientMutationJson(
+        response,
+        200,
+        (value) =>
+          isPlanContentWithdrawnResponse(value, {
+            itemId,
+            kind,
+            revision: planRevision + 1,
+          }),
+        "The plan content could not be withdrawn.",
       );
-      router.refresh();
     } catch (withdrawError) {
-      setError(true);
+      handleMutationFailure(withdrawError);
       setMessage(
         clientMutationErrorMessage(
           withdrawError,
@@ -144,9 +332,82 @@ export function LivingPlanForms({
           "The plan content could not be withdrawn.",
         ),
       );
-    } finally {
-      setBusy(null);
+      return;
     }
+
+    setMessage(
+      "Content withdrawn from the golfer view. Previous access was revoked; add a corrected replacement if needed, then review before republishing.",
+    );
+    setReloadRequired(true);
+    setBusy(null);
+    try {
+      router.refresh();
+    } catch {
+      // The confirmed withdrawal remains successful if refresh fails.
+    }
+  }
+
+  function renderDraftRecovery(kind: PlanContentKind, label: string) {
+    const recovery = draftRecoveries[kind];
+    return (
+      <AuthoringDraftRecovery
+        state={recovery}
+        label={label}
+        noticeClassName={styles.notice}
+        actionsClassName={styles.actions}
+        buttonClassName={styles.secondaryButton}
+        onRestore={() => {
+          if (recovery.kind !== "unchanged") {
+            setDraftRecoveries((current) => ({
+              ...current,
+              [kind]: { kind: "blocked", reason: "invalid" },
+            }));
+            return;
+          }
+          if (kind === "review") {
+            const transition = recovery.draft.envelope.ui.reviewTransition;
+            if (
+              typeof transition !== "string" ||
+              !["continue", "pause", "advance", "complete_plan"].includes(transition)
+            ) {
+              setDraftRecoveries((current) => ({
+                ...current,
+                [kind]: { kind: "blocked", reason: "invalid" },
+              }));
+              return;
+            }
+            flushSync(() => setReviewTransition(transition as ReviewTransition));
+          }
+          const form = authoringFormRefs.current[kind];
+          if (!form || !restoreAuthoringDraftValues(form, recovery.draft.envelope.values)) {
+            setDraftRecoveries((current) => ({
+              ...current,
+              [kind]: { kind: "blocked", reason: "invalid" },
+            }));
+            return;
+          }
+          setDraftRecoveries((current) => ({
+            ...current,
+            [kind]: { kind: "restored" },
+          }));
+        }}
+        onDiscard={() => {
+          const reload = recovery.kind === "blocked" || recovery.kind === "diverged";
+          if (!discardAuthoringDraft(draftScopes[kind])) {
+            setDraftRecoveries((current) => ({
+              ...current,
+              [kind]: { kind: "blocked", reason: "unavailable" },
+            }));
+            return;
+          }
+          setDraftRecoveries((current) => ({
+            ...current,
+            [kind]: { kind: "empty" },
+          }));
+          if (reload) window.location.reload();
+        }}
+      />
+    );
   }
 
   return (
@@ -162,12 +423,22 @@ export function LivingPlanForms({
         and republish the exact golfer view.
       </p>
 
+      <fieldset
+        disabled={reloadRequired || busy !== null}
+        style={{ border: 0, margin: 0, minInlineSize: 0, padding: 0 }}
+      >
       <div className={styles.form} style={{ marginTop: "1rem" }}>
         <details>
           <summary>Add a completed lesson chapter</summary>
+          {renderDraftRecovery("lesson", "lesson chapter")}
           <form
+            ref={(element) => {
+              if (element) authoringFormRefs.current.lesson = element;
+              else delete authoringFormRefs.current.lesson;
+            }}
             className={styles.form}
             aria-describedby={ERROR_SUMMARY_ID}
+            method="post"
             onSubmit={(event) => submit(event, "lesson")}
           >
             <PhaseSelect phases={phases} />
@@ -180,15 +451,25 @@ export function LivingPlanForms({
               <TextArea name="nextCheck" label="Next check" maxLength={1_000} />
               <TextArea name="phaseConnection" label="How this connects to the phase" maxLength={1_000} />
             </div>
-            <Submit label="Save lesson chapter" waiting={busy === "lesson"} />
+            <Submit
+              label="Save lesson chapter"
+              waiting={busy === "lesson"}
+              locked={!actionCanMutate("lesson")}
+            />
           </form>
         </details>
 
         <details>
           <summary>Add or replace the current practice direction</summary>
+          {renderDraftRecovery("practice", "practice direction")}
           <form
+            ref={(element) => {
+              if (element) authoringFormRefs.current.practice = element;
+              else delete authoringFormRefs.current.practice;
+            }}
             className={styles.form}
             aria-describedby={ERROR_SUMMARY_ID}
+            method="post"
             onSubmit={(event) => submit(event, "practice")}
           >
             <PhaseSelect phases={phases} />
@@ -208,15 +489,25 @@ export function LivingPlanForms({
               <TextArea name="stopOrAskRule" label="When to stop or ask" required maxLength={1_000} />
               <TextArea name="constraintNote" label="Constraint note (optional)" maxLength={1_000} />
             </div>
-            <Submit label="Save practice direction" waiting={busy === "practice"} />
+            <Submit
+              label="Save practice direction"
+              waiting={busy === "practice"}
+              locked={!actionCanMutate("practice")}
+            />
           </form>
         </details>
 
         <details>
           <summary>Add evidence with its limits</summary>
+          {renderDraftRecovery("evidence", "evidence")}
           <form
+            ref={(element) => {
+              if (element) authoringFormRefs.current.evidence = element;
+              else delete authoringFormRefs.current.evidence;
+            }}
             className={styles.form}
             aria-describedby={ERROR_SUMMARY_ID}
+            method="post"
             onSubmit={(event) => submit(event, "evidence")}
           >
             <PhaseSelect phases={phases} />
@@ -271,16 +562,26 @@ export function LivingPlanForms({
               </label>
               <TextArea name="nextEvidenceNeeded" label="Next evidence needed (optional)" maxLength={1_000} />
             </div>
-            <Submit label="Save evidence" waiting={busy === "evidence"} />
+            <Submit
+              label="Save evidence"
+              waiting={busy === "evidence"}
+              locked={!actionCanMutate("evidence")}
+            />
           </form>
         </details>
 
         <details>
           <summary>Complete a phase review and choose what happens next</summary>
+          {renderDraftRecovery("review", "phase review")}
           {currentPhase ? (
             <form
+              ref={(element) => {
+                if (element) authoringFormRefs.current.review = element;
+                else delete authoringFormRefs.current.review;
+              }}
               className={styles.form}
               aria-describedby={ERROR_SUMMARY_ID}
+              method="post"
               onSubmit={(event) => submit(event, "review")}
             >
               <input type="hidden" name="phaseId" value={currentPhase.id} />
@@ -365,7 +666,11 @@ export function LivingPlanForms({
                   maxLength={1_500}
                 />
               </div>
-              <Submit label="Save review and apply transition" waiting={busy === "review"} />
+              <Submit
+                label="Save review and apply transition"
+                waiting={busy === "review"}
+                locked={!actionCanMutate("review")}
+              />
             </form>
           ) : (
             <p className={styles.muted} role="note">
@@ -399,12 +704,15 @@ export function LivingPlanForms({
                           <form
                             ref={busy === operation ? formRef : undefined}
                             aria-describedby={ERROR_SUMMARY_ID}
-                            onSubmit={(event) => withdraw(event, group.kind, item.id)}
+                            method="post"
+                            onSubmit={(event) =>
+                              withdraw(event, group.kind, item.id, item.title)
+                            }
                           >
                             <button
                               className={styles.secondaryButton}
                               type="submit"
-                              disabled={busy !== null}
+                              disabled={busy !== null || !actionCanMutate()}
                             >
                               {busy === operation ? "Saving..." : `${group.action} item`}
                             </button>
@@ -419,6 +727,7 @@ export function LivingPlanForms({
           </details>
         ) : null}
       </div>
+      </fieldset>
 
       <FormErrorSummary
         id={ERROR_SUMMARY_ID}
@@ -426,6 +735,22 @@ export function LivingPlanForms({
         formRef={formRef}
         className={styles.errorStatus}
       />
+      {reloadRequired ? (
+        <div className={styles.notice} role="alert">
+          <strong>Reload before making another living-plan change.</strong>
+          <span>
+            All plan mutation controls are locked until the authoritative revision and
+            sharing state are loaded.
+          </span>
+          <button
+            className={styles.secondaryButton}
+            type="button"
+            onClick={() => window.location.reload()}
+          >
+            Reload and check plan state
+          </button>
+        </div>
+      ) : null}
       {!error && message ? (
         <div className={styles.formStatus} role="status">
           {message}
@@ -475,12 +800,34 @@ function TextArea(props: { name: string; label: string; required?: boolean; maxL
   );
 }
 
-function Submit({ label, waiting }: { label: string; waiting: boolean }) {
+function Submit({
+  label,
+  waiting,
+  locked,
+}: {
+  label: string;
+  waiting: boolean;
+  locked: boolean;
+}) {
   return (
     <div className={styles.actions}>
-      <button className={styles.primaryButton} type="submit" disabled={waiting}>
+      <button className={styles.primaryButton} type="submit" disabled={waiting || locked}>
         {waiting ? "Saving…" : label}
       </button>
     </div>
   );
+}
+
+function livingDraftScope(
+  accountScope: string,
+  planId: string,
+  kind: PlanContentKind,
+): AuthoringDraftScope {
+  const actions: Record<PlanContentKind, AuthoringDraftAction> = {
+    lesson: "living_lesson_create",
+    practice: "living_practice_create",
+    evidence: "living_evidence_create",
+    review: "living_review_create",
+  };
+  return { accountScope, resourceId: planId, action: actions[kind] };
 }

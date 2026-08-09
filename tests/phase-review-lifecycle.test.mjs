@@ -390,9 +390,9 @@ test(
       2,
       "Final completed roadmap recipient",
     );
-    const finalCookie = await assertShareAvailable(worker, finalShare.token);
-    const finalPlan = await worker.dispatch("/r/plan", {
-      headers: { accept: "text/html", cookie: finalCookie },
+    const finalSession = await assertShareAvailable(worker, finalShare.token);
+    const finalPlan = await worker.dispatch(finalSession.planPath, {
+      headers: { accept: "text/html", cookie: finalSession.cookie },
     });
     assert.equal(finalPlan.status, 200);
     const finalPlanHtml = await finalPlan.text();
@@ -585,9 +585,14 @@ async function publish(worker, planId, revision, recipient) {
 async function assertShareAvailable(worker, token) {
   const response = await jsonWrite(worker, "/r/session", "POST", { token });
   assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.match(body.sessionContext, /^[0-9a-f]{64}$/);
   const cookie = response.headers.get("set-cookie")?.split(";", 1)[0];
   assert.match(cookie ?? "", /^roadmap_share=/);
-  return cookie;
+  return {
+    cookie,
+    planPath: `/r/plan?context=${body.sessionContext}`,
+  };
 }
 
 async function assertShareUnavailable(worker, token) {

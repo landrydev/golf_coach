@@ -51,6 +51,9 @@ export async function startD1Worker(bindingOverrides = {}, runtimeOptions = {}) 
     compatibilityFlags: ["nodejs_compat"],
     bindings: {
       APP_URL: testOrigin,
+      ...(runtimeOptions.applicationWriteModeDefault === false
+        ? {}
+        : { APPLICATION_WRITE_MODE: "enabled" }),
       SHARE_TOKEN_PEPPER:
         "synthetic-local-critical-journey-pepper-2026-08-07",
       ABUSE_LIMIT_PEPPER:

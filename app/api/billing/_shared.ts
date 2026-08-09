@@ -84,6 +84,35 @@ export function billingRedirect(location: string): Response {
   });
 }
 
+export function billingBrowserRecoveryRedirect(
+  request: Request,
+  error: unknown,
+  operation: "checkout" | "portal",
+): Response | null {
+  if (!acceptsHtml(request) || !(error instanceof RequestError)) return null;
+
+  const notice =
+    error.status === 429
+      ? "rate_limited"
+      : error.status === 502 || error.status === 503
+        ? "unavailable"
+        : error.status === 409
+          ? operation === "checkout"
+            ? "review_required"
+            : "not_available"
+          : null;
+  if (!notice) return null;
+  return billingRedirect(
+    `/app/billing?${operation}=${encodeURIComponent(notice)}`,
+  );
+}
+
+function acceptsHtml(request: Request): boolean {
+  return (request.headers.get("accept") ?? "")
+    .split(",")
+    .some((value) => value.trim().split(";", 1)[0] === "text/html");
+}
+
 export function requestId(request: Request): string {
   return requestCorrelationId(request);
 }

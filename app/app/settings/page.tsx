@@ -28,12 +28,18 @@ export default async function SettingsPage() {
         </div>
       </header>
       <ProfileForm
+        key={profile?.updatedAt ?? "new-profile"}
         displayName={profile?.displayName || identity.displayName}
         businessName={profile?.businessName || undefined}
-        location={profile?.location || undefined}
-        bio={profile?.bio || undefined}
+        professionalTitle={profile?.professionalTitle || undefined}
+        philosophy={profile?.philosophy || undefined}
         contactEmail={profile?.contactEmail || identity.email}
+        contactPhone={profile?.contactPhone || undefined}
+        websiteUrl={profile?.websiteUrl || undefined}
+        city={profile?.city || undefined}
+        provinceOrTerritory={profile?.provinceOrTerritory || undefined}
         accentColor={profile?.accentColor || undefined}
+        expectedUpdatedAt={profile?.updatedAt ?? null}
       />
 
       <section className={styles.formCard} style={{ marginTop: "1rem" }}>
@@ -45,6 +51,9 @@ export default async function SettingsPage() {
           identity and retention review; nothing is removed automatically.
         </p>
         <div className={styles.actions} style={{ marginTop: "1rem" }}>
+          <a className={styles.secondaryButton} href="/app/settings/shares">
+            Review or revoke active private access
+          </a>
           <a className={styles.secondaryButton} href="/app/settings/data">
             Export data or request deletion review
           </a>

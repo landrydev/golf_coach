@@ -132,6 +132,58 @@ state without claiming failure and retains the pending key in per-tab
 is never server-persisted or logged. External-handoff clicks use a fresh key for
 each click and are intentionally not cross-click deduplicated.
 
+A later review identified three separate controls that are implemented only in
+the unreleased successor working tree: `OPS-CONTAIN-001`,
+`CLIENT-RECOVERY-002`, and `RESP-RECOVERY-002`. No immutable successor release,
+saved Sites version, deployment, environment revision, archive, or hosted result
+is claimed. The exact version-12 observations above remain historical/current
+hosted evidence and are not relabelled as successor evidence.
+
+The successor's application-write boundary accepts only exact
+`APPLICATION_WRITE_MODE=enabled` as write-enabled. Exact `frozen`, missing, and
+malformed/padded/case-variant values fail closed. After canonical-origin and
+product-access evaluation, and before framework dispatch, the edge blocks every
+non-`OPTIONS` mutation and conservatively blocks `GET`/`HEAD` for `/app` and
+non-health `/api` routes because those reads may provision, reconcile, rate-limit,
+or audit. It returns a generic private/no-store `503` without disclosing whether
+the normalized state is `frozen` or `invalid`. Exact health endpoints and
+non-application public/golfer `GET`/`HEAD` reads remain outside the classifier.
+Scheduled work uses the same parser and exits before D1 or outbound-provider work
+unless the value is exact `enabled`. Owner-only operations readiness exposes only
+the normalized state and degrades; public health exposes no write-control detail.
+
+The successor's general interactive browser-mutation boundary starts no automatic
+replay; deliberately non-blocking external-handoff telemetry remains best-effort.
+A single 10-second deadline covers the fetch and complete response-body read, with
+an 8 MiB maximum accepted body. Timeout, transport failure, `408`, `425`, `429`,
+any `5xx`, an oversized response, or an unreadable/structurally invalid successful
+JSON acknowledgement is outcome unknown. A malformed non-2xx body remains a
+definitive failure with safe fallback copy. Controls with a stable idempotency
+attempt retain it and say to retry the same action; controls without a proven
+replay contract say to reload and inspect current state before trying again. This
+copy does not claim that an ambiguous action failed.
+
+The successor also binds golfer recovery to a non-reversible 64-hex HMAC context
+derived from the exact account, share, and session. Response and close routes
+require that context alongside the path-scoped `HttpOnly` cookie and compare it
+without an early-exit string comparison. A stale tab's mismatch returns
+`409 share_session_changed`, creates neither a golfer response nor its
+`golfer.response_recorded` audit, and does not expire the active replacement
+cookie. One current-format, context-bound explicit response attempt may be
+restored in the same tab; contextless legacy, malformed, invalid-context, or
+storage-unavailable state blocks new responses rather than silently discarding
+ambiguity. State belonging to a different current session is removed as retired
+session state.
+
+Only a successful share exchange atomically creates the new session and retires
+the prior one. Invalid, throttled, timed-out, or otherwise retryable exchange
+preserves the prior cookie/session, and a tokenless `/r` view does not issue an
+automatic session delete. Retryable exchange retains the fragment capability;
+definitive success or rejection invokes best-effort fragment scrubbing before any
+unmount-sensitive UI work. After definitive server success, a local storage,
+history, or scripted-navigation failure does not relabel the exchange/close as
+failed; the UI retains a normal-link fallback.
+
 `[OWNER INPUT REQUIRED]` Exact consent-policy-registry entries and the independent
 privacy-operator authority/configuration remain unresolved and absent from the
 private environment. Those boundaries fail closed; application deep readiness is
@@ -217,8 +269,15 @@ peppers. Plaintext allowlist emails are neither configured nor logged.
 `subscription_required` permits core product routes only when the account's
 latest Stripe subscription projection has a status in the explicitly configured
 allowlist. No status is selected in code as a commercial default. Billing,
-profile, export, and privacy-request controls remain reachable so an instructor
-can subscribe, manage billing, or exercise account/data rights. Public health,
+profile, export, privacy-request controls, and the minimized private-link access
+control at `/app/settings/shares` and `/api/account/shares` remain reachable so
+an instructor can subscribe, manage billing, exercise account/data rights, or
+remove capability access they still own. The share-control exception reveals no
+golfer, recipient, plan-content, raw-token, or session identifier and cannot read
+or mutate core product data; all other tenant-scoped plan/share APIs remain
+subscription-gated. Entitlement loss does not automatically revoke a capability
+or its sessions. Only the instructor's explicit confirmed revocation (or another
+documented capability/consent lifecycle transition) does so. Public health,
 signed Stripe webhook, and golfer capability endpoints keep their separate
 boundaries. Missing or invalid policy configuration fails closed. Denials are
 non-cacheable, bounded `403`, `402`, or configuration-failure responses without
@@ -312,12 +371,45 @@ record by itself does not activate them.
 - Store only an HMAC-SHA-256 fingerprint under a dedicated runtime pepper; never store or log the raw verifier.
 - Carry the raw verifier in a fragment and exchange it through a same-origin POST body for a scoped `Secure`, `HttpOnly`, `SameSite=Lax` session cookie.
 - Record link-open access, create the browser session, and increment the capability counter in that same atomic POST transaction. Token-free `GET /r/plan` is read-only, so cross-site navigation or prefetch cannot create audit/counter state.
+- When replacing a browser session, first validate the new capability and commit
+  new-session creation plus prior-session retirement atomically. A rejected or
+  retryable exchange must not revoke or clear the prior cookie/session.
 - Clear the fragment before further navigation and set `Referrer-Policy: no-referrer` on capability bootstrap and golfer pages.
 - Return no personal detail before validation; use equivalent neutral invalid, expired, revoked, and not-found states.
 - Rate-limit capability exchanges by a privacy-safe combination of share ID and network signals; do not expose whether a share ID exists.
 - Scope each capability to one instructor, one golfer roadmap/publication, read-only actions, and its approved lifetime.
 - Support explicit revoke and rotate. Revocation atomically marks the capability and every still-open child session revoked and records the instructor action in the audit ledger.
-- Require a bounded, safe-character idempotency key for each golfer response. Scope its deterministic HMAC receipts to the resolved account and share session; replay the same payload without a second response or audit event, and reject changed payload. Never persist the raw key server-side or log it. The browser uses a bounded request timeout and retains a pending ambiguous key only in per-tab session storage until a definitive result or tab closure, allowing a same-tab reload to retry truthfully without creating durable cross-tab state.
+- Permit an authenticated owner, including one without current core-product
+  entitlement, to list only their live capability metadata and explicitly revoke
+  one owned capability. List results contain only opaque link identity, published
+  revision, lifecycle/access timestamps and counts, expiry, and active-session
+  count. Ownership is re-proved in the mutation; another tenant's identifier is
+  indistinguishable from a missing record.
+- A published revision whose latest capability is revoked or effectively expired
+  may be reissued without republishing content only after an explicit
+  same-revision confirmation and a newly selected bounded expiry. The transaction
+  compares the exact published revision, plan `lastSharedAt`, source capability
+  identity/status/version, current consent, absence of a newer source, and absence
+  of a live capability. It then retires any residual live capabilities and
+  sessions, updates `lastSharedAt`, creates exactly one HMAC-only capability, and
+  writes one minimized `share.reissue_same_revision` audit event. A concurrent
+  reissue, revocation, edit, consent change, or publication change loses with a
+  conflict and creates no partial capability or audit state.
+- Publication, inaccessible-link replacement, and same-revision reissue return
+  the database receipt's exact operation, source identity/history where
+  applicable, revision, lifecycle timestamps, expiry intent, and access facts
+  with the one-time fragment URL. The client requires a bare canonical expected
+  origin, a byte-canonical URL, equal fresh-link creation/update timestamps, and
+  the exact requested day interval before revealing the bearer. Browser history
+  must use those authoritative values and must not synthesize lifecycle timestamps
+  from its own clock. After a locally initiated revoke whose acknowledgement lacks
+  an updated history receipt, reload before offering same-revision reissue.
+- Require a bounded, safe-character idempotency key for each golfer response. Scope its deterministic HMAC receipts to the resolved account and share session; replay the same payload without a second response or audit event, and reject changed payload. Never persist the raw key server-side or log it. The browser uses a bounded request timeout and retains one pending ambiguous key only in per-tab session storage until a definitive result or tab closure, allowing a same-tab reload to retry truthfully without creating durable cross-tab state.
+- Bind every response and explicit close to an opaque HMAC context for the exact
+  account/share/session as well as the `HttpOnly` cookie. Reject a context mismatch
+  before response/audit mutation or cookie expiry. Fail closed when older
+  contextless, malformed, or unavailable browser recovery state cannot be matched
+  safely; do not silently discard it and issue a new attempt.
 - Keep capability pages free of third-party scripts, pixels, fonts, embeds, and asset origins that could receive URL or behavior data.
 - Prevent indexing and caching of private pages with appropriate response headers.
 - Never put raw capabilities in Sites logs, first-party events, error reports, support tickets, or screenshots.
@@ -325,6 +417,36 @@ record by itself does not activate them.
 A capability is a bearer secret. It cannot prevent an authorized recipient from copying what they can see or forwarding the link before revocation. User-facing copy and policy must explain this limitation honestly.
 
 ## Application and API controls
+
+### Successor write containment and client recovery
+
+The unreleased successor implements one edge-owned containment decision before
+framework routing. Its classifier is method and path aware rather than a simple
+mutation-method list: authenticated instructor page/RSC reads and non-health API
+reads remain write-capable because they can provision identity, reconcile billing,
+consume durable abuse counters, or write audits. All non-`GET`/`HEAD` requests
+except `OPTIONS` are treated as write-capable. Exact `/api/health` and
+`/api/operations/health` are the only API read exceptions. Canonical-origin and
+product-access denials run first so the generic write-unavailable response cannot
+be used to bypass or distinguish those boundaries.
+
+Only the exact lower-case value `enabled` enables writes. `frozen`, absent,
+whitespace-padded, case-variant, empty, and unknown values all disable them;
+operations health distinguishes intentional `frozen` from configuration
+`invalid`, but public responses do not. The generic `503` is private/no-store and
+contains no mode, environment, tenant, identity, or provider detail. Scheduled
+execution performs the same exact parse and does no database or outbound-provider
+work when disabled.
+
+The general browser mutation helper is an acknowledgement boundary, not a retry
+engine. It aborts/cancels at a 10-second end-to-end deadline, accepts at most an
+8 MiB body, and reconstructs a response only after the full body is available.
+It treats transport/timeout, `408`, `425`, `429`, `5xx`, body overflow, and an
+unreadable or structurally invalid successful JSON acknowledgement as unknown
+outcomes and never replays automatically. A malformed non-2xx JSON body is a
+definitive failure with bounded fallback copy. UI recovery copy must reflect the
+underlying server contract: reuse a stable idempotency attempt where one exists,
+or require reload/current-state inspection where replay safety is unproven.
 
 ### Input, output, and state changes
 
@@ -531,6 +653,7 @@ No retention duration is selected in this document. D1 records, R2 objects, audi
 | Cross-tenant object access | Server-derived instructor context, owner-scoped repositories, opaque IDs, authorization on every read/write | Automated negative matrix across all resources plus audit review |
 | Forged identity header | Trust only the Sites dispatch boundary; strip/replace browser values; protected server routes | Hosted spoofing tests and dispatch-contract evidence |
 | Capability guessing or leakage | 256-bit verifier, hashed-at-rest, fragment/body exchange, neutral errors, rate limits, no third parties/referrers | Token-not-logged test, brute-force controls, revoke/rotate/session invalidation test |
+| Stale-tab golfer action applied to a replacement session | Cookie plus account/share/session HMAC context, context-bound per-tab recovery, mismatch before response/audit/close mutation | Cross-tab replacement tests proving `409`, zero response/audit cardinality change, and no active-cookie expiry |
 | Stored XSS from coach content | Framework escaping, no raw HTML/SVG, CSP, URL allowlist | Payload test corpus and rendered response/header inspection |
 | CSRF or unintended mutation | Same-origin validation, SameSite/secure cookies, route-appropriate CSRF token, explicit confirmation | Cross-origin mutation tests for all state-changing endpoints |
 | SQL injection or mass assignment | Schema validation, prepared/bound D1 queries, explicit writable fields | Injection and overposting tests |
@@ -538,6 +661,8 @@ No retention duration is selected in this document. D1 records, R2 objects, audi
 | Unsafe file upload | Private quarantine, type/size/signature validation, opaque key, no active content, authorized serving | Malformed/polyglot/oversize tests and deletion retry evidence |
 | Secret or personal-data leakage | Hosted secrets, log minimization/redaction, no raw token storage, repository scanning | Secret scan, log sample review, error-path review, rotation runbook |
 | Accidental destructive action | Confirmation, state preconditions, version checks, idempotent workflow, audit | Restore/rollback and deletion-cancellation tests where policy permits |
+| Lost or delayed browser mutation acknowledgement | End-to-end deadline, no automatic replay, stable idempotency/CAS where available, truthful retry-same-attempt or reload-first copy | Timeout, stalled-body, oversized-body, retryable-status, and source-inventory tests plus hosted interruption/reload exercise |
+| Unsafe write continuation during an integrity incident | Exact fail-closed write mode, path-aware edge classification, scheduler no-work branch, private operational readiness | Frozen/invalid route matrix, zero-side-effect scheduled tests, and exact hosted containment/re-enable exercise |
 | Provider or dependency outage | Bounded timeouts, safe errors, retry/idempotency, text-first fallback, operational runbooks | Failure injection or controlled outage exercises |
 | Dependency compromise | Lockfile, review/update cadence, build integrity, least-privilege secrets | Dependency scan/review evidence and emergency update rehearsal |
 | Privacy overcollection | Field-purpose inventory, optional fields, adult-only scope, no third-party analytics by default | Data-map review, UI/content review, export/delete sampling |

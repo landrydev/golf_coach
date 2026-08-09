@@ -91,6 +91,7 @@ test(
       }),
     });
     assert.equal(success.status, 200);
+    const successBody = await success.json();
     const successRequestId = success.headers.get("x-request-id");
     assert.match(successRequestId ?? "", UUID_V4);
     assert.notEqual(successRequestId, spoofedInternalId);
@@ -120,6 +121,7 @@ test(
       body: JSON.stringify({
         displayName: coach.name,
         contactEmail: "not-an-email",
+        expectedUpdatedAt: successBody.profile.updatedAt,
       }),
     });
     assert.equal(failure.status, 400);

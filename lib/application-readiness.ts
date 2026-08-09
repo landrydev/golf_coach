@@ -6,11 +6,18 @@ import {
   checkoutConfiguration,
 } from "@/lib/stripe";
 import { shareTokenPepperConfigurationReady } from "@/lib/tokens";
+import {
+  readApplicationWriteControl,
+  type ApplicationWriteModeState,
+} from "@/lib/application-write-control";
 
 export const READINESS_DEPENDENCY_TIMEOUT_MS = 2_000;
 
 export type ApplicationReadiness = Readonly<{
   status: "ready" | "degraded";
+  writeControl: Readonly<{
+    state: ApplicationWriteModeState;
+  }>;
   checks: Readonly<{
     database: boolean;
     media: boolean;
@@ -21,6 +28,7 @@ export type ApplicationReadiness = Readonly<{
     instructorAccessPolicy: boolean;
     consentPolicy: boolean;
     dataRequestOperatorAccessPolicy: boolean;
+    applicationWritesEnabled: boolean;
   }>;
 }>;
 
@@ -29,6 +37,9 @@ export async function loadApplicationReadiness(input: {
   media: R2Bucket;
   dependencyTimeoutMs?: number;
 }): Promise<ApplicationReadiness> {
+  const writeControl = readApplicationWriteControl(
+    process.env.APPLICATION_WRITE_MODE,
+  );
   const checks = {
     database: false,
     media: false,
@@ -60,6 +71,7 @@ export async function loadApplicationReadiness(input: {
         DATA_REQUEST_OPERATOR_EMAIL_DIGESTS:
           process.env.DATA_REQUEST_OPERATOR_EMAIL_DIGESTS,
       }),
+    applicationWritesEnabled: writeControl.writesEnabled,
   };
 
   const dependencyTimeoutMs =
@@ -86,6 +98,7 @@ export async function loadApplicationReadiness(input: {
 
   return {
     status: Object.values(checks).every(Boolean) ? "ready" : "degraded",
+    writeControl: { state: writeControl.state },
     checks,
   };
 }

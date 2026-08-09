@@ -41,7 +41,7 @@ export async function POST(request: Request): Promise<Response> {
       throw new RequestError(400, "invalid_body", "Request body must be a JSON object.");
     }
     const payload = value as Record<string, unknown>;
-    assertExactObjectKeys(payload, ["responseType"]);
+    assertExactObjectKeys(payload, ["responseType", "sessionContext"]);
     if (
       typeof payload.responseType !== "string" ||
       !RESPONSE_TYPES.has(payload.responseType as GolferResponseType)
@@ -52,6 +52,7 @@ export async function POST(request: Request): Promise<Response> {
         "Choose one of the available plan responses.",
       );
     }
+    const sessionContext = validatedSessionContext(payload.sessionContext);
 
     const cookieStore = await cookies();
     const rawSessionToken = cookieStore.get(SHARE_COOKIE)?.value;
@@ -65,6 +66,7 @@ export async function POST(request: Request): Promise<Response> {
 
     const response = await recordGolferResponse({
       rawSessionToken,
+      sessionContext,
       responseType: payload.responseType as GolferResponseType,
       idempotencyKey,
       requestId,
@@ -88,6 +90,17 @@ export async function POST(request: Request): Promise<Response> {
     response.headers.set("X-Request-ID", requestId);
     return response;
   }
+}
+
+function validatedSessionContext(value: unknown): string {
+  if (typeof value !== "string" || !/^[0-9a-f]{64}$/.test(value)) {
+    throw new RequestError(
+      400,
+      "session_context_required",
+      "Reload this private plan before choosing again.",
+    );
+  }
+  return value;
 }
 
 function validatedIdempotencyKey(request: Request): string {

@@ -6,6 +6,20 @@ import type {
   ConsentCurrentState,
   ConsentSubjectType,
 } from "@/lib/consent-repository";
+import {
+  clientMutationMalformedSuccess,
+  clientMutationErrorMessage,
+  requestClientMutation,
+  requireClientMutationJson,
+} from "@/lib/client-mutation-recovery";
+import {
+  isConsentTransitionEnvelope,
+  isConsentTransitionStatusPair,
+} from "@/lib/client-response-validation";
+import {
+  CONSENT_STATE_INVALIDATING_CONFLICT_CODES,
+  requiresAuthoritativeMutationReload,
+} from "@/lib/client-terminal-mutation";
 import styles from "@/app/app/workspace.module.css";
 
 export function ConsentPurposeControl({
@@ -25,6 +39,7 @@ export function ConsentPurposeControl({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [failed, setFailed] = useState(false);
+  const [reloadRequired, setReloadRequired] = useState(false);
 
   const configured =
     state.policy.configured &&
@@ -36,7 +51,12 @@ export function ConsentPurposeControl({
     const policyVersion = action === "withdraw"
       ? state.currentRecord?.policyVersion
       : state.policy.version;
-    if (busy || !policyVersion || (action === "grant" && !configured)) return;
+    if (
+      busy ||
+      reloadRequired ||
+      !policyVersion ||
+      (action === "grant" && !configured)
+    ) return;
 
     setBusy(true);
     setMessage("");
@@ -51,8 +71,12 @@ export function ConsentPurposeControl({
       idempotency.current = { key: crypto.randomUUID(), intent };
     }
 
+    let result: {
+      record: NonNullable<ConsentCurrentState["currentRecord"]>;
+      replayed: boolean;
+    };
     try {
-      const response = await fetch("/api/consents", {
+      const response = await requestClientMutation("/api/consents", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -68,40 +92,65 @@ export function ConsentPurposeControl({
           evidenceReference: null,
         }),
       });
-      const result = (await response.json().catch(() => null)) as
-        | {
-            record?: ConsentCurrentState["currentRecord"];
-            error?: { message?: string };
-          }
-        | null;
-      if (!response.ok || !result?.record) {
-        throw new Error(
-          result?.error?.message || "The authorization choice could not be recorded.",
-        );
-      }
-
-      setState((current) => ({
-        ...current,
-        currentRecord: result.record ?? null,
-        effectiveGranted: action === "grant",
-        withdrawalAvailable: action === "grant",
-      }));
-      setMessage(
-        action === "grant"
-          ? "Authorization recorded."
-          : "Authorization withdrawn. Related access is now disabled.",
+      result = await requireClientMutationJson<{
+        record: NonNullable<ConsentCurrentState["currentRecord"]>;
+        replayed: boolean;
+      }>(
+        response,
+        (value): value is {
+          record: NonNullable<ConsentCurrentState["currentRecord"]>;
+          replayed: boolean;
+        } =>
+          isConsentTransitionEnvelope(value, {
+            action,
+            policyVersion,
+            purpose: state.purpose,
+          }),
+        "The authorization choice could not be recorded.",
       );
-      idempotency.current = null;
-      router.refresh();
+      if (!isConsentTransitionStatusPair(response.status, result.replayed)) {
+        throw clientMutationMalformedSuccess(response.status);
+      }
     } catch (error) {
+      const authoritativeReloadRequired = requiresAuthoritativeMutationReload(
+        error,
+        CONSENT_STATE_INVALIDATING_CONFLICT_CODES,
+      );
+      if (authoritativeReloadRequired) setReloadRequired(true);
       setFailed(true);
       setMessage(
-        error instanceof Error
-          ? error.message
-          : "The authorization choice could not be recorded.",
+        clientMutationErrorMessage(
+          error,
+          action === "grant"
+            ? "the authorization was recorded"
+            : "the authorization was withdrawn",
+          authoritativeReloadRequired
+            ? "reload_before_retry"
+            : "retry_same_attempt",
+          "The authorization choice could not be recorded.",
+        ),
       );
-    } finally {
       setBusy(false);
+      return;
+    }
+
+    idempotency.current = null;
+    setState((current) => ({
+      ...current,
+      currentRecord: result.record,
+      effectiveGranted: action === "grant",
+      withdrawalAvailable: action === "grant",
+    }));
+    setMessage(
+      action === "grant"
+        ? "Authorization recorded."
+        : "Authorization withdrawn. Related access is now disabled.",
+    );
+    setBusy(false);
+    try {
+      router.refresh();
+    } catch {
+      // The confirmed consent transition remains successful if refresh fails.
     }
   }
 
@@ -121,7 +170,7 @@ export function ConsentPurposeControl({
           <button
             className={styles.dangerButton}
             type="button"
-            disabled={busy}
+            disabled={busy || reloadRequired}
             onClick={() => void transition("withdraw")}
           >
             {busy ? "Recording..." : "Withdraw existing authorization"}
@@ -138,7 +187,7 @@ export function ConsentPurposeControl({
           <button
             className={state.effectiveGranted ? styles.dangerButton : styles.primaryButton}
             type="button"
-            disabled={busy}
+            disabled={busy || reloadRequired}
             onClick={() => void transition(state.effectiveGranted ? "withdraw" : "grant")}
           >
             {busy
@@ -169,6 +218,22 @@ export function ConsentPurposeControl({
         <p role={failed ? "alert" : "status"} className={styles.muted}>
           {message}
         </p>
+      ) : null}
+      {reloadRequired ? (
+        <div className={styles.notice} role="alert">
+          <strong>Reload before changing this authorization again.</strong>
+          <span>
+            Authorization controls are locked until Roadmap loads the authoritative
+            policy and recorded state.
+          </span>
+          <button
+            className={styles.secondaryButton}
+            type="button"
+            onClick={() => window.location.reload()}
+          >
+            Reload and check authorization
+          </button>
+        </div>
       ) : null}
     </section>
   );
