@@ -561,6 +561,8 @@ async function runCli() {
           report.artifactReport.structuredApplicationLogsEnabled,
         automaticInvocationLogsDisabled:
           report.artifactReport.automaticInvocationLogsDisabled,
+        providerLogPersistenceDisabled:
+          report.artifactReport.providerLogPersistenceDisabled,
         verificationMode: report.verificationMode,
       },
     );

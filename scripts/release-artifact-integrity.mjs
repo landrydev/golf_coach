@@ -81,6 +81,7 @@ export async function auditReleaseArtifacts(rootDirectory) {
   let expectedSchedulerConfigured = false;
   let structuredApplicationLogsEnabled = false;
   let automaticInvocationLogsDisabled = false;
+  let providerLogPersistenceDisabled = false;
   try {
     const workerConfig = JSON.parse(await readFile(workerConfigPath, "utf8"));
     productionPrerenderBindingConfigured = containsConfigurationToken(
@@ -105,13 +106,15 @@ export async function auditReleaseArtifacts(rootDirectory) {
       workerConfig.observability?.enabled === true &&
       workerConfig.observability?.logs?.enabled === true;
     automaticInvocationLogsDisabled =
+      workerConfig.observability?.enabled === false ||
       workerConfig.observability?.logs?.invocation_logs === false;
-    if (
-      !structuredApplicationLogsEnabled ||
-      !automaticInvocationLogsDisabled
-    ) {
+    providerLogPersistenceDisabled =
+      workerConfig.observability?.enabled === false &&
+      workerConfig.observability?.logs?.enabled === false &&
+      workerConfig.observability?.logs?.invocation_logs === false;
+    if (!providerLogPersistenceDisabled) {
       findings.push(
-        "server/wrangler.json: automatic invocation logs must be disabled while structured application logs remain enabled",
+        "server/wrangler.json: provider log persistence must be fully disabled until hosted invocation-log exclusion is proven",
       );
     }
   } catch {
@@ -129,6 +132,7 @@ export async function auditReleaseArtifacts(rootDirectory) {
     expectedSchedulerConfigured,
     structuredApplicationLogsEnabled,
     automaticInvocationLogsDisabled,
+    providerLogPersistenceDisabled,
     findings: findings.map((finding) =>
       redactKnownCredentials(finding, credentialValues),
     ),
@@ -236,6 +240,8 @@ async function runCli() {
         report.structuredApplicationLogsEnabled,
       automaticInvocationLogsDisabled:
         report.automaticInvocationLogsDisabled,
+      providerLogPersistenceDisabled:
+        report.providerLogPersistenceDisabled,
     });
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));

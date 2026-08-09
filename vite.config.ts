@@ -37,12 +37,12 @@ const localBindingConfig = {
     crons: ["*/5 * * * *"],
   },
   observability: {
-    enabled: true,
+    // Sites did not enforce the narrower invocation_logs setting in a hosted
+    // retest. Disable persisted Workers Logs entirely until the provider can
+    // prove that automatic request metadata is excluded.
+    enabled: false,
     logs: {
-      enabled: true,
-      // Cloudflare invocation logs include the request, response, metadata, and
-      // request headers. Keep only the application's allowlisted structured
-      // console events in persisted Workers Logs.
+      enabled: false,
       invocation_logs: false,
     },
   },

@@ -16,8 +16,8 @@ import {
 
 const SYNTHETIC_SECRET = "ab".repeat(32);
 const PRIVACY_SAFE_OBSERVABILITY = {
-  enabled: true,
-  logs: { enabled: true, invocation_logs: false },
+  enabled: false,
+  logs: { enabled: false, invocation_logs: false },
 };
 
 test("the exact build keeps its generated prerender credential server-only", async () => {
@@ -31,8 +31,9 @@ test("the exact build keeps its generated prerender credential server-only", asy
   assert.equal(report.unexpectedCredentialPathCopies, 0);
   assert.equal(report.productionPrerenderBindingConfigured, false);
   assert.equal(report.expectedSchedulerConfigured, true);
-  assert.equal(report.structuredApplicationLogsEnabled, true);
+  assert.equal(report.structuredApplicationLogsEnabled, false);
   assert.equal(report.automaticInvocationLogsDisabled, true);
+  assert.equal(report.providerLogPersistenceDisabled, true);
 });
 
 test("artifact audit rejects credential copies outside the server manifests without disclosing them", async (context) => {
@@ -127,32 +128,30 @@ test("artifact audit requires the exact packaged billing-recovery schedule", asy
   assert.equal(report.expectedSchedulerConfigured, true);
 });
 
-test("artifact audit requires structured logs without automatic invocation logs", async (context) => {
+test("artifact audit requires provider log persistence to remain fully disabled", async (context) => {
   for (const observability of [
     undefined,
+    { enabled: true, logs: { enabled: true, invocation_logs: false } },
     { enabled: false, logs: { enabled: true, invocation_logs: false } },
-    { enabled: true, logs: { enabled: false, invocation_logs: false } },
     { enabled: true, logs: { enabled: true, invocation_logs: true } },
+    { enabled: false, logs: { enabled: false, invocation_logs: true } },
   ]) {
     const root = await createSyntheticArtifacts(context, { observability });
     const report = await auditReleaseArtifacts(root);
-    assert.equal(
-      report.structuredApplicationLogsEnabled &&
-        report.automaticInvocationLogsDisabled,
-      false,
-    );
+    assert.equal(report.providerLogPersistenceDisabled, false);
     assert.ok(
       report.findings.some((finding) =>
-        finding.includes("automatic invocation logs must be disabled"),
+        finding.includes("provider log persistence must be fully disabled"),
       ),
     );
   }
 
   const root = await createSyntheticArtifacts(context);
   const report = await auditReleaseArtifacts(root);
-  assert.equal(report.structuredApplicationLogsEnabled, true);
+  assert.equal(report.structuredApplicationLogsEnabled, false);
   assert.equal(report.automaticInvocationLogsDisabled, true);
-  assert.doesNotMatch(report.findings.join("\n"), /automatic invocation logs/i);
+  assert.equal(report.providerLogPersistenceDisabled, true);
+  assert.doesNotMatch(report.findings.join("\n"), /provider log persistence/i);
 });
 
 test("archive entry validation rejects traversal, links, and portable-path collisions", () => {
