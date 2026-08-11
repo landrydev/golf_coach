@@ -22,7 +22,7 @@ export function SiteFooter() {
           <Link href="/privacy">Privacy</Link>
           <Link href="/terms">Terms</Link>
           <Link href="/support">Support</Link>
-          <Link href="/app">Open the app</Link>
+          <a href="/auth/login?return_to=%2Fapp">Open the app</a>
         </nav>
       </div>
     </footer>

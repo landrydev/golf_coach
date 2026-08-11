@@ -7,6 +7,7 @@ import { requirePageIdentity } from "@/lib/identity";
 import { getCoachPlanForGolfer } from "@/lib/plans";
 import { getOrCreateAccountForIdentity } from "@/lib/repository";
 import styles from "../../../workspace.module.css";
+import { AuthoringStepNav } from "../../AuthoringStepNav";
 import { PlanEditorForm } from "./PlanEditorForm";
 
 export const metadata: Metadata = {
@@ -45,6 +46,21 @@ export default async function EditGolferPlanPage({
           Back to plan
         </Link>
       </header>
+
+      <AuthoringStepNav
+        current="goal"
+        completed={[]}
+        optional={["evidence", "package"]}
+        links={{
+          goal: "#authoring-goal",
+          assessment: "#authoring-assessment",
+          priority: "#authoring-priority",
+          phases: "#authoring-phases",
+          evidence: "#authoring-evidence",
+          package: "#authoring-package",
+          preview: `${planPath}#hub-roadmap`,
+        }}
+      />
 
       <div className={styles.notice} role="note" aria-label="Share access warning">
         <strong>Saving ends current share access.</strong>

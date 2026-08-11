@@ -9,6 +9,7 @@ import {
 } from "../lib/client-mutation-recovery.ts";
 import {
   CONSENT_STATE_INVALIDATING_CONFLICT_CODES,
+  navigateToConfirmedDestination,
   requiresAuthoritativeMutationReload,
 } from "../lib/client-terminal-mutation.ts";
 import { isConsentTransitionStatusPair } from "../lib/client-response-validation.ts";
@@ -69,6 +70,59 @@ test("consent acknowledgement status is bound to replay truth", () => {
   }
 });
 
+test("confirmed staged-create navigation cannot refresh and bounce to its source route", async () => {
+  const calls = [];
+  const router = {
+    push(destination) {
+      calls.push(["push", destination]);
+    },
+    refresh() {
+      calls.push(["refresh"]);
+    },
+  };
+  const destination = "/app/golfers/golfer-navigation-test/complete";
+
+  navigateToConfirmedDestination(router, destination);
+
+  assert.deepEqual(calls, [["push", destination]]);
+
+  const source = await sourceOf("app/app/golfers/new/StagedGolferForm.tsx");
+  assert.match(
+    source,
+    /const destination =\s*`\/app\/golfers\/\$\{encodeURIComponent\(result\.golfer\.id\)\}\/complete`;/,
+  );
+  const capture = source.indexOf("setConfirmedDestination(destination)");
+  const navigate = source.indexOf(
+    "navigateToConfirmedDestination(router, destination)",
+  );
+  assert.ok(capture >= 0);
+  assert.ok(navigate > capture);
+  assert.doesNotMatch(source, /router\.refresh\(\)/);
+  assert.match(source, /href=\{confirmedDestination\}/);
+  assert.match(source, /Continue to roadmap completion/);
+});
+
+test("confirmed full-create navigation cannot refresh and strand its terminal form", async () => {
+  const source = await sourceOf("app/app/golfers/new/NewGolferForm.tsx");
+  assert.match(
+    source,
+    /const destination =\s*`\/app\/golfers\/\$\{encodeURIComponent\(result\.golfer\.id\)\}`;/,
+  );
+  const capture = source.indexOf("setConfirmedDestination(destination)");
+  const navigate = source.indexOf(
+    "navigateToConfirmedDestination(router, destination)",
+  );
+  assert.ok(capture >= 0);
+  assert.ok(navigate > capture);
+  assert.doesNotMatch(source, /router\.refresh\(\)/);
+  assert.match(source, /href=\{confirmedDestination\}/);
+  assert.match(source, /Open confirmed golfer workspace/);
+  assert.match(
+    source,
+    /disabled=\{[\s\S]*?status === "saved"[\s\S]*?\}/,
+  );
+});
+
 test("confirmed plan and golfer mutations become terminal before navigation", async () => {
   const files = [
     "app/app/golfers/[golferId]/edit/PlanEditorForm.tsx",
@@ -84,7 +138,9 @@ test("confirmed plan and golfer mutations become terminal before navigation", as
     assert.match(source, /<a[\s\S]*?href=\{confirmedDestination\}/);
 
     const capture = source.indexOf("setConfirmedDestination(destination)");
-    const navigate = source.indexOf("router.push(destination)");
+    const navigate = source.indexOf(
+      "navigateToConfirmedDestination(router, destination)",
+    );
     assert.ok(capture >= 0, `${relativePath} must capture its destination`);
     assert.ok(
       navigate > capture,
@@ -114,6 +170,24 @@ test("confirmed plan and golfer mutations become terminal before navigation", as
     golferSettings,
     /confirmedDestination !== null/,
   );
+  assert.equal(
+    golferSettings.match(
+      /navigateToConfirmedDestination\(router, destination\)/g,
+    )?.length,
+    2,
+  );
+});
+
+test("app client code contains no push-or-replace then refresh navigation race", async () => {
+  const clientFiles = await appTsxFiles();
+  for (const relativePath of clientFiles) {
+    const source = await sourceOf(relativePath);
+    assert.doesNotMatch(
+      source,
+      /router\.(?:push|replace)\([^;]+\);\s*router\.refresh\(\)/,
+      `${relativePath} must not refresh its source route immediately after navigation`,
+    );
+  }
 });
 
 test("profile and consent conflicts lock behind an actual reload", async () => {
@@ -158,4 +232,19 @@ test("living-plan withdrawal confirms the exact item before taking the mutex", a
 
 async function sourceOf(relativePath) {
   return readFile(path.join(projectRoot, relativePath), "utf8");
+}
+
+async function appTsxFiles(directory = path.join(projectRoot, "app")) {
+  const { readdir } = await import("node:fs/promises");
+  const entries = await readdir(directory, { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...await appTsxFiles(absolute));
+    } else if (entry.isFile() && entry.name.endsWith(".tsx")) {
+      files.push(path.relative(projectRoot, absolute).replaceAll("\\", "/"));
+    }
+  }
+  return files;
 }

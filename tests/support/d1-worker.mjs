@@ -6,7 +6,10 @@ import { Miniflare } from "miniflare";
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const serverRoot = resolve(projectRoot, "dist/server");
 
-export const testOrigin = "https://roadmap.test";
+export const testOrigin = "https://roadmap-test.chatgpt.site";
+
+const MINIFLARE_SIMULATED_HOST_HEADER =
+  "x-roadmap-synthetic-miniflare-host";
 
 const TEST_OWNER_ACCESS_PEPPER =
   "synthetic-owner-access-pepper-for-tests-only-2026-08-07";
@@ -45,12 +48,41 @@ const TEST_CONSENT_POLICY_REGISTRY = JSON.stringify({
   },
 });
 
+export function syntheticBillingCommercialPolicyJson(
+  priceId,
+  overrides = {},
+) {
+  return JSON.stringify({
+    version: "synthetic-test-v1",
+    approvalReference: "SYNTHETIC-TEST-POLICY-NOT-OWNER-APPROVAL",
+    providerMode: "test",
+    priceId,
+    currency: "CAD",
+    amountMinor: 7_500,
+    billingInterval: "month",
+    trialTerms: "No synthetic trial in this test policy.",
+    cancellationTerms:
+      "Synthetic cancellation is reflected only after a signed provider state update.",
+    pauseResumeTerms:
+      "Synthetic pause and resume use the Stripe test Portal and signed state updates.",
+    taxTerms: "Synthetic test amount; no real tax calculation or charge.",
+    refundTerms: "Synthetic test mode only; no real refund is created.",
+    failedPaymentTerms:
+      "Synthetic failed payment follows the explicitly configured entitlement statuses.",
+    dataAfterEndTerms:
+      "Synthetic records remain test-only; this is not an approved retention policy.",
+    supportContact: "Synthetic test support route: /support",
+    ...overrides,
+  });
+}
+
 export async function startD1Worker(bindingOverrides = {}, runtimeOptions = {}) {
+  const runtimeOrigin = runtimeOptions.origin ?? testOrigin;
   const common = {
     compatibilityDate: "2026-08-07",
-    compatibilityFlags: ["nodejs_compat"],
+    compatibilityFlags: ["nodejs_compat", "global_fetch_strictly_public"],
     bindings: {
-      APP_URL: testOrigin,
+      APP_URL: runtimeOrigin,
       ...(runtimeOptions.applicationWriteModeDefault === false
         ? {}
         : { APPLICATION_WRITE_MODE: "enabled" }),
@@ -58,6 +90,12 @@ export async function startD1Worker(bindingOverrides = {}, runtimeOptions = {}) 
         "synthetic-local-critical-journey-pepper-2026-08-07",
       ABUSE_LIMIT_PEPPER:
         "synthetic-local-abuse-limit-pepper-2026-08-07",
+      // Production chooses this boundary explicitly. Existing integration
+      // tests exercise the trusted Sites-dispatch path; public-host tests
+      // override it with the verified OIDC mode or deliberately omit it.
+      ...(runtimeOptions.instructorAuthModeDefault === false
+        ? {}
+        : { INSTRUCTOR_AUTH_MODE: "sites_siwc" }),
       INSTRUCTOR_ACCESS_MODE: "owner_private",
       OWNER_PRIVATE_ACCESS_PEPPER: TEST_OWNER_ACCESS_PEPPER,
       OWNER_PRIVATE_EMAIL_DIGESTS: TEST_OWNER_EMAIL_DIGESTS.join(","),
@@ -120,7 +158,7 @@ export async function startD1Worker(bindingOverrides = {}, runtimeOptions = {}) 
         .filter(Boolean),
     );
     const setupResponse = await miniflare.dispatchFetch(
-      new URL("/__setup", testOrigin),
+      new URL("/__setup", runtimeOrigin),
       {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -136,22 +174,40 @@ export async function startD1Worker(bindingOverrides = {}, runtimeOptions = {}) 
       "index.js",
       ...discoveredModules.filter((path) => path !== "index.js").sort(),
     ];
-    const appOptions = {
+    let appOptions = {
       ...common,
       rootPath: serverRoot,
       modulesRoot: serverRoot,
-      modules: modulePaths.map((path) => ({ type: "ESModule", path })),
+      modules: [
+        {
+          type: "ESModule",
+          path: "__synthetic-miniflare-host-adapter.mjs",
+          contents: MINIFLARE_HOST_ADAPTER,
+        },
+        ...modulePaths.map((path) => ({ type: "ESModule", path })),
+      ],
     };
     await miniflare.setOptions(appOptions);
 
     return {
       dispatch(path, init = {}) {
         const headers = new Headers(init.headers);
+        const requestUrl = new URL(path, runtimeOrigin);
+        // dispatchFetch replaces Host with its localhost service address. Pass
+        // the intended browser Host through a private test-adapter header; the
+        // synthetic entry module restores it and removes this marker before
+        // the production Worker sees the request.
+        const simulatedHost = headers.has("host")
+          ? headers.get("host")
+          : requestUrl.host;
+        headers.delete("host");
+        headers.set(MINIFLARE_SIMULATED_HOST_HEADER, simulatedHost ?? "");
         if (!headers.has("cf-connecting-ip")) {
           headers.set("cf-connecting-ip", "192.0.2.10");
         }
-        return miniflare.dispatchFetch(new URL(path, testOrigin), {
+        return miniflare.dispatchFetch(requestUrl, {
           ...init,
+          redirect: init.redirect ?? "manual",
           headers,
         });
       },
@@ -159,7 +215,7 @@ export async function startD1Worker(bindingOverrides = {}, runtimeOptions = {}) 
         return miniflare.dispatchFetch(
           new URL(
             `/cdn-cgi/local/scheduled?cron=${encodeURIComponent(cron)}`,
-            testOrigin,
+            runtimeOrigin,
           ),
         );
       },
@@ -169,6 +225,16 @@ export async function startD1Worker(bindingOverrides = {}, runtimeOptions = {}) 
       media() {
         return miniflare.getR2Bucket("MEDIA");
       },
+      async setBindings(bindingUpdates) {
+        appOptions = {
+          ...appOptions,
+          bindings: {
+            ...appOptions.bindings,
+            ...bindingUpdates,
+          },
+        };
+        await miniflare.setOptions(appOptions);
+      },
       async inspect(queries) {
         await miniflare.setOptions({
           ...common,
@@ -177,7 +243,7 @@ export async function startD1Worker(bindingOverrides = {}, runtimeOptions = {}) 
         });
         try {
           const response = await miniflare.dispatchFetch(
-            new URL("/__inspect", testOrigin),
+            new URL("/__inspect", runtimeOrigin),
             {
               method: "POST",
               headers: { "content-type": "application/json" },
@@ -232,6 +298,22 @@ export default {
       queries.map(({ sql, params = [] }) => env.DB.prepare(sql).bind(...params)),
     );
     return Response.json(results);
+  },
+};`;
+
+const MINIFLARE_HOST_ADAPTER = `
+import application from "./index.js";
+
+export default {
+  fetch(request, environment, context) {
+    const headers = new Headers(request.headers);
+    const simulatedHost = headers.get("${MINIFLARE_SIMULATED_HOST_HEADER}");
+    headers.delete("${MINIFLARE_SIMULATED_HOST_HEADER}");
+    if (simulatedHost !== null) headers.set("host", simulatedHost);
+    return application.fetch(new Request(request, { headers }), environment, context);
+  },
+  scheduled(controller, environment, context) {
+    return application.scheduled(controller, environment, context);
   },
 };`;
 

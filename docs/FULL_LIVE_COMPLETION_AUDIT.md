@@ -3,7 +3,7 @@
 **Opened:** 2026-08-08  
 **Authority:** `AUTH-005`  
 **Status:** active completion record; not a launch approval or completion certificate  
-**Companion records:** [requirements traceability](REQUIREMENTS_TRACEABILITY.md), [findings/retest ledger](FINDINGS_RETEST_LEDGER.md), [release evidence](RELEASE_EVIDENCE.md), [historical exact-v15 private release](release-evidence/ROADMAP-SITES-V15-2026-08-09.md), [historical exact-v13 local exercises](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md), [owner decisions required](OWNER_RELEASE_DECISIONS_REQUIRED.md)
+**Companion records:** [requirements traceability](REQUIREMENTS_TRACEABILITY.md), [findings/retest ledger](FINDINGS_RETEST_LEDGER.md), [release evidence](RELEASE_EVIDENCE.md), [direct successor local pre-deployment evidence](release-evidence/ROADMAP-DIRECT-PREDEPLOY-2026-08-09.md), [historical exact-v15 private release](release-evidence/ROADMAP-SITES-V15-2026-08-09.md), [historical exact-v13 local exercises](release-evidence/ROADMAP-SITES-V13-2026-08-09-LOCAL-EXERCISES.md), [owner decisions required](OWNER_RELEASE_DECISIONS_REQUIRED.md)
 
 ## Current conclusion
 
@@ -19,8 +19,19 @@ access remains one owner with no groups or external visitors. Fresh signed-out
 requests to `/`, `/app`, `/r`, and `/api/health` returned `401` with `no-store`
 and `no-referrer`.
 
+`TECH-006` now supersedes Sites as the final paid live-V1 host because official
+Sites guidance prohibits enabling financial transactions, provides no data
+residency at launch, and warns that some background/hosting patterns are
+unsupported. Sites v16 remains private staging/evidence. Direct Cloudflare
+Workers/D1/R2 is the least-change verification candidate only; no successor
+account, resources, credentials, configured or hosted OIDC provider, domain, data
+migration, deployment, or acceptance exists. The current working tree implements
+the direct OIDC and revocable-session boundary and passed the complete local
+verification suite at 389/389 tests; that is not provider or hosted evidence.
+
 The full-live goal remains **active and not complete**. `LOG-PRIV-001` is High/open
-before any real-user or public operation; authenticated hosted acceptance, manual
+before any real-user or public operation on Sites; configured and hosted successor
+authentication, authenticated hosted acceptance, manual
 accessibility, hosted scheduler/recovery/alert evidence, exact consent/operator
 configuration, public commercial/policy inputs, controlled real operations, and
 Aaron's exact-release acceptance are absent.
@@ -101,22 +112,21 @@ The bounded local capacity run completed 54 requests with zero failures.
 Those are evidence, operating, and owner-decision dependencies. They are not a
 reinstated design gate and they do not invalidate completed engineering evidence.
 
-Current official Sites guidance also leaves the paid-operation host unresolved.
-The [Sites developer guide](https://learn.chatgpt.com/docs/sites) says some
-background services or hosting patterns are unsupported and cautions against using
-Sites to enable financial transactions, while the
-[Sites help article](https://help.openai.com/en/articles/20001339) describes
-third-party payment processing as an operator responsibility. Neither documents a
-Sites cron facility. That conflict/omission plus the bounded zero-scheduled-event
-observations requires provider confirmation or a verified superseding host/scheduler
-before paid operation; it does not by itself prove that Sites discarded the trigger.
+Current official Sites guidance resolves the final-host question even though it
+does not prove whether the historical packaged trigger was discarded. The
+[Sites developer guide](https://learn.chatgpt.com/docs/sites) says some background
+services or hosting patterns are unsupported, data residency is unavailable at
+launch, and Sites must not be used to process card data or enable financial
+transactions. `TECH-006` therefore retains Sites only as private staging/evidence
+and selects direct Cloudflare for verification. Direct documentation for Cron
+Triggers and `invocation_logs=false` is design input, not hosted evidence.
 
 ## Phase and definition-of-done status
 
 | Area | Current evidence | Status |
 |---|---|---|
 | Authority and source precedence | `AUTH-005` authorizes production implementation; Business Plan V2 remains authoritative and Business Plan V1 remains unchanged | Implemented and preserved |
-| Bounded architecture | Sites/Vinext Worker, SIWC boundary, D1, private R2 binding, Stripe-hosted SaaS billing boundary, no AI or native coach-package payment | Selected under `AUTH-005`; provider suitability still needs live evidence |
+| Bounded architecture | Worker-compatible vinext/React application, D1, private R2, Stripe-hosted SaaS billing boundary, no AI or native coach-package payment; exact Sites v16 retained as private staging; direct Cloudflare selected under `TECH-006` as the successor candidate | Direction selected under `AUTH-005`; direct config/auth/deployment/provider/privacy/recovery evidence and owner acceptance remain absent |
 | Instructor and golfer journeys | Resumable minimum-first adult golfer setup, three- or four-phase coach-authored roadmap, profile/packages, preview/publication readiness, scoped share session with retry recovery, account-level share revoke/same-revision reissue/lost-ack replacement receipts, non-blocking native external handoff, living-plan create/archive/retire/withdraw/replace updates, operation-keyed golfer responses, bounded draft/session ambiguous-outcome recovery, native billing recovery, six data-request types, and bounded export/manual fallback | Automated production-bundle evidence passed; hosted signed-in interruption/reload remains untested |
 | Tenant and capability security | Server-derived tenant, D1 ownership constraints, canonical route guard, missing-identity denial, HMAC-only verifier/session storage, expiry/revocation, rate limits, CSRF, private headers; the exposed Sites bypass value was invalidated by one value-safe provider rotation under `OWNER-SEC-001` | Automated evidence and provider-attested rotation passed; `SEC-001` signed-in owner/log retest plus the broader hosted SIWC spoof/recovery matrix remain |
 | Concurrency and lifecycle integrity | Strict profile/package/revision CAS, tenant-scoped race-safe staged/full-authoring/package idempotency, request-ownership fences, single publish winner, profile-change and living-content publication/session invalidation, atomic practice-replacement retirement audits, idempotent revoke/session close, current-publication response guard, account-and-resolved-share-session-scoped HMAC response receipts with atomic one-response/one-audit cardinality and deterministic replay/conflict outcomes, account share replacement receipts, and atomic data-request/export-fallback deduplication | Automated sequential, same-input race, mixed-input race, cross-session, timeout/reload recovery, and raw-key non-persistence evidence passed; formal external concurrency/load assessment remains |
@@ -289,6 +299,10 @@ success.
 Until the linked owner decisions and exercises are complete:
 
 - keep the Sites access policy owner-only;
+- treat Sites v16 only as staging/evidence and never as the final paid/public host;
+- do not deploy or expose the direct-Cloudflare candidate until an authorized
+  account, credentials, budget, domain, provider-reviewed data handling, and a
+  verified public OIDC boundary are present;
 - admit no real users and do not expand public access while `LOG-PRIV-001` is open;
   require provider-side invocation-log disablement or verified redaction, or move
   to a supported host, then deploy and retest a new exact release with a meaningful
@@ -309,7 +323,42 @@ Until the linked owner decisions and exercises are complete:
 - do not close `SEC-002` until a supported signed-in hosted browser verifies the
   nonce CSP, hydration, navigation, and representative interactions on exact version 16.
 
-## Remaining completion sequence
+## Current remaining completion sequence under `TECH-006`
+
+1. Preserve and re-run the completed local direct-Cloudflare profile, preflight,
+   and provider-neutral OIDC boundary on every candidate. The profile fails closed
+   on placeholder resources, wrong cron/log settings, missing canonical HTTPS
+   origin, absent provider/hosted evidence, or invalid auth configuration; identity
+   uses verified issuer plus subject, revocable server sessions, and explicit
+   account linking rather than silent email merge. Current local evidence is
+   recorded in the [direct successor pre-deployment record](release-evidence/ROADMAP-DIRECT-PREDEPLOY-2026-08-09.md).
+2. Record exact owner decisions for scope/design/copy, versioned consent purposes,
+   privacy-operator assignment/access, public contacts, commercial consequences,
+   privacy/retention/deletion, media exclusion, Cloudflare account/budget/domain,
+   OIDC provider/policy, public origin, and residual risks; then configure and
+   retest deep readiness without exposing secrets.
+3. Deploy a new exact private successor candidate through the authorized direct
+   Cloudflare account. Prove disabled invocation logs and retained-data disposition,
+   trigger provisioning plus at least three heartbeats, alert delivery, D1/R2
+   backup/restore, rollback/forward-fix, configuration inventory, and cost controls.
+   Then complete the recorded `SEC-001`, `AUTH-EVID-001`, and `SEC-002` signed-in
+   browser/security/accessibility retests without using or replaying a bypass value.
+4. Approve and provision a Stripe-reachable signed-webhook ingress that does not expose
+   instructor routes; record the exact Price/status/entitlement/freshness/tax/refund/
+   cancel policy; then exercise the implemented durable Checkout, replay, ordering,
+   rotation, and reconciliation paths in controlled Stripe test and authorized live
+   transactions before enabling Checkout.
+5. Complete qualified policy review, support/incident/operator handoff, manual
+   accessibility, and authorized real instructor/golfer journeys; separate observed
+   evidence from founder assistance and unvalidated commercial hypotheses.
+6. Have Aaron accept the exact release with date, operating scope, configuration,
+   policies, named owners, residual risks, and stop/revisit triggers.
+
+## Superseded pre-`TECH-006` completion sequence
+
+The sequence below is preserved as historical provenance. Where it calls for
+provider confirmation or a supported replacement host, `TECH-006` selected the
+direct-Cloudflare verification path above; it is not the active sequence.
 
 1. Resolve `LOG-PRIV-001` through provider-side disablement or verified redaction,
    or move to a supported host. Deploy a new exact release and obtain a meaningful

@@ -4,9 +4,10 @@ import test from "node:test";
 
 register(new URL("./support/cloudflare-loader.mjs", import.meta.url));
 
-const canonicalOrigin = "https://roadmap.example";
-const aliasOrigin = "https://roadmap-alias.example";
+const canonicalOrigin = "https://roadmap-browser-failure.chatgpt.site";
+const aliasOrigin = "https://roadmap-browser-failure-alias.chatgpt.site";
 const ownerAccess = {
+  INSTRUCTOR_AUTH_MODE: "sites_siwc",
   INSTRUCTOR_ACCESS_MODE: "owner_private",
   OWNER_PRIVATE_ACCESS_PEPPER:
     "synthetic-browser-failure-boundary-pepper-2026-08-09",
@@ -351,6 +352,7 @@ async function invokeWorker(
     {
       APP_URL: canonicalOrigin,
       APPLICATION_WRITE_MODE: "enabled",
+      INSTRUCTOR_AUTH_MODE: "sites_siwc",
       ASSETS: { fetch: assetFetch },
       ...environment,
     },

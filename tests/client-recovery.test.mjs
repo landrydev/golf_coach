@@ -809,6 +809,10 @@ test("share exchange keeps bearer material in the body and constructs only a con
   assert.equal(captured.input, "/r/session");
   assert.equal(captured.input.includes(token), false);
   assert.deepEqual(JSON.parse(captured.init.body), { token });
+  assert.equal(
+    captured.init.headers.Accept,
+    "application/vnd.roadmap.share-exchange+json",
+  );
   assert.equal(captured.init.cache, "no-store");
   assert.equal(captured.init.credentials, "same-origin");
 
@@ -828,6 +832,23 @@ test("share exchange keeps bearer material in the body and constructs only a con
     async () => new Response('{"sessionContext":', { status: 200 }),
   );
   assert.deepEqual(malformedSuccess, { kind: "retryable" });
+
+  const unavailable = await requestShareExchange(
+    token,
+    async () => Response.json({ outcome: "unavailable" }),
+  );
+  assert.deepEqual(unavailable, { kind: "unavailable" });
+
+  for (const malformedUnavailable of [
+    { outcome: "unavailable", detail: "private" },
+    { outcome: "expired" },
+  ]) {
+    const malformed = await requestShareExchange(
+      token,
+      async () => Response.json(malformedUnavailable),
+    );
+    assert.deepEqual(malformed, { kind: "retryable" });
+  }
 });
 
 test("share exchange accepts only the exact 200 JSON acknowledgement contract", async () => {
@@ -908,6 +929,19 @@ test("share exchange results propagate only safe server request references", asy
       }),
   );
   assert.deepEqual(unavailable, {
+    kind: "unavailable",
+    requestId: SAFE_REQUEST_ID,
+  });
+
+  const browserUnavailable = await requestShareExchange(
+    "referenced-token",
+    async () =>
+      Response.json(
+        { outcome: "unavailable" },
+        { headers: { "X-Request-ID": SAFE_REQUEST_ID } },
+      ),
+  );
+  assert.deepEqual(browserUnavailable, {
     kind: "unavailable",
     requestId: SAFE_REQUEST_ID,
   });
@@ -1106,7 +1140,7 @@ test("golfer header keeps the session-close control usable at the 320px boundary
   assert.match(styles, /\.headerTools\s*\{[\s\S]*?flex:\s*0 0 auto;/);
   assert.match(
     styles,
-    /\.closeControl button\s*\{[\s\S]*?white-space:\s*nowrap;/,
+    /\.closeControl button,\s*\.printControl\s*\{[\s\S]*?white-space:\s*nowrap;/,
   );
   assert.match(
     styles,

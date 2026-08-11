@@ -56,9 +56,12 @@ test("the migration journal, SQL files, and schema table set agree", async () =>
     schema,
     /\b(?:uniqueIndex|index)\("([^"]+)"\)/g,
   );
+  const supersededMigrationIndexes = new Set(
+    captures(migration, /DROP INDEX `([^`]+)`/g),
+  );
   const migrationIndexes = unique(
     captures(migration, /CREATE (?:UNIQUE )?INDEX `([^`]+)`/g),
-  );
+  ).filter((name) => !supersededMigrationIndexes.has(name));
   assert.deepEqual(migrationIndexes, schemaIndexes);
 
   const schemaChecks = captures(schema, /\bcheck\(\s*"([^"]+)"/g);
@@ -109,6 +112,27 @@ test("tenant ownership and lifecycle constraints are present in the migration", 
     /data_requests_type_check[^;]+export[^;]+deletion/i,
   );
   assert.match(compact, /audit_events_metadata_json_check/);
+});
+
+test("practice replacement lineage is tenant-safe and immutable while its plan exists", async () => {
+  const { schema, migration } = await loadDatabaseSources();
+  const compact = migration.replace(/\s+/g, " ");
+
+  assert.match(schema, /export const practiceAssignmentReplacements = sqliteTable/);
+  assert.match(compact, /CREATE TABLE `practice_assignment_replacements`/);
+  assert.match(
+    compact,
+    /FOREIGN KEY \(`account_id`,`plan_id`,`replaced_practice_item_id`\) REFERENCES `practice_items`\(`account_id`,`plan_id`,`id`\)/,
+  );
+  assert.match(
+    compact,
+    /FOREIGN KEY \(`account_id`,`plan_id`,`replacement_practice_item_id`\) REFERENCES `practice_items`\(`account_id`,`plan_id`,`id`\)/,
+  );
+  assert.match(compact, /practice_assignment_replacements_next_unique/);
+  assert.match(compact, /practice_assignment_replacements_distinct_check/);
+  assert.match(compact, /practice_assignment_replacements_immutable_update/);
+  assert.match(compact, /practice_assignment_replacements_immutable_delete/);
+  assert.match(compact, /replacement lineage is immutable/);
 });
 
 test("share verifiers are hashed at rest and constrained to the selected algorithm", async () => {

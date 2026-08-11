@@ -1,8 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { flushSync } from "react-dom";
 import {
   AuthoringDraftRecovery,
   type AuthoringDraftUiState,
@@ -34,14 +34,13 @@ import {
 import styles from "../../workspace.module.css";
 
 type PhaseOption = { id: string; number: number; title: string; purpose: string; status: string };
-type ReviewTransition = "continue" | "pause" | "advance" | "complete_plan";
 type ContentItem = { id: string; title: string };
+type LivingPlanContentKind = Exclude<PlanContentKind, "review">;
 const ERROR_SUMMARY_ID = "living-plan-forms-error-summary";
-const CONTENT_KINDS: readonly PlanContentKind[] = [
+const CONTENT_KINDS: readonly LivingPlanContentKind[] = [
   "lesson",
   "practice",
   "evidence",
-  "review",
 ];
 
 export function LivingPlanForms({
@@ -65,27 +64,24 @@ export function LivingPlanForms({
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
-  const authoringFormRefs = useRef<Partial<Record<PlanContentKind, HTMLFormElement>>>({});
+  const authoringFormRefs = useRef<Partial<Record<LivingPlanContentKind, HTMLFormElement>>>({});
   const mutationInFlightRef = useRef(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState(false);
   const [reloadRequired, setReloadRequired] = useState(false);
-  const [reviewTransition, setReviewTransition] = useState<ReviewTransition>("continue");
   const [draftRecoveries, setDraftRecoveries] = useState<
-    Record<PlanContentKind, AuthoringDraftUiState>
+    Record<LivingPlanContentKind, AuthoringDraftUiState>
   >({
     lesson: { kind: "checking" },
     practice: { kind: "checking" },
     evidence: { kind: "checking" },
-    review: { kind: "checking" },
   });
-  const draftScopes = useMemo<Record<PlanContentKind, AuthoringDraftScope>>(
+  const draftScopes = useMemo<Record<LivingPlanContentKind, AuthoringDraftScope>>(
     () => ({
       lesson: livingDraftScope(recoveryScope, planId, "lesson"),
       practice: livingDraftScope(recoveryScope, planId, "practice"),
       evidence: livingDraftScope(recoveryScope, planId, "evidence"),
-      review: livingDraftScope(recoveryScope, planId, "review"),
     }),
     [planId, recoveryScope],
   );
@@ -101,12 +97,6 @@ export function LivingPlanForms({
     }),
     [evidenceItems, lessons, phases, planId, planRevision, planStatus, practiceItems],
   );
-  const currentPhase =
-    phases.find((phase) => phase.status === "active") ??
-    phases.find((phase) => phase.status === "paused");
-  const nextPhase = currentPhase
-    ? phases.find((phase) => phase.number === currentPhase.number + 1 && phase.status === "planned")
-    : undefined;
   const contentGroups: Array<{
     kind: WithdrawablePlanContentKind;
     heading: string;
@@ -137,7 +127,7 @@ export function LivingPlanForms({
       ] as const),
     ).then((entries) => {
       if (current) {
-        setDraftRecoveries(Object.fromEntries(entries) as Record<PlanContentKind, AuthoringDraftUiState>);
+        setDraftRecoveries(Object.fromEntries(entries) as Record<LivingPlanContentKind, AuthoringDraftUiState>);
       }
     });
     return () => {
@@ -145,7 +135,7 @@ export function LivingPlanForms({
     };
   }, [authoritativeDraftState, draftScopes, planRevision]);
 
-  function actionCanMutate(kind?: PlanContentKind): boolean {
+  function actionCanMutate(kind?: LivingPlanContentKind): boolean {
     return CONTENT_KINDS.every((candidate) => {
       const recovery = draftRecoveries[candidate];
       if (recovery.kind === "empty" || recovery.kind === "applied") return true;
@@ -153,7 +143,7 @@ export function LivingPlanForms({
     });
   }
 
-  function startMutation(kind?: PlanContentKind): boolean {
+  function startMutation(kind?: LivingPlanContentKind): boolean {
     if (
       mutationInFlightRef.current ||
       busy !== null ||
@@ -181,7 +171,7 @@ export function LivingPlanForms({
 
   async function submit(
     event: FormEvent<HTMLFormElement>,
-    kind: PlanContentKind,
+    kind: LivingPlanContentKind,
   ) {
     event.preventDefault();
     if (!startMutation(kind)) return;
@@ -203,7 +193,7 @@ export function LivingPlanForms({
       baseRevision: planRevision,
       baseState: authoritativeDraftState,
       values,
-      ui: kind === "review" ? { reviewTransition } : {},
+      ui: {},
     });
     if (savedDraft.kind === "blocked") {
       mutationInFlightRef.current = false;
@@ -347,7 +337,7 @@ export function LivingPlanForms({
     }
   }
 
-  function renderDraftRecovery(kind: PlanContentKind, label: string) {
+  function renderDraftRecovery(kind: LivingPlanContentKind, label: string) {
     const recovery = draftRecoveries[kind];
     return (
       <AuthoringDraftRecovery
@@ -363,20 +353,6 @@ export function LivingPlanForms({
               [kind]: { kind: "blocked", reason: "invalid" },
             }));
             return;
-          }
-          if (kind === "review") {
-            const transition = recovery.draft.envelope.ui.reviewTransition;
-            if (
-              typeof transition !== "string" ||
-              !["continue", "pause", "advance", "complete_plan"].includes(transition)
-            ) {
-              setDraftRecoveries((current) => ({
-                ...current,
-                [kind]: { kind: "blocked", reason: "invalid" },
-              }));
-              return;
-            }
-            flushSync(() => setReviewTransition(transition as ReviewTransition));
           }
           const form = authoringFormRefs.current[kind];
           if (!form || !restoreAuthoringDraftValues(form, recovery.draft.envelope.values)) {
@@ -562,6 +538,56 @@ export function LivingPlanForms({
               </label>
               <TextArea name="nextEvidenceNeeded" label="Next evidence needed (optional)" maxLength={1_000} />
             </div>
+            <details className={styles.optionalFields}>
+              <summary>Optional structured value or baseline/current role</summary>
+              <div className={styles.fieldGrid}>
+                <Field
+                  name="metricName"
+                  label="Metric name (optional)"
+                  maxLength={160}
+                />
+                <Field
+                  name="metricValue"
+                  label="Numeric value (optional)"
+                  type="number"
+                  step="any"
+                />
+                <Field
+                  name="metricUnit"
+                  label="Exact unit (required with a numeric value)"
+                  maxLength={80}
+                />
+                <TextArea
+                  name="valueText"
+                  label="Non-numeric value or result text (optional)"
+                  maxLength={1_000}
+                />
+                <label className={styles.field}>
+                  Comparison role
+                  <select name="comparisonRole" defaultValue="standalone">
+                    <option value="standalone">Standalone</option>
+                    <option value="baseline">Baseline</option>
+                    <option value="current">Current</option>
+                  </select>
+                </label>
+                <Field
+                  name="comparisonGroupId"
+                  label="Shared comparison group label (baseline/current only)"
+                  maxLength={80}
+                />
+                <label className={styles.field}>
+                  Representative of the context recorded?
+                  <select name="isRepresentative" defaultValue="false">
+                    <option value="false">No or not established</option>
+                    <option value="true">Yes — coach selected</option>
+                  </select>
+                </label>
+              </div>
+              <p className={styles.muted}>
+                Roadmap preserves the exact number and unit you enter. It does not convert,
+                normalize, or interpret a device value automatically.
+              </p>
+            </details>
             <Submit
               label="Save evidence"
               waiting={busy === "evidence"}
@@ -571,112 +597,17 @@ export function LivingPlanForms({
         </details>
 
         <details>
-          <summary>Complete a phase review and choose what happens next</summary>
-          {renderDraftRecovery("review", "phase review")}
-          {currentPhase ? (
-            <form
-              ref={(element) => {
-                if (element) authoringFormRefs.current.review = element;
-                else delete authoringFormRefs.current.review;
-              }}
-              className={styles.form}
-              aria-describedby={ERROR_SUMMARY_ID}
-              method="post"
-              onSubmit={(event) => submit(event, "review")}
-            >
-              <input type="hidden" name="phaseId" value={currentPhase.id} />
-              <p className={styles.muted}>
-                Reviewing Phase {currentPhase.number} — {currentPhase.title}. Roadmap applies only
-                the transition and outcome you select; it does not infer a result or recommend a package.
-              </p>
-              <label className={styles.field}>
-                After this review
-                <select
-                  name="transition"
-                  value={reviewTransition}
-                  onChange={(event) => setReviewTransition(event.target.value as ReviewTransition)}
-                >
-                  <option value="continue">Continue this phase</option>
-                  <option value="pause">Pause this phase and plan</option>
-                  {nextPhase ? (
-                    <option value="advance">Complete and advance to Phase {nextPhase.number}</option>
-                  ) : null}
-                  <option value="complete_plan">Complete this phase and the plan</option>
-                </select>
-              </label>
-              {reviewTransition === "continue" ? (
-                <label className={styles.field}>
-                  Coach-assessed outcome
-                  <select name="outcome" defaultValue="partially_complete">
-                    <option value="partially_complete">Partially complete</option>
-                    <option value="revised">Direction revised</option>
-                    <option value="insufficient_evidence">Insufficient evidence</option>
-                    <option value="goal_changed">Goal changed</option>
-                  </select>
-                </label>
-              ) : (
-                <input
-                  type="hidden"
-                  name="outcome"
-                  value={reviewTransition === "pause" ? "paused" : "complete"}
-                />
-              )}
-              <div className={styles.fieldGrid}>
-                <TextArea name="originalPurpose" label="Original phase purpose" required maxLength={1_500} />
-                <TextArea name="baselineSummary" label="Starting condition" required maxLength={1_500} />
-                <TextArea name="workCompleted" label="Work completed" required maxLength={2_000} />
-                <TextArea name="changeSummary" label="What changed" required maxLength={2_000} />
-                <Field name="reliabilityLabel" label="Reliability label" required maxLength={500} />
-                <TextArea name="limitations" label="What remains uncertain" required maxLength={1_500} />
-                <TextArea name="golferContribution" label="Golfer contribution (optional)" maxLength={1_500} />
-                <TextArea name="coachConclusion" label="Coach conclusion" required maxLength={2_000} />
-                <TextArea name="remainingOpportunity" label="Remaining opportunity (optional)" maxLength={1_500} />
-                {reviewTransition === "advance" && nextPhase ? (
-                  <>
-                    <input type="hidden" name="nextPhaseId" value={nextPhase.id} />
-                    <Field
-                      name="nextPriorityTitle"
-                      label={`Current priority for Phase ${nextPhase.number}`}
-                      required
-                      maxLength={160}
-                    />
-                    <TextArea
-                      name="nextPriorityRationale"
-                      label="Why this is the next current priority"
-                      required
-                      maxLength={1_500}
-                    />
-                    <TextArea
-                      name="nextPhaseRationale"
-                      label={`Why Phase ${nextPhase.number} starts now`}
-                      required
-                      maxLength={1_500}
-                    />
-                  </>
-                ) : (
-                  <TextArea
-                    name="nextPhaseRationale"
-                    label="Future direction note (optional)"
-                    maxLength={1_500}
-                  />
-                )}
-                <TextArea
-                  name="independentPracticeAlternative"
-                  label="Independent-practice alternative (optional)"
-                  maxLength={1_500}
-                />
-              </div>
-              <Submit
-                label="Save review and apply transition"
-                waiting={busy === "review"}
-                locked={!actionCanMutate("review")}
-              />
-            </form>
-          ) : (
-            <p className={styles.muted} role="note">
-              This plan has no active or paused phase available for review.
-            </p>
-          )}
+          <summary>Complete a source-backed phase review</summary>
+          <p className={styles.muted}>
+            Phase conclusions now begin by selecting the exact lessons, practice, check-ins,
+            media, launch data, and evidence the coach reviewed.
+          </p>
+          <Link
+            className={styles.secondaryButton}
+            href={`/app/coaching/plans/${encodeURIComponent(planId)}?tab=reviews`}
+          >
+            Open source-first review builder
+          </Link>
         </details>
 
         {hasPublishedContent ? (
@@ -779,6 +710,7 @@ function Field(props: {
   name: string;
   label: string;
   type?: string;
+  step?: number | "any";
   required?: boolean;
   maxLength?: number;
 }) {
@@ -821,13 +753,12 @@ function Submit({
 function livingDraftScope(
   accountScope: string,
   planId: string,
-  kind: PlanContentKind,
+  kind: LivingPlanContentKind,
 ): AuthoringDraftScope {
-  const actions: Record<PlanContentKind, AuthoringDraftAction> = {
+  const actions: Record<LivingPlanContentKind, AuthoringDraftAction> = {
     lesson: "living_lesson_create",
     practice: "living_practice_create",
     evidence: "living_evidence_create",
-    review: "living_review_create",
   };
   return { accountScope, resourceId: planId, action: actions[kind] };
 }

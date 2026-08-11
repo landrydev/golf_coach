@@ -89,6 +89,13 @@ test(
       limitation: "The sample is too small and controlled to generalize to play.",
       maturity: "single_observation",
       nextEvidenceNeeded: "Repeat under a representative target constraint.",
+      comparisonRole: "standalone",
+      comparisonGroupId: null,
+      metricName: "Centred strike count",
+      metricValue: 3,
+      metricUnit: "attempts",
+      valueText: "Three of five constrained attempts finished in the intended window.",
+      isRepresentative: true,
     });
     assert.equal(evidence.status, 201);
     const evidenceBody = await evidence.json();
@@ -144,9 +151,13 @@ test(
     assert.equal(populatedPage.status, 200);
     const populatedHtml = await populatedPage.text();
     assert.match(populatedHtml, /Correct or withdraw existing golfer-view content/);
-    assert.doesNotMatch(populatedHtml, /First practice direction/);
+    // The current-practice card uses the replacement while the unified journey
+    // deliberately retains the retired title as historical truth.
+    assert.match(populatedHtml, /First practice direction/);
     assert.match(populatedHtml, /Replacement practice direction/);
     assert.match(populatedHtml, /Early strike-location evidence/);
+    assert.match(populatedHtml, /Centred strike count/);
+    assert.match(populatedHtml, /Coach selected as representative of the recorded context/);
 
     const crossTenant = await withdrawContent(
       worker,
@@ -258,8 +269,14 @@ test(
       headers: identityHeaders(coachA.email, coachA.name),
     });
     const finalHtml = await finalPage.text();
+    assert.match(finalHtml, /Lessons<\/span><small>0<\/small>/);
+    assert.match(finalHtml, /Practice<\/span><small>0<\/small>/);
+    assert.match(finalHtml, /Data \/ Evidence<\/span><small>0<\/small>/);
+    assert.match(finalHtml, /None active/);
+    // The retired practice stays in the unified timeline as replacement history;
+    // archived and explicitly withdrawn content is no longer rendered.
     assert.doesNotMatch(finalHtml, /Contact calibration lesson/);
-    assert.doesNotMatch(finalHtml, /Replacement practice direction/);
+    assert.match(finalHtml, /Replacement practice direction/);
     assert.doesNotMatch(finalHtml, /Early strike-location evidence/);
   },
 );

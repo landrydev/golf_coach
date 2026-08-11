@@ -88,6 +88,7 @@ export const phaseStatuses = [
 ] as const;
 export const lessonStatuses = [
   "planned",
+  "scheduled",
   "completed",
   "canceled",
   "archived",
@@ -183,6 +184,8 @@ export const abuseLimitScopes = [
   "data_request_account",
   "data_request_operator_network",
   "data_request_operator_identity",
+  "auth_login_network",
+  "auth_callback_network",
 ] as const;
 
 export const accounts = sqliteTable(
@@ -190,7 +193,13 @@ export const accounts = sqliteTable(
   {
     id: text("id").primaryKey(),
     authProvider: text("auth_provider").notNull().default("siwc"),
+    // OIDC identity stability is defined by issuer + subject. Legacy SIWC and
+    // local-development identities intentionally retain a null issuer.
+    authIssuer: text("auth_issuer"),
     authSubject: text("auth_subject").notNull(),
+    // Incrementing this value invalidates every existing instructor session
+    // through the runtime equality check while preserving session history.
+    identityVersion: integer("identity_version").notNull().default(1),
     primaryEmail: text("primary_email").notNull(),
     normalizedEmail: text("normalized_email").notNull(),
     emailVerifiedAt: timestamp("email_verified_at"),
@@ -208,9 +217,17 @@ export const accounts = sqliteTable(
     updatedAt: updatedAt(),
   },
   (table) => [
-    uniqueIndex("accounts_auth_identity_unique").on(
-      table.authProvider,
-      table.authSubject,
+    uniqueIndex("accounts_legacy_auth_identity_unique")
+      .on(table.authProvider, table.authSubject)
+      .where(sql`${table.authIssuer} is null`),
+    uniqueIndex("accounts_oidc_auth_identity_unique")
+      .on(table.authIssuer, table.authSubject)
+      .where(
+        sql`${table.authProvider} = 'oidc' and ${table.authIssuer} is not null`,
+      ),
+    uniqueIndex("accounts_id_identity_version_unique").on(
+      table.id,
+      table.identityVersion,
     ),
     uniqueIndex("accounts_normalized_email_unique").on(table.normalizedEmail),
     index("accounts_status_idx").on(table.status),
@@ -221,6 +238,135 @@ export const accounts = sqliteTable(
     check(
       "accounts_normalized_email_check",
       sql`${table.normalizedEmail} = lower(trim(${table.normalizedEmail}))`,
+    ),
+    check(
+      "accounts_identity_version_check",
+      sql`${table.identityVersion} > 0`,
+    ),
+    check(
+      "accounts_auth_mapping_check",
+      sql`(${table.authProvider} in ('siwc', 'development') and ${table.authIssuer} is null) or (${table.authProvider} = 'oidc' and ${table.authIssuer} is not null and length(${table.authIssuer}) > 0)`,
+    ),
+  ],
+);
+
+export const oidcLoginTransactions = sqliteTable(
+  "oidc_login_transactions",
+  {
+    // The browser-visible state value is never stored. This is its
+    // domain-separated, peppered HMAC-SHA-256 fingerprint.
+    stateHash: text("state_hash").primaryKey(),
+    stateHashAlgorithm: text("state_hash_algorithm")
+      .notNull()
+      .default("hmac-sha256-oidc-state-v1"),
+    // PKCE verifier, nonce, and validated return path are held only inside
+    // this bounded authenticated-encryption envelope.
+    sealedPayload: text("sealed_payload").notNull(),
+    payloadIv: text("payload_iv").notNull(),
+    payloadAlgorithm: text("payload_algorithm")
+      .notNull()
+      .default("aes-256-gcm-v1"),
+    expiresAt: timestamp("expires_at").notNull(),
+    consumedAt: timestamp("consumed_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    index("oidc_login_transactions_expiry_consumed_idx").on(
+      table.expiresAt,
+      table.consumedAt,
+    ),
+    check(
+      "oidc_login_transactions_state_hash_algorithm_check",
+      sql`${table.stateHashAlgorithm} = 'hmac-sha256-oidc-state-v1'`,
+    ),
+    check(
+      "oidc_login_transactions_state_hash_check",
+      sql`length(${table.stateHash}) = 64 and ${table.stateHash} not glob '*[^0-9a-f]*'`,
+    ),
+    check(
+      "oidc_login_transactions_payload_algorithm_check",
+      sql`${table.payloadAlgorithm} = 'aes-256-gcm-v1'`,
+    ),
+    check(
+      "oidc_login_transactions_payload_iv_check",
+      sql`length(${table.payloadIv}) = 16 and ${table.payloadIv} not glob '*[^A-Za-z0-9_-]*'`,
+    ),
+    check(
+      "oidc_login_transactions_sealed_payload_check",
+      sql`length(${table.sealedPayload}) between 1 and 8192`,
+    ),
+    check(
+      "oidc_login_transactions_expiry_check",
+      sql`${table.expiresAt} > ${table.createdAt}`,
+    ),
+    check(
+      "oidc_login_transactions_consumed_check",
+      sql`${table.consumedAt} is null or ${table.consumedAt} >= ${table.createdAt}`,
+    ),
+  ],
+);
+
+export const instructorSessions = sqliteTable(
+  "instructor_sessions",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    // Every authenticated request must compare this captured value with the
+    // current account identityVersion. It is deliberately not part of the FK,
+    // so identity remaps can retain stale, revoked session history.
+    identityVersion: integer("identity_version").notNull(),
+    // The __Host- browser cookie contains an opaque random value. D1 stores
+    // only its domain-separated, peppered HMAC-SHA-256 fingerprint.
+    tokenHash: text("token_hash").notNull(),
+    tokenHashAlgorithm: text("token_hash_algorithm")
+      .notNull()
+      .default("hmac-sha256-instructor-session-v1"),
+    authenticatedAt: timestamp("authenticated_at").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    revokedAt: timestamp("revoked_at"),
+    revokeReason: text("revoke_reason"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    foreignKey({
+      name: "instructor_sessions_account_fk",
+      columns: [table.accountId],
+      foreignColumns: [accounts.id],
+    }).onDelete("cascade"),
+    uniqueIndex("instructor_sessions_token_hash_unique").on(table.tokenHash),
+    index("instructor_sessions_account_revoked_idx").on(
+      table.accountId,
+      table.revokedAt,
+    ),
+    index("instructor_sessions_expiry_revoked_idx").on(
+      table.expiresAt,
+      table.revokedAt,
+    ),
+    check(
+      "instructor_sessions_token_hash_algorithm_check",
+      sql`${table.tokenHashAlgorithm} = 'hmac-sha256-instructor-session-v1'`,
+    ),
+    check(
+      "instructor_sessions_token_hash_check",
+      sql`length(${table.tokenHash}) = 64 and ${table.tokenHash} not glob '*[^0-9a-f]*'`,
+    ),
+    check(
+      "instructor_sessions_identity_version_check",
+      sql`${table.identityVersion} > 0`,
+    ),
+    check(
+      "instructor_sessions_expiry_check",
+      sql`${table.expiresAt} > ${table.createdAt}`,
+    ),
+    check(
+      "instructor_sessions_authenticated_at_check",
+      sql`${table.authenticatedAt} <= ${table.createdAt}`,
+    ),
+    check(
+      "instructor_sessions_revocation_check",
+      sql`(${table.revokedAt} is null and ${table.revokeReason} is null) or (${table.revokedAt} is not null and length(trim(coalesce(${table.revokeReason}, ''))) > 0)`,
     ),
   ],
 );
@@ -1113,6 +1259,11 @@ export const assessments = sqliteTable(
       foreignColumns: [developmentPlans.accountId, developmentPlans.id],
     }).onDelete("cascade"),
     uniqueIndex("assessments_account_id_unique").on(table.accountId, table.id),
+    uniqueIndex("assessments_plan_id_unique").on(
+      table.accountId,
+      table.planId,
+      table.id,
+    ),
     index("assessments_plan_status_idx").on(
       table.accountId,
       table.planId,
@@ -1322,6 +1473,11 @@ export const lessons = sqliteTable(
       foreignColumns: [planPhases.accountId, planPhases.id],
     }).onDelete("no action"),
     uniqueIndex("lessons_account_id_unique").on(table.accountId, table.id),
+    uniqueIndex("lessons_plan_id_unique").on(
+      table.accountId,
+      table.planId,
+      table.id,
+    ),
     uniqueIndex("lessons_plan_sequence_unique").on(
       table.accountId,
       table.planId,
@@ -1339,9 +1495,81 @@ export const lessons = sqliteTable(
     ),
     check(
       "lessons_status_check",
-      sql`${table.status} in ('planned', 'completed', 'canceled', 'archived')`,
+      sql`${table.status} in ('planned', 'scheduled', 'completed', 'canceled', 'archived')`,
     ),
     check("lessons_sequence_check", sql`${table.sequence} >= 1`),
+  ],
+);
+
+export const lessonRevisionSnapshots = sqliteTable(
+  "lesson_revision_snapshots",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    planId: text("plan_id").notNull(),
+    lessonId: text("lesson_id").notNull(),
+    sourcePlanRevision: integer("source_plan_revision").notNull(),
+    replacementPlanRevision: integer("replacement_plan_revision").notNull(),
+    phaseId: text("phase_id"),
+    sequence: integer("sequence").notNull(),
+    title: text("title").notNull(),
+    status: text("status", { enum: lessonStatuses }).notNull(),
+    purpose: text("purpose").notNull(),
+    coachObservation: text("coach_observation"),
+    golferLearning: text("golfer_learning"),
+    takeaway: text("takeaway"),
+    nextCheck: text("next_check"),
+    phaseConnection: text("phase_connection"),
+    scheduledAt: timestamp("scheduled_at"),
+    occurredAt: timestamp("occurred_at"),
+    coachApprovedAt: timestamp("coach_approved_at"),
+    completedAt: timestamp("completed_at"),
+    canceledAt: timestamp("canceled_at"),
+    archivedAt: timestamp("archived_at"),
+    evidenceItemIds: text("evidence_item_ids", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    launchSessionIds: text("launch_session_ids", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    foreignKey({
+      name: "lesson_revision_snapshots_lesson_plan_tenant_fk",
+      columns: [table.accountId, table.planId, table.lessonId],
+      foreignColumns: [lessons.accountId, lessons.planId, lessons.id],
+    }).onDelete("cascade"),
+    uniqueIndex("lesson_revision_snapshots_revision_unique").on(
+      table.accountId,
+      table.planId,
+      table.lessonId,
+      table.sourcePlanRevision,
+    ),
+    index("lesson_revision_snapshots_lesson_revision_idx").on(
+      table.accountId,
+      table.planId,
+      table.lessonId,
+      table.replacementPlanRevision,
+    ),
+    check(
+      "lesson_revision_snapshots_revision_check",
+      sql`${table.sourcePlanRevision} >= 1 and ${table.replacementPlanRevision} = ${table.sourcePlanRevision} + 1`,
+    ),
+    check(
+      "lesson_revision_snapshots_status_check",
+      sql`${table.status} in ('planned', 'scheduled', 'completed', 'canceled', 'archived')`,
+    ),
+    check(
+      "lesson_revision_snapshots_evidence_json_check",
+      sql`json_valid(${table.evidenceItemIds})`,
+    ),
+    check(
+      "lesson_revision_snapshots_launch_json_check",
+      sql`json_valid(${table.launchSessionIds})`,
+    ),
   ],
 );
 
@@ -1371,6 +1599,7 @@ export const practiceItems = sqliteTable(
     startsAt: timestamp("starts_at"),
     dueAt: timestamp("due_at"),
     coachApprovedAt: timestamp("coach_approved_at"),
+    pausedAt: timestamp("paused_at"),
     completedAt: timestamp("completed_at"),
     retiredAt: timestamp("retired_at"),
     createdAt: createdAt(),
@@ -1393,6 +1622,11 @@ export const practiceItems = sqliteTable(
       foreignColumns: [lessons.accountId, lessons.id],
     }).onDelete("no action"),
     uniqueIndex("practice_items_account_id_unique").on(table.accountId, table.id),
+    uniqueIndex("practice_items_plan_id_unique").on(
+      table.accountId,
+      table.planId,
+      table.id,
+    ),
     index("practice_items_plan_status_due_idx").on(
       table.accountId,
       table.planId,
@@ -1520,6 +1754,11 @@ export const evidenceItems = sqliteTable(
       foreignColumns: [mediaAssets.accountId, mediaAssets.id],
     }).onDelete("no action"),
     uniqueIndex("evidence_items_account_id_unique").on(table.accountId, table.id),
+    uniqueIndex("evidence_items_plan_id_unique").on(
+      table.accountId,
+      table.planId,
+      table.id,
+    ),
     index("evidence_items_plan_status_observed_idx").on(
       table.accountId,
       table.planId,
@@ -1631,6 +1870,11 @@ export const phaseReviews = sqliteTable(
       foreignColumns: [coachingPackages.accountId, coachingPackages.id],
     }).onDelete("no action"),
     uniqueIndex("phase_reviews_account_id_unique").on(table.accountId, table.id),
+    uniqueIndex("phase_reviews_plan_id_unique").on(
+      table.accountId,
+      table.planId,
+      table.id,
+    ),
     index("phase_reviews_phase_status_idx").on(
       table.accountId,
       table.phaseId,
@@ -1780,6 +2024,11 @@ export const shareSessions = sqliteTable(
     }).onDelete("cascade"),
     uniqueIndex("share_sessions_token_hash_unique").on(table.tokenHash),
     uniqueIndex("share_sessions_account_id_unique").on(table.accountId, table.id),
+    uniqueIndex("share_sessions_share_id_unique").on(
+      table.accountId,
+      table.shareLinkId,
+      table.id,
+    ),
     index("share_sessions_share_created_idx").on(
       table.accountId,
       table.shareLinkId,
@@ -2126,7 +2375,7 @@ export const abuseRateLimits = sqliteTable(
     index("abuse_rate_limits_expires_idx").on(table.windowExpiresAt),
     check(
       "abuse_rate_limits_scope_check",
-      sql`${table.scope} in ('share_exchange_network', 'share_exchange_capability', 'share_close_network', 'share_close_session', 'share_response_network', 'share_response_capability', 'plan_publish_account', 'share_revoke_account', 'billing_checkout_account', 'billing_portal_account', 'billing_reconcile_account', 'data_export_account', 'data_request_account', 'data_request_operator_network', 'data_request_operator_identity')`,
+      sql`${table.scope} in ('share_exchange_network', 'share_exchange_capability', 'share_close_network', 'share_close_session', 'share_response_network', 'share_response_capability', 'plan_publish_account', 'share_revoke_account', 'billing_checkout_account', 'billing_portal_account', 'billing_reconcile_account', 'data_export_account', 'data_request_account', 'data_request_operator_network', 'data_request_operator_identity', 'auth_login_network', 'auth_callback_network')`,
     ),
     check(
       "abuse_rate_limits_hash_check",
@@ -2139,6 +2388,1143 @@ export const abuseRateLimits = sqliteTable(
     check(
       "abuse_rate_limits_count_check",
       sql`${table.requestCount} >= 1`,
+    ),
+  ],
+);
+
+/**
+ * Rich media metadata is kept in a one-to-one extension so the original R2
+ * identity recorded by `media_assets` remains immutable. Replacements always
+ * create a new asset and an explicit lineage edge; object keys are never
+ * overwritten in place.
+ */
+export const mediaAssetDetails = sqliteTable(
+  "media_asset_details",
+  {
+    accountId: text("account_id").notNull(),
+    mediaAssetId: text("media_asset_id").notNull(),
+    posterMediaAssetId: text("poster_media_asset_id"),
+    capturedAt: timestamp("captured_at"),
+    orientation: text("orientation", {
+      enum: ["landscape", "portrait", "square", "unknown"],
+    })
+      .notNull()
+      .default("unknown"),
+    viewLabel: text("view_label"),
+    coachContext: text("coach_context"),
+    processingAttempts: integer("processing_attempts").notNull().default(0),
+    lastProcessingAttemptAt: timestamp("last_processing_attempt_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    primaryKey({
+      name: "media_asset_details_pk",
+      columns: [table.accountId, table.mediaAssetId],
+    }),
+    foreignKey({
+      name: "media_asset_details_asset_tenant_fk",
+      columns: [table.accountId, table.mediaAssetId],
+      foreignColumns: [mediaAssets.accountId, mediaAssets.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "media_asset_details_poster_tenant_fk",
+      columns: [table.accountId, table.posterMediaAssetId],
+      foreignColumns: [mediaAssets.accountId, mediaAssets.id],
+    }).onDelete("no action"),
+    index("media_asset_details_poster_idx").on(
+      table.accountId,
+      table.posterMediaAssetId,
+    ),
+    check(
+      "media_asset_details_orientation_check",
+      sql`${table.orientation} in ('landscape', 'portrait', 'square', 'unknown')`,
+    ),
+    check(
+      "media_asset_details_attempts_check",
+      sql`${table.processingAttempts} >= 0`,
+    ),
+    check(
+      "media_asset_details_poster_not_self_check",
+      sql`${table.posterMediaAssetId} is null or ${table.posterMediaAssetId} <> ${table.mediaAssetId}`,
+    ),
+  ],
+);
+
+export const mediaAssetReplacements = sqliteTable(
+  "media_asset_replacements",
+  {
+    accountId: text("account_id").notNull(),
+    replacedMediaAssetId: text("replaced_media_asset_id").notNull(),
+    replacementMediaAssetId: text("replacement_media_asset_id").notNull(),
+    reasonCode: text("reason_code").notNull().default("coach_replaced"),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    primaryKey({
+      name: "media_asset_replacements_pk",
+      columns: [table.accountId, table.replacedMediaAssetId],
+    }),
+    foreignKey({
+      name: "media_asset_replacements_source_tenant_fk",
+      columns: [table.accountId, table.replacedMediaAssetId],
+      foreignColumns: [mediaAssets.accountId, mediaAssets.id],
+    }).onDelete("no action"),
+    foreignKey({
+      name: "media_asset_replacements_target_tenant_fk",
+      columns: [table.accountId, table.replacementMediaAssetId],
+      foreignColumns: [mediaAssets.accountId, mediaAssets.id],
+    }).onDelete("no action"),
+    uniqueIndex("media_asset_replacements_target_unique").on(
+      table.accountId,
+      table.replacementMediaAssetId,
+    ),
+    check(
+      "media_asset_replacements_distinct_check",
+      sql`${table.replacedMediaAssetId} <> ${table.replacementMediaAssetId}`,
+    ),
+    check(
+      "media_asset_replacements_reason_check",
+      sql`${table.reasonCode} in ('coach_replaced', 'processing_retry', 'metadata_correction')`,
+    ),
+  ],
+);
+
+export const drillTemplates = sqliteTable(
+  "drill_templates",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    sourceTemplateId: text("source_template_id"),
+    title: text("title").notNull(),
+    purpose: text("purpose").notNull(),
+    whenItFits: text("when_it_fits").notNull(),
+    equipment: text("equipment", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    setup: text("setup").notNull(),
+    steps: text("steps", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    dosageOrCadence: text("dosage_or_cadence").notNull(),
+    feelOrCue: text("feel_or_cue"),
+    successCheck: text("success_check").notNull(),
+    commonMiss: text("common_miss"),
+    stopOrAskRule: text("stop_or_ask_rule").notNull(),
+    constraintOrAdaptation: text("constraint_or_adaptation"),
+    progression: text("progression"),
+    regression: text("regression"),
+    status: text("status", { enum: ["active", "archived"] })
+      .notNull()
+      .default("active"),
+    isFavourite: integer("is_favourite", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    version: integer("version").notNull().default(1),
+    archivedAt: timestamp("archived_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    foreignKey({
+      name: "drill_templates_account_fk",
+      columns: [table.accountId],
+      foreignColumns: [accounts.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "drill_templates_source_tenant_fk",
+      columns: [table.accountId, table.sourceTemplateId],
+      foreignColumns: [table.accountId, table.id],
+    }).onDelete("no action"),
+    uniqueIndex("drill_templates_account_id_unique").on(table.accountId, table.id),
+    index("drill_templates_account_status_title_idx").on(
+      table.accountId,
+      table.status,
+      table.title,
+    ),
+    index("drill_templates_account_favourite_idx").on(
+      table.accountId,
+      table.isFavourite,
+      table.updatedAt,
+    ),
+    check(
+      "drill_templates_status_check",
+      sql`${table.status} in ('active', 'archived')`,
+    ),
+    check("drill_templates_version_check", sql`${table.version} >= 1`),
+    check("drill_templates_equipment_json_check", sql`json_valid(${table.equipment})`),
+    check("drill_templates_steps_json_check", sql`json_valid(${table.steps})`),
+    check(
+      "drill_templates_source_not_self_check",
+      sql`${table.sourceTemplateId} is null or ${table.sourceTemplateId} <> ${table.id}`,
+    ),
+  ],
+);
+
+export const roadmapTemplates = sqliteTable(
+  "roadmap_templates",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    sourceTemplateId: text("source_template_id"),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    content: text("content", { mode: "json" })
+      .$type<Record<string, unknown>>()
+      .notNull(),
+    origin: text("origin", { enum: ["coach", "editable_example"] })
+      .notNull()
+      .default("coach"),
+    status: text("status", { enum: ["active", "archived"] })
+      .notNull()
+      .default("active"),
+    isFavourite: integer("is_favourite", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    version: integer("version").notNull().default(1),
+    archivedAt: timestamp("archived_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    foreignKey({
+      name: "roadmap_templates_account_fk",
+      columns: [table.accountId],
+      foreignColumns: [accounts.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "roadmap_templates_source_tenant_fk",
+      columns: [table.accountId, table.sourceTemplateId],
+      foreignColumns: [table.accountId, table.id],
+    }).onDelete("no action"),
+    uniqueIndex("roadmap_templates_account_id_unique").on(table.accountId, table.id),
+    index("roadmap_templates_account_status_title_idx").on(
+      table.accountId,
+      table.status,
+      table.title,
+    ),
+    check("roadmap_templates_content_json_check", sql`json_valid(${table.content})`),
+    check(
+      "roadmap_templates_origin_check",
+      sql`${table.origin} in ('coach', 'editable_example')`,
+    ),
+    check(
+      "roadmap_templates_status_check",
+      sql`${table.status} in ('active', 'archived')`,
+    ),
+    check("roadmap_templates_version_check", sql`${table.version} >= 1`),
+    check(
+      "roadmap_templates_source_not_self_check",
+      sql`${table.sourceTemplateId} is null or ${table.sourceTemplateId} <> ${table.id}`,
+    ),
+  ],
+);
+
+export const practiceAssignmentSnapshots = sqliteTable(
+  "practice_assignment_snapshots",
+  {
+    accountId: text("account_id").notNull(),
+    planId: text("plan_id").notNull(),
+    practiceItemId: text("practice_item_id").notNull(),
+    drillTemplateId: text("drill_template_id"),
+    drillTemplateVersion: integer("drill_template_version"),
+    wasCustomized: integer("was_customized", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    title: text("title").notNull(),
+    purpose: text("purpose").notNull(),
+    whenItFits: text("when_it_fits").notNull(),
+    equipment: text("equipment", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    setup: text("setup").notNull(),
+    steps: text("steps", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    dosageOrCadence: text("dosage_or_cadence").notNull(),
+    feelOrCue: text("feel_or_cue"),
+    successCheck: text("success_check").notNull(),
+    commonMiss: text("common_miss"),
+    stopOrAskRule: text("stop_or_ask_rule").notNull(),
+    constraintOrAdaptation: text("constraint_or_adaptation"),
+    progression: text("progression"),
+    regression: text("regression"),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    primaryKey({
+      name: "practice_assignment_snapshots_pk",
+      columns: [table.accountId, table.practiceItemId],
+    }),
+    foreignKey({
+      name: "practice_assignment_snapshots_practice_plan_tenant_fk",
+      columns: [table.accountId, table.planId, table.practiceItemId],
+      foreignColumns: [practiceItems.accountId, practiceItems.planId, practiceItems.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "practice_assignment_snapshots_template_tenant_fk",
+      columns: [table.accountId, table.drillTemplateId],
+      foreignColumns: [drillTemplates.accountId, drillTemplates.id],
+    }).onDelete("no action"),
+    index("practice_assignment_snapshots_template_idx").on(
+      table.accountId,
+      table.drillTemplateId,
+    ),
+    check(
+      "practice_assignment_snapshots_template_version_check",
+      sql`(${table.drillTemplateId} is null and ${table.drillTemplateVersion} is null) or (${table.drillTemplateId} is not null and ${table.drillTemplateVersion} >= 1)`,
+    ),
+    check(
+      "practice_assignment_snapshots_equipment_json_check",
+      sql`json_valid(${table.equipment})`,
+    ),
+    check(
+      "practice_assignment_snapshots_steps_json_check",
+      sql`json_valid(${table.steps})`,
+    ),
+  ],
+);
+
+/**
+ * Immutable lineage for assignment-specific edits. A replacement creates a
+ * new practice item and snapshot, then retires (without rewriting) the prior
+ * item. Both sides are tenant-and-plan constrained so lineage cannot cross a
+ * golfer plan boundary. Migration 0016 also rejects direct UPDATE/DELETE while
+ * the owning plan exists, but permits the intentional parent-plan cascade.
+ */
+export const practiceAssignmentReplacements = sqliteTable(
+  "practice_assignment_replacements",
+  {
+    accountId: text("account_id").notNull(),
+    planId: text("plan_id").notNull(),
+    replacedPracticeItemId: text("replaced_practice_item_id").notNull(),
+    replacementPracticeItemId: text("replacement_practice_item_id").notNull(),
+    replacedStatus: text("replaced_status", {
+      enum: ["active", "paused"],
+    }).notNull(),
+    replacementPlanRevision: integer("replacement_plan_revision").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    primaryKey({
+      name: "practice_assignment_replacements_pk",
+      columns: [table.accountId, table.planId, table.replacedPracticeItemId],
+    }),
+    foreignKey({
+      name: "practice_assignment_replacements_prior_plan_tenant_fk",
+      columns: [table.accountId, table.planId, table.replacedPracticeItemId],
+      foreignColumns: [practiceItems.accountId, practiceItems.planId, practiceItems.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "practice_assignment_replacements_next_plan_tenant_fk",
+      columns: [table.accountId, table.planId, table.replacementPracticeItemId],
+      foreignColumns: [practiceItems.accountId, practiceItems.planId, practiceItems.id],
+    }).onDelete("cascade"),
+    uniqueIndex("practice_assignment_replacements_next_unique").on(
+      table.accountId,
+      table.planId,
+      table.replacementPracticeItemId,
+    ),
+    index("practice_assignment_replacements_plan_created_idx").on(
+      table.accountId,
+      table.planId,
+      table.createdAt,
+    ),
+    check(
+      "practice_assignment_replacements_distinct_check",
+      sql`${table.replacedPracticeItemId} <> ${table.replacementPracticeItemId}`,
+    ),
+    check(
+      "practice_assignment_replacements_status_check",
+      sql`${table.replacedStatus} in ('active', 'paused')`,
+    ),
+    check(
+      "practice_assignment_replacements_revision_check",
+      sql`${table.replacementPlanRevision} >= 2`,
+    ),
+  ],
+);
+
+export const practiceCheckIns = sqliteTable(
+  "practice_check_ins",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    planId: text("plan_id").notNull(),
+    practiceItemId: text("practice_item_id").notNull(),
+    shareLinkId: text("share_link_id").notNull(),
+    shareSessionId: text("share_session_id").notNull(),
+    idempotencyKeyHash: text("idempotency_key_hash").notNull(),
+    inputFingerprint: text("input_fingerprint").notNull(),
+    completionStatus: text("completion_status", {
+      enum: ["completed", "not_completed"],
+    }).notNull(),
+    perceivedDifficulty: text("perceived_difficulty", {
+      enum: ["very_easy", "easy", "appropriate", "hard", "very_hard"],
+    }),
+    confidenceRating: integer("confidence_rating"),
+    note: text("note"),
+    requestHelp: integer("request_help", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    occurredAt: timestamp("occurred_at").notNull().default(currentTimestampMs),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    foreignKey({
+      name: "practice_check_ins_practice_plan_tenant_fk",
+      columns: [table.accountId, table.planId, table.practiceItemId],
+      foreignColumns: [practiceItems.accountId, practiceItems.planId, practiceItems.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "practice_check_ins_share_tenant_fk",
+      columns: [table.accountId, table.shareLinkId],
+      foreignColumns: [shareLinks.accountId, shareLinks.id],
+    }).onDelete("no action"),
+    foreignKey({
+      name: "practice_check_ins_session_tenant_fk",
+      columns: [table.accountId, table.shareLinkId, table.shareSessionId],
+      foreignColumns: [shareSessions.accountId, shareSessions.shareLinkId, shareSessions.id],
+    }).onDelete("no action"),
+    uniqueIndex("practice_check_ins_account_id_unique").on(table.accountId, table.id),
+    uniqueIndex("practice_check_ins_plan_id_unique").on(
+      table.accountId,
+      table.planId,
+      table.id,
+    ),
+    uniqueIndex("practice_check_ins_idempotency_unique").on(
+      table.accountId,
+      table.shareSessionId,
+      table.idempotencyKeyHash,
+    ),
+    index("practice_check_ins_practice_occurred_idx").on(
+      table.accountId,
+      table.practiceItemId,
+      table.occurredAt,
+    ),
+    check(
+      "practice_check_ins_completion_check",
+      sql`${table.completionStatus} in ('completed', 'not_completed')`,
+    ),
+    check(
+      "practice_check_ins_difficulty_check",
+      sql`${table.perceivedDifficulty} is null or ${table.perceivedDifficulty} in ('very_easy', 'easy', 'appropriate', 'hard', 'very_hard')`,
+    ),
+    check(
+      "practice_check_ins_confidence_check",
+      sql`${table.confidenceRating} is null or ${table.confidenceRating} between 1 and 5`,
+    ),
+    check(
+      "practice_check_ins_idempotency_hash_check",
+      sql`length(${table.idempotencyKeyHash}) = 64 and ${table.idempotencyKeyHash} not glob '*[^0-9a-f]*'`,
+    ),
+    check(
+      "practice_check_ins_input_fingerprint_check",
+      sql`length(${table.inputFingerprint}) = 64 and ${table.inputFingerprint} not glob '*[^0-9a-f]*'`,
+    ),
+  ],
+);
+
+export const launchMonitorImports = sqliteTable(
+  "launch_monitor_imports",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    planId: text("plan_id").notNull(),
+    sourceMediaAssetId: text("source_media_asset_id"),
+    status: text("status", {
+      enum: ["staged", "mapping_required", "validated", "committed", "failed", "abandoned"],
+    })
+      .notNull()
+      .default("staged"),
+    columnHeaders: text("column_headers", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    columnMappings: text("column_mappings", { mode: "json" })
+      .$type<Record<string, string | null>>()
+      .notNull()
+      .default(sql`'{}'`),
+    validationReport: text("validation_report", { mode: "json" })
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default(sql`'{}'`),
+    reviewRows: text("review_rows", { mode: "json" })
+      .$type<string[][]>()
+      .notNull()
+      .default(sql`'[]'`),
+    acceptedRows: text("accepted_rows", { mode: "json" })
+      .$type<string[][]>()
+      .notNull()
+      .default(sql`'[]'`),
+    acceptedSourceRowNumbers: text("accepted_source_row_numbers", { mode: "json" })
+      .$type<number[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    rejectedRows: text("rejected_rows", { mode: "json" })
+      .$type<Array<{ row: number; reason: string }>>()
+      .notNull()
+      .default(sql`'[]'`),
+    totalRowCount: integer("total_row_count").notNull().default(0),
+    acceptedRowCount: integer("accepted_row_count").notNull().default(0),
+    rejectedRowCount: integer("rejected_row_count").notNull().default(0),
+    errorCode: text("error_code"),
+    idempotencyKeyHash: text("idempotency_key_hash"),
+    requestFingerprint: text("request_fingerprint"),
+    committedAt: timestamp("committed_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    foreignKey({
+      name: "launch_monitor_imports_plan_tenant_fk",
+      columns: [table.accountId, table.planId],
+      foreignColumns: [developmentPlans.accountId, developmentPlans.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "launch_monitor_imports_media_tenant_fk",
+      columns: [table.accountId, table.sourceMediaAssetId],
+      foreignColumns: [mediaAssets.accountId, mediaAssets.id],
+    }).onDelete("no action"),
+    uniqueIndex("launch_monitor_imports_account_id_unique").on(table.accountId, table.id),
+    uniqueIndex("launch_monitor_imports_plan_id_unique").on(
+      table.accountId,
+      table.planId,
+      table.id,
+    ),
+    uniqueIndex("launch_monitor_imports_idempotency_unique")
+      .on(table.accountId, table.planId, table.idempotencyKeyHash)
+      .where(sql`${table.idempotencyKeyHash} is not null`),
+    index("launch_monitor_imports_plan_status_idx").on(
+      table.accountId,
+      table.planId,
+      table.status,
+      table.updatedAt,
+    ),
+    check(
+      "launch_monitor_imports_status_check",
+      sql`${table.status} in ('staged', 'mapping_required', 'validated', 'committed', 'failed', 'abandoned')`,
+    ),
+    check("launch_monitor_imports_headers_json_check", sql`json_valid(${table.columnHeaders})`),
+    check("launch_monitor_imports_mappings_json_check", sql`json_valid(${table.columnMappings})`),
+    check("launch_monitor_imports_report_json_check", sql`json_valid(${table.validationReport})`),
+    check("launch_monitor_imports_review_rows_json_check", sql`json_valid(${table.reviewRows})`),
+    check("launch_monitor_imports_accepted_rows_json_check", sql`json_valid(${table.acceptedRows})`),
+    check("launch_monitor_imports_source_rows_json_check", sql`json_valid(${table.acceptedSourceRowNumbers})`),
+    check("launch_monitor_imports_rejected_rows_json_check", sql`json_valid(${table.rejectedRows})`),
+    check(
+      "launch_monitor_imports_counts_check",
+      sql`${table.totalRowCount} >= 0 and ${table.acceptedRowCount} >= 0 and ${table.rejectedRowCount} >= 0 and ${table.acceptedRowCount} + ${table.rejectedRowCount} <= ${table.totalRowCount}`,
+    ),
+    check(
+      "launch_monitor_imports_idempotency_hash_check",
+      sql`${table.idempotencyKeyHash} is null or (length(${table.idempotencyKeyHash}) = 64 and ${table.idempotencyKeyHash} not glob '*[^0-9a-f]*')`,
+    ),
+    check(
+      "launch_monitor_imports_request_fingerprint_check",
+      sql`${table.requestFingerprint} is null or (length(${table.requestFingerprint}) = 64 and ${table.requestFingerprint} not glob '*[^0-9a-f]*')`,
+    ),
+  ],
+);
+
+export const launchMonitorMetricDefinitions = sqliteTable(
+  "launch_monitor_metric_definitions",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    canonicalKey: text("canonical_key").notNull(),
+    displayName: text("display_name").notNull(),
+    description: text("description"),
+    direction: text("direction", {
+      enum: ["higher", "lower", "target", "context_only", "unknown"],
+    })
+      .notNull()
+      .default("unknown"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    foreignKey({
+      name: "launch_monitor_metric_definitions_account_fk",
+      columns: [table.accountId],
+      foreignColumns: [accounts.id],
+    }).onDelete("cascade"),
+    uniqueIndex("launch_monitor_metric_definitions_account_id_unique").on(
+      table.accountId,
+      table.id,
+    ),
+    uniqueIndex("launch_monitor_metric_definitions_key_unique").on(
+      table.accountId,
+      table.canonicalKey,
+    ),
+    check(
+      "launch_monitor_metric_definitions_key_check",
+      sql`length(trim(${table.canonicalKey})) > 0 and ${table.canonicalKey} = lower(${table.canonicalKey}) and ${table.canonicalKey} not glob '*[^a-z0-9_]*'`,
+    ),
+    check(
+      "launch_monitor_metric_definitions_direction_check",
+      sql`${table.direction} in ('higher', 'lower', 'target', 'context_only', 'unknown')`,
+    ),
+  ],
+);
+
+export const launchMonitorSessions = sqliteTable(
+  "launch_monitor_sessions",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    planId: text("plan_id").notNull(),
+    phaseId: text("phase_id"),
+    lessonId: text("lesson_id"),
+    importId: text("import_id"),
+    sourceMediaAssetId: text("source_media_asset_id"),
+    sourceMode: text("source_mode", { enum: ["manual", "csv_import"] }).notNull(),
+    sessionDate: timestamp("session_date").notNull(),
+    deviceSource: text("device_source").notNull(),
+    club: text("club"),
+    environment: text("environment"),
+    conditions: text("conditions"),
+    notes: text("notes"),
+    coachInterpretation: text("coach_interpretation").notNull(),
+    limitations: text("limitations").notNull(),
+    representativeness: text("representativeness", {
+      enum: ["representative", "limited", "unknown"],
+    })
+      .notNull()
+      .default("unknown"),
+    nextEvidenceNeeded: text("next_evidence_needed"),
+    status: text("status", { enum: ["draft", "committed", "withdrawn"] })
+      .notNull()
+      .default("draft"),
+    coachApprovedAt: timestamp("coach_approved_at"),
+    withdrawnAt: timestamp("withdrawn_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    foreignKey({
+      name: "launch_monitor_sessions_plan_tenant_fk",
+      columns: [table.accountId, table.planId],
+      foreignColumns: [developmentPlans.accountId, developmentPlans.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "launch_monitor_sessions_phase_tenant_fk",
+      columns: [table.accountId, table.phaseId],
+      foreignColumns: [planPhases.accountId, planPhases.id],
+    }).onDelete("no action"),
+    foreignKey({
+      name: "launch_monitor_sessions_lesson_plan_tenant_fk",
+      columns: [table.accountId, table.planId, table.lessonId],
+      foreignColumns: [lessons.accountId, lessons.planId, lessons.id],
+    }).onDelete("no action"),
+    foreignKey({
+      name: "launch_monitor_sessions_import_plan_tenant_fk",
+      columns: [table.accountId, table.planId, table.importId],
+      foreignColumns: [launchMonitorImports.accountId, launchMonitorImports.planId, launchMonitorImports.id],
+    }).onDelete("no action"),
+    foreignKey({
+      name: "launch_monitor_sessions_media_tenant_fk",
+      columns: [table.accountId, table.sourceMediaAssetId],
+      foreignColumns: [mediaAssets.accountId, mediaAssets.id],
+    }).onDelete("no action"),
+    uniqueIndex("launch_monitor_sessions_account_id_unique").on(table.accountId, table.id),
+    uniqueIndex("launch_monitor_sessions_plan_id_unique").on(
+      table.accountId,
+      table.planId,
+      table.id,
+    ),
+    index("launch_monitor_sessions_plan_date_idx").on(
+      table.accountId,
+      table.planId,
+      table.sessionDate,
+    ),
+    check(
+      "launch_monitor_sessions_source_mode_check",
+      sql`${table.sourceMode} in ('manual', 'csv_import')`,
+    ),
+    check(
+      "launch_monitor_sessions_import_mode_check",
+      sql`(${table.sourceMode} = 'manual' and ${table.importId} is null) or (${table.sourceMode} = 'csv_import' and ${table.importId} is not null)`,
+    ),
+    check(
+      "launch_monitor_sessions_representativeness_check",
+      sql`${table.representativeness} in ('representative', 'limited', 'unknown')`,
+    ),
+    check(
+      "launch_monitor_sessions_status_check",
+      sql`${table.status} in ('draft', 'committed', 'withdrawn')`,
+    ),
+  ],
+);
+
+export const launchMonitorShots = sqliteTable(
+  "launch_monitor_shots",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    sessionId: text("session_id").notNull(),
+    sequence: integer("sequence").notNull(),
+    sourceRowNumber: integer("source_row_number"),
+    label: text("label"),
+    capturedAt: timestamp("captured_at"),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    foreignKey({
+      name: "launch_monitor_shots_session_tenant_fk",
+      columns: [table.accountId, table.sessionId],
+      foreignColumns: [launchMonitorSessions.accountId, launchMonitorSessions.id],
+    }).onDelete("cascade"),
+    uniqueIndex("launch_monitor_shots_account_id_unique").on(table.accountId, table.id),
+    uniqueIndex("launch_monitor_shots_session_id_unique").on(
+      table.accountId,
+      table.sessionId,
+      table.id,
+    ),
+    uniqueIndex("launch_monitor_shots_sequence_unique").on(
+      table.accountId,
+      table.sessionId,
+      table.sequence,
+    ),
+    check("launch_monitor_shots_sequence_check", sql`${table.sequence} >= 1`),
+    check(
+      "launch_monitor_shots_source_row_check",
+      sql`${table.sourceRowNumber} is null or ${table.sourceRowNumber} >= 1`,
+    ),
+  ],
+);
+
+export const launchMonitorMetrics = sqliteTable(
+  "launch_monitor_metrics",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    sessionId: text("session_id").notNull(),
+    shotId: text("shot_id"),
+    metricDefinitionId: text("metric_definition_id"),
+    originalName: text("original_name").notNull(),
+    displayName: text("display_name").notNull(),
+    numericValue: real("numeric_value").notNull(),
+    unit: text("unit").notNull(),
+    sourceColumn: text("source_column"),
+    isSummary: integer("is_summary", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    isGolferFacing: integer("is_golfer_facing", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    foreignKey({
+      name: "launch_monitor_metrics_session_tenant_fk",
+      columns: [table.accountId, table.sessionId],
+      foreignColumns: [launchMonitorSessions.accountId, launchMonitorSessions.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "launch_monitor_metrics_shot_session_tenant_fk",
+      columns: [table.accountId, table.sessionId, table.shotId],
+      foreignColumns: [launchMonitorShots.accountId, launchMonitorShots.sessionId, launchMonitorShots.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "launch_monitor_metrics_definition_tenant_fk",
+      columns: [table.accountId, table.metricDefinitionId],
+      foreignColumns: [launchMonitorMetricDefinitions.accountId, launchMonitorMetricDefinitions.id],
+    }).onDelete("no action"),
+    uniqueIndex("launch_monitor_metrics_account_id_unique").on(table.accountId, table.id),
+    index("launch_monitor_metrics_session_summary_idx").on(
+      table.accountId,
+      table.sessionId,
+      table.isSummary,
+      table.sortOrder,
+    ),
+    index("launch_monitor_metrics_definition_unit_idx").on(
+      table.accountId,
+      table.metricDefinitionId,
+      table.unit,
+    ),
+    check(
+      "launch_monitor_metrics_summary_shot_check",
+      sql`(${table.isSummary} = 1 and ${table.shotId} is null) or (${table.isSummary} = 0 and ${table.shotId} is not null)`,
+    ),
+    check(
+      "launch_monitor_metrics_text_check",
+      sql`length(trim(${table.originalName})) > 0 and length(trim(${table.displayName})) > 0 and length(trim(${table.unit})) > 0`,
+    ),
+    check("launch_monitor_metrics_sort_order_check", sql`${table.sortOrder} >= 0`),
+  ],
+);
+
+export const launchMonitorComparisonGroups = sqliteTable(
+  "launch_monitor_comparison_groups",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    planId: text("plan_id").notNull(),
+    title: text("title").notNull(),
+    baselineSessionId: text("baseline_session_id").notNull(),
+    currentSessionId: text("current_session_id").notNull(),
+    coachInterpretation: text("coach_interpretation").notNull(),
+    limitations: text("limitations").notNull(),
+    nextEvidenceNeeded: text("next_evidence_needed"),
+    status: text("status", { enum: ["active", "withdrawn"] })
+      .notNull()
+      .default("active"),
+    coachApprovedAt: timestamp("coach_approved_at"),
+    withdrawnAt: timestamp("withdrawn_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    foreignKey({
+      name: "launch_monitor_comparison_groups_plan_tenant_fk",
+      columns: [table.accountId, table.planId],
+      foreignColumns: [developmentPlans.accountId, developmentPlans.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "launch_monitor_comparison_groups_baseline_plan_tenant_fk",
+      columns: [table.accountId, table.planId, table.baselineSessionId],
+      foreignColumns: [launchMonitorSessions.accountId, launchMonitorSessions.planId, launchMonitorSessions.id],
+    }).onDelete("no action"),
+    foreignKey({
+      name: "launch_monitor_comparison_groups_current_plan_tenant_fk",
+      columns: [table.accountId, table.planId, table.currentSessionId],
+      foreignColumns: [launchMonitorSessions.accountId, launchMonitorSessions.planId, launchMonitorSessions.id],
+    }).onDelete("no action"),
+    uniqueIndex("launch_monitor_comparison_groups_account_id_unique").on(table.accountId, table.id),
+    uniqueIndex("launch_monitor_comparison_groups_plan_id_unique").on(
+      table.accountId,
+      table.planId,
+      table.id,
+    ),
+    index("launch_monitor_comparison_groups_plan_status_idx").on(
+      table.accountId,
+      table.planId,
+      table.status,
+      table.createdAt,
+    ),
+    check(
+      "launch_monitor_comparison_groups_status_check",
+      sql`${table.status} in ('active', 'withdrawn')`,
+    ),
+    check(
+      "launch_monitor_comparison_groups_distinct_sessions_check",
+      sql`${table.baselineSessionId} <> ${table.currentSessionId}`,
+    ),
+  ],
+);
+
+export const launchMonitorComparisonMetrics = sqliteTable(
+  "launch_monitor_comparison_metrics",
+  {
+    accountId: text("account_id").notNull(),
+    comparisonGroupId: text("comparison_group_id").notNull(),
+    baselineMetricId: text("baseline_metric_id").notNull(),
+    currentMetricId: text("current_metric_id").notNull(),
+    displayName: text("display_name").notNull(),
+    unit: text("unit").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    primaryKey({
+      name: "launch_monitor_comparison_metrics_pk",
+      columns: [table.accountId, table.comparisonGroupId, table.baselineMetricId],
+    }),
+    foreignKey({
+      name: "launch_monitor_comparison_metrics_group_tenant_fk",
+      columns: [table.accountId, table.comparisonGroupId],
+      foreignColumns: [launchMonitorComparisonGroups.accountId, launchMonitorComparisonGroups.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "launch_monitor_comparison_metrics_baseline_tenant_fk",
+      columns: [table.accountId, table.baselineMetricId],
+      foreignColumns: [launchMonitorMetrics.accountId, launchMonitorMetrics.id],
+    }).onDelete("no action"),
+    foreignKey({
+      name: "launch_monitor_comparison_metrics_current_tenant_fk",
+      columns: [table.accountId, table.currentMetricId],
+      foreignColumns: [launchMonitorMetrics.accountId, launchMonitorMetrics.id],
+    }).onDelete("no action"),
+    uniqueIndex("launch_monitor_comparison_metrics_current_unique").on(
+      table.accountId,
+      table.comparisonGroupId,
+      table.currentMetricId,
+    ),
+    check(
+      "launch_monitor_comparison_metrics_distinct_check",
+      sql`${table.baselineMetricId} <> ${table.currentMetricId}`,
+    ),
+    check(
+      "launch_monitor_comparison_metrics_unit_check",
+      sql`length(trim(${table.unit})) > 0`,
+    ),
+    check(
+      "launch_monitor_comparison_metrics_sort_order_check",
+      sql`${table.sortOrder} >= 0`,
+    ),
+  ],
+);
+
+/**
+ * One attachment row points at exactly one concrete content owner. Nullable
+ * tenant-FK columns deliberately avoid unchecked polymorphic target IDs.
+ */
+export const contentMediaAttachments = sqliteTable(
+  "content_media_attachments",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    planId: text("plan_id"),
+    mediaAssetId: text("media_asset_id").notNull(),
+    profileAccountId: text("profile_account_id"),
+    assessmentId: text("assessment_id"),
+    lessonId: text("lesson_id"),
+    practiceItemId: text("practice_item_id"),
+    evidenceItemId: text("evidence_item_id"),
+    phaseReviewId: text("phase_review_id"),
+    drillTemplateId: text("drill_template_id"),
+    targetType: text("target_type", {
+      enum: ["profile", "assessment", "lesson", "practice", "evidence", "phase_review", "drill"],
+    }).notNull(),
+    attachmentRole: text("attachment_role", {
+      enum: ["primary", "supporting", "demo", "baseline", "current", "poster", "logo", "profile_photo", "source"],
+    })
+      .notNull()
+      .default("supporting"),
+    label: text("label"),
+    coachContext: text("coach_context"),
+    sortOrder: integer("sort_order").notNull().default(0),
+    status: text("status", { enum: ["active", "withdrawn"] })
+      .notNull()
+      .default("active"),
+    withdrawnAt: timestamp("withdrawn_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    foreignKey({
+      name: "content_media_attachments_media_tenant_fk",
+      columns: [table.accountId, table.mediaAssetId],
+      foreignColumns: [mediaAssets.accountId, mediaAssets.id],
+    }).onDelete("no action"),
+    foreignKey({
+      name: "content_media_attachments_profile_fk",
+      columns: [table.profileAccountId],
+      foreignColumns: [instructorProfiles.accountId],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "content_media_attachments_assessment_plan_tenant_fk",
+      columns: [table.accountId, table.planId, table.assessmentId],
+      foreignColumns: [assessments.accountId, assessments.planId, assessments.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "content_media_attachments_lesson_plan_tenant_fk",
+      columns: [table.accountId, table.planId, table.lessonId],
+      foreignColumns: [lessons.accountId, lessons.planId, lessons.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "content_media_attachments_practice_plan_tenant_fk",
+      columns: [table.accountId, table.planId, table.practiceItemId],
+      foreignColumns: [practiceItems.accountId, practiceItems.planId, practiceItems.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "content_media_attachments_evidence_plan_tenant_fk",
+      columns: [table.accountId, table.planId, table.evidenceItemId],
+      foreignColumns: [evidenceItems.accountId, evidenceItems.planId, evidenceItems.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "content_media_attachments_review_plan_tenant_fk",
+      columns: [table.accountId, table.planId, table.phaseReviewId],
+      foreignColumns: [phaseReviews.accountId, phaseReviews.planId, phaseReviews.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "content_media_attachments_drill_tenant_fk",
+      columns: [table.accountId, table.drillTemplateId],
+      foreignColumns: [drillTemplates.accountId, drillTemplates.id],
+    }).onDelete("cascade"),
+    uniqueIndex("content_media_attachments_account_id_unique").on(table.accountId, table.id),
+    index("content_media_attachments_media_status_idx").on(
+      table.accountId,
+      table.mediaAssetId,
+      table.status,
+    ),
+    index("content_media_attachments_plan_status_idx").on(
+      table.accountId,
+      table.planId,
+      table.status,
+    ),
+    check(
+      "content_media_attachments_target_type_check",
+      sql`${table.targetType} in ('profile', 'assessment', 'lesson', 'practice', 'evidence', 'phase_review', 'drill')`,
+    ),
+    check(
+      "content_media_attachments_role_check",
+      sql`${table.attachmentRole} in ('primary', 'supporting', 'demo', 'baseline', 'current', 'poster', 'logo', 'profile_photo', 'source')`,
+    ),
+    check(
+      "content_media_attachments_status_check",
+      sql`${table.status} in ('active', 'withdrawn')`,
+    ),
+    check(
+      "content_media_attachments_exact_one_target_check",
+      sql`((${table.profileAccountId} is not null) + (${table.assessmentId} is not null) + (${table.lessonId} is not null) + (${table.practiceItemId} is not null) + (${table.evidenceItemId} is not null) + (${table.phaseReviewId} is not null) + (${table.drillTemplateId} is not null)) = 1`,
+    ),
+    check(
+      "content_media_attachments_target_alignment_check",
+      sql`(${table.targetType} = 'profile' and ${table.profileAccountId} is not null) or (${table.targetType} = 'assessment' and ${table.assessmentId} is not null) or (${table.targetType} = 'lesson' and ${table.lessonId} is not null) or (${table.targetType} = 'practice' and ${table.practiceItemId} is not null) or (${table.targetType} = 'evidence' and ${table.evidenceItemId} is not null) or (${table.targetType} = 'phase_review' and ${table.phaseReviewId} is not null) or (${table.targetType} = 'drill' and ${table.drillTemplateId} is not null)`,
+    ),
+    check(
+      "content_media_attachments_plan_alignment_check",
+      sql`(${table.planId} is null and (${table.profileAccountId} is not null or ${table.drillTemplateId} is not null)) or (${table.planId} is not null and (${table.assessmentId} is not null or ${table.lessonId} is not null or ${table.practiceItemId} is not null or ${table.evidenceItemId} is not null or ${table.phaseReviewId} is not null))`,
+    ),
+    check(
+      "content_media_attachments_profile_tenant_check",
+      sql`${table.profileAccountId} is null or ${table.profileAccountId} = ${table.accountId}`,
+    ),
+    check("content_media_attachments_sort_order_check", sql`${table.sortOrder} >= 0`),
+  ],
+);
+
+export const phaseReviewSources = sqliteTable(
+  "phase_review_sources",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    planId: text("plan_id").notNull(),
+    phaseReviewId: text("phase_review_id").notNull(),
+    lessonId: text("lesson_id"),
+    practiceItemId: text("practice_item_id"),
+    practiceCheckInId: text("practice_check_in_id"),
+    mediaAssetId: text("media_asset_id"),
+    launchMonitorSessionId: text("launch_monitor_session_id"),
+    launchMonitorComparisonGroupId: text("launch_monitor_comparison_group_id"),
+    evidenceItemId: text("evidence_item_id"),
+    sourceType: text("source_type", {
+      enum: ["lesson", "practice", "practice_check_in", "media", "launch_session", "launch_comparison", "evidence"],
+    }).notNull(),
+    sourcePlanRevision: integer("source_plan_revision"),
+    sourceSnapshot: text("source_snapshot", { mode: "json" })
+      .$type<Record<string, unknown> | null>(),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    foreignKey({
+      name: "phase_review_sources_review_plan_tenant_fk",
+      columns: [table.accountId, table.planId, table.phaseReviewId],
+      foreignColumns: [phaseReviews.accountId, phaseReviews.planId, phaseReviews.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "phase_review_sources_lesson_plan_tenant_fk",
+      columns: [table.accountId, table.planId, table.lessonId],
+      foreignColumns: [lessons.accountId, lessons.planId, lessons.id],
+    }).onDelete("no action"),
+    foreignKey({
+      name: "phase_review_sources_practice_plan_tenant_fk",
+      columns: [table.accountId, table.planId, table.practiceItemId],
+      foreignColumns: [practiceItems.accountId, practiceItems.planId, practiceItems.id],
+    }).onDelete("no action"),
+    foreignKey({
+      name: "phase_review_sources_check_in_plan_tenant_fk",
+      columns: [table.accountId, table.planId, table.practiceCheckInId],
+      foreignColumns: [practiceCheckIns.accountId, practiceCheckIns.planId, practiceCheckIns.id],
+    }).onDelete("no action"),
+    foreignKey({
+      name: "phase_review_sources_media_tenant_fk",
+      columns: [table.accountId, table.mediaAssetId],
+      foreignColumns: [mediaAssets.accountId, mediaAssets.id],
+    }).onDelete("no action"),
+    foreignKey({
+      name: "phase_review_sources_launch_session_plan_tenant_fk",
+      columns: [table.accountId, table.planId, table.launchMonitorSessionId],
+      foreignColumns: [launchMonitorSessions.accountId, launchMonitorSessions.planId, launchMonitorSessions.id],
+    }).onDelete("no action"),
+    foreignKey({
+      name: "phase_review_sources_launch_comparison_plan_tenant_fk",
+      columns: [table.accountId, table.planId, table.launchMonitorComparisonGroupId],
+      foreignColumns: [launchMonitorComparisonGroups.accountId, launchMonitorComparisonGroups.planId, launchMonitorComparisonGroups.id],
+    }).onDelete("no action"),
+    foreignKey({
+      name: "phase_review_sources_evidence_plan_tenant_fk",
+      columns: [table.accountId, table.planId, table.evidenceItemId],
+      foreignColumns: [evidenceItems.accountId, evidenceItems.planId, evidenceItems.id],
+    }).onDelete("no action"),
+    uniqueIndex("phase_review_sources_account_id_unique").on(table.accountId, table.id),
+    index("phase_review_sources_review_order_idx").on(
+      table.accountId,
+      table.phaseReviewId,
+      table.sortOrder,
+    ),
+    check(
+      "phase_review_sources_source_type_check",
+      sql`${table.sourceType} in ('lesson', 'practice', 'practice_check_in', 'media', 'launch_session', 'launch_comparison', 'evidence')`,
+    ),
+    check(
+      "phase_review_sources_exact_one_source_check",
+      sql`((${table.lessonId} is not null) + (${table.practiceItemId} is not null) + (${table.practiceCheckInId} is not null) + (${table.mediaAssetId} is not null) + (${table.launchMonitorSessionId} is not null) + (${table.launchMonitorComparisonGroupId} is not null) + (${table.evidenceItemId} is not null)) = 1`,
+    ),
+    check(
+      "phase_review_sources_snapshot_pair_check",
+      sql`(${table.sourcePlanRevision} is null and ${table.sourceSnapshot} is null) or (${table.sourcePlanRevision} >= 1 and ${table.sourceSnapshot} is not null and json_valid(${table.sourceSnapshot}))`,
+    ),
+    check(
+      "phase_review_sources_alignment_check",
+      sql`(${table.sourceType} = 'lesson' and ${table.lessonId} is not null) or (${table.sourceType} = 'practice' and ${table.practiceItemId} is not null) or (${table.sourceType} = 'practice_check_in' and ${table.practiceCheckInId} is not null) or (${table.sourceType} = 'media' and ${table.mediaAssetId} is not null) or (${table.sourceType} = 'launch_session' and ${table.launchMonitorSessionId} is not null) or (${table.sourceType} = 'launch_comparison' and ${table.launchMonitorComparisonGroupId} is not null) or (${table.sourceType} = 'evidence' and ${table.evidenceItemId} is not null)`,
+    ),
+    check("phase_review_sources_sort_order_check", sql`${table.sortOrder} >= 0`),
+  ],
+);
+
+export const milestones = sqliteTable(
+  "milestones",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    planId: text("plan_id").notNull(),
+    phaseId: text("phase_id"),
+    title: text("title").notNull(),
+    summary: text("summary").notNull(),
+    occurredAt: timestamp("occurred_at").notNull(),
+    status: text("status", { enum: ["draft", "published", "withdrawn"] })
+      .notNull()
+      .default("draft"),
+    coachApprovedAt: timestamp("coach_approved_at"),
+    withdrawnAt: timestamp("withdrawn_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    foreignKey({
+      name: "milestones_plan_tenant_fk",
+      columns: [table.accountId, table.planId],
+      foreignColumns: [developmentPlans.accountId, developmentPlans.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "milestones_phase_tenant_fk",
+      columns: [table.accountId, table.phaseId],
+      foreignColumns: [planPhases.accountId, planPhases.id],
+    }).onDelete("no action"),
+    uniqueIndex("milestones_account_id_unique").on(table.accountId, table.id),
+    uniqueIndex("milestones_plan_id_unique").on(
+      table.accountId,
+      table.planId,
+      table.id,
+    ),
+    index("milestones_plan_status_occurred_idx").on(
+      table.accountId,
+      table.planId,
+      table.status,
+      table.occurredAt,
+    ),
+    check(
+      "milestones_status_check",
+      sql`${table.status} in ('draft', 'published', 'withdrawn')`,
     ),
   ],
 );

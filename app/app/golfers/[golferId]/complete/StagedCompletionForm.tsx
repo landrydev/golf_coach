@@ -22,11 +22,18 @@ import {
   clientMutationErrorMessage,
   requestClientMutation,
 } from "@/lib/client-mutation-recovery";
-import { requiresAuthoritativeMutationReload } from "@/lib/client-terminal-mutation";
+import {
+  navigateToConfirmedDestination,
+  requiresAuthoritativeMutationReload,
+} from "@/lib/client-terminal-mutation";
 import {
   isStagedCompletionMutationResponse,
   requireExactClientMutationJson,
 } from "@/lib/instructor-mutation-response-contracts";
+import {
+  AuthoringCandidatePreview,
+  type AuthoringCandidate,
+} from "../AuthoringCandidatePreview";
 import styles from "../../../workspace.module.css";
 
 type PackageOption = {
@@ -35,19 +42,46 @@ type PackageOption = {
   fitDescription: string;
 };
 
+type TemplateOption = {
+  id: string;
+  title: string;
+  description: string;
+  isFavourite: boolean;
+  origin: "coach" | "editable_example";
+  content: {
+    goalPrompt?: string | null;
+    assessmentPrompt?: string | null;
+    priorityPrompt?: string | null;
+    phases: ReadonlyArray<{
+      title: string;
+      purpose: string;
+      rationale?: string | null;
+      progressSignals: readonly string[];
+    }>;
+  };
+};
+
 const ERROR_SUMMARY_ID = "staged-completion-form-error-summary";
 
 export function StagedCompletionForm({
   golferId,
+  golferName,
+  planTitle,
+  goalStatement,
   planId,
   expectedRevision,
   packages,
+  templates,
   recoveryScope,
 }: {
   golferId: string;
+  golferName: string;
+  planTitle: string;
+  goalStatement: string;
   planId: string;
   expectedRevision: number;
   packages: PackageOption[];
+  templates: TemplateOption[];
   recoveryScope: string;
 }) {
   const router = useRouter();
@@ -59,6 +93,10 @@ export function StagedCompletionForm({
   >("idle");
   const [message, setMessage] = useState("");
   const [confirmedDestination, setConfirmedDestination] = useState<string | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [phaseNotice, setPhaseNotice] = useState("");
+  const [candidatePreview, setCandidatePreview] =
+    useState<AuthoringCandidate | null>(null);
   const [draftRecovery, setDraftRecovery] =
     useState<AuthoringDraftUiState>({ kind: "checking" });
   const draftScope = useMemo<AuthoringDraftScope>(
@@ -75,14 +113,118 @@ export function StagedCompletionForm({
       planId,
       revision: expectedRevision,
       availablePackageIds: packages.map((item) => item.id).sort(),
+      availableTemplateIds: templates.map((item) => item.id).sort(),
     }),
-    [expectedRevision, packages, planId],
+    [expectedRevision, packages, planId, templates],
   );
   const isLocked =
     state === "saving" ||
     state === "reload_required" ||
     state === "saved" ||
     authoringDraftStateBlocksMutation(draftRecovery);
+  const selectedTemplate = templates.find((template) => template.id === selectedTemplateId) ?? null;
+
+  function applySelectedTemplate() {
+    if (!selectedTemplate || !formRef.current || isLocked) return;
+    const count = selectedTemplate.content.phases.length;
+    if (count !== 3 && count !== 4) return;
+    flushSync(() => setPhaseCount(count));
+    for (const [index, phase] of selectedTemplate.content.phases.entries()) {
+      setFormValue(formRef.current, `phase${index + 1}Title`, phase.title);
+      setFormValue(formRef.current, `phase${index + 1}Purpose`, phase.purpose);
+    }
+    const firstPhase = selectedTemplate.content.phases[0];
+    setFormValue(formRef.current, "firstPhaseRationale", firstPhase.rationale ?? "");
+    setFormValue(
+      formRef.current,
+      "firstPhaseProgressSignals",
+      firstPhase.progressSignals.join("\n"),
+    );
+    setPhaseNotice(
+      `${selectedTemplate.title} applied. Review and reorder every phase for this golfer.`,
+    );
+  }
+
+  function moveLaterPhase(number: number, direction: -1 | 1) {
+    const target = number + direction;
+    const form = formRef.current;
+    if (!form || isLocked || number <= 1 || target <= 1 || target > phaseCount) return;
+    swapFormValues(form, `phase${number}Title`, `phase${target}Title`);
+    swapFormValues(form, `phase${number}Purpose`, `phase${target}Purpose`);
+    setPhaseNotice(`Phases ${number} and ${target} were reordered in this draft.`);
+  }
+
+  function duplicatePhase(number: number) {
+    const form = formRef.current;
+    if (!form || isLocked || phaseCount !== 3) return;
+    const title = formValue(form, `phase${number}Title`);
+    const purpose = formValue(form, `phase${number}Purpose`);
+    flushSync(() => setPhaseCount(4));
+    setFormValue(form, "phase4Title", title);
+    setFormValue(form, "phase4Purpose", purpose);
+    setPhaseNotice(
+      `Phase ${number} was duplicated into Phase 4. Edit the copy before completing the roadmap.`,
+    );
+  }
+
+  async function saveAndReturnLater() {
+    const form = formRef.current;
+    if (!form || isLocked || authoringDraftStateBlocksMutation(draftRecovery)) return;
+    const values = captureAuthoringDraftValues(form);
+    if (!values) {
+      setState("error");
+      setMessage("The staged roadmap draft could not be captured safely.");
+      return;
+    }
+    const saved = await persistAuthoringDraft({
+      scope: draftScope,
+      baseRevision: expectedRevision,
+      baseState: authoritativeDraftState,
+      values,
+      ui: { phaseCount },
+    });
+    if (saved.kind === "blocked") {
+      setDraftRecovery(saved);
+      setState("error");
+      setMessage(
+        "Roadmap could not safely preserve this draft in the browser tab. Stay on this page and copy any needed text before leaving.",
+      );
+      return;
+    }
+    router.push("/app/golfers");
+  }
+
+  function refreshCandidatePreview() {
+    const form = formRef.current;
+    if (!form) return;
+    const values = captureAuthoringDraftValues(form);
+    if (!values) {
+      setState("error");
+      setMessage("The candidate preview could not read this draft safely.");
+      return;
+    }
+    setCandidatePreview({
+      golferName,
+      planTitle,
+      goalStatement,
+      assessmentSummary: values.assessmentSummary ?? "",
+      priorityTitle: values.priorityTitle ?? "",
+      priorityRationale: values.priorityRationale ?? "",
+      phases: Array.from({ length: phaseCount }, (_, index) => {
+        const number = index + 1;
+        return {
+          number,
+          title: values[`phase${number}Title`] ?? "",
+          purpose: values[`phase${number}Purpose`] ?? "",
+          rationale: number === 1 ? values.firstPhaseRationale ?? "" : "",
+          progressSignals:
+            number === 1
+              ? splitLines(values.firstPhaseProgressSignals ?? "")
+              : [],
+        };
+      }),
+    });
+  }
 
   useEffect(() => {
     let current = true;
@@ -202,8 +344,7 @@ export function StagedCompletionForm({
 
     if (!destination) return;
     try {
-      router.push(destination);
-      router.refresh();
+      navigateToConfirmedDestination(router, destination);
     } catch {
       // The confirmed completion remains successful if navigation fails.
     }
@@ -256,7 +397,60 @@ export function StagedCompletionForm({
           if (reload) window.location.reload();
         }}
       />
-      <section className={styles.formCard}>
+      <div className={styles.saveState} role="status" aria-live="polite">
+        {completionSaveStateLabel(state, draftRecovery)}
+      </div>
+      <section className={styles.formCard} aria-labelledby="roadmap-template-heading">
+        <h2 id="roadmap-template-heading">Start blank or apply a reusable roadmap template</h2>
+        <p className={styles.muted}>
+          A template can fill the directional phase structure. It never supplies this
+          golfer&apos;s assessment, priority, or diagnosis; those remain your judgment.
+        </p>
+        {templates.length ? (
+          <div className={styles.fieldGrid}>
+            <label className={styles.fullField}>
+              Coach-owned template
+              <select
+                value={selectedTemplateId}
+                disabled={isLocked}
+                onChange={(event) => setSelectedTemplateId(event.target.value)}
+              >
+                <option value="">Start with blank phases</option>
+                {templates.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.isFavourite ? "Favourite — " : ""}{template.title} ({template.content.phases.length} phases)
+                  </option>
+                ))}
+              </select>
+            </label>
+            {selectedTemplate ? (
+              <div className={styles.fullField} role="note">
+                <strong>{selectedTemplate.title}</strong>
+                <p>{selectedTemplate.description}</p>
+                <small>
+                  {selectedTemplate.origin === "editable_example"
+                    ? "Editable example — review every field before saving."
+                    : "Your saved coach template — review it for this golfer before saving."}
+                </small>
+              </div>
+            ) : null}
+            <button
+              className={styles.secondaryButton}
+              type="button"
+              disabled={isLocked || !selectedTemplate}
+              onClick={applySelectedTemplate}
+            >
+              Apply phase structure
+            </button>
+          </div>
+        ) : (
+          <p className={styles.muted}>
+            No compatible three- or four-phase templates are saved. Continue blank or
+            create one from the Roadmap templates library.
+          </p>
+        )}
+      </section>
+      <section className={styles.formCard} id="authoring-assessment">
         <fieldset
           className={styles.formSection}
           disabled={isLocked}
@@ -266,6 +460,9 @@ export function StagedCompletionForm({
             <label className={styles.fullField}>
               Starting assessment summary
               <textarea name="assessmentSummary" required maxLength={2_000} />
+              {selectedTemplate?.content.assessmentPrompt ? (
+                <small>Template prompt: {selectedTemplate.content.assessmentPrompt}</small>
+              ) : null}
             </label>
             <label className={styles.fullField}>
               Strengths to preserve
@@ -284,7 +481,7 @@ export function StagedCompletionForm({
         </fieldset>
       </section>
 
-      <section className={styles.formCard}>
+      <section className={styles.formCard} id="authoring-priority">
         <fieldset
           className={styles.formSection}
           disabled={isLocked}
@@ -294,6 +491,9 @@ export function StagedCompletionForm({
             <label className={styles.field}>
               Priority title
               <input name="priorityTitle" required maxLength={120} />
+              {selectedTemplate?.content.priorityPrompt ? (
+                <small>Template prompt: {selectedTemplate.content.priorityPrompt}</small>
+              ) : null}
             </label>
             <label className={styles.fullField}>
               Why this comes first
@@ -303,7 +503,7 @@ export function StagedCompletionForm({
         </fieldset>
       </section>
 
-      <section className={styles.formCard}>
+      <section className={styles.formCard} id="authoring-phases">
         <fieldset
           className={styles.formSection}
           disabled={isLocked}
@@ -321,23 +521,60 @@ export function StagedCompletionForm({
           </label>
           <p className={styles.muted}>
             These phases are coach-authored direction, not promised outcomes or fixed
-            timelines.
+            timelines. Choose three or four before writing: switching to three hides any
+            unsaved Phase 4 fields.
           </p>
           {Array.from({ length: phaseCount }, (_, index) => {
             const number = index + 1;
             return (
-              <div className={styles.fieldGrid} key={number}>
-                <label className={styles.field}>
-                  Phase {number} title
-                  <input name={`phase${number}Title`} required maxLength={120} />
-                </label>
-                <label className={styles.fullField}>
-                  Phase {number} purpose
-                  <textarea name={`phase${number}Purpose`} required maxLength={700} />
-                </label>
+              <div className={styles.phaseAuthoringCard} key={number}>
+                <div className={styles.cardHeader}>
+                  <h3>Phase {number}</h3>
+                  <div className={styles.actions} aria-label={`Phase ${number} structure controls`}>
+                    <button
+                      className={styles.secondaryButton}
+                      type="button"
+                      disabled={number <= 2}
+                      onClick={() => moveLaterPhase(number, -1)}
+                    >
+                      Move up
+                    </button>
+                    <button
+                      className={styles.secondaryButton}
+                      type="button"
+                      disabled={number === 1 || number >= phaseCount}
+                      onClick={() => moveLaterPhase(number, 1)}
+                    >
+                      Move down
+                    </button>
+                    <button
+                      className={styles.secondaryButton}
+                      type="button"
+                      disabled={phaseCount === 4}
+                      onClick={() => duplicatePhase(number)}
+                    >
+                      Duplicate as Phase 4
+                    </button>
+                  </div>
+                </div>
+                <div className={styles.fieldGrid}>
+                  <label className={styles.field}>
+                    Phase {number} title
+                    <input name={`phase${number}Title`} required maxLength={120} />
+                  </label>
+                  <label className={styles.fullField}>
+                    Phase {number} purpose
+                    <textarea name={`phase${number}Purpose`} required maxLength={700} />
+                  </label>
+                </div>
               </div>
             );
           })}
+          {phaseNotice ? (
+            <p className={styles.formStatus} role="status">
+              {phaseNotice}
+            </p>
+          ) : null}
           <div className={styles.fieldGrid}>
             <label className={styles.fullField}>
               Why Phase 1 leads the roadmap
@@ -352,28 +589,60 @@ export function StagedCompletionForm({
         </fieldset>
       </section>
 
-      <section className={styles.formCard}>
-        <fieldset
-          className={styles.formSection}
+      <section className={styles.formCard} id="authoring-evidence">
+        <h2>Evidence details are optional at setup</h2>
+        <p className={styles.muted}>
+          Complete the text-first roadmap now. After it is saved, the golfer hub provides
+          a direct Evidence destination for lessons, observations, and later review notes.
+        </p>
+      </section>
+
+      <section className={styles.formCard} id="authoring-package">
+        <details className={styles.optionalFields}>
+          <summary>Optional first-phase package</summary>
+          <fieldset className={styles.formSection} disabled={isLocked}>
+            <legend className={styles.muted}>Commercial context does not block coaching.</legend>
+            <label className={styles.fullField}>
+              Existing active package
+              <select name="firstPhasePackageId" defaultValue="">
+                <option value="">No package attached</option>
+                {packages.map((coachingPackage) => (
+                  <option key={coachingPackage.id} value={coachingPackage.id}>
+                    {coachingPackage.name}
+                  </option>
+                ))}
+              </select>
+              <small>
+                A package remains optional. Roadmap does not infer a purchase, booking, or
+                golfer commitment.
+              </small>
+            </label>
+          </fieldset>
+        </details>
+      </section>
+
+      <section className={styles.formCard} id="authoring-preview">
+        <h2>Preview this unsaved golfer-view candidate</h2>
+        <p className={styles.muted}>
+          Refresh the candidate after edits to review the exact words and phase order a
+          golfer will see. Completing the draft then unlocks the full shared renderer for
+          media, activity, print, and private-delivery review; it does not publish access.
+        </p>
+        <button
+          className={styles.secondaryButton}
+          type="button"
           disabled={isLocked}
+          onClick={refreshCandidatePreview}
         >
-          <legend>Optional first-phase package</legend>
-          <label className={styles.fullField}>
-            Existing active package
-            <select name="firstPhasePackageId" defaultValue="">
-              <option value="">No package attached</option>
-              {packages.map((coachingPackage) => (
-                <option key={coachingPackage.id} value={coachingPackage.id}>
-                  {coachingPackage.name}
-                </option>
-              ))}
-            </select>
-            <small>
-              A package remains optional. Roadmap does not infer a purchase, booking, or
-              golfer commitment.
-            </small>
-          </label>
-        </fieldset>
+          Refresh golfer preview
+        </button>
+        {candidatePreview ? (
+          <AuthoringCandidatePreview candidate={candidatePreview} />
+        ) : (
+          <p className={styles.muted} role="status">
+            No candidate is shown yet. Draft fields stay local until you explicitly save.
+          </p>
+        )}
       </section>
 
       <FormErrorSummary
@@ -429,7 +698,7 @@ export function StagedCompletionForm({
           className={styles.secondaryButton}
           type="button"
           disabled={isLocked}
-          onClick={() => router.push("/app/golfers")}
+          onClick={() => void saveAndReturnLater()}
         >
           Save and return later
         </button>
@@ -443,4 +712,38 @@ function splitLines(value: string): string[] {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
+}
+
+function setFormValue(form: HTMLFormElement, name: string, value: string) {
+  const control = form.elements.namedItem(name);
+  if (control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement) {
+    control.value = value;
+  }
+}
+
+function formValue(form: HTMLFormElement, name: string): string {
+  const control = form.elements.namedItem(name);
+  return control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement
+    ? control.value
+    : "";
+}
+
+function swapFormValues(form: HTMLFormElement, left: string, right: string) {
+  const leftValue = formValue(form, left);
+  const rightValue = formValue(form, right);
+  setFormValue(form, left, rightValue);
+  setFormValue(form, right, leftValue);
+}
+
+function completionSaveStateLabel(
+  state: "idle" | "saving" | "saved" | "error" | "reload_required",
+  recovery: AuthoringDraftUiState,
+): string {
+  if (state === "saving") return "Saving the complete roadmap draft and validating the response…";
+  if (state === "saved") return "Saved. The confirmed roadmap is ready to open.";
+  if (state === "reload_required") return "Authoritative state changed. Reload is required before another save.";
+  if (state === "error") return "Not saved. Your recoverable draft remains in this browser tab when available.";
+  if (recovery.kind === "checking") return "Checking this browser tab for a recoverable draft…";
+  if (recovery.kind === "restored") return "Recovered draft loaded. Changes are not saved to Roadmap yet.";
+  return "Changes are local until you complete the roadmap draft. Safe browser-tab recovery is enabled.";
 }

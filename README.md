@@ -18,8 +18,12 @@ deployment `appgdep_6a7826b2f4c481919cc85665dffa2391`, and environment revision 
 The deployment succeeded with provider `updated_at`
 `2026-08-09T07:05:36.176024Z`.
 The custom Sites policy has one owner, zero groups, and zero external visitors;
-Stripe Checkout remains disabled. This is a production deployment, not
-a public launch or accepted real-user release. Exact evidence and unresolved
+Stripe Checkout remains disabled. This is a provider production deployment used
+only as private staging/evidence, not a public launch, final paid host, or accepted
+real-user release. Under `TECH-006`, current official Sites constraints supersede
+Sites as the final paid live-V1 host. Direct Cloudflare Workers/D1/R2 is the
+least-change successor candidate to verify; it is not provisioned, deployed,
+public, data-migrated, or accepted. Exact evidence and unresolved
 operating dependencies are recorded in
 [`docs/RELEASE_EVIDENCE.md`](docs/RELEASE_EVIDENCE.md), the
 [exact version-16 release record](docs/release-evidence/ROADMAP-SITES-V16-2026-08-09.md),
@@ -191,20 +195,28 @@ Those captures use the local production Worker bundle, local compatible D1, and
 synthetic adults-only fixtures. They are not hosted journey evidence, manual
 accessibility review, assistive-technology evidence, or owner acceptance.
 
-## Runtime
+## Runtime and migration boundary
 
-- Vinext/React on OpenAI Sites and Cloudflare Workers
+- current staging: Vinext/React on owner-private OpenAI Sites/Cloudflare Workers
+- successor candidate: the same Worker-compatible bundle deployed directly to
+  Cloudflare Workers after explicit resource configuration and verification
 - Cloudflare D1 for tenant-owned structured records
-- private Cloudflare R2 binding for approved future media/export objects
-- dispatch-owned Sign in with ChatGPT for instructor identity
+- private Cloudflare R2 binding for policy-gated media and approved export objects
+- current staging identity: dispatch-owned Sign in with ChatGPT
+- required successor identity: provider-neutral, verified OIDC with revocable
+  server-side sessions; the local protocol boundary is implemented, while the exact
+  provider/policy remains unselected and unconfigured
+- 17 committed D1 migrations, `0000` through `0016_handy_green_goblin`
 - 256-bit, HMAC-fingerprinted, revision-scoped golfer capability links
 - Stripe-hosted Checkout and Customer Portal for the Roadmap SaaS subscription,
   with signed-webhook projection, authenticated read-only account refresh, and
   a packaged, locally exercised scheduled-recovery handler for existing provider-backed work
 
 No application password, card number, raw Stripe webhook payload, or raw share
-token is stored in D1. Media upload remains disabled until its exact consent,
-format, scanning, and retention policy is approved.
+token is stored in D1. Authenticated media upload, private delivery, replacement,
+and removal are implemented, but uploads fail closed unless R2, a valid bounded
+media policy, and any required consent are active. Exact real-user format,
+scanning, retention, and consent decisions remain owner/validation dependencies.
 
 ## Local setup
 
@@ -259,6 +271,12 @@ Public, non-secret variables:
   and `roadmap_sharing` is configured for `golfer` subjects; real processing
   still requires a matching current grant, and exact wording changes require a
   new version
+- `MEDIA_UPLOAD_POLICY_JSON`: strict bounded media-policy version, MIME allowlist,
+  byte/duration limits, and account/golfer consent requirements. Missing or invalid
+  configuration keeps upload unavailable while preserving text-first operation.
+  `maxBytes` must be an integer from 1,024 through 50,000,000. The route-owned
+  upload protocol enforces the configured file length while streaming into R2;
+  the exact live value within that implementation bound remains an owner decision
 
 Hosted secrets:
 
@@ -272,10 +290,16 @@ Hosted secrets:
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 
-Bindings declared in `.openai/hosting.json`:
+Sites staging bindings declared in `.openai/hosting.json`:
 
 - `DB`: D1 database
 - `MEDIA`: private R2 bucket
+
+The Sites manifest is not a direct-Cloudflare deployment approval. A successor
+profile must be generated from a fresh exact build with explicit non-secret Worker,
+D1, R2, and canonical HTTPS-origin values. Generated configuration and all secrets
+remain uncommitted. Release readiness must fail closed until public-host auth is
+configured and the exact hosted controls are exercised.
 
 Checkout stays unavailable when Stripe configuration is absent. Production
 share-token hashing fails closed when its pepper is absent. Public `/api/health`
@@ -302,7 +326,9 @@ bounded backoff and no Stripe object creation. It records a privacy-safe D1 hear
 for owner-operator health checks and safely performs no provider work when Stripe
 credentials or the complete billing policy are absent. The handler is locally exercised;
 hosted Sites trigger provisioning/invocation remains unproven and must not be relied on
-for paid operation until independently observed. Health, Stripe's signed webhook, and
+for paid operation. The direct successor must prove trigger provisioning, at least
+three successful heartbeats, privacy-safe logging, and alert delivery on its exact
+deployment. Health, Stripe's signed webhook, and
 golfer capability endpoints remain separate.
 
 ## Verification

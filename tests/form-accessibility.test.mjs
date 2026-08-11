@@ -105,7 +105,7 @@ test("first-party instructor mutation surfaces use the shared error summary with
       path: "../app/app/golfers/[golferId]/LivingPlanForms.tsx",
       summaryId: "living-plan-forms-error-summary",
       describedBy: /aria-describedby=\{ERROR_SUMMARY_ID\}/g,
-      associations: 5,
+      associations: 4,
       successStatus: true,
     },
     {
@@ -310,7 +310,7 @@ test(
         path: golferPath,
         title: "Golfer plan | Roadmap",
         summaries: [
-          ["living-plan-forms-error-summary", 4],
+          ["living-plan-forms-error-summary", 3],
           ["publish-controls-error-summary", 1],
         ],
       },

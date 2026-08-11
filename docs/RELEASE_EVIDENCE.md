@@ -4,12 +4,20 @@
 **Evidence opened:** 2026-08-07
 **Authority:** `AUTH-005`
 **Status:** owner-only Sites version 16 succeeded with additional failure,
-recovery, readiness, and scheduler hardening; `LOG-PRIV-001` remains High/open
-and blocks public launch or real-user operation
+recovery, readiness, and scheduler hardening; the direct-host OIDC/session
+successor is implemented and locally verified but undeployed; `LOG-PRIV-001`
+remains High/open for Sites and no host is approved for public real-user operation
 
 This file records evidence for one exact candidate. A command result supports only
 the scope it actually exercised. A successful private deployment is not Aaron's
 acceptance and is not evidence that unresolved policy or live operations work.
+
+The exact-release sections below remain bound to Sites version 16. The newer
+working-tree-only direct-host implementation has a separate
+[local pre-deployment record](release-evidence/ROADMAP-DIRECT-PREDEPLOY-2026-08-09.md):
+lint, type checking, production build, artifact integrity, and 389/389 tests pass;
+the contained 12-migration preflight is locally ready; provider and release stages
+remain false. No deployment or external configuration is implied.
 
 ## Implemented candidate boundary
 

@@ -43,6 +43,7 @@ const authoritativeLifecycleTables = [
   "golfer_goals",
   "golfer_plan_responses",
   "golfers",
+  "instructor_sessions",
   "instructor_profiles",
   "lessons",
   "media_assets",
@@ -59,6 +60,7 @@ const authoritativeLifecycleTables = [
 const operationalStateTables = [
   "abuse_rate_limits",
   "billing_account_operation_leases",
+  "oidc_login_transactions",
   "scheduler_heartbeat",
 ];
 const coveredSchemaTables = [
@@ -67,9 +69,12 @@ const coveredSchemaTables = [
 ].sort();
 const recoveryMutatedTables = new Set([
   "abuse_rate_limits",
+  "accounts",
   "billing_account_operation_leases",
   "billing_events",
   "billing_reconciliation_targets",
+  "instructor_sessions",
+  "oidc_login_transactions",
   "scheduler_heartbeat",
 ]);
 const expectedTableRowCounts = {
@@ -91,9 +96,11 @@ const expectedTableRowCounts = {
   golfer_goals: 2,
   golfer_plan_responses: 2,
   golfers: 2,
+  instructor_sessions: 3,
   instructor_profiles: 2,
   lessons: 2,
   media_assets: 2,
+  oidc_login_transactions: 2,
   phase_priorities: 2,
   phase_review_evidence: 1,
   phase_reviews: 1,
@@ -168,7 +175,9 @@ const baseVerificationStatements = [
      (select count(*) from audit_events) as audit_events,
      (select count(*) from data_requests) as data_requests,
      (select count(*) from subscriptions) as subscriptions,
-     (select count(*) from media_assets) as media_assets`,
+     (select count(*) from media_assets) as media_assets,
+     (select count(*) from oidc_login_transactions) as oidc_login_transactions,
+     (select count(*) from instructor_sessions) as instructor_sessions`,
   `select id, account_id, status, revision, approved_revision,
           published_revision
      from development_plans
@@ -370,7 +379,7 @@ try {
     "PASS D1 invariants: every column of every populated application table, foreign keys, tenant ownership, lifecycle state, audit order, data-request state, and billing projections survived restore.",
   );
   console.log(
-    "PASS post-restore normalization: in-flight account/event/reconciliation leases and the running scheduler were made retry-safe; expired rate-limit state was removed and the active window was preserved.",
+    "PASS post-restore normalization: every restored OIDC transaction was deleted, every restored instructor session was revoked and identity-version fenced, in-flight billing/scheduler work was made retry-safe, and expired rate-limit state was removed.",
   );
   console.log(
     `PASS local R2-compatible restore: ${r2Result.objectCount} private synthetic objects, ${r2Result.totalBytes} bytes, inventory and SHA-256 checks match D1 metadata.`,
@@ -597,6 +606,8 @@ function assertRepresentativeState(
       data_requests: 2,
       subscriptions: 2,
       media_assets: 2,
+      oidc_login_transactions: recoveryNormalized ? 0 : 2,
+      instructor_sessions: 3,
     },
   ]);
   assert.deepEqual(state[2], [
@@ -745,10 +756,13 @@ function assertRepresentativeState(
   for (const [tableName, expectedCount] of Object.entries(
     expectedTableRowCounts,
   )) {
-    const normalizedExpectedCount =
-      recoveryNormalized && tableName === "abuse_rate_limits"
+    const normalizedExpectedCount = recoveryNormalized
+      ? tableName === "abuse_rate_limits"
         ? 1
-        : expectedCount;
+        : tableName === "oidc_login_transactions"
+          ? 0
+          : expectedCount
+      : expectedCount;
     assert.equal(
       rowsByTable.get(tableName).length,
       normalizedExpectedCount,
@@ -776,6 +790,9 @@ function assertRepresentativeState(
   );
   const scheduler = rowsByTable.get("scheduler_heartbeat")[0];
   const rateLimits = rowsByTable.get("abuse_rate_limits");
+  const accounts = rowsByTable.get("accounts");
+  const instructorSessions = rowsByTable.get("instructor_sessions");
+  const oidcTransactions = rowsByTable.get("oidc_login_transactions");
 
   if (!recoveryNormalized) {
     assert.equal(betaLease.state, "held");
@@ -791,6 +808,33 @@ function assertRepresentativeState(
     assert.equal(scheduler.state, "running");
     assert.equal(scheduler.completed_at, null);
     assert.equal(rateLimits.length, 2);
+    assert.ok(accounts.every((account) => account.identity_version === 1));
+    assert.deepEqual(
+      oidcTransactions.map(({ state_hash, consumed_at }) => ({
+        state_hash,
+        consumed_at,
+      })),
+      [
+        { state_hash: "9".repeat(64), consumed_at: null },
+        { state_hash: "a".repeat(64), consumed_at: baseTimestamp + 30 },
+      ],
+    );
+    assert.deepEqual(
+      instructorSessions.map(({ id, revoked_at, revoke_reason }) => ({
+        id,
+        revoked_at,
+        revoke_reason,
+      })),
+      [
+        { id: "auth-session-alpha-live", revoked_at: null, revoke_reason: null },
+        {
+          id: "auth-session-alpha-revoked",
+          revoked_at: baseTimestamp + 40,
+          revoke_reason: "synthetic_prior_revocation",
+        },
+        { id: "auth-session-beta-expired", revoked_at: null, revoke_reason: null },
+      ],
+    );
     return;
   }
 
@@ -859,6 +903,38 @@ function assertRepresentativeState(
   assert.ok(
     rateLimits[0].window_expires_at > recoveryNormalizationTimestamp,
     "the active rate-limit window was not preserved",
+  );
+  assert.equal(oidcTransactions.length, 0);
+  assert.ok(accounts.every((account) => account.identity_version === 2));
+  assert.deepEqual(
+    instructorSessions.map(
+      ({ id, identity_version, revoked_at, revoke_reason }) => ({
+        id,
+        identity_version,
+        revoked_at,
+        revoke_reason,
+      }),
+    ),
+    [
+      {
+        id: "auth-session-alpha-live",
+        identity_version: 1,
+        revoked_at: recoveryNormalizationTimestamp,
+        revoke_reason: "restore_session_invalidation",
+      },
+      {
+        id: "auth-session-alpha-revoked",
+        identity_version: 1,
+        revoked_at: baseTimestamp + 40,
+        revoke_reason: "synthetic_prior_revocation",
+      },
+      {
+        id: "auth-session-beta-expired",
+        identity_version: 1,
+        revoked_at: recoveryNormalizationTimestamp,
+        revoke_reason: "restore_session_invalidation",
+      },
+    ],
   );
 }
 
@@ -953,6 +1029,15 @@ async function exerciseModifiedSnapshotDetection(
 
 function buildRecoveryNormalizationStatements() {
   return [
+    "delete from oidc_login_transactions",
+    `update instructor_sessions
+   set revoked_at = ${recoveryNormalizationTimestamp},
+       revoke_reason = 'restore_session_invalidation',
+       updated_at = ${recoveryNormalizationTimestamp}
+ where revoked_at is null`,
+    `update accounts
+   set identity_version = identity_version + 1,
+       updated_at = ${recoveryNormalizationTimestamp}`,
     `update billing_account_operation_leases
    set state = 'idle',
        operation = null,
@@ -1570,6 +1655,32 @@ values
   ('acct-beta', 'siwc', 'synthetic-subject-beta', 'beta@synthetic.invalid',
    'beta@synthetic.invalid', ${baseTimestamp + 1}, 'active', 'en-CA',
    'America/Toronto', ${baseTimestamp + 1}, ${baseTimestamp + 1});
+
+insert into oidc_login_transactions
+  (state_hash, sealed_payload, payload_iv, expires_at, consumed_at,
+   created_at, updated_at)
+values
+  (${value(token("9"))}, 'synthetic-expired-sealed-payload',
+   'abcdefghijklmnop', ${baseTimestamp + 100}, null,
+   ${baseTimestamp + 10}, ${baseTimestamp + 10}),
+  (${value(token("a"))}, 'synthetic-consumed-sealed-payload',
+   'ponmlkjihgfedcba', ${baseTimestamp + 900_000},
+   ${baseTimestamp + 30}, ${baseTimestamp + 20}, ${baseTimestamp + 30});
+
+insert into instructor_sessions
+  (id, account_id, identity_version, token_hash, authenticated_at,
+   expires_at, revoked_at, revoke_reason, created_at, updated_at)
+values
+  ('auth-session-alpha-live', 'acct-alpha', 1, ${value(token("5"))},
+   ${baseTimestamp + 10}, ${baseTimestamp + 900_000}, null, null,
+   ${baseTimestamp + 10}, ${baseTimestamp + 10}),
+  ('auth-session-alpha-revoked', 'acct-alpha', 1, ${value(token("6"))},
+   ${baseTimestamp + 20}, ${baseTimestamp + 900_000},
+   ${baseTimestamp + 40}, 'synthetic_prior_revocation',
+   ${baseTimestamp + 20}, ${baseTimestamp + 40}),
+  ('auth-session-beta-expired', 'acct-beta', 1, ${value(token("7"))},
+   ${baseTimestamp + 10}, ${baseTimestamp + 100}, null, null,
+   ${baseTimestamp + 10}, ${baseTimestamp + 10});
 
 insert into media_assets
   (id, account_id, storage_provider, object_key, status, media_kind, mime_type,

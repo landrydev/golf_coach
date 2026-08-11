@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import {
   identityHeaders,
   startD1Worker,
+  syntheticBillingCommercialPolicyJson,
   testOrigin,
   writeHeaders,
 } from "./support/d1-worker.mjs";
@@ -41,6 +42,9 @@ const stripeBindings = {
   SUBSCRIPTION_ENTITLEMENT_PRICE_IDS: PRICE_ID,
   SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS: "3600",
   STRIPE_CHECKOUT_SESSION_LIFETIME_SECONDS: "3600",
+  BILLING_COMMERCIAL_POLICY_JSON: syntheticBillingCommercialPolicyJson(PRICE_ID),
+  INSTRUCTOR_ACCESS_MODE: "subscription_required",
+  SUBSCRIPTION_ACCESS_STATUSES: "trialing,active",
   BILLING_CHECKOUT_ENABLED: "true",
 };
 

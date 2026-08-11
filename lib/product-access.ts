@@ -131,6 +131,7 @@ export async function ownerOperatorAccessGranted(input: {
 export async function evaluateInstructorRequestAccess(input: {
   pathname: string;
   authenticatedEmail: string | null;
+  authenticatedAccountId?: string | null;
   environment: ProductAccessEnvironment;
   nowMs?: number;
 }): Promise<InstructorAccessDecision> {
@@ -155,21 +156,37 @@ export async function evaluateInstructorRequestAccess(input: {
   if (!input.environment.DB) return "unavailable";
 
   try {
-    const subscription = await input.environment.DB.prepare(
-      `select s.status as status,
+    const accountId = input.authenticatedAccountId ?? null;
+    const subscriptionQuery = accountId
+      ? `select s.status as status,
               s.provider_price_id as providerPriceId,
               s.last_provider_sync_at as lastProviderSyncAt
          from accounts a
          join subscriptions s on s.account_id = a.id
-        where a.normalized_email = ?1
+        where a.id = ?1
+          and a.auth_provider = 'oidc'
+          and a.status = 'active'
           and s.provider = 'stripe'
         order by
           case when s.status in ('incomplete', 'trialing', 'active', 'past_due', 'paused', 'unpaid') then 0 else 1 end,
           s.last_provider_sync_at desc,
           s.updated_at desc
-        limit 1`,
-    )
-      .bind(normalizedEmail)
+        limit 1`
+      : `select s.status as status,
+              s.provider_price_id as providerPriceId,
+              s.last_provider_sync_at as lastProviderSyncAt
+         from accounts a
+         join subscriptions s on s.account_id = a.id
+        where a.normalized_email = ?1
+          and a.auth_provider <> 'oidc'
+          and s.provider = 'stripe'
+        order by
+          case when s.status in ('incomplete', 'trialing', 'active', 'past_due', 'paused', 'unpaid') then 0 else 1 end,
+          s.last_provider_sync_at desc,
+          s.updated_at desc
+        limit 1`;
+    const subscription = await input.environment.DB.prepare(subscriptionQuery)
+      .bind(accountId ?? normalizedEmail)
       .first<{
         status: string;
         providerPriceId: string | null;

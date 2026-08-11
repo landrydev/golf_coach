@@ -4,16 +4,27 @@ import {
   assessments,
   auditEvents,
   coachingPackages,
+  contentMediaAttachments,
   developmentPlans,
   evidenceItems,
   golferGoals,
   golferPlanResponses,
   golfers,
   instructorProfiles,
+  launchMonitorComparisonGroups,
+  launchMonitorComparisonMetrics,
+  launchMonitorMetrics,
+  launchMonitorSessions,
   lessons,
+  mediaAssetDetails,
+  mediaAssets,
+  milestones,
   phaseReviews,
+  phaseReviewSources,
   planPhases,
   planPriorities,
+  practiceAssignmentSnapshots,
+  practiceCheckIns,
   practiceItems,
   shareLinks,
   shareSessions,
@@ -53,6 +64,9 @@ const PLAN_PHASE_CAP = 4;
 const PLAN_LESSON_SNAPSHOT_CAP = 12;
 const PLAN_PRACTICE_SNAPSHOT_CAP = 8;
 const PLAN_EVIDENCE_SNAPSHOT_CAP = 20;
+const PLAN_MEDIA_SNAPSHOT_CAP = 24;
+const PLAN_COMPARISON_SNAPSHOT_CAP = 8;
+const PLAN_TIMELINE_SNAPSHOT_CAP = 60;
 
 export type PlanShareSummary = {
   id: string;
@@ -312,7 +326,7 @@ export async function getCoachPlanForGolfer(
         eq(developmentPlans.golferId, golferId),
       ),
     )
-    .orderBy(desc(developmentPlans.updatedAt))
+    .orderBy(desc(developmentPlans.updatedAt), desc(developmentPlans.id))
     .limit(1);
   if (!plan) return null;
   return assemblePlanView(accountId, plan);
@@ -1735,8 +1749,12 @@ export async function resolveShareSession(
   model: PlanViewModel;
   accountId: string;
   golferId: string;
+  planId: string;
+  planRevision: number;
   shareId: string;
+  linkTokenHash: string;
   sessionId: string;
+  sessionTokenHash: string;
   sessionContext: string;
   expiresAt: Date;
 } | null> {
@@ -1841,8 +1859,12 @@ export async function resolveShareSession(
     model,
     accountId: link.accountId,
     golferId: plan.golferId,
+    planId: plan.id,
+    planRevision: link.planRevision,
     shareId: link.id,
+    linkTokenHash: link.tokenHash,
     sessionId: session.id,
+    sessionTokenHash: tokenHash,
     sessionContext,
     expiresAt: session.expiresAt,
   };
@@ -2299,6 +2321,447 @@ async function assemblePlanView(
   const lessonRows = [...selectedLessonRows].sort(
     (left, right) => left.sequence - right.sequence,
   );
+  const [
+    practiceSnapshotRows,
+    checkInRows,
+    mediaRows,
+    comparisonRows,
+    milestoneRows,
+    timelineLessonRows,
+    timelinePracticeRows,
+    timelineReviewRows,
+    launchSessionRows,
+  ] = await Promise.all([
+    practiceRows.length
+      ? db
+          .select()
+          .from(practiceAssignmentSnapshots)
+          .where(
+            and(
+              eq(practiceAssignmentSnapshots.accountId, accountId),
+              eq(practiceAssignmentSnapshots.planId, plan.id),
+              inArray(
+                practiceAssignmentSnapshots.practiceItemId,
+                practiceRows.map((row) => row.id),
+              ),
+            ),
+          )
+      : Promise.resolve([]),
+    db
+      .select()
+      .from(practiceCheckIns)
+      .where(
+        and(
+          eq(practiceCheckIns.accountId, accountId),
+          eq(practiceCheckIns.planId, plan.id),
+        ),
+      )
+      .orderBy(desc(practiceCheckIns.occurredAt), desc(practiceCheckIns.id))
+      .limit(100),
+    db
+      .select({
+        attachment: contentMediaAttachments,
+        asset: mediaAssets,
+        details: mediaAssetDetails,
+      })
+      .from(contentMediaAttachments)
+      .innerJoin(
+        mediaAssets,
+        and(
+          eq(mediaAssets.accountId, contentMediaAttachments.accountId),
+          eq(mediaAssets.id, contentMediaAttachments.mediaAssetId),
+          eq(mediaAssets.status, "ready"),
+        ),
+      )
+      .leftJoin(
+        mediaAssetDetails,
+        and(
+          eq(mediaAssetDetails.accountId, mediaAssets.accountId),
+          eq(mediaAssetDetails.mediaAssetId, mediaAssets.id),
+        ),
+      )
+      .where(
+        and(
+          eq(contentMediaAttachments.accountId, accountId),
+          eq(contentMediaAttachments.planId, plan.id),
+          eq(contentMediaAttachments.status, "active"),
+        ),
+      )
+      .orderBy(asc(contentMediaAttachments.sortOrder), asc(contentMediaAttachments.createdAt))
+      .limit(PLAN_MEDIA_SNAPSHOT_CAP),
+    db
+      .select()
+      .from(launchMonitorComparisonGroups)
+      .where(
+        and(
+          eq(launchMonitorComparisonGroups.accountId, accountId),
+          eq(launchMonitorComparisonGroups.planId, plan.id),
+          eq(launchMonitorComparisonGroups.status, "active"),
+        ),
+      )
+      .orderBy(desc(launchMonitorComparisonGroups.createdAt))
+      .limit(PLAN_COMPARISON_SNAPSHOT_CAP),
+    db
+      .select()
+      .from(milestones)
+      .where(
+        and(
+          eq(milestones.accountId, accountId),
+          eq(milestones.planId, plan.id),
+          eq(milestones.status, "published"),
+        ),
+      )
+      .orderBy(desc(milestones.occurredAt))
+      .limit(20),
+    db
+      .select()
+      .from(lessons)
+      .where(
+        and(
+          eq(lessons.accountId, accountId),
+          eq(lessons.planId, plan.id),
+          inArray(lessons.status, ["planned", "scheduled", "completed", "canceled"]),
+        ),
+      )
+      .orderBy(desc(lessons.updatedAt))
+      .limit(30),
+    db
+      .select()
+      .from(practiceItems)
+      .where(
+        and(eq(practiceItems.accountId, accountId), eq(practiceItems.planId, plan.id)),
+      )
+      .orderBy(desc(practiceItems.updatedAt))
+      .limit(30),
+    db
+      .select()
+      .from(phaseReviews)
+      .where(
+        and(
+          eq(phaseReviews.accountId, accountId),
+          eq(phaseReviews.planId, plan.id),
+          inArray(phaseReviews.status, ["confirmed", "shared", "superseded"]),
+        ),
+      )
+      .orderBy(desc(phaseReviews.updatedAt), desc(phaseReviews.id))
+      .limit(20),
+    db
+      .select()
+      .from(launchMonitorSessions)
+      .where(
+        and(
+          eq(launchMonitorSessions.accountId, accountId),
+          eq(launchMonitorSessions.planId, plan.id),
+          eq(launchMonitorSessions.status, "committed"),
+        ),
+      )
+      .orderBy(desc(launchMonitorSessions.sessionDate))
+      .limit(20),
+  ]);
+  const lessonSummaryMetricRows = launchSessionRows.length
+    ? await db
+        .select({
+          id: launchMonitorMetrics.id,
+          sessionId: launchMonitorMetrics.sessionId,
+          displayName: launchMonitorMetrics.displayName,
+          numericValue: launchMonitorMetrics.numericValue,
+          unit: launchMonitorMetrics.unit,
+        })
+        .from(launchMonitorMetrics)
+        .where(
+          and(
+            eq(launchMonitorMetrics.accountId, accountId),
+            inArray(
+              launchMonitorMetrics.sessionId,
+              launchSessionRows.map((row) => row.id),
+            ),
+            eq(launchMonitorMetrics.isSummary, true),
+            eq(launchMonitorMetrics.isGolferFacing, true),
+          ),
+        )
+        .orderBy(asc(launchMonitorMetrics.sortOrder), asc(launchMonitorMetrics.id))
+    : [];
+  const reviewSourceRows = review
+    ? await db
+        .select()
+        .from(phaseReviewSources)
+        .where(
+          and(
+            eq(phaseReviewSources.accountId, accountId),
+            eq(phaseReviewSources.planId, plan.id),
+            eq(phaseReviewSources.phaseReviewId, review.id),
+          ),
+        )
+        .orderBy(asc(phaseReviewSources.sortOrder), asc(phaseReviewSources.id))
+        .limit(100)
+    : [];
+  const reviewCheckInIds = reviewSourceRows.flatMap((row) =>
+    row.practiceCheckInId ? [row.practiceCheckInId] : [],
+  );
+  const reviewCheckInRows = reviewCheckInIds.length
+    ? await db
+        .select({
+          id: practiceCheckIns.id,
+          practiceItemId: practiceCheckIns.practiceItemId,
+          completionStatus: practiceCheckIns.completionStatus,
+          occurredAt: practiceCheckIns.occurredAt,
+        })
+        .from(practiceCheckIns)
+        .where(
+          and(
+            eq(practiceCheckIns.accountId, accountId),
+            eq(practiceCheckIns.planId, plan.id),
+            inArray(practiceCheckIns.id, reviewCheckInIds),
+          ),
+        )
+    : [];
+  const reviewPracticeIds = new Set([
+    ...reviewSourceRows.flatMap((row) =>
+      row.practiceItemId ? [row.practiceItemId] : [],
+    ),
+    ...reviewCheckInRows.map((row) => row.practiceItemId),
+  ]);
+  const reviewLessonIds = reviewSourceRows.flatMap((row) =>
+    row.lessonId ? [row.lessonId] : [],
+  );
+  const reviewMediaIds = reviewSourceRows.flatMap((row) =>
+    row.mediaAssetId ? [row.mediaAssetId] : [],
+  );
+  const reviewSessionIds = reviewSourceRows.flatMap((row) =>
+    row.launchMonitorSessionId ? [row.launchMonitorSessionId] : [],
+  );
+  const reviewComparisonIds = reviewSourceRows.flatMap((row) =>
+    row.launchMonitorComparisonGroupId ? [row.launchMonitorComparisonGroupId] : [],
+  );
+  const reviewEvidenceIds = reviewSourceRows.flatMap((row) =>
+    row.evidenceItemId ? [row.evidenceItemId] : [],
+  );
+  const [
+    reviewLessonRows,
+    reviewPracticeRows,
+    reviewMediaRows,
+    reviewSessionRows,
+    reviewComparisonRows,
+    reviewEvidenceRows,
+  ] = await Promise.all([
+    reviewLessonIds.length
+      ? db
+          .select({ id: lessons.id, title: lessons.title })
+          .from(lessons)
+          .where(
+            and(
+              eq(lessons.accountId, accountId),
+              eq(lessons.planId, plan.id),
+              inArray(lessons.id, reviewLessonIds),
+            ),
+          )
+      : Promise.resolve([]),
+    reviewPracticeIds.size
+      ? db
+          .select({ id: practiceItems.id, title: practiceItems.title })
+          .from(practiceItems)
+          .where(
+            and(
+              eq(practiceItems.accountId, accountId),
+              eq(practiceItems.planId, plan.id),
+              inArray(practiceItems.id, [...reviewPracticeIds]),
+            ),
+          )
+      : Promise.resolve([]),
+    reviewMediaIds.length
+      ? db
+          .select({
+            id: mediaAssets.id,
+            caption: mediaAssets.caption,
+            altText: mediaAssets.altText,
+            originalFilename: mediaAssets.originalFilename,
+          })
+          .from(mediaAssets)
+          .where(
+            and(
+              eq(mediaAssets.accountId, accountId),
+              inArray(mediaAssets.id, reviewMediaIds),
+            ),
+          )
+      : Promise.resolve([]),
+    reviewSessionIds.length
+      ? db
+          .select({
+            id: launchMonitorSessions.id,
+            sessionDate: launchMonitorSessions.sessionDate,
+            deviceSource: launchMonitorSessions.deviceSource,
+            club: launchMonitorSessions.club,
+          })
+          .from(launchMonitorSessions)
+          .where(
+            and(
+              eq(launchMonitorSessions.accountId, accountId),
+              eq(launchMonitorSessions.planId, plan.id),
+              inArray(launchMonitorSessions.id, reviewSessionIds),
+            ),
+          )
+      : Promise.resolve([]),
+    reviewComparisonIds.length
+      ? db
+          .select({ id: launchMonitorComparisonGroups.id, title: launchMonitorComparisonGroups.title })
+          .from(launchMonitorComparisonGroups)
+          .where(
+            and(
+              eq(launchMonitorComparisonGroups.accountId, accountId),
+              eq(launchMonitorComparisonGroups.planId, plan.id),
+              inArray(launchMonitorComparisonGroups.id, reviewComparisonIds),
+            ),
+          )
+      : Promise.resolve([]),
+    reviewEvidenceIds.length
+      ? db
+          .select({ id: evidenceItems.id, title: evidenceItems.title })
+          .from(evidenceItems)
+          .where(
+            and(
+              eq(evidenceItems.accountId, accountId),
+              eq(evidenceItems.planId, plan.id),
+              inArray(evidenceItems.id, reviewEvidenceIds),
+            ),
+          )
+      : Promise.resolve([]),
+  ]);
+  const comparisonPairRows = comparisonRows.length
+    ? await db
+        .select()
+        .from(launchMonitorComparisonMetrics)
+        .where(
+          and(
+            eq(launchMonitorComparisonMetrics.accountId, accountId),
+            inArray(
+              launchMonitorComparisonMetrics.comparisonGroupId,
+              comparisonRows.map((row) => row.id),
+            ),
+          ),
+        )
+        .orderBy(asc(launchMonitorComparisonMetrics.sortOrder))
+    : [];
+  const comparisonMetricIds = comparisonPairRows.flatMap((row) => [
+    row.baselineMetricId,
+    row.currentMetricId,
+  ]);
+  const comparisonValueRows = comparisonMetricIds.length
+    ? await db
+        .select({ id: launchMonitorMetrics.id, numericValue: launchMonitorMetrics.numericValue })
+        .from(launchMonitorMetrics)
+        .where(
+          and(
+            eq(launchMonitorMetrics.accountId, accountId),
+            inArray(launchMonitorMetrics.id, comparisonMetricIds),
+          ),
+        )
+    : [];
+  const comparisonValues = new Map(
+    comparisonValueRows.map((row) => [row.id, Number(row.numericValue)]),
+  );
+  const practiceSnapshots = new Map(
+    practiceSnapshotRows.map((row) => [row.practiceItemId, row]),
+  );
+  const checkInsByPractice = new Map<string, typeof checkInRows>();
+  for (const checkIn of checkInRows) {
+    const existing = checkInsByPractice.get(checkIn.practiceItemId) ?? [];
+    existing.push(checkIn);
+    checkInsByPractice.set(checkIn.practiceItemId, existing);
+  }
+  const summaryMetricsBySession = new Map<string, typeof lessonSummaryMetricRows>();
+  for (const metric of lessonSummaryMetricRows) {
+    const existing = summaryMetricsBySession.get(metric.sessionId) ?? [];
+    existing.push(metric);
+    summaryMetricsBySession.set(metric.sessionId, existing);
+  }
+  const lessonTitles = new Map(
+    [...timelineLessonRows, ...reviewLessonRows].map((row) => [row.id, row.title]),
+  );
+  const reviewLessonLabels = new Map(
+    reviewLessonRows.map((row) => [row.id, row.title]),
+  );
+  const reviewPracticeLabels = new Map(
+    reviewPracticeRows.map((row) => [row.id, row.title]),
+  );
+  const reviewCheckInLabels = new Map(
+    reviewCheckInRows.map((row) => [
+      row.id,
+      `${reviewPracticeLabels.get(row.practiceItemId) ?? "Practice"} check-in · ${
+        row.completionStatus === "completed" ? "Completed" : "Not completed"
+      } · ${formatSourceDate(row.occurredAt)}`,
+    ]),
+  );
+  const reviewMediaLabels = new Map(
+    reviewMediaRows.map((row) => [
+      row.id,
+      row.caption || row.altText || row.originalFilename || "Selected media",
+    ]),
+  );
+  const reviewSessionLabels = new Map(
+    reviewSessionRows.map((row) => [
+      row.id,
+      `${row.deviceSource}${row.club ? ` · ${row.club}` : ""} · ${formatSourceDate(row.sessionDate)}`,
+    ]),
+  );
+  const reviewComparisonLabels = new Map(
+    reviewComparisonRows.map((row) => [row.id, row.title]),
+  );
+  const reviewEvidenceLabels = new Map(
+    reviewEvidenceRows.map((row) => [row.id, row.title]),
+  );
+  const selectedReviewSources = reviewSourceRows.flatMap((source) => {
+    const sourceId =
+      source.lessonId ??
+      source.practiceItemId ??
+      source.practiceCheckInId ??
+      source.mediaAssetId ??
+      source.launchMonitorSessionId ??
+      source.launchMonitorComparisonGroupId ??
+      source.evidenceItemId;
+    if (!sourceId) return [];
+    const lessonSnapshot =
+      source.sourceType === "lesson"
+        ? lessonReviewSourceSnapshot(source.sourceSnapshot)
+        : null;
+    const label =
+      source.sourceType === "lesson"
+        ? lessonSnapshot?.lesson.title ?? reviewLessonLabels.get(sourceId)
+        : source.sourceType === "practice"
+          ? reviewPracticeLabels.get(sourceId)
+          : source.sourceType === "practice_check_in"
+            ? reviewCheckInLabels.get(sourceId)
+            : source.sourceType === "media"
+              ? reviewMediaLabels.get(sourceId)
+              : source.sourceType === "launch_session"
+                ? reviewSessionLabels.get(sourceId)
+                : source.sourceType === "launch_comparison"
+                  ? reviewComparisonLabels.get(sourceId)
+                  : reviewEvidenceLabels.get(sourceId);
+    return [
+      {
+        id: sourceId,
+        sourceType: source.sourceType,
+        label: label ?? `${source.sourceType.replaceAll("_", " ")} record`,
+        sourcePlanRevision: source.sourcePlanRevision,
+        summary: lessonSnapshot
+          ? lessonSnapshot.lesson.coachObservation ||
+            lessonSnapshot.lesson.takeaway ||
+            lessonSnapshot.lesson.purpose
+          : null,
+        associations: lessonSnapshot
+          ? [
+              ...lessonSnapshot.evidence.map(
+                (item) => `Evidence: ${item.title} (${item.evidenceType.replaceAll("_", " ")})`,
+              ),
+              ...lessonSnapshot.launchSessions.map(
+                (session) =>
+                  `Measurement session: ${session.deviceSource}${session.club ? ` · ${session.club}` : ""}${session.sessionDate === null ? "" : ` · ${formatSourceDate(session.sessionDate)}`}`,
+              ),
+            ]
+          : [],
+      },
+    ];
+  });
   let packageRow: typeof coachingPackages.$inferSelect | undefined;
   if (currentOrRecommendedPhase?.coachingPackageId) {
     [packageRow] = await db
@@ -2313,6 +2776,8 @@ async function assemblePlanView(
       )
       .limit(1);
   }
+  const selectedLessonIds = new Set(lessonRows.map((lesson) => lesson.id));
+  const selectedPracticeIds = new Set(practiceRows.map((item) => item.id));
 
   return {
     coach: {
@@ -2320,6 +2785,8 @@ async function assemblePlanView(
       businessName: profile.businessName,
       contactEmail: profile.contactEmail,
       accentColor: profile.accentColor,
+      logoMediaAssetId: profile.logoMediaAssetId,
+      profilePhotoMediaAssetId: profile.profilePhotoMediaAssetId,
     },
     golfer: {
       displayName: golfer.preferredName || golfer.displayName,
@@ -2366,18 +2833,71 @@ async function assemblePlanView(
       title: lesson.title,
       summary: lesson.purpose,
       coachObservation: lesson.coachObservation,
+      golferLearning: lesson.golferLearning,
       takeaway: lesson.takeaway,
       nextCheck: lesson.nextCheck,
+      phaseConnection: lesson.phaseConnection,
+      status: lesson.status,
+      scheduledAt: toMillis(lesson.scheduledAt),
       happenedAt: toMillis(lesson.occurredAt),
+      selectedEvidence: evidenceRows
+        .filter((item) => item.lessonId === lesson.id)
+        .map((item) => ({
+          id: item.id,
+          title: item.title,
+          evidenceType: item.evidenceType,
+          summary:
+            item.interpretation || item.claim || "Evidence recorded without an interpretation.",
+        })),
+      selectedMeasurements: launchSessionRows
+        .filter((session) => session.lessonId === lesson.id)
+        .map((session) => ({
+          id: session.id,
+          label: `${session.deviceSource}${session.club ? ` · ${session.club}` : ""}`,
+          deviceSource: session.deviceSource,
+          club: session.club,
+          sessionDate: toMillis(session.sessionDate) ?? 0,
+          coachInterpretation: session.coachInterpretation,
+          metrics: (summaryMetricsBySession.get(session.id) ?? []).map((metric) => ({
+            displayName: metric.displayName,
+            numericValue: Number(metric.numericValue),
+            unit: metric.unit,
+          })),
+        })),
     })),
-    practiceItems: practiceRows.map((item) => ({
-      id: item.id,
-      title: item.title,
-      instructions: item.instructions.join("\n"),
-      dosage: item.timeOrCadence,
-      successSignal: item.successCheck,
-      status: item.status,
-    })),
+    practiceItems: practiceRows.map((item) => {
+      const snapshot = practiceSnapshots.get(item.id);
+      return {
+        id: item.id,
+        title: item.title,
+        instructions: item.instructions.join("\n"),
+        dosage: item.timeOrCadence,
+        successSignal: item.successCheck,
+        status: item.status,
+        purpose: snapshot?.purpose ?? item.objective,
+        whenItFits: snapshot?.whenItFits ?? item.rationale,
+        equipment: snapshot?.equipment ?? [],
+        setup: snapshot?.setup ?? null,
+        steps: snapshot?.steps ?? item.instructions,
+        feelOrCue: snapshot?.feelOrCue ?? null,
+        commonMiss: snapshot?.commonMiss ?? item.commonMistake,
+        stopOrAskRule: snapshot?.stopOrAskRule ?? item.stopOrAskRule,
+        constraintOrAdaptation:
+          snapshot?.constraintOrAdaptation ?? item.constraintNote,
+        progression: snapshot?.progression ?? null,
+        regression: snapshot?.regression ?? null,
+        dueAt: toMillis(item.dueAt),
+        checkIns: (checkInsByPractice.get(item.id) ?? []).map((checkIn) => ({
+          id: checkIn.id,
+          completionStatus: checkIn.completionStatus,
+          perceivedDifficulty: checkIn.perceivedDifficulty,
+          confidenceRating: checkIn.confidenceRating,
+          note: checkIn.note,
+          requestHelp: checkIn.requestHelp,
+          occurredAt: toMillis(checkIn.occurredAt) ?? 0,
+        })),
+      };
+    }),
     evidenceItems: evidenceRows.map((item) => ({
       id: item.id,
       title: item.title,
@@ -2390,6 +2910,16 @@ async function assemblePlanView(
       limitations: item.limitation,
       nextEvidenceNeeded: item.nextEvidenceNeeded,
       observedAt: toMillis(item.observedAt),
+      evidenceType: item.evidenceType,
+      comparisonRole: item.comparisonRole,
+      comparisonGroupId: item.comparisonGroupId,
+      metricName: item.metricName,
+      metricValue: item.metricValue,
+      metricUnit: item.metricUnit,
+      valueText: item.valueText,
+      isRepresentative: item.isRepresentative,
+      lessonId: item.lessonId,
+      lessonTitle: item.lessonId ? lessonTitles.get(item.lessonId) ?? null : null,
     })),
     phaseReview: review
       ? {
@@ -2403,8 +2933,151 @@ async function assemblePlanView(
           remainingOpportunity: review.remainingOpportunity,
           nextRecommendation: review.nextPhaseRationale || review.independentPracticeAlternative,
           decisionStatus: review.outcome,
+          sources: selectedReviewSources,
         }
       : null,
+    mediaItems: mediaRows.map(({ attachment, asset, details }) => ({
+      attachmentId: attachment.id,
+      mediaAssetId: asset.id,
+      mediaKind: asset.mediaKind,
+      mimeType: asset.mimeType,
+      altText: asset.altText,
+      caption: asset.caption,
+      transcript: asset.transcript,
+      widthPixels: asset.widthPixels,
+      heightPixels: asset.heightPixels,
+      durationMs: asset.durationMs,
+      capturedAt: toMillis(details?.capturedAt),
+      orientation: details?.orientation ?? "unknown",
+      viewLabel: details?.viewLabel,
+      coachContext: attachment.coachContext ?? details?.coachContext,
+      posterMediaAssetId: details?.posterMediaAssetId,
+      targetType: attachment.targetType,
+      targetLabel: targetLabelForAttachment(attachment, {
+        assessmentId: assessment.id,
+        lessons: lessonRows,
+        practice: practiceRows,
+        evidence: evidenceRows,
+        reviewId: review?.id ?? null,
+      }),
+      role: attachment.attachmentRole,
+    })),
+    launchComparisons: comparisonRows.map((comparison) => ({
+      id: comparison.id,
+      title: comparison.title,
+      coachInterpretation: comparison.coachInterpretation,
+      limitations: comparison.limitations,
+      nextEvidenceNeeded: comparison.nextEvidenceNeeded,
+      metrics: comparisonPairRows
+        .filter((pair) => pair.comparisonGroupId === comparison.id)
+        .flatMap((pair) => {
+          const baselineValue = comparisonValues.get(pair.baselineMetricId);
+          const currentValue = comparisonValues.get(pair.currentMetricId);
+          return baselineValue === undefined || currentValue === undefined
+            ? []
+            : [
+                {
+                  displayName: pair.displayName,
+                  unit: pair.unit,
+                  baselineValue,
+                  currentValue,
+                  delta: currentValue - baselineValue,
+                },
+              ];
+        }),
+    })),
+    milestones: milestoneRows.map((milestone) => ({
+      id: milestone.id,
+      title: milestone.title,
+      summary: milestone.summary,
+      occurredAt: toMillis(milestone.occurredAt) ?? 0,
+    })),
+    timeline: [
+      ...timelineLessonRows
+        .filter(
+          (lesson) =>
+            lesson.status !== "completed" || selectedLessonIds.has(lesson.id),
+        )
+        .map((lesson) => ({
+        id: lesson.id,
+        kind: "lesson",
+        title: lesson.title,
+        summary: lesson.takeaway ?? lesson.purpose,
+        status: lesson.status,
+        occurredAt:
+          toMillis(lesson.occurredAt) ??
+          toMillis(lesson.scheduledAt) ??
+          toMillis(lesson.createdAt) ??
+          0,
+        })),
+      ...timelinePracticeRows
+        .filter(
+          (item) =>
+            !["active", "completed", "paused"].includes(item.status) ||
+            selectedPracticeIds.has(item.id),
+        )
+        .map((item) => ({
+        id: item.id,
+        kind: "practice",
+        title: item.title,
+        summary: item.objective,
+        status: item.status,
+        occurredAt:
+          toMillis(item.completedAt) ?? toMillis(item.createdAt) ?? 0,
+        })),
+      ...checkInRows.map((checkIn) => ({
+        id: checkIn.id,
+        kind: "practice_check_in",
+        title: "Practice check-in",
+        summary: checkIn.note,
+        status: checkIn.requestHelp
+          ? "help_requested"
+          : checkIn.completionStatus,
+        occurredAt: toMillis(checkIn.occurredAt) ?? 0,
+      })),
+      ...evidenceRows.map((item) => ({
+        id: item.id,
+        kind: "evidence",
+        title: item.title,
+        summary: item.interpretation,
+        status: item.maturity,
+        occurredAt:
+          toMillis(item.observedAt) ?? toMillis(item.createdAt) ?? 0,
+      })),
+      ...launchSessionRows.map((session) => ({
+        id: session.id,
+        kind: "launch_session",
+        title: `${session.deviceSource}${session.club ? ` · ${session.club}` : ""}`,
+        summary: session.coachInterpretation,
+        status: session.representativeness,
+        occurredAt: toMillis(session.sessionDate) ?? 0,
+      })),
+      ...timelineReviewRows.map((timelineReview) => ({
+        id: timelineReview.id,
+        kind: "phase_review",
+        title: "Phase review",
+        summary: timelineReview.coachConclusion,
+        status: timelineReview.outcome,
+        occurredAt:
+          toMillis(timelineReview.sharedAt) ??
+          toMillis(timelineReview.confirmedAt) ??
+          toMillis(timelineReview.createdAt) ??
+          0,
+      })),
+      ...milestoneRows.map((milestone) => ({
+        id: milestone.id,
+        kind: "milestone",
+        title: milestone.title,
+        summary: milestone.summary,
+        status: milestone.status,
+        occurredAt: toMillis(milestone.occurredAt) ?? 0,
+      })),
+    ]
+      .sort(
+        (left, right) =>
+          right.occurredAt - left.occurredAt || left.id.localeCompare(right.id),
+      )
+      .slice(0, PLAN_TIMELINE_SNAPSHOT_CAP),
     coachingPackage: packageRow
       ? {
           title: packageRow.name,
@@ -2424,9 +3097,135 @@ async function assemblePlanView(
   };
 }
 
+type LessonReviewSourceSnapshot = {
+  lesson: {
+    title: string;
+    purpose: string;
+    coachObservation: string | null;
+    takeaway: string | null;
+  };
+  evidence: Array<{ id: string; title: string; evidenceType: string }>;
+  launchSessions: Array<{
+    id: string;
+    deviceSource: string;
+    club: string | null;
+    sessionDate: number | null;
+  }>;
+};
+
+function lessonReviewSourceSnapshot(value: unknown): LessonReviewSourceSnapshot | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const snapshot = value as Record<string, unknown>;
+  if (snapshot.version !== "lesson-review-source-v1") return null;
+  const lesson = snapshot.lesson;
+  if (!lesson || typeof lesson !== "object" || Array.isArray(lesson)) return null;
+  const lessonRecord = lesson as Record<string, unknown>;
+  if (typeof lessonRecord.title !== "string" || typeof lessonRecord.purpose !== "string") {
+    return null;
+  }
+  const evidence = Array.isArray(snapshot.evidence) ? snapshot.evidence : [];
+  const launchSessions = Array.isArray(snapshot.launchSessions)
+    ? snapshot.launchSessions
+    : [];
+  if (
+    evidence.some(
+      (item) =>
+        !item ||
+        typeof item !== "object" ||
+        Array.isArray(item) ||
+        typeof (item as Record<string, unknown>).id !== "string" ||
+        typeof (item as Record<string, unknown>).title !== "string" ||
+        typeof (item as Record<string, unknown>).evidenceType !== "string",
+    ) ||
+    launchSessions.some(
+      (item) =>
+        !item ||
+        typeof item !== "object" ||
+        Array.isArray(item) ||
+        typeof (item as Record<string, unknown>).id !== "string" ||
+        typeof (item as Record<string, unknown>).deviceSource !== "string",
+    )
+  ) {
+    return null;
+  }
+  return {
+    lesson: {
+      title: lessonRecord.title,
+      purpose: lessonRecord.purpose,
+      coachObservation:
+        typeof lessonRecord.coachObservation === "string"
+          ? lessonRecord.coachObservation
+          : null,
+      takeaway:
+        typeof lessonRecord.takeaway === "string" ? lessonRecord.takeaway : null,
+    },
+    evidence: evidence as LessonReviewSourceSnapshot["evidence"],
+    launchSessions: launchSessions.map((item) => {
+      const record = item as Record<string, unknown>;
+      return {
+        id: record.id as string,
+        deviceSource: record.deviceSource as string,
+        club: typeof record.club === "string" ? record.club : null,
+        sessionDate:
+          typeof record.sessionDate === "number" && Number.isSafeInteger(record.sessionDate)
+            ? record.sessionDate
+            : null,
+      };
+    }),
+  };
+}
+
+function targetLabelForAttachment(
+  attachment: typeof contentMediaAttachments.$inferSelect,
+  context: {
+    assessmentId: string;
+    lessons: Array<typeof lessons.$inferSelect>;
+    practice: Array<typeof practiceItems.$inferSelect>;
+    evidence: Array<typeof evidenceItems.$inferSelect>;
+    reviewId: string | null;
+  },
+): string {
+  if (
+    attachment.targetType === "assessment" &&
+    attachment.assessmentId === context.assessmentId
+  ) {
+    return "Starting assessment";
+  }
+  if (attachment.targetType === "lesson" && attachment.lessonId) {
+    return (
+      context.lessons.find((lesson) => lesson.id === attachment.lessonId)?.title ??
+      "Lesson"
+    );
+  }
+  if (attachment.targetType === "practice" && attachment.practiceItemId) {
+    return (
+      context.practice.find((item) => item.id === attachment.practiceItemId)?.title ??
+      "Practice assignment"
+    );
+  }
+  if (attachment.targetType === "evidence" && attachment.evidenceItemId) {
+    return (
+      context.evidence.find((item) => item.id === attachment.evidenceItemId)?.title ??
+      "Progress evidence"
+    );
+  }
+  if (
+    attachment.targetType === "phase_review" &&
+    attachment.phaseReviewId === context.reviewId
+  ) {
+    return "Phase review";
+  }
+  return attachment.label || "Coaching context";
+}
+
 function toMillis(value: Date | number | null | undefined): number | null {
   if (value == null) return null;
   return value instanceof Date ? value.getTime() : value;
+}
+
+function formatSourceDate(value: Date | number): string {
+  const epoch = toMillis(value);
+  return epoch === null ? "Date unavailable" : new Date(epoch).toISOString().slice(0, 10);
 }
 
 function requiredShareTimestamp(value: Date | number): number {

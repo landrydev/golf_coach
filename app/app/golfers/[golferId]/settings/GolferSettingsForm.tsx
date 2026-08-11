@@ -8,7 +8,10 @@ import {
   requestClientMutation,
   requireClientMutationSuccess,
 } from "@/lib/client-mutation-recovery";
-import { requiresAuthoritativeMutationReload } from "@/lib/client-terminal-mutation";
+import {
+  navigateToConfirmedDestination,
+  requiresAuthoritativeMutationReload,
+} from "@/lib/client-terminal-mutation";
 import {
   isGolferUpdatedResponse,
   requireExactClientMutationJson,
@@ -90,8 +93,7 @@ export function GolferSettingsForm(props: {
     setMessage("Golfer details saved. Open the authoritative golfer view to continue.");
     setBusy(null);
     try {
-      router.push(destination);
-      router.refresh();
+      navigateToConfirmedDestination(router, destination);
     } catch {
       // The confirmed edit remains terminal; the native destination stays available.
     }
@@ -142,8 +144,7 @@ export function GolferSettingsForm(props: {
     );
     setBusy(null);
     try {
-      router.push(destination);
-      router.refresh();
+      navigateToConfirmedDestination(router, destination);
     } catch {
       // The confirmed archive remains terminal; the native destination stays available.
     }

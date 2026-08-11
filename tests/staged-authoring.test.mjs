@@ -312,6 +312,382 @@ test(
   },
 );
 
+test(
+  "planless and equal-timestamp plan reads stay deterministic across resume, hub, and directory",
+  { timeout: 60_000 },
+  async (context) => {
+    const worker = await startD1Worker();
+    context.after(() => worker.dispose());
+
+    const profile = await jsonWrite(worker, "/api/profile", "PUT", coachA, {
+      displayName: coachA.name,
+      contactEmail: coachA.email,
+    });
+    assert.equal(profile.status, 200);
+    await grantSyntheticGolferRecordConsent(worker, coachA);
+    const tenantProfile = await jsonWrite(worker, "/api/profile", "PUT", coachB, {
+      displayName: coachB.name,
+      contactEmail: coachB.email,
+    });
+    assert.equal(tenantProfile.status, 200);
+    await grantSyntheticGolferRecordConsent(worker, coachB);
+
+    await worker.inspect([
+      {
+        sql: `insert into golfers (
+                id, account_id, display_name, contact_email, status,
+                eligibility_status, eligibility_confirmed_at, created_at, updated_at
+              )
+              select 'planless_directory_control', id, 'Planless Directory Control',
+                     'planless.directory.control@example.test', 'active',
+                     'adult_confirmed', 1786435200000, 1786435200000, 1786435200000
+                from accounts where normalized_email = ?`,
+        params: [coachA.email],
+      },
+      {
+        sql: `insert into golfers (
+                id, account_id, display_name, contact_email, status,
+                eligibility_status, eligibility_confirmed_at, archived_at,
+                created_at, updated_at
+              )
+              select 'archived_incomplete_control', id, 'Archived Incomplete Control',
+                     'archived.incomplete.control@example.test', 'archived',
+                     'adult_confirmed', 1786435200000, 1786435200000,
+                     1786435200000, 1786435200002
+                from accounts where normalized_email = ?`,
+        params: [coachA.email],
+      },
+      {
+        sql: `insert into development_plans (
+                id, account_id, golfer_id, title, status, revision,
+                archived_at, created_at, updated_at
+              )
+              select 'archived_incomplete_plan', id, 'archived_incomplete_control',
+                     'Archived Incomplete Roadmap', 'archived', 1,
+                     1786435200000, 1786435200000, 1786435200002
+                from accounts where normalized_email = ?`,
+        params: [coachA.email],
+      },
+      {
+        sql: `insert into golfer_goals (
+                id, account_id, golfer_id, plan_id, desired_outcome,
+                status, is_primary, created_at, updated_at
+              )
+              select 'archived_incomplete_goal', id, 'archived_incomplete_control',
+                     'archived_incomplete_plan', 'Retained archived goal.',
+                     'active', 1, 1786435200000, 1786435200002
+                from accounts where normalized_email = ?`,
+        params: [coachA.email],
+      },
+      {
+        sql: `insert into golfers (
+                id, account_id, display_name, contact_email, status,
+                eligibility_status, eligibility_confirmed_at, deletion_scheduled_at,
+                created_at, updated_at
+              )
+              select 'deletion_pending_planless_control', id,
+                     'Deletion Pending Planless Control',
+                     'deletion.pending.planless.control@example.test', 'deletion_pending',
+                     'adult_confirmed', 1786435200000, 1786521600000,
+                     1786435200000, 1786435200001
+                from accounts where normalized_email = ?`,
+        params: [coachA.email],
+      },
+      {
+        sql: `insert into data_requests (
+                id, account_id, golfer_id, request_type, requested_by_type,
+                status, details, identity_verified_at, due_at, created_at, updated_at
+              )
+              select 'deletion_pending_request_control', id,
+                     'deletion_pending_planless_control', 'deletion', 'account',
+                     'in_progress', 'Synthetic deletion-status control.',
+                     1786435200000, 1789113600000, 1786435200000, 1786435200001
+                from accounts where normalized_email = ?`,
+        params: [coachA.email],
+      },
+    ]);
+    const planlessPage = await worker.dispatch(
+      "/app/golfers?q=planless.directory.control%40example.test",
+      { headers: identityHeaders(coachA.email, coachA.name) },
+    );
+    assert.equal(planlessPage.status, 200);
+    const planlessHtml = await planlessPage.text();
+    assert.match(planlessHtml, /Planless Directory Control/);
+    assert.match(planlessHtml, /No development plan/);
+    assert.match(
+      planlessHtml,
+      /href="\/app\/golfers\/planless_directory_control\/recover"[^>]*>Review record recovery options<\/a>/,
+    );
+    assert.doesNotMatch(
+      planlessHtml,
+      /\/app\/golfers\/planless_directory_control\/complete/,
+    );
+    assert.doesNotMatch(planlessHtml, /Tie-break .* winner roadmap/);
+    const recordRecovery = await worker.dispatch(
+      "/app/golfers/planless_directory_control/recover",
+      { headers: identityHeaders(coachA.email, coachA.name) },
+    );
+    assert.equal(recordRecovery.status, 200);
+    const recordRecoveryHtml = await recordRecovery.text();
+    assert.match(recordRecoveryHtml, /No roadmap is attached/);
+    assert.match(recordRecoveryHtml, /Create a distinct golfer roadmap/);
+    assert.match(recordRecoveryHtml, /Open data controls/);
+    const tenantBlockedRecovery = await worker.dispatch(
+      "/app/golfers/planless_directory_control/recover",
+      { headers: identityHeaders(coachB.email, coachB.name) },
+    );
+    assert.equal(tenantBlockedRecovery.status, 404);
+
+    const archivedPage = await worker.dispatch(
+      "/app/golfers?q=archived.incomplete.control%40example.test&status=archived",
+      { headers: identityHeaders(coachA.email, coachA.name) },
+    );
+    assert.equal(archivedPage.status, 200);
+    const archivedHtml = await archivedPage.text();
+    assert.match(archivedHtml, /Archived Incomplete Roadmap/);
+    assert.match(
+      archivedHtml,
+      /href="\/app\/golfers\/archived_incomplete_control"[^>]*>View archived record<\/a>/,
+    );
+    assert.doesNotMatch(
+      archivedHtml,
+      /\/app\/golfers\/archived_incomplete_control\/(?:complete|recover)/,
+    );
+    const archivedHub = await worker.dispatch(
+      "/app/golfers/archived_incomplete_control",
+      { headers: identityHeaders(coachA.email, coachA.name) },
+    );
+    assert.equal(archivedHub.status, 200);
+    const archivedHubHtml = await archivedHub.text();
+    assert.match(archivedHubHtml, /Archived Incomplete Roadmap/);
+    assert.match(archivedHubHtml, /archived[^<]*read-only/i);
+
+    const deletionPendingPage = await worker.dispatch(
+      "/app/golfers?q=deletion.pending.planless.control%40example.test&status=deletion_pending",
+      { headers: identityHeaders(coachA.email, coachA.name) },
+    );
+    assert.equal(deletionPendingPage.status, 200);
+    const deletionPendingHtml = await deletionPendingPage.text();
+    assert.match(deletionPendingHtml, /Deletion Pending Planless Control/);
+    assert.match(
+      deletionPendingHtml,
+      /href="\/app\/settings\/data"[^>]*>Review data-request status<\/a>/,
+    );
+    assert.doesNotMatch(
+      deletionPendingHtml,
+      /\/app\/golfers\/deletion_pending_planless_control\/(?:complete|recover)/,
+    );
+    const dataControls = await worker.dispatch("/app/settings/data", {
+      headers: identityHeaders(coachA.email, coachA.name),
+    });
+    assert.equal(dataControls.status, 200);
+    assert.match(await dataControls.text(), /Review in progress/);
+
+    const commandCentrePage = await worker.dispatch("/app", {
+      headers: identityHeaders(coachA.email, coachA.name),
+    });
+    assert.equal(commandCentrePage.status, 200);
+    const commandCentreHtml = await commandCentrePage.text();
+    assert.match(commandCentreHtml, /Planless Directory Control/);
+    assert.match(commandCentreHtml, /Archived Incomplete Control/);
+    assert.match(commandCentreHtml, /Deletion Pending Planless Control/);
+    assert.match(commandCentreHtml, /Review record recovery options/);
+    assert.match(
+      commandCentreHtml,
+      /href="\/app\/golfers\/planless_directory_control\/recover"[^>]*>Open task<\/a>/,
+    );
+    assert.match(
+      commandCentreHtml,
+      /href="\/app\/golfers\/archived_incomplete_control"[^>]*>Open task<\/a>/,
+    );
+    assert.match(
+      commandCentreHtml,
+      /href="\/app\/settings\/data"[^>]*>Open task<\/a>/,
+    );
+    assert.doesNotMatch(
+      commandCentreHtml,
+      /\/app\/golfers\/(?:planless_directory_control|archived_incomplete_control|deletion_pending_planless_control)\/complete/,
+    );
+
+    const stagedResponse = await stageGolfer(
+      worker,
+      "latest-plan-tie-staged-0001",
+      stagedPayload("Staged Tie Golfer"),
+    );
+    assert.equal(stagedResponse.status, 201);
+    const staged = await stagedResponse.json();
+    const stagedWinnerPlanId = "zzzz_latest_staged_plan";
+    const stagedWinnerTitle = "Tie-break staged winner roadmap";
+    const stagedWinnerGoal = "Tie-break staged winner goal.";
+    await worker.inspect([
+      clonePlanQuery(staged.plan.id, stagedWinnerPlanId, stagedWinnerTitle),
+      cloneGoalQuery(
+        staged.plan.id,
+        stagedWinnerPlanId,
+        "zzzz_latest_staged_goal",
+        stagedWinnerGoal,
+      ),
+    ]);
+
+    const resumePage = await worker.dispatch(
+      `/app/golfers/${staged.golfer.id}/complete`,
+      { headers: identityHeaders(coachA.email, coachA.name) },
+    );
+    assert.equal(resumePage.status, 200);
+    const resumeHtml = await resumePage.text();
+    assert.match(resumeHtml, new RegExp(escapeRegExp(stagedWinnerTitle)));
+    assert.match(resumeHtml, new RegExp(escapeRegExp(stagedWinnerGoal)));
+    assert.doesNotMatch(
+      resumeHtml,
+      new RegExp(escapeRegExp(staged.plan.title)),
+    );
+    const stagedDirectory = await worker.dispatch(
+      `/app/golfers?q=${encodeURIComponent(stagedWinnerTitle)}&status=setup_incomplete`,
+      { headers: identityHeaders(coachA.email, coachA.name) },
+    );
+    assert.equal(stagedDirectory.status, 200);
+    const stagedDirectoryHtml = await stagedDirectory.text();
+    assert.match(
+      stagedDirectoryHtml,
+      new RegExp(escapeRegExp(stagedWinnerTitle)),
+    );
+    assert.match(
+      stagedDirectoryHtml,
+      new RegExp(
+        `href="/app/golfers/${escapeRegExp(staged.golfer.id)}/complete"[^>]*>Continue roadmap setup</a>`,
+      ),
+    );
+    assert.doesNotMatch(
+      stagedDirectoryHtml,
+      new RegExp(escapeRegExp(staged.plan.title)),
+    );
+
+    const coachResponse = await stageGolfer(
+      worker,
+      "latest-plan-tie-coach-0002",
+      stagedPayload("Coach Tie Golfer"),
+    );
+    assert.equal(coachResponse.status, 201);
+    const coach = await coachResponse.json();
+    await grantSyntheticRoadmapSharingConsent(worker, coachA, coach.golfer.id);
+    const completed = await completeGolfer(
+      worker,
+      coachA,
+      coach.golfer.id,
+      coach.plan.id,
+      1,
+      completionPayload(3),
+    );
+    assert.equal(completed.status, 200);
+
+    const coachWinnerPlanId = "zzzz_latest_coach_plan";
+    const coachWinnerTitle = "Tie-break coach winner roadmap";
+    const coachWinnerGoal = "Tie-break coach winner goal.";
+    const coachWinnerAssessmentId = "zzzz_latest_coach_assessment";
+    await worker.inspect([
+      clonePlanQuery(coach.plan.id, coachWinnerPlanId, coachWinnerTitle),
+      cloneGoalQuery(
+        coach.plan.id,
+        coachWinnerPlanId,
+        "zzzz_latest_coach_goal",
+        coachWinnerGoal,
+      ),
+      {
+        sql: `insert into assessments (
+                id, account_id, plan_id, title, status, assessed_at, context,
+                starting_point, strength_summary, primary_pattern, limitations,
+                coach_approved_at, superseded_at, archived_at, created_at, updated_at
+              )
+              select ?, account_id, ?, title, status, assessed_at, context,
+                     starting_point, strength_summary, primary_pattern, limitations,
+                     coach_approved_at, superseded_at, archived_at, created_at, updated_at
+                from assessments where plan_id = ? limit 1`,
+        params: [coachWinnerAssessmentId, coachWinnerPlanId, coach.plan.id],
+      },
+      {
+        sql: `insert into plan_priorities (
+                id, account_id, plan_id, assessment_id, title, description,
+                rationale, status, sort_order, is_current, coach_approved_at,
+                resolved_at, archived_at, created_at, updated_at
+              )
+              select ?, account_id, ?, ?, title, description,
+                     rationale, status, sort_order, is_current, coach_approved_at,
+                     resolved_at, archived_at, created_at, updated_at
+                from plan_priorities
+               where plan_id = ? and is_current = 1 limit 1`,
+        params: [
+          "zzzz_latest_coach_priority",
+          coachWinnerPlanId,
+          coachWinnerAssessmentId,
+          coach.plan.id,
+        ],
+      },
+      {
+        sql: `insert into plan_phases (
+                id, account_id, plan_id, coaching_package_id, sequence, title,
+                purpose, rationale, progress_signals, expectations,
+                estimated_duration, status, is_recommended, coach_approved_at,
+                started_at, paused_at, completed_at, revised_at, canceled_at,
+                created_at, updated_at
+              )
+              select ? || printf('%02d', sequence), account_id, ?, null, sequence,
+                     title, purpose, rationale, progress_signals, expectations,
+                     estimated_duration, status, is_recommended, coach_approved_at,
+                     started_at, paused_at, completed_at, revised_at, canceled_at,
+                     created_at, updated_at
+                from plan_phases where plan_id = ?`,
+        params: [
+          "zzzz_latest_coach_phase_",
+          coachWinnerPlanId,
+          coach.plan.id,
+        ],
+      },
+    ]);
+
+    const [tieRows] = await worker.inspect([
+      {
+        sql: `select id, updated_at as updatedAt
+                from development_plans
+               where golfer_id = ?
+               order by updated_at desc, id desc`,
+        params: [coach.golfer.id],
+      },
+    ]);
+    assert.deepEqual(
+      tieRows.results.map(({ id }) => id),
+      [coachWinnerPlanId, coach.plan.id],
+    );
+    assert.equal(tieRows.results[0].updatedAt, tieRows.results[1].updatedAt);
+
+    const hubPage = await worker.dispatch(`/app/golfers/${coach.golfer.id}`, {
+      headers: identityHeaders(coachA.email, coachA.name),
+    });
+    assert.equal(hubPage.status, 200);
+    const hubHtml = await hubPage.text();
+    assert.match(hubHtml, new RegExp(escapeRegExp(coachWinnerTitle)));
+    assert.match(hubHtml, new RegExp(escapeRegExp(coachWinnerGoal)));
+    assert.doesNotMatch(hubHtml, new RegExp(escapeRegExp(coach.plan.title)));
+
+    const directoryPage = await worker.dispatch(
+      `/app/golfers?q=${encodeURIComponent(coachWinnerTitle)}&status=draft&phase=active&review=needs_review`,
+      { headers: identityHeaders(coachA.email, coachA.name) },
+    );
+    assert.equal(directoryPage.status, 200);
+    const directoryHtml = await directoryPage.text();
+    assert.match(directoryHtml, new RegExp(escapeRegExp(coachWinnerTitle)));
+    assert.match(
+      directoryHtml,
+      new RegExp(
+        `href="/app/golfers/${escapeRegExp(coach.golfer.id)}"[^>]*>Review draft</a>`,
+      ),
+    );
+    assert.doesNotMatch(
+      directoryHtml,
+      new RegExp(`/app/golfers/${escapeRegExp(coach.golfer.id)}/complete`),
+    );
+  },
+);
+
 function stagedPayload(displayName) {
   return {
     adultEligibilityConfirmed: true,
@@ -392,4 +768,44 @@ function jsonWrite(worker, path, method, identity, body) {
     headers: writeHeaders(identity.email, identity.name),
     body: JSON.stringify(body),
   });
+}
+
+function clonePlanQuery(sourcePlanId, targetPlanId, title) {
+  return {
+    sql: `insert into development_plans (
+            id, account_id, golfer_id, title, status, revision,
+            approved_revision, published_revision, welcome_note,
+            assessment_context, current_coach_note, current_coach_note_at,
+            private_context_label, coach_approved_at, previewed_at,
+            published_at, last_shared_at, paused_at, completed_at, archived_at,
+            created_at, updated_at
+          )
+          select ?, account_id, golfer_id, ?, 'draft', revision,
+                 null, null, welcome_note, assessment_context, current_coach_note,
+                 current_coach_note_at, private_context_label, null, null,
+                 null, null, null, null, null, created_at, updated_at
+            from development_plans where id = ?`,
+    params: [targetPlanId, title, sourcePlanId],
+  };
+}
+
+function cloneGoalQuery(sourcePlanId, targetPlanId, targetGoalId, desiredOutcome) {
+  return {
+    sql: `insert into golfer_goals (
+            id, account_id, golfer_id, plan_id, desired_outcome, why_it_matters,
+            context, constraints, score_or_handicap_context, target_date, status,
+            is_primary, confirmed_by_golfer_at, coach_approved_at, achieved_at,
+            revised_at, archived_at, created_at, updated_at
+          )
+          select ?, account_id, golfer_id, ?, ?, why_it_matters,
+                 context, constraints, score_or_handicap_context, target_date,
+                 'active', 1, confirmed_by_golfer_at, coach_approved_at, null,
+                 null, null, created_at, updated_at
+            from golfer_goals where plan_id = ? and is_primary = 1 limit 1`,
+    params: [targetGoalId, targetPlanId, desiredOutcome, sourcePlanId],
+  };
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

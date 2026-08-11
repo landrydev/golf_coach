@@ -2,6 +2,10 @@ import {
   isStripePriceId,
   readBillingPolicy,
 } from "@/lib/billing-policy";
+import {
+  billingCommercialPolicyMatchesPrice,
+  configuredBillingCommercialPolicy,
+} from "@/lib/billing-commercial-policy";
 import type {
   StripeSubscriptionProjection,
   SubscriptionStatus,
@@ -138,6 +142,27 @@ export function parseStripeSubscriptionProjection(
       "The configured subscription interval is unsupported.",
     );
   }
+  const currency =
+    currencyValue(price.currency) ?? currencyValue(subscription.currency);
+  const unitAmountMinor = minorAmount(price.unit_amount);
+  const commercialPolicy = configuredBillingCommercialPolicy();
+  if (
+    commercialPolicy &&
+    commercialPolicy.priceId === billingPolicy.checkoutPriceId &&
+    providerPriceId === billingPolicy.checkoutPriceId &&
+    !billingCommercialPolicyMatchesPrice({
+      policy: commercialPolicy,
+      priceId: providerPriceId,
+      currency,
+      amountMinor: unitAmountMinor,
+      billingInterval: interval,
+    })
+  ) {
+    throw invalid(
+      "billing_commercial_policy_mismatch",
+      "The provider Price does not match the configured commercial policy.",
+    );
+  }
 
   const customerId = objectId(subscription.customer);
   if (!customerId || !/^cus_[A-Za-z0-9_]+$/.test(customerId)) {
@@ -161,9 +186,8 @@ export function parseStripeSubscriptionProjection(
     providerPriceId,
     status: mapSubscriptionStatus(subscription.status),
     billingInterval: interval,
-    currency:
-      currencyValue(price.currency) ?? currencyValue(subscription.currency),
-    unitAmountMinor: minorAmount(price.unit_amount),
+    currency,
+    unitAmountMinor,
     trialStartsAt: optionalSecondsToDate(subscription.trial_start),
     trialEndsAt: optionalSecondsToDate(subscription.trial_end),
     currentPeriodStartsAt: optionalSecondsToDate(

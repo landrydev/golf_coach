@@ -16,6 +16,7 @@ register(new URL("./support/cloudflare-loader.mjs", import.meta.url));
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const appRoot = resolve(projectRoot, "app");
+const BUILT_APP_ORIGIN = "https://roadmap-route-matrix.chatgpt.site";
 
 test("the unused image optimization proxy is absent from the Worker boundary", async () => {
   const source = await readFile(resolve(projectRoot, "worker/index.ts"), "utf8");
@@ -92,7 +93,7 @@ test(
         assert.equal(
           response.status,
           403,
-          `${mutation.method} ${mutation.routePath} accepted ${scenario.label}`,
+          `${mutation.method} ${mutation.routePath} accepted ${scenario.label}: ${await response.clone().text()}`,
         );
         assert.equal(
           (await response.json()).error.code,
@@ -148,12 +149,17 @@ test(
       [
         "/app",
         "/app/billing",
+        "/app/coaching/drills",
+        "/app/coaching/plans/[planId]",
+        "/app/coaching/roadmaps",
         "/app/golfers",
         "/app/golfers/[golferId]",
         "/app/golfers/[golferId]/complete",
         "/app/golfers/[golferId]/edit",
+        "/app/golfers/[golferId]/recover",
         "/app/golfers/[golferId]/settings",
         "/app/golfers/new",
+        "/app/media",
         "/app/packages",
         "/app/settings",
         "/app/settings/data",
@@ -196,12 +202,28 @@ test(
       writeCapableGetApis,
       [
         "/api/account/shares",
+        "/api/coaching/drills",
+        "/api/coaching/drills/[drillId]/media",
+        "/api/coaching/plans/[planId]/workspace",
+        "/api/coaching/roadmaps",
         "/api/consents",
         "/api/data-requests",
         "/api/golfers",
+        "/api/media",
+        "/api/media/[mediaId]",
         "/api/operations/data-requests",
         "/api/operations/data-requests/[requestId]",
         "/api/packages",
+        "/api/plans/[planId]/coaching/launch/comparisons",
+        "/api/plans/[planId]/coaching/launch/comparisons/[comparisonId]",
+        "/api/plans/[planId]/coaching/launch/imports",
+        "/api/plans/[planId]/coaching/launch/sessions",
+        "/api/plans/[planId]/coaching/launch/sessions/[sessionId]",
+        "/api/plans/[planId]/coaching/media",
+        "/api/plans/[planId]/coaching/milestones",
+        "/api/plans/[planId]/coaching/practice",
+        "/api/plans/[planId]/coaching/reviews/[reviewId]/sources",
+        "/api/plans/[planId]/coaching/timeline",
         "/api/profile",
       ].sort(),
     );
@@ -445,11 +467,14 @@ test("Worker access classification covers every instructor page, RSC request, an
 
   for (const publicPath of [
     "/",
+    "/demo",
     "/privacy",
     "/support",
     "/terms",
     "/r",
     "/r/plan",
+    "/r/media/synthetic-route-id",
+    "/r/practice-check-in",
     "/r/session",
     "/r/response",
   ]) {
@@ -691,21 +716,30 @@ async function fetchBuiltApp(path, init, environment = {}) {
   builtWorkerPromise ??= import(new URL("../dist/server/index.js", import.meta.url))
     .then(({ default: worker }) => worker);
   const worker = await builtWorkerPromise;
-  return worker.fetch(
-    new Request(new URL(path, "https://roadmap.example"), init),
-    {
-      ASSETS: {
-        fetch: async () => {
-          throw new Error("Origin validation reached static assets");
+  const previousApplicationUrl = process.env.APP_URL;
+  process.env.APP_URL = BUILT_APP_ORIGIN;
+  try {
+    return await worker.fetch(
+      new Request(new URL(path, BUILT_APP_ORIGIN), init),
+      {
+        APP_URL: BUILT_APP_ORIGIN,
+        INSTRUCTOR_AUTH_MODE: "sites_siwc",
+        ASSETS: {
+          fetch: async () => {
+            throw new Error("Origin validation reached static assets");
+          },
         },
+        ...environment,
       },
-      ...environment,
-    },
-    {
-      waitUntil() {},
-      passThroughOnException() {},
-    },
-  );
+      {
+        waitUntil() {},
+        passThroughOnException() {},
+      },
+    );
+  } finally {
+    if (previousApplicationUrl === undefined) delete process.env.APP_URL;
+    else process.env.APP_URL = previousApplicationUrl;
+  }
 }
 
 async function assertAccessClassification(path, expected) {

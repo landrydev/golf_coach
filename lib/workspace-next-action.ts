@@ -1,27 +1,37 @@
 import type { GolferListItem } from "./repository";
 
+type WorkspaceActionGolfer = Pick<GolferListItem, "id" | "status"> & {
+  plan: Pick<NonNullable<GolferListItem["plan"]>, "status" | "authoringComplete"> | null;
+};
+
 export type WorkspaceNextAction = {
   label: string;
   explanation: string;
+  href: string;
 };
 
-export function workspaceNextAction(golfer: GolferListItem): WorkspaceNextAction {
-  if (golfer.status === "archived" || golfer.plan?.status === "archived") {
-    return {
-      label: "View archived record",
-      explanation: "Read-only history; no new private access is available.",
-    };
-  }
+export function workspaceNextAction(golfer: WorkspaceActionGolfer): WorkspaceNextAction {
+  const golferHref = `/app/golfers/${encodeURIComponent(golfer.id)}`;
   if (golfer.status === "deletion_pending") {
     return {
       label: "Review data-request status",
       explanation: "A deletion review is open; no deletion is implied.",
+      href: "/app/settings/data",
+    };
+  }
+  if (golfer.status === "archived" || golfer.plan?.status === "archived") {
+    return {
+      label: "View archived record",
+      explanation: "Read-only history; no new private access is available.",
+      href: golfer.plan ? golferHref : `${golferHref}/recover`,
     };
   }
   if (!golfer.plan) {
     return {
-      label: "Continue setup",
-      explanation: "Complete the minimum goal and coach-authored roadmap.",
+      label: "Review record recovery options",
+      explanation:
+        "No roadmap is attached to this retained golfer record; review record-specific options before creating or changing another record.",
+      href: `${golferHref}/recover`,
     };
   }
   if (golfer.plan.authoringComplete === false) {
@@ -29,12 +39,13 @@ export function workspaceNextAction(golfer: GolferListItem): WorkspaceNextAction
       label: "Continue roadmap setup",
       explanation:
         "The saved identity, title, and goal are private; complete the real coaching content before review or publication.",
+      href: `${golferHref}/complete`,
     };
   }
 
   const actions: Record<
     NonNullable<GolferListItem["plan"]>["status"],
-    WorkspaceNextAction
+    Omit<WorkspaceNextAction, "href">
   > = {
     draft: {
       label: "Review draft",
@@ -61,5 +72,5 @@ export function workspaceNextAction(golfer: GolferListItem): WorkspaceNextAction
       explanation: "Read-only history; no new private access is available.",
     },
   };
-  return actions[golfer.plan.status];
+  return { ...actions[golfer.plan.status], href: golferHref };
 }

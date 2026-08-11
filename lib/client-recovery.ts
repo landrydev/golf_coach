@@ -4,6 +4,10 @@ import {
   clientMutationResponseRequestId,
   requestClientMutation,
 } from "./client-mutation-recovery.ts";
+import {
+  BROWSER_SHARE_EXCHANGE_MEDIA_TYPE,
+  isUnavailableShareExchangePayload,
+} from "./share-exchange-browser-contract.ts";
 
 type ClientFetch = (
   input: RequestInfo | URL,
@@ -582,7 +586,10 @@ export async function requestShareExchange(
       "/r/session",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          Accept: BROWSER_SHARE_EXCHANGE_MEDIA_TYPE,
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ token }),
         cache: "no-store",
         credentials: "same-origin",
@@ -601,6 +608,9 @@ export async function requestShareExchange(
       return { kind: "retryable", ...requestReference };
     }
     const payload = await response.json().catch(() => null);
+    if (isUnavailableShareExchangePayload(payload)) {
+      return { kind: "unavailable", ...requestReference };
+    }
     if (!validShareExchangePayload(payload)) {
       return { kind: "retryable", ...requestReference };
     }

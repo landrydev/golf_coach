@@ -31,6 +31,7 @@ import {
   requestClientMutation,
   requireClientMutationJson,
 } from "@/lib/client-mutation-recovery";
+import { navigateToConfirmedDestination } from "@/lib/client-terminal-mutation";
 import styles from "../../workspace.module.css";
 
 type PackageOption = { id: string; name: string; fitDescription: string };
@@ -53,6 +54,7 @@ export function NewGolferForm({
     "checking" | "idle" | "saving" | "recovery" | "blocked" | "saved" | "error"
   >("checking");
   const [message, setMessage] = useState("");
+  const [confirmedDestination, setConfirmedDestination] = useState<string | null>(null);
   const [restoredValues, setRestoredValues] = useState<
     Record<string, RestoredFormValue> | null
   >(null);
@@ -237,11 +239,13 @@ export function NewGolferForm({
         return;
       }
       pendingAttemptRef.current = null;
+      const destination =
+        `/app/golfers/${encodeURIComponent(result.golfer.id)}`;
+      setConfirmedDestination(destination);
       setStatus("saved");
       setMessage("Golfer workspace created.");
       try {
-        router.push(`/app/golfers/${encodeURIComponent(result.golfer.id)}`);
-        router.refresh();
+        navigateToConfirmedDestination(router, destination);
       } catch {
         // The server save is confirmed. Local navigation cannot undo it.
       }
@@ -523,7 +527,11 @@ export function NewGolferForm({
               ? "Retry exact saved attempt"
               : "Save draft and review"}
         </button>
-        {status === "recovery" || status === "blocked" ? (
+        {confirmedDestination ? (
+          <a className={styles.secondaryButton} href={confirmedDestination}>
+            Open confirmed golfer workspace
+          </a>
+        ) : status === "recovery" || status === "blocked" ? (
           <>
             <Link className={styles.secondaryButton} href="/app/golfers">
               Reload and inspect golfer list

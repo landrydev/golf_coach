@@ -8,6 +8,22 @@ export const CONSENT_STATE_INVALIDATING_CONFLICT_CODES = [
   "stale_consent_policy",
 ] as const;
 
+type ConfirmedDestinationRouter = {
+  push(destination: string): void;
+};
+
+/**
+ * Start one navigation after a confirmed mutation. The destination request is
+ * authoritative; refreshing the source route in the same turn can race it and
+ * bounce the browser back to stale, now-terminal UI.
+ */
+export function navigateToConfirmedDestination(
+  router: ConfirmedDestinationRouter,
+  destination: string,
+): void {
+  router.push(destination);
+}
+
 /**
  * Decide whether a client mutation must stop and reload authoritative state.
  * Outcome-unknown failures always stop. Callers can treat every HTTP 409 as

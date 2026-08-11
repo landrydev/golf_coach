@@ -67,7 +67,8 @@ test("public HTML exposes a coherent semantic entry path", async () => {
   assert.match(html, /href="#how-it-works"/i);
   assert.match(html, /href="#sample"/i);
   assert.match(html, /href="#pricing"/i);
-  assert.match(html, /href="\/app"/i);
+  assert.match(html, /<a[^>]+href="\/auth\/login\?return_to=%2Fapp"/i);
+  assert.doesNotMatch(html, /href="\/app"/i);
   assert.match(html, /<meta name="robots" content="index, follow"/i);
   assert.match(html, /property="og:locale" content="en_CA"/i);
   assert.match(html, /https:\/\/roadmap\.example\/og\.png/i);

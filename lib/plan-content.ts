@@ -2,13 +2,18 @@ import { and, asc, eq, gt, inArray, max, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import {
   auditEvents,
+  contentMediaAttachments,
   developmentPlans,
   evidenceItems,
+  launchMonitorComparisonGroups,
+  launchMonitorSessions,
   lessons,
+  phaseReviewSources,
   phaseReviews,
   phasePriorities,
   planPhases,
   planPriorities,
+  practiceCheckIns,
   practiceItems,
   shareLinks,
 } from "@/db/schema";
@@ -46,7 +51,18 @@ type PhaseReviewInput = {
   nextPhaseId?: string | null;
   nextPriorityTitle?: string | null;
   nextPriorityRationale?: string | null;
+  sources?: readonly PhaseReviewSourceSelection[];
 };
+
+export type PhaseReviewSourceSelection = Readonly<{
+  kind: "lesson" | "practice" | "practice_check_in" | "media" | "launch_session" | "launch_comparison" | "evidence";
+  id: string;
+}>;
+
+type ValidatedPhaseReviewSourceSelection = PhaseReviewSourceSelection & Readonly<{
+  sourcePlanRevision: number | null;
+  sourceSnapshot: Record<string, unknown> | null;
+}>;
 
 export async function addCompletedLesson(
   context: MutationContext,
@@ -189,6 +205,13 @@ export async function addEvidenceItem(
     limitation: string;
     maturity: "single_observation" | "early_indication" | "repeated_practice" | "on_course_observation" | "insufficient";
     nextEvidenceNeeded?: string | null;
+    comparisonRole?: "standalone" | "baseline" | "current";
+    comparisonGroupId?: string | null;
+    metricName?: string | null;
+    metricValue?: number | null;
+    metricUnit?: string | null;
+    valueText?: string | null;
+    isRepresentative?: boolean;
   },
 ): Promise<string> {
   const { plan, phase } = await requireOwnedPlanAndPhase(context, input.phaseId);
@@ -213,11 +236,17 @@ export async function addEvidenceItem(
       sourceLabel: input.sourceLabel,
       sourceType: input.sourceType,
       observedAt: input.observedAt || null,
-      comparisonRole: "standalone",
+      comparisonRole: input.comparisonRole ?? "standalone",
+      comparisonGroupId: input.comparisonGroupId || null,
+      metricName: input.metricName || null,
+      metricValue: input.metricValue ?? null,
+      metricUnit: input.metricUnit || null,
+      valueText: input.valueText || null,
       interpretation: input.interpretation,
       limitation: input.limitation,
       maturity: input.maturity,
       nextEvidenceNeeded: input.nextEvidenceNeeded || null,
+      isRepresentative: input.isRepresentative ?? false,
       coachApprovedAt: now,
     }),
     ...invalidationStatements(
@@ -334,17 +363,30 @@ export async function withdrawPlanContent(
     return;
   }
 
-  const [item] = await db
-    .select({ status: evidenceItems.status })
-    .from(evidenceItems)
-    .where(
-      and(
-        eq(evidenceItems.accountId, context.accountId),
-        eq(evidenceItems.planId, context.planId),
-        eq(evidenceItems.id, input.itemId),
+  const [[item], evidenceMediaAttachments] = await Promise.all([
+    db
+      .select({ status: evidenceItems.status })
+      .from(evidenceItems)
+      .where(
+        and(
+          eq(evidenceItems.accountId, context.accountId),
+          eq(evidenceItems.planId, context.planId),
+          eq(evidenceItems.id, input.itemId),
+        ),
+      )
+      .limit(1),
+    db
+      .select({ id: contentMediaAttachments.id, mediaAssetId: contentMediaAttachments.mediaAssetId })
+      .from(contentMediaAttachments)
+      .where(
+        and(
+          eq(contentMediaAttachments.accountId, context.accountId),
+          eq(contentMediaAttachments.planId, context.planId),
+          eq(contentMediaAttachments.evidenceItemId, input.itemId),
+          eq(contentMediaAttachments.status, "active"),
+        ),
       ),
-    )
-    .limit(1);
+  ]);
   if (!item) throw contentNotFound();
   if (item.status === "withdrawn" || item.status === "archived") {
     throw contentAlreadyWithdrawn();
@@ -369,6 +411,17 @@ export async function withdrawPlanContent(
             eq(evidenceItems.id, input.itemId),
           ),
         ),
+      db
+        .update(contentMediaAttachments)
+        .set({ status: "withdrawn", withdrawnAt: now, updatedAt: now })
+        .where(
+          and(
+            eq(contentMediaAttachments.accountId, context.accountId),
+            eq(contentMediaAttachments.planId, context.planId),
+            eq(contentMediaAttachments.evidenceItemId, input.itemId),
+            eq(contentMediaAttachments.status, "active"),
+          ),
+        ),
       ...invalidationStatements(context, nextPlanStatus, "evidence withdrawn", now),
       auditStatement(
         context,
@@ -376,6 +429,19 @@ export async function withdrawPlanContent(
         "evidence_item",
         input.itemId,
         {},
+      ),
+      ...evidenceMediaAttachments.map((attachment) =>
+        auditStatement(
+          context,
+          "media_attachment.withdrawn",
+          "content_media_attachment",
+          attachment.id,
+          {
+            targetType: "evidence",
+            evidenceId: input.itemId,
+            mediaAssetId: attachment.mediaAssetId,
+          },
+        ),
       ),
     ]);
   } catch (error) {
@@ -420,6 +486,9 @@ async function transitionPhaseReview(
     );
   }
   validateReviewTransition(input);
+  const reviewSources = input.sources
+    ? await validatePhaseReviewSourceSelection(context, input.sources)
+    : [];
 
   const db = getDb();
   const [allPhases, allPriorities, linkedPriorities] = await Promise.all([
@@ -500,6 +569,27 @@ async function transitionPhaseReview(
     independentPracticeAlternative: input.independentPracticeAlternative || null,
     confirmedAt: now,
   });
+  const reviewSourceRows = reviewSources.map((source, sortOrder) => ({
+    id: newId(),
+    accountId: context.accountId,
+    planId: context.planId,
+    phaseReviewId: reviewId,
+    sourceType: source.kind,
+    lessonId: source.kind === "lesson" ? source.id : null,
+    practiceItemId: source.kind === "practice" ? source.id : null,
+    practiceCheckInId: source.kind === "practice_check_in" ? source.id : null,
+    mediaAssetId: source.kind === "media" ? source.id : null,
+    launchMonitorSessionId: source.kind === "launch_session" ? source.id : null,
+    launchMonitorComparisonGroupId: source.kind === "launch_comparison" ? source.id : null,
+    evidenceItemId: source.kind === "evidence" ? source.id : null,
+    sourcePlanRevision: source.sourcePlanRevision,
+    sourceSnapshot: source.sourceSnapshot,
+    sortOrder,
+    createdAt: now,
+  }));
+  const insertReviewSources = chunksOf(reviewSourceRows, 6).map((rows) =>
+    db.insert(phaseReviewSources).values(rows),
+  );
   const currentPriorityId = currentPriority?.id ?? "__no_current_priority__";
   const maxPriorityOrder = allPriorities.reduce(
     (highest, priority) => Math.max(highest, priority.sortOrder),
@@ -515,6 +605,7 @@ async function transitionPhaseReview(
         ),
         supersedeReview,
         insertReview,
+        ...insertReviewSources,
         db
           .update(planPhases)
           .set({
@@ -535,6 +626,8 @@ async function transitionPhaseReview(
           phaseId: phase.id,
           transition: input.transition,
           outcome: input.outcome,
+          sourceCount: reviewSources.length,
+          sourceTypes: [...new Set(reviewSources.map((source) => source.kind))],
         }),
       ]);
     } else if (input.transition === "pause") {
@@ -545,6 +638,7 @@ async function transitionPhaseReview(
         ),
         supersedeReview,
         insertReview,
+        ...insertReviewSources,
         db
           .update(planPhases)
           .set({ status: "paused", isRecommended: true, pausedAt: now, updatedAt: now })
@@ -558,6 +652,8 @@ async function transitionPhaseReview(
           phaseId: phase.id,
           transition: input.transition,
           outcome: input.outcome,
+          sourceCount: reviewSources.length,
+          sourceTypes: [...new Set(reviewSources.map((source) => source.kind))],
         }),
       ]);
     } else if (input.transition === "advance") {
@@ -568,6 +664,7 @@ async function transitionPhaseReview(
         ),
         supersedeReview,
         insertReview,
+        ...insertReviewSources,
         db
           .update(planPhases)
           .set({
@@ -621,6 +718,8 @@ async function transitionPhaseReview(
           nextPriorityId,
           transition: input.transition,
           outcome: input.outcome,
+          sourceCount: reviewSources.length,
+          sourceTypes: [...new Set(reviewSources.map((source) => source.kind))],
         }),
       ]);
     } else {
@@ -631,6 +730,7 @@ async function transitionPhaseReview(
         ),
         supersedeReview,
         insertReview,
+        ...insertReviewSources,
         db
           .update(planPhases)
           .set({
@@ -661,6 +761,8 @@ async function transitionPhaseReview(
           phaseId: phase.id,
           transition: input.transition,
           outcome: input.outcome,
+          sourceCount: reviewSources.length,
+          sourceTypes: [...new Set(reviewSources.map((source) => source.kind))],
         }),
       ]);
     }
@@ -734,6 +836,237 @@ function validateReviewTransition(input: PhaseReviewInput) {
       "Next-phase fields are only allowed when advancing.",
     );
   }
+}
+
+async function validatePhaseReviewSourceSelection(
+  context: MutationContext,
+  input: readonly PhaseReviewSourceSelection[],
+): Promise<ValidatedPhaseReviewSourceSelection[]> {
+  if (!input.length || input.length > 100) {
+    throw new RequestError(
+      400,
+      "review_sources_required",
+      "Select between 1 and 100 owned source records before confirming the review.",
+    );
+  }
+  const sources = input.map((source) => ({ kind: source.kind, id: source.id.trim() }));
+  if (sources.some((source) => !source.id)) {
+    throw new RequestError(400, "invalid_review_source", "Every review source requires an ID.");
+  }
+  const sourceKeys = sources.map((source) => `${source.kind}:${source.id}`);
+  if (new Set(sourceKeys).size !== sourceKeys.length) {
+    throw new RequestError(400, "duplicate_review_source", "Duplicate review sources are not allowed.");
+  }
+  const ids = (kind: PhaseReviewSourceSelection["kind"]) =>
+    sources.filter((source) => source.kind === kind).map((source) => source.id);
+  const lessonIds = ids("lesson");
+  const maximumLessonSources = 12;
+  const maximumAssociationsPerLesson = 50;
+  const maximumLessonAssociations = maximumLessonSources * maximumAssociationsPerLesson;
+  if (lessonIds.length > maximumLessonSources) {
+    throw new RequestError(
+      400,
+      "review_source_snapshot_too_large",
+      `Select at most ${maximumLessonSources} lessons for one review. Other source types remain available.`,
+    );
+  }
+  const practiceIds = ids("practice");
+  const checkInIds = ids("practice_check_in");
+  const mediaIds = ids("media");
+  const launchSessionIds = ids("launch_session");
+  const comparisonIds = ids("launch_comparison");
+  const evidenceIds = ids("evidence");
+  const db = getDb();
+  const [
+    lessonRows,
+    practiceRows,
+    checkInRows,
+    mediaRows,
+    sessionRows,
+    comparisonRows,
+    evidenceRows,
+    lessonEvidenceRows,
+    lessonSessionRows,
+  ] =
+    await Promise.all([
+      lessonIds.length
+        ? db.select().from(lessons).where(and(
+            eq(lessons.accountId, context.accountId),
+            eq(lessons.planId, context.planId),
+            inArray(lessons.id, lessonIds),
+          ))
+        : Promise.resolve([]),
+      practiceIds.length
+        ? db.select({ id: practiceItems.id }).from(practiceItems).where(and(
+            eq(practiceItems.accountId, context.accountId),
+            eq(practiceItems.planId, context.planId),
+            inArray(practiceItems.id, practiceIds),
+          ))
+        : Promise.resolve([]),
+      checkInIds.length
+        ? db.select({ id: practiceCheckIns.id }).from(practiceCheckIns).where(and(
+            eq(practiceCheckIns.accountId, context.accountId),
+            eq(practiceCheckIns.planId, context.planId),
+            inArray(practiceCheckIns.id, checkInIds),
+          ))
+        : Promise.resolve([]),
+      mediaIds.length
+        ? db.select({ id: contentMediaAttachments.mediaAssetId }).from(contentMediaAttachments).where(and(
+            eq(contentMediaAttachments.accountId, context.accountId),
+            eq(contentMediaAttachments.planId, context.planId),
+            eq(contentMediaAttachments.status, "active"),
+            inArray(contentMediaAttachments.mediaAssetId, mediaIds),
+          ))
+        : Promise.resolve([]),
+      launchSessionIds.length
+        ? db.select({ id: launchMonitorSessions.id }).from(launchMonitorSessions).where(and(
+            eq(launchMonitorSessions.accountId, context.accountId),
+            eq(launchMonitorSessions.planId, context.planId),
+            eq(launchMonitorSessions.status, "committed"),
+            inArray(launchMonitorSessions.id, launchSessionIds),
+          ))
+        : Promise.resolve([]),
+      comparisonIds.length
+        ? db.select({ id: launchMonitorComparisonGroups.id }).from(launchMonitorComparisonGroups).where(and(
+            eq(launchMonitorComparisonGroups.accountId, context.accountId),
+            eq(launchMonitorComparisonGroups.planId, context.planId),
+            eq(launchMonitorComparisonGroups.status, "active"),
+            inArray(launchMonitorComparisonGroups.id, comparisonIds),
+          ))
+        : Promise.resolve([]),
+      evidenceIds.length
+        ? db.select({ id: evidenceItems.id }).from(evidenceItems).where(and(
+            eq(evidenceItems.accountId, context.accountId),
+            eq(evidenceItems.planId, context.planId),
+            inArray(evidenceItems.status, ["draft", "published"]),
+            inArray(evidenceItems.id, evidenceIds),
+          ))
+        : Promise.resolve([]),
+      lessonIds.length
+        ? db.select({
+            id: evidenceItems.id,
+            lessonId: evidenceItems.lessonId,
+            title: evidenceItems.title,
+            evidenceType: evidenceItems.evidenceType,
+          }).from(evidenceItems).where(and(
+            eq(evidenceItems.accountId, context.accountId),
+            eq(evidenceItems.planId, context.planId),
+            inArray(evidenceItems.lessonId, lessonIds),
+          )).orderBy(asc(evidenceItems.lessonId), asc(evidenceItems.id)).limit(maximumLessonAssociations + 1)
+        : Promise.resolve([]),
+      lessonIds.length
+        ? db.select({
+            id: launchMonitorSessions.id,
+            lessonId: launchMonitorSessions.lessonId,
+            deviceSource: launchMonitorSessions.deviceSource,
+            club: launchMonitorSessions.club,
+            sessionDate: launchMonitorSessions.sessionDate,
+            coachInterpretation: launchMonitorSessions.coachInterpretation,
+          }).from(launchMonitorSessions).where(and(
+            eq(launchMonitorSessions.accountId, context.accountId),
+            eq(launchMonitorSessions.planId, context.planId),
+            inArray(launchMonitorSessions.lessonId, lessonIds),
+          )).orderBy(asc(launchMonitorSessions.lessonId), asc(launchMonitorSessions.id)).limit(maximumLessonAssociations + 1)
+        : Promise.resolve([]),
+    ]);
+  if (
+    lessonEvidenceRows.length > maximumLessonAssociations ||
+    lessonSessionRows.length > maximumLessonAssociations
+  ) {
+    throw new RequestError(
+      400,
+      "review_source_snapshot_too_large",
+      "The selected lesson snapshots contain too many linked records. Select fewer lessons or associations.",
+    );
+  }
+  for (const lessonId of lessonIds) {
+    const evidenceCount = lessonEvidenceRows.filter((item) => item.lessonId === lessonId).length;
+    const sessionCount = lessonSessionRows.filter((item) => item.lessonId === lessonId).length;
+    if (
+      evidenceCount > maximumAssociationsPerLesson ||
+      sessionCount > maximumAssociationsPerLesson
+    ) {
+      throw new RequestError(
+        400,
+        "review_source_snapshot_too_large",
+        `A selected lesson can snapshot at most ${maximumAssociationsPerLesson} evidence records and ${maximumAssociationsPerLesson} launch sessions.`,
+      );
+    }
+  }
+  const groups: readonly [readonly string[], readonly { id: string }[]][] = [
+    [lessonIds, lessonRows],
+    [practiceIds, practiceRows],
+    [checkInIds, checkInRows],
+    [mediaIds, mediaRows],
+    [launchSessionIds, sessionRows],
+    [comparisonIds, comparisonRows],
+    [evidenceIds, evidenceRows],
+  ];
+  for (const [expected, actual] of groups) {
+    const found = new Set(actual.map((row) => row.id));
+    if (expected.some((id) => !found.has(id))) {
+      throw new RequestError(
+        404,
+        "review_source_not_found",
+        "A selected review source is unavailable in this plan.",
+      );
+    }
+  }
+  const lessonById = new Map(lessonRows.map((lesson) => [lesson.id, lesson]));
+  return sources.map((source) => {
+    if (source.kind !== "lesson") {
+      return { ...source, sourcePlanRevision: null, sourceSnapshot: null };
+    }
+    const lesson = lessonById.get(source.id)!;
+    return {
+      ...source,
+      sourcePlanRevision: context.expectedRevision,
+      sourceSnapshot: {
+        version: "lesson-review-source-v1",
+        lesson: {
+          id: lesson.id,
+          title: lesson.title,
+          status: lesson.status,
+          purpose: lesson.purpose,
+          coachObservation: lesson.coachObservation,
+          golferLearning: lesson.golferLearning,
+          takeaway: lesson.takeaway,
+          nextCheck: lesson.nextCheck,
+          phaseConnection: lesson.phaseConnection,
+          scheduledAt: nullableEpoch(lesson.scheduledAt),
+          occurredAt: nullableEpoch(lesson.occurredAt),
+        },
+        evidence: lessonEvidenceRows
+          .filter((item) => item.lessonId === lesson.id)
+          .map((item) => ({
+            id: item.id,
+            title: item.title,
+            evidenceType: item.evidenceType,
+          })),
+        launchSessions: lessonSessionRows
+          .filter((session) => session.lessonId === lesson.id)
+          .map((session) => ({
+            id: session.id,
+            deviceSource: session.deviceSource,
+            club: session.club,
+            sessionDate: nullableEpoch(session.sessionDate),
+            coachInterpretation: session.coachInterpretation,
+          })),
+      },
+    };
+  });
+}
+
+function nullableEpoch(value: Date | number | null): number | null {
+  return value instanceof Date ? value.getTime() : value;
+}
+
+function chunksOf<T>(items: readonly T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
 }
 
 async function requireOwnedPlanAndPhase(context: MutationContext, phaseId: string) {

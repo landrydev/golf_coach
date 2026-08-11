@@ -33,6 +33,7 @@ import {
   requestClientMutation,
   requireClientMutationJson,
 } from "@/lib/client-mutation-recovery";
+import { navigateToConfirmedDestination } from "@/lib/client-terminal-mutation";
 import styles from "../../workspace.module.css";
 
 const ERROR_SUMMARY_ID = "staged-golfer-form-error-summary";
@@ -47,6 +48,7 @@ export function StagedGolferForm({ recoveryScope }: { recoveryScope: string }) {
     "checking" | "idle" | "saving" | "recovery" | "blocked" | "saved" | "error"
   >("checking");
   const [message, setMessage] = useState("");
+  const [confirmedDestination, setConfirmedDestination] = useState<string | null>(null);
   const [restoredValues, setRestoredValues] = useState<
     Record<string, RestoredFormValue> | null
   >(null);
@@ -205,13 +207,13 @@ export function StagedGolferForm({ recoveryScope }: { recoveryScope: string }) {
         return;
       }
       pendingAttemptRef.current = null;
+      const destination =
+        `/app/golfers/${encodeURIComponent(result.golfer.id)}/complete`;
+      setConfirmedDestination(destination);
       setState("saved");
       setMessage("Resumable golfer draft saved.");
       try {
-        router.push(
-          `/app/golfers/${encodeURIComponent(result.golfer.id)}/complete`,
-        );
-        router.refresh();
+        navigateToConfirmedDestination(router, destination);
       } catch {
         // The confirmed server save remains successful if navigation fails.
       }
@@ -259,6 +261,13 @@ export function StagedGolferForm({ recoveryScope }: { recoveryScope: string }) {
       aria-describedby={ERROR_SUMMARY_ID}
       onSubmit={submit}
     >
+      <div className={styles.saveState} role="status" aria-live="polite">
+        <span aria-hidden="true" />
+        <div>
+          <strong>Goal-step save state</strong>
+          <small>{stagedSaveStateLabel(state)}</small>
+        </div>
+      </div>
       <section className={styles.formCard}>
         <fieldset
           className={styles.formSection}
@@ -286,20 +295,34 @@ export function StagedGolferForm({ recoveryScope }: { recoveryScope: string }) {
             </label>
             <label className={styles.fullField}>
               Plan title
-              <input name="planTitle" required maxLength={120} />
+              <input name="planTitle" required maxLength={120} placeholder="Predictable contact roadmap" />
             </label>
             <label className={styles.fullField}>
               Primary goal
-              <textarea name="goalStatement" required maxLength={600} />
+              <textarea
+                name="goalStatement"
+                required
+                maxLength={600}
+                placeholder="What does the golfer want to make more useful or predictable?"
+              />
             </label>
-            <label className={styles.fullField}>
-              Why it matters (optional)
-              <textarea name="goalWhy" maxLength={1_000} />
-            </label>
-            <label className={styles.fullField}>
-              Practical context (optional)
-              <textarea name="goalContext" maxLength={1_000} />
-            </label>
+            <details className={styles.optionalFields}>
+              <summary>Add optional goal meaning and practical context</summary>
+              <div className={styles.fieldGrid}>
+                <label className={styles.fullField}>
+                  Why it matters (optional)
+                  <textarea name="goalWhy" maxLength={1_000} />
+                </label>
+                <label className={styles.fullField}>
+                  Practical context (optional)
+                  <textarea
+                    name="goalContext"
+                    maxLength={1_000}
+                    placeholder="Practice reality, upcoming play, constraints, or preferences."
+                  />
+                </label>
+              </div>
+            </details>
             <label className={`${styles.fullField} ${styles.confirmRow}`}>
               <input
                 name="adultEligibilityConfirmed"
@@ -342,7 +365,11 @@ export function StagedGolferForm({ recoveryScope }: { recoveryScope: string }) {
               ? "Retry exact saved attempt"
               : "Save basics and continue"}
         </button>
-        {state === "recovery" || state === "blocked" ? (
+        {confirmedDestination ? (
+          <a className={styles.secondaryButton} href={confirmedDestination}>
+            Continue to roadmap completion
+          </a>
+        ) : state === "recovery" || state === "blocked" ? (
           <>
             <Link className={styles.secondaryButton} href="/app/golfers">
               Reload and inspect golfer list
@@ -360,6 +387,21 @@ export function StagedGolferForm({ recoveryScope }: { recoveryScope: string }) {
       ) : null}
     </form>
   );
+}
+
+function stagedSaveStateLabel(
+  state: "checking" | "idle" | "saving" | "recovery" | "blocked" | "saved" | "error",
+): string {
+  const labels = {
+    checking: "Checking this tab for an unfinished saved attempt…",
+    idle: "Not saved yet. Submit once to create the durable resumable record.",
+    saving: "Saving the golfer and goal…",
+    recovery: "An exact saved attempt is ready to retry without changing its fields.",
+    blocked: "Saving is locked until the recovery notice is resolved.",
+    saved: "The server confirmed the golfer and goal. Opening the next step…",
+    error: "Not saved. Correct the error summary and submit again.",
+  } as const;
+  return labels[state];
 }
 
 type StagedGolferResponse = {

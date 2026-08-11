@@ -78,6 +78,48 @@
       "when": 1786248060200,
       "tag": "0010_steep_hemingway",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1786263456951,
+      "tag": "0011_stormy_shard",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1786410924064,
+      "tag": "0012_giant_rockslide",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1786411008651,
+      "tag": "0013_mature_alex_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1786420556859,
+      "tag": "0014_easy_electro",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1786421342708,
+      "tag": "0015_freezing_puma",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1786421452444,
+      "tag": "0016_handy_green_goblin",
+      "breakpoints": true
     }
   ]
 }

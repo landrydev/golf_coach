@@ -16,6 +16,13 @@ not a public launch or Aaron's acceptance. No successful hosted backup/restore o
 exercise, staffed operating assignment, alert-delivery exercise, live Stripe flow,
 qualified legal/privacy review, or controlled real-user validation is claimed.
 
+`TECH-006` supersedes Sites as the final paid live-V1 host. Exact Sites v16 remains
+owner-private staging/evidence. Direct Cloudflare Workers/D1/R2 is the un-deployed
+successor verification candidate, governed by the
+[direct Cloudflare migration runbook](DIRECT_CLOUDFLARE_MIGRATION.md). No successor
+account, credentials, budget, resources, OIDC provider, domain, data migration,
+deployment, or owner acceptance exists.
+
 The current exact private candidate is Sites version 16 at source/runtime release
 `91f37ebd542774779f6db7e000832c2f6714e528`, saved version
 `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_0a4d7dc3d8108191aa4a1b3e14051a96`,
@@ -463,7 +470,7 @@ One person may hold several roles initially, but each responsibility needs a nam
 | Role | Responsibilities | Current assignment evidence |
 |---|---|---|
 | Service owner | Scope, risk acceptance, public release, provider budgets, commercial policy, live acceptance | Aaron is the owner decision authority; day-to-day assignment still needs a release record |
-| Release operator | Sites deployment, configuration inventory, migrations, smoke checks, rollback, release log | Unresolved |
+| Release operator | Sites staging containment; authorized direct-Cloudflare configuration/deployment, migration, smoke, rollback/forward-fix, and release log | Unresolved |
 | Security incident lead | Triage, containment, evidence handling, secret/capability rotation, recovery coordination | Unresolved |
 | Privacy/data-request lead | Intake, identity verification, access/correction/export/deletion workflow, legal escalation | Unresolved |
 | Billing operator | Stripe configuration, webhook reconciliation, disputes/refunds under approved policy, customer/account correction | Unresolved |
@@ -479,7 +486,7 @@ One person may hold several roles initially, but each responsibility needs a nam
 |---|---|---|---|---|
 | Local | Development and automated checks | Synthetic/generated fixtures only | Local Sites simulation; Stripe fake/test behavior | Never promoted as a live URL |
 | Preview | Integrated production-like verification | Approved non-production accounts and non-sensitive fixtures | Separate preview bindings and Stripe test mode | No real customer onboarding, customer messages, or live charges |
-| Production | Authorized real adult instructors and golfer records | Data collected under published policy | Production Sites, D1, R2, SIWC, Stripe, domain, logs, and alerts | Exact release/configuration recorded and controlled checks completed |
+| Production | Authorized real adult instructors and golfer records | Data collected under published policy | Accepted direct Cloudflare Worker/D1/R2, approved OIDC, Stripe, domain, privacy-safe logs, cron, and alerts | Exact release/configuration recorded, hosted controls exercised, and Aaron acceptance recorded |
 
 Environment identity must be visible to operators and machine-checkable. Preview and production must not share D1 databases, R2 buckets, Stripe secrets, webhook secrets, capability peppers, or other credentials. A production build must not contain a development secret or synthetic shortcut.
 
@@ -489,8 +496,10 @@ The inventory records a name, purpose, environment, provider owner, last rotatio
 
 | Item | Type | Operational rule |
 |---|---|---|
-| D1 `DB` binding | Sites-managed resource binding | Separate per environment; migration version and backup source recorded |
-| R2 binding | Sites-managed resource binding | Private; separate per environment; object lifecycle and inventory monitored |
+| Cloudflare account ID | Runtime resource identifier, not a secret | Pin the exact authorized 32-hex account in the generated direct profile; never permit an interactive/multi-account deploy choice |
+| D1 `DB` binding | Sites-managed staging or direct-Cloudflare resource binding | Separate per environment; exact account/name/UUID, migration version, and backup source recorded |
+| R2 binding | Sites-managed staging or direct-Cloudflare resource binding | Private; separate per environment; exact account/bucket, object lifecycle, and inventory monitored |
+| OIDC client secret | Runtime secret for the approved direct-host provider | Provider/environment-specific; never store in config or source; rotate with session revocation and callback verification |
 | Sites SIWC bypass bearer | Provider-managed credential | The exposed prior value was invalidated by one authorized provider rotation; the replacement was not displayed, persisted, or used. Available tooling exposes rotation rather than revoke-only disablement. Keep it unused and keep access owner-only pending the signed-in owner and hosted-log retest. |
 | Share-token pepper | Runtime secret | Unique per environment; rotation plan accounts for active capabilities rather than silently breaking them |
 | Abuse-limit pepper | Runtime secret | Unique and independent per environment; rotation resets non-reversible short-lived counters and must be correlated with the release |
@@ -512,7 +521,12 @@ The inventory records a name, purpose, environment, provider owner, last rotatio
 | Canonical application origin | Runtime configuration | Exact approved HTTPS origin; used for redirect and absolute-URL allowlisting |
 | Release identifier | Build configuration | Immutable commit/artifact identifier exposed to health/diagnostic output without secrets |
 
-Logical D1/R2 declarations live in `.openai/hosting.json`; Sites owns real Cloudflare resource provisioning and deployment wiring. Hosted runtime values are managed through the Sites control plane. No `.env` file, dashboard export, credential screenshot, or copied webhook payload belongs in version control.
+Logical D1/R2 declarations in `.openai/hosting.json` govern Sites staging only.
+For the successor, render the ignored direct profile from a fresh exact build with
+explicit non-secret account/Worker/D1/R2/origin inputs. Manage direct-host secrets
+through the authorized Cloudflare secret store, never the rendered JSON. No `.env`
+file, generated direct profile, dashboard export, credential screenshot, or copied
+webhook payload belongs in version control.
 
 For the current private version-16 environment, do not invent consent or
 privacy-operator values to make deep health green. `CONSENT_POLICY_REGISTRY_JSON`
@@ -550,6 +564,14 @@ entitlement transition as authorization to revoke capabilities automatically.
 
 The release operator records every step and attaches evidence to an immutable release identifier.
 
+For Sites, this procedure may only maintain the owner-private staging/evidence
+deployment. A final paid/public release must use an authorized direct-Cloudflare
+successor. Before any upload or deploy, its generated profile must pin the reviewed
+account and resources, disable `workers.dev` and preview URLs, contain no route, and
+pass structural verification. Release verification must remain failed closed until
+the exact public OIDC boundary and spoof-denial tests are implemented. Never weaken
+that refusal to obtain a deployable artifact.
+
 ### 1. Prepare
 
 - Confirm the intended V1 scope and exclusions against [Requirements Traceability](REQUIREMENTS_TRACEABILITY.md).
@@ -578,6 +600,13 @@ The release operator records every step and attaches evidence to an immutable re
 - Generate and inspect any D1 migration after schema changes.
 - Confirm no development preview metadata, starter content, debug endpoint, fake billing success, or synthetic-only critical-path behavior remains.
 - Run `npm run verify:release-integrity` to scan release text for secret-shaped values, reject unexpected environment files/symlinks, verify the immutable Business Plan V1 hash, check the migration journal, and validate the Sites resource manifest. Treat a clean scan as bounded evidence, not proof that no secret exists outside the scanned source.
+- For a direct successor, render `.work/direct-cloudflare/wrangler.json` from the
+  fresh build using the exact authorized account ID, Worker name, D1 name/UUID, R2
+  bucket, and canonical HTTPS origin. Run structural verification and then the
+  release-readiness verifier. The direct authentication boundary is now locally
+  implemented and tested; a current failure stating that provider and hosted
+  release evidence are absent is expected and prohibits deploy. It is not a
+  waivable warning.
 - Capture command, environment, version, result, limitations, and artifact checksums; a green command without scope/context is weak evidence.
 
 The repository's package scripts are the command authority. Typical current entry
@@ -588,8 +617,12 @@ than assume their coverage.
 ### 3. Protect data and deploy
 
 - Take or verify the documented pre-change D1 recovery point and required R2 inventory state.
-- Apply migration through the approved Sites/D1 process and record its version/result.
-- Deploy the immutable application release through Sites.
+- For Sites staging only, apply migration through the approved Sites/D1 process and
+  keep the access policy owner-only and Checkout disabled.
+- For a direct successor, confirm the generated profile byte-matches the reviewed
+  projection, apply migrations to the exact pinned D1 resource through the
+  authorized account, upload/deploy only after release readiness passes, and attach
+  the custom domain only through the separately approved access change.
 - Verify actual D1/R2 bindings, environment identity, secret/config presence, and release identifier.
 - Verify the deployed application-write mode through owner-only operational
   health before any controlled mutation; public health intentionally cannot
@@ -601,7 +634,10 @@ than assume their coverage.
 Use authorized test accounts and data. Confirm:
 
 - public landing, sample, privacy/support/legal destinations, and canonical redirects;
-- SIWC start, callback ownership, authenticated page, sign-out, unauthorized response, and tenant isolation;
+- approved OIDC start/callback with PKCE/state/nonce, issuer/audience/signature
+  verification, stable issuer-plus-subject ownership, account-link collision
+  denial, session rotation/revocation, sign-out, forged identity-header denial,
+  unauthorized response, recovery, and tenant isolation;
 - instructor setup, draft save/return, preview, publish, capability creation,
   exchange, view, revoke, and neutral invalid state;
 - revoked/expired same-published-revision reissue with a new bounded expiry,
@@ -613,7 +649,8 @@ Use authorized test accounts and data. Confirm:
 - Now, Goal, Roadmap, Lessons, Practice, Evidence, and Phase Review rendering, including no-media and narrow-screen behavior;
 - external coach action warning and handoff without any claim that booking/payment completed;
 - Stripe test or specifically authorized controlled live Checkout/Portal/webhook flow;
-- first-party audit events, Sites log correlation, alerts, and privacy-safe log content;
+- first-party audit events, direct-Worker privacy-safe correlation, confirmed
+  invocation-log enforcement and retained-data disposition, alerts, and safe log content;
 - health, D1/R2 access, error handling, caching, security headers, and release identifier.
 - the intended application-write mode, route-aware `503` behavior while frozen,
   scheduler no-work behavior, and controlled write recovery after re-enabling.

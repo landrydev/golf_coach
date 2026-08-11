@@ -92,6 +92,7 @@ test(
         assert.deepEqual(policy.get("frame-src"), ["'none'"]);
         assert.deepEqual(policy.get("frame-ancestors"), ["'none'"]);
         assert.deepEqual(policy.get("worker-src"), ["'none'"]);
+        assert.deepEqual(policy.get("media-src"), ["'self'", "blob:"]);
         assert.deepEqual(policy.get("manifest-src"), ["'self'"]);
         assert.deepEqual(policy.get("connect-src"), ["'self'"]);
         const scriptNonce = requireScriptNonce(policy);
@@ -517,6 +518,8 @@ function assertSecureCsp(response) {
   assert.deepEqual(policy.get("object-src"), ["'none'"]);
   assert.deepEqual(policy.get("frame-src"), ["'none'"]);
   assert.deepEqual(policy.get("frame-ancestors"), ["'none'"]);
+  assert.deepEqual(policy.get("media-src"), ["'self'", "blob:"]);
+  assert.deepEqual(policy.get("worker-src"), ["'none'"]);
   requireScriptNonce(policy);
   assert.equal(policy.get("script-src")?.includes("'unsafe-inline'"), false);
   assert.equal(policy.get("script-src-elem")?.includes("'unsafe-inline'"), false);

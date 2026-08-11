@@ -34,13 +34,15 @@ test("AST inventory contains every browser-capable transport call", async () => 
     new Map([
       ["lib/client-mutation-recovery.ts", ["fetch"]],
       ["lib/client-recovery.ts", ["fetch"]],
+      ["lib/client-upload-recovery.ts", ["XMLHttpRequest"]],
+      ["lib/instructor-auth-protocol.ts", ["fetch"]],
       ["lib/stripe.ts", ["fetch"]],
-      ["lib/synthetic-concurrency-barrier.ts", ["fetch"]],
+      ["lib/synthetic-concurrency-barrier.ts", ["fetch", "fetch"]],
     ]),
   );
 });
 
-test("every client mutation endpoint and HTTP method is exactly allowlisted", async () => {
+test("every recovery-managed client mutation endpoint and HTTP method is exactly allowlisted", async () => {
   const sourceFiles = (
     await Promise.all(
       ["app", "components", "lib"].map((directory) =>
@@ -64,9 +66,37 @@ test("every client mutation endpoint and HTTP method is exactly allowlisted", as
   }
 
   const expected = [
+    ["app/app/coaching/drills/DrillLibrary.tsx", "/api/coaching/drills/:segment/media", "POST"],
+    ["app/app/coaching/drills/DrillLibrary.tsx", "/api/coaching/drills/:segment/media", "DELETE"],
+    ["app/app/coaching/drills/DrillLibrary.tsx", "/api/coaching/drills/:segment", "PUT"],
+    ["app/app/coaching/drills/DrillLibrary.tsx", "/api/coaching/drills", "POST"],
+    ["app/app/coaching/drills/DrillLibrary.tsx", "/api/coaching/drills/:segment", "PATCH"],
+    ["app/app/coaching/drills/DrillLibrary.tsx", "/api/coaching/drills/:segment/duplicate", "POST"],
+    ["app/app/coaching/drills/DrillLibrary.tsx", "/api/coaching/drills/:segment", "DELETE"],
+    ["app/app/coaching/roadmaps/RoadmapTemplateLibrary.tsx", "/api/coaching/roadmaps/:segment", "PUT"],
+    ["app/app/coaching/roadmaps/RoadmapTemplateLibrary.tsx", "/api/coaching/roadmaps", "POST"],
+    ["app/app/coaching/roadmaps/RoadmapTemplateLibrary.tsx", "/api/coaching/roadmaps/:segment", "PATCH"],
+    ["app/app/coaching/roadmaps/RoadmapTemplateLibrary.tsx", "/api/coaching/roadmaps/:segment/duplicate", "POST"],
+    ["app/app/coaching/roadmaps/RoadmapTemplateLibrary.tsx", "/api/coaching/roadmaps/:segment", "DELETE"],
+    ["app/app/coaching/plans/[planId]/RichCoachingWorkspace.tsx", "/api/plans/:segment/coaching/practice", "POST"],
+    ["app/app/coaching/plans/[planId]/RichCoachingWorkspace.tsx", "/api/plans/:segment/coaching/practice", "PATCH"],
+    ["app/app/coaching/plans/[planId]/RichCoachingWorkspace.tsx", "/api/plans/:segment/coaching/lessons", "POST"],
+    ["app/app/coaching/plans/[planId]/RichCoachingWorkspace.tsx", "/api/plans/:segment/coaching/lessons", "PATCH"],
+    ["app/app/coaching/plans/[planId]/RichCoachingWorkspace.tsx", "/api/plans/:segment/coaching/evidence", "POST"],
+    ["app/app/coaching/plans/[planId]/RichCoachingWorkspace.tsx", "/api/plans/:segment/coaching/reviews", "POST"],
+    ["app/app/coaching/plans/[planId]/RichCoachingWorkspace.tsx", "/api/plans/:segment/coaching/media", "POST"],
+    ["app/app/coaching/plans/[planId]/RichCoachingWorkspace.tsx", "/api/plans/:segment/coaching/media", "DELETE"],
+    ["app/app/coaching/plans/[planId]/RichCoachingWorkspace.tsx", "/api/plans/:segment/coaching/launch/sessions", "POST"],
+    ["app/app/coaching/plans/[planId]/RichCoachingWorkspace.tsx", "/api/plans/:segment/coaching/launch/imports", "POST"],
+    ["app/app/coaching/plans/[planId]/RichCoachingWorkspace.tsx", "/api/plans/:segment/coaching/launch/comparisons", "POST"],
+    ["app/app/coaching/plans/[planId]/RichCoachingWorkspace.tsx", "/api/plans/:segment/coaching/milestones", "POST"],
+    ["app/app/coaching/plans/[planId]/RichCoachingWorkspace.tsx", "/api/plans/:segment/coaching/milestones", "PATCH"],
+    ["app/app/media/MediaLibrary.tsx", "/api/media/:segment", "DELETE"],
     ["components/consent/ConsentPurposeControl.tsx", "/api/consents", "POST"],
     ["components/plan/CloseRoadmap.tsx", "/r/session", "DELETE"],
     ["app/app/settings/ProfileForm.tsx", "/api/profile", "PUT"],
+    ["app/app/settings/BrandingMediaForm.tsx", "/api/profile/media", "DELETE"],
+    ["app/app/settings/BrandingMediaForm.tsx", "/api/profile/media", "POST"],
     ["app/app/settings/shares/ShareAccessControls.tsx", "/api/account/shares/:segment", "DELETE"],
     ["app/app/packages/PackageForm.tsx", "/api/packages", "POST"],
     ["app/app/settings/data/DataRequestControls.tsx", "/api/data-export", "POST"],
@@ -87,8 +117,39 @@ test("every client mutation endpoint and HTTP method is exactly allowlisted", as
     ["app/app/golfers/[golferId]/PublishControls.tsx", "/api/plans/:segment/publish/reissue", "POST"],
     ["app/app/golfers/[golferId]/PublishControls.tsx", "/api/shares/:segment", "DELETE"],
     ["app/app/golfers/new/NewGolferForm.tsx", "/api/golfers", "POST"],
+    ["components/plan/PracticeCheckIn.tsx", "/r/practice-check-in", "POST"],
     ["lib/client-recovery.ts", "/r/response", "POST"],
     ["lib/client-recovery.ts", "/r/session", "POST"],
+  ].map(([file, endpoint, method]) => ({ file, endpoint, method }));
+
+  assert.deepEqual(actual.sort(compareInventory), expected.sort(compareInventory));
+});
+
+test("every bounded client read and upload endpoint is exactly allowlisted", async () => {
+  const sourceFiles = (
+    await Promise.all(
+      ["app", "components", "lib"].map((directory) =>
+        discoverSourceFiles(path.join(projectRoot, directory)),
+      ),
+    )
+  ).flat();
+  const actual = [];
+  for (const filename of sourceFiles.sort()) {
+    const source = await readFile(filename, "utf8");
+    const sourceFile = parseSource(filename, source);
+    for (const request of clientHelperRequests(sourceFile)) {
+      actual.push({ file: relativePath(filename), ...request });
+    }
+  }
+
+  const expected = [
+    ["app/app/coaching/drills/DrillLibrary.tsx", "/api/coaching/drills?includeArchived=true&limit=250", "GET"],
+    ["app/app/coaching/drills/DrillLibrary.tsx", "/api/coaching/drills/:segment/media", "GET"],
+    ["app/app/coaching/plans/[planId]/RichCoachingWorkspace.tsx", "/api/coaching/plans/:segment/workspace", "GET"],
+    ["app/app/coaching/plans/[planId]/RichCoachingWorkspace.tsx", "/api/coaching/drills?limit=250", "GET"],
+    ["app/app/coaching/roadmaps/RoadmapTemplateLibrary.tsx", "/api/coaching/roadmaps?includeArchived=true&limit=250", "GET"],
+    ["app/app/media/MediaLibrary.tsx", "/api/media", "POST"],
+    ["app/app/settings/BrandingMediaForm.tsx", "/api/media", "POST"],
   ].map(([file, endpoint, method]) => ({ file, endpoint, method }));
 
   assert.deepEqual(actual.sort(compareInventory), expected.sort(compareInventory));
@@ -125,7 +186,7 @@ test("direct best-effort browser requests are separately and exactly allowlisted
   ]);
 });
 
-test("forms have explicit POST fallback semantics and no control-level overrides", async () => {
+test("forms have exact fallback semantics and no control-level overrides", async () => {
   const sourceFiles = (
     await Promise.all(
       ["app", "components"].map((directory) =>
@@ -140,14 +201,26 @@ test("forms have explicit POST fallback semantics and no control-level overrides
     const source = await readFile(filename, "utf8");
     const sourceFile = parseSource(filename, source);
     for (const form of formDeclarations(sourceFile)) {
-      assert.equal(form.method, "post", `${relativePath(filename)} form must use POST`);
       if (form.intercepted) {
+        assert.equal(
+          form.method,
+          "post",
+          `${relativePath(filename)} intercepted form must use explicit POST fallback semantics`,
+        );
         assert.equal(form.action, null, "intercepted forms must not override action");
         const key = relativePath(filename);
         intercepted.set(key, (intercepted.get(key) ?? 0) + 1);
       } else {
+        assert.ok(
+          form.method === "get" || form.method === "post",
+          `${relativePath(filename)} native form must declare GET or POST`,
+        );
         assert.equal(typeof form.action, "string", "native POST action must be static");
-        native.push({ file: relativePath(filename), action: form.action });
+        native.push({
+          file: relativePath(filename),
+          action: form.action,
+          method: form.method,
+        });
       }
     }
     for (const override of formControlOverrides(sourceFile)) {
@@ -156,14 +229,20 @@ test("forms have explicit POST fallback semantics and no control-level overrides
   }
 
   assert.deepEqual(native, [
-    { file: "app/app/billing/page.tsx", action: "/api/billing/checkout" },
-    { file: "app/app/billing/page.tsx", action: "/api/billing/portal" },
-    { file: "app/app/billing/page.tsx", action: "/api/billing/reconcile" },
+    { file: "app/app/billing/page.tsx", action: "/api/billing/checkout", method: "post" },
+    { file: "app/app/billing/page.tsx", action: "/api/billing/portal", method: "post" },
+    { file: "app/app/billing/page.tsx", action: "/api/billing/reconcile", method: "post" },
+    { file: "app/app/golfers/page.tsx", action: "/app/golfers", method: "get" },
+    { file: "app/app/layout.tsx", action: "/auth/logout", method: "post" },
+    { file: "app/app/layout.tsx", action: "/auth/logout", method: "post" },
   ]);
   assert.deepEqual(
     intercepted,
     new Map([
-      ["app/app/golfers/[golferId]/LivingPlanForms.tsx", 5],
+      ["app/app/coaching/drills/DrillLibrary.tsx", 2],
+      ["app/app/coaching/plans/[planId]/RichCoachingWorkspace.tsx", 12],
+      ["app/app/coaching/roadmaps/RoadmapTemplateLibrary.tsx", 1],
+      ["app/app/golfers/[golferId]/LivingPlanForms.tsx", 4],
       ["app/app/golfers/[golferId]/PublishControls.tsx", 3],
       ["app/app/golfers/[golferId]/complete/StagedCompletionForm.tsx", 1],
       ["app/app/golfers/[golferId]/edit/PlanEditorForm.tsx", 1],
@@ -172,8 +251,11 @@ test("forms have explicit POST fallback semantics and no control-level overrides
       ["app/app/golfers/new/StagedGolferForm.tsx", 1],
       ["app/app/packages/PackageForm.tsx", 1],
       ["app/app/packages/PackageLifecycleControls.tsx", 1],
+      ["app/app/media/MediaLibrary.tsx", 1],
+      ["app/app/settings/BrandingMediaForm.tsx", 1],
       ["app/app/settings/ProfileForm.tsx", 1],
       ["app/app/settings/data/DataRequestControls.tsx", 1],
+      ["components/plan/PracticeCheckIn.tsx", 1],
     ]),
   );
   assert.deepEqual(overrides, []);
@@ -280,6 +362,32 @@ function clientMutationRequests(sourceFile) {
       endpoint: endpointPattern(node.arguments[0]),
       methods: requestMethods(node.arguments[1], node),
     });
+  });
+  return requests;
+}
+
+function clientHelperRequests(sourceFile) {
+  const requests = [];
+  walk(sourceFile, (node) => {
+    if (!ts.isCallExpression(node)) return;
+    const expression = unwrapExpression(node.expression);
+    if (!ts.isIdentifier(expression) || !node.arguments[0]) return;
+    if (expression.text === "requestClientRead") {
+      const methods = node.arguments[1]
+        ? requestMethods(node.arguments[1], node)
+        : ["GET"];
+      assert.equal(
+        methods.every((method) => method === "GET" || method === "HEAD"),
+        true,
+        "bounded client reads must use GET or HEAD",
+      );
+      for (const method of methods) {
+        requests.push({ endpoint: endpointPattern(node.arguments[0]), method });
+      }
+    }
+    if (expression.text === "requestClientUpload") {
+      requests.push({ endpoint: endpointPattern(node.arguments[0]), method: "POST" });
+    }
   });
   return requests;
 }

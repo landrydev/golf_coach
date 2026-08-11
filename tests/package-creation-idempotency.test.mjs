@@ -58,6 +58,8 @@ test(
       [firstBody.idempotentReplay, retryBody.idempotentReplay].sort(),
       [false, true],
     );
+    assert.equal(firstBody.package.createdAt, firstBody.package.updatedAt);
+    assert.equal(retryBody.package.createdAt, retryBody.package.updatedAt);
 
     const sequentialReplay = await createPackage(
       worker,
@@ -161,6 +163,17 @@ test(
     assert.equal(JSON.stringify([receipt, otherTenantReceipt]).includes(idempotencyKey), false);
   },
 );
+
+test("package creation pins created and updated timestamps to one instant", async () => {
+  const repositorySource = await readFile(
+    new URL("../lib/repository.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(
+    repositorySource,
+    /db\.insert\(coachingPackages\)\.values\(\{[\s\S]*?createdAt: now,[\s\S]*?updatedAt: now,[\s\S]*?\}\);/,
+  );
+});
 
 test("package form persists one exact client attempt until reconciliation", async () => {
   const source = await readFile(

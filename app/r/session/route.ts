@@ -18,6 +18,7 @@ import {
   enforceAbuseLimit,
 } from "@/lib/rate-limit";
 import { requestCorrelationId } from "@/lib/request-correlation";
+import { browserUnavailableShareExchangeResponse } from "@/lib/share-exchange-browser-contract";
 
 const SHARE_COOKIE = "roadmap_share";
 
@@ -51,6 +52,11 @@ export async function POST(request: Request) {
       existingSessionToken,
     );
     if (!session) {
+      const browserUnavailable = browserUnavailableShareExchangeResponse(
+        request.headers,
+        requestId,
+      );
+      if (browserUnavailable) return browserUnavailable;
       throw new RequestError(404, "plan_unavailable", "This private plan is unavailable.");
     }
 
@@ -67,6 +73,7 @@ export async function POST(request: Request) {
         headers: {
           "Cache-Control": "private, no-store, max-age=0",
           "Set-Cookie": sessionCookie(request, session.rawToken, maxAge),
+          Vary: "Accept",
           "X-Request-ID": requestId,
         },
       },
@@ -76,6 +83,7 @@ export async function POST(request: Request) {
     response.headers.set("X-Request-ID", requestId);
     if (sameOriginAccepted) {
       response.headers.set("Cache-Control", "private, no-store, max-age=0");
+      response.headers.append("Vary", "Accept");
     }
     return response;
   }

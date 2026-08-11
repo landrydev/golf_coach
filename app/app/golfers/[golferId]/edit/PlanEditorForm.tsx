@@ -22,12 +22,19 @@ import {
   clientMutationErrorMessage,
   requestClientMutation,
 } from "@/lib/client-mutation-recovery";
-import { requiresAuthoritativeMutationReload } from "@/lib/client-terminal-mutation";
+import {
+  navigateToConfirmedDestination,
+  requiresAuthoritativeMutationReload,
+} from "@/lib/client-terminal-mutation";
 import {
   isPlanEditorMutationResponse,
   requireExactClientMutationJson,
 } from "@/lib/instructor-mutation-response-contracts";
 import type { PlanViewModel } from "@/components/plan/types";
+import {
+  AuthoringCandidatePreview,
+  type AuthoringCandidate,
+} from "../AuthoringCandidatePreview";
 import styles from "../../../workspace.module.css";
 
 const ERROR_SUMMARY_ID = "plan-editor-form-error-summary";
@@ -49,6 +56,9 @@ export function PlanEditorForm({
   >("idle");
   const [message, setMessage] = useState("");
   const [confirmedDestination, setConfirmedDestination] = useState<string | null>(null);
+  const [phaseNotice, setPhaseNotice] = useState("");
+  const [candidatePreview, setCandidatePreview] =
+    useState<AuthoringCandidate | null>(null);
   const [draftRecovery, setDraftRecovery] =
     useState<AuthoringDraftUiState>({ kind: "checking" });
   const draftScope = useMemo<AuthoringDraftScope>(
@@ -105,6 +115,50 @@ export function PlanEditorForm({
   }
 
   const phases = orderedPhases as PlanViewModel["phases"];
+
+  function moveLaterPhase(number: number, direction: -1 | 1) {
+    const target = number + direction;
+    const form = formRef.current;
+    if (
+      !form ||
+      isLocked ||
+      number <= 1 ||
+      target <= 1 ||
+      target > phases.length
+    ) {
+      return;
+    }
+    for (const suffix of ["Title", "Purpose", "Rationale", "ProgressSignals"]) {
+      swapFormValues(form, `phase${number}${suffix}`, `phase${target}${suffix}`);
+    }
+    setPhaseNotice(`Phases ${number} and ${target} were reordered in this draft.`);
+  }
+
+  function refreshCandidatePreview() {
+    const form = formRef.current;
+    if (!form) return;
+    const values = captureAuthoringDraftValues(form);
+    if (!values) {
+      setState("error");
+      setMessage("The candidate preview could not read this draft safely.");
+      return;
+    }
+    setCandidatePreview({
+      golferName: model.golfer.displayName,
+      planTitle: values.title ?? "",
+      goalStatement: values.goalStatement ?? "",
+      assessmentSummary: values.assessmentSummary ?? "",
+      priorityTitle: values.priorityTitle ?? "",
+      priorityRationale: values.priorityRationale ?? "",
+      phases: phases.map((phase) => ({
+        number: phase.number,
+        title: values[`phase${phase.number}Title`] ?? "",
+        purpose: values[`phase${phase.number}Purpose`] ?? "",
+        rationale: values[`phase${phase.number}Rationale`] ?? "",
+        progressSignals: lineItems(values[`phase${phase.number}ProgressSignals`]),
+      })),
+    });
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -211,8 +265,7 @@ export function PlanEditorForm({
 
     if (!destination) return;
     try {
-      router.push(destination);
-      router.refresh();
+      navigateToConfirmedDestination(router, destination);
     } catch {
       // The confirmed plan save remains successful if navigation fails.
     }
@@ -257,7 +310,10 @@ export function PlanEditorForm({
           if (reload) window.location.reload();
         }}
       />
-      <section className={styles.formCard}>
+      <div className={styles.saveState} role="status" aria-live="polite">
+        {editorSaveStateLabel(state, draftRecovery)}
+      </div>
+      <section className={styles.formCard} id="authoring-goal">
         <fieldset
           className={styles.formSection}
           disabled={isLocked}
@@ -286,31 +342,34 @@ export function PlanEditorForm({
                 permanent change.
               </small>
             </label>
-            <label className={styles.fullField}>
-              Why it matters (optional)
-              <textarea
-                name="goalWhy"
-                defaultValue={model.goal.why ?? ""}
-                maxLength={1_000}
-              />
-            </label>
-            <label className={styles.fullField}>
-              Practical context and constraints (optional)
-              <textarea
-                name="goalContext"
-                defaultValue={model.goal.context ?? ""}
-                maxLength={2_500}
-              />
-              <small>
-                Keep only context needed for coaching. Do not add medical, payment, or
-                unrelated personal information.
-              </small>
-            </label>
+            <details className={styles.optionalFields}>
+              <summary>Optional goal context</summary>
+              <label className={styles.fullField}>
+                Why it matters
+                <textarea
+                  name="goalWhy"
+                  defaultValue={model.goal.why ?? ""}
+                  maxLength={1_000}
+                />
+              </label>
+              <label className={styles.fullField}>
+                Practical context and constraints
+                <textarea
+                  name="goalContext"
+                  defaultValue={model.goal.context ?? ""}
+                  maxLength={2_500}
+                />
+                <small>
+                  Keep only context needed for coaching. Do not add medical, payment, or
+                  unrelated personal information.
+                </small>
+              </label>
+            </details>
           </div>
         </fieldset>
       </section>
 
-      <section className={styles.formCard}>
+      <section className={styles.formCard} id="authoring-assessment">
         <fieldset
           className={styles.formSection}
           disabled={isLocked}
@@ -364,7 +423,7 @@ export function PlanEditorForm({
         </fieldset>
       </section>
 
-      <section className={styles.formCard}>
+      <section className={styles.formCard} id="authoring-priority">
         <fieldset
           className={styles.formSection}
           disabled={isLocked}
@@ -393,18 +452,43 @@ export function PlanEditorForm({
         </fieldset>
       </section>
 
-      <section className={styles.formCard}>
+      <section className={styles.formCard} id="authoring-phases">
         <fieldset
           className={styles.formSection}
           disabled={isLocked}
         >
           <legend>{phases.length} directional development phases</legend>
           <p className={styles.muted}>
-            Keep the existing {phases.length}-phase structure. Later phases are direction and may change as new evidence develops.
+            Keep the existing {phases.length}-phase structure for this revision. Phase count
+            is fixed here so every stored phase remains explicit and consecutive; start a
+            new roadmap if the structure itself must change. Later phases are direction and
+            may change as new evidence develops.
           </p>
           {phases.map((phase) => (
-            <div className={styles.fieldGrid} key={phase.id}>
-              <label className={styles.field}>
+            <div className={styles.phaseAuthoringCard} key={phase.id}>
+              <div className={styles.cardHeader}>
+                <h3>Phase {phase.number}</h3>
+                <div className={styles.actions} aria-label={`Phase ${phase.number} order controls`}>
+                  <button
+                    className={styles.secondaryButton}
+                    type="button"
+                    disabled={phase.number <= 2}
+                    onClick={() => moveLaterPhase(phase.number, -1)}
+                  >
+                    Move up
+                  </button>
+                  <button
+                    className={styles.secondaryButton}
+                    type="button"
+                    disabled={phase.number === 1 || phase.number >= phases.length}
+                    onClick={() => moveLaterPhase(phase.number, 1)}
+                  >
+                    Move down
+                  </button>
+                </div>
+              </div>
+              <div className={styles.fieldGrid}>
+                <label className={styles.field}>
                 Phase {phase.number} title
                 <input
                   name={`phase${phase.number}Title`}
@@ -444,10 +528,61 @@ export function PlanEditorForm({
                   maxLength={2_400}
                 />
                 <small>Use observable signals, not guaranteed outcomes or fixed timelines.</small>
-              </label>
+                </label>
+              </div>
             </div>
           ))}
+          {phaseNotice ? (
+            <p className={styles.formStatus} role="status">
+              {phaseNotice}
+            </p>
+          ) : null}
         </fieldset>
+      </section>
+
+      <section className={styles.formCard} id="authoring-evidence">
+        <h2>Evidence and coaching activity</h2>
+        <p className={styles.muted}>
+          Core roadmap edits stay text-first. Use the golfer hub&apos;s Evidence, Lessons,
+          and Practice destinations to record supporting activity without blocking this save.
+        </p>
+        <a className={styles.secondaryButton} href={`/app/golfers/${encodeURIComponent(golferId)}#hub-evidence`}>
+          Open evidence destination
+        </a>
+      </section>
+
+      <section className={styles.formCard} id="authoring-package">
+        <h2>Package context is optional</h2>
+        <p className={styles.muted}>
+          Package management is separate from the coach-authored core and does not block
+          an edit, review, or text-first roadmap.
+        </p>
+        <a className={styles.secondaryButton} href="/app/packages">
+          Manage packages
+        </a>
+      </section>
+
+      <section className={styles.formCard} id="authoring-preview">
+        <h2>Preview this unsaved golfer-view candidate</h2>
+        <p className={styles.muted}>
+          Refresh after editing to review the exact words and phase order before saving.
+          Saving creates a new draft revision and revokes current access; the full shared
+          renderer remains available before any new publish action.
+        </p>
+        <button
+          className={styles.secondaryButton}
+          type="button"
+          disabled={isLocked}
+          onClick={refreshCandidatePreview}
+        >
+          Refresh golfer preview
+        </button>
+        {candidatePreview ? (
+          <AuthoringCandidatePreview candidate={candidatePreview} />
+        ) : null}
+        <a className={styles.secondaryButton} href={`/app/golfers/${encodeURIComponent(golferId)}#hub-roadmap`}>
+          Open current exact preview
+        </a>
       </section>
 
       <FormErrorSummary
@@ -515,6 +650,40 @@ function lineItems(value: string | undefined): string[] {
     .split(/\r?\n/)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function formValue(form: HTMLFormElement, name: string): string {
+  const control = form.elements.namedItem(name);
+  return control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement
+    ? control.value
+    : "";
+}
+
+function setFormValue(form: HTMLFormElement, name: string, value: string) {
+  const control = form.elements.namedItem(name);
+  if (control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement) {
+    control.value = value;
+  }
+}
+
+function swapFormValues(form: HTMLFormElement, left: string, right: string) {
+  const leftValue = formValue(form, left);
+  const rightValue = formValue(form, right);
+  setFormValue(form, left, rightValue);
+  setFormValue(form, right, leftValue);
+}
+
+function editorSaveStateLabel(
+  state: "idle" | "saving" | "saved" | "error" | "reload_required",
+  recovery: AuthoringDraftUiState,
+): string {
+  if (state === "saving") return "Saving a new draft revision and validating the response…";
+  if (state === "saved") return "Saved. The confirmed roadmap revision is ready to open.";
+  if (state === "reload_required") return "Authoritative plan state changed. Reload before another edit.";
+  if (state === "error") return "Not saved. Your recoverable draft remains in this browser tab when available.";
+  if (recovery.kind === "checking") return "Checking this browser tab for a recoverable plan draft…";
+  if (recovery.kind === "restored") return "Recovered draft loaded. Changes are not saved to Roadmap yet.";
+  return "Changes are local until you save a new draft revision. Safe browser-tab recovery is enabled.";
 }
 
 function planEditorDraftValues(model: PlanViewModel): Record<string, string> {

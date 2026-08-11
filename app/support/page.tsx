@@ -9,7 +9,7 @@ export default function SupportPage() {
     <div className={styles.page}>
       <header className={styles.header}>
         <Link className={styles.brand} href="/">Roadmap</Link>
-        <Link href="/app">Open the app</Link>
+        <a href="/auth/login?return_to=%2Fapp">Open the app</a>
       </header>
       <main className={styles.main}>
         <span className={styles.eyebrow}>Support</span>
@@ -31,7 +31,7 @@ export default function SupportPage() {
             <li>Export or deletion: Settings → Export or delete data.</li>
             <li>Lost sign-in access or a suspected incident: use the owner’s controlled release channel immediately.</li>
           </ul>
-          <Link href="/app">Open the instructor workspace</Link>
+          <a href="/auth/login?return_to=%2Fapp">Open the instructor workspace</a>
         </section>
         <section className={styles.section}>
           <h2>For golfers</h2>

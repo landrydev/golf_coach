@@ -369,6 +369,14 @@ a {
   margin-top: 2.1rem;
 }
 
+.auth-entry-note {
+  max-width: 34rem;
+  margin: 0.8rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
 .reassurance-list {
   display: flex;
   flex-wrap: wrap;

@@ -9,16 +9,18 @@ import {
   testOrigin,
   writeHeaders,
 } from "../tests/support/d1-worker.mjs";
+import { functionalQaWorkerBindings } from "./functional-qa-fixtures.mjs";
 
 const host = "127.0.0.1";
 const port = Number(process.env.VISUAL_REVIEW_PORT || 4175);
+const browserOrigin = `http://${host}:${port}`;
 const clientRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../dist/client");
 const identity = {
   email: "visual.coach@example.test",
   name: "Coach Rowan",
 };
 
-const worker = await startD1Worker();
+const worker = await startD1Worker(functionalQaWorkerBindings());
 const fixture = await createSyntheticFixture(worker);
 
 const server = createServer(async (request, response) => {
@@ -26,7 +28,8 @@ const server = createServer(async (request, response) => {
     const incomingUrl = new URL(request.url || "/", `http://${host}:${port}`);
     if (
       incomingUrl.pathname.startsWith("/assets/") ||
-      incomingUrl.pathname === "/og.png"
+      incomingUrl.pathname === "/og.png" ||
+      incomingUrl.pathname === "/favicon.svg"
     ) {
       await serveClientAsset(incomingUrl.pathname, response);
       return;
@@ -89,8 +92,25 @@ const server = createServer(async (request, response) => {
     );
     response.statusCode = upstream.status;
     response.statusMessage = upstream.statusText;
-    upstream.headers.forEach((value, name) => response.setHeader(name, value));
-    response.end(Buffer.from(await upstream.arrayBuffer()));
+    upstream.headers.forEach((value, name) => {
+      if (name === "content-length") return;
+      response.setHeader(
+        name,
+        name === "location" ? value.replaceAll(testOrigin, browserOrigin) : value,
+      );
+    });
+    const upstreamBody = Buffer.from(await upstream.arrayBuffer());
+    const contentType = upstream.headers.get("content-type") ?? "";
+    if (/^(?:text\/|application\/(?:javascript|json|problem\+json))/i.test(contentType)) {
+      const rewrittenBody = upstreamBody
+        .toString("utf8")
+        .replaceAll(testOrigin, browserOrigin);
+      response.setHeader("Content-Length", Buffer.byteLength(rewrittenBody));
+      response.end(rewrittenBody);
+    } else {
+      response.setHeader("Content-Length", upstreamBody.byteLength);
+      response.end(upstreamBody);
+    }
   } catch (error) {
     response.statusCode = 500;
     response.setHeader("Content-Type", "text/plain; charset=utf-8");
@@ -234,6 +254,7 @@ async function serveClientAsset(pathname, response) {
       ".css": "text/css; charset=utf-8",
       ".js": "text/javascript; charset=utf-8",
       ".png": "image/png",
+      ".svg": "image/svg+xml; charset=utf-8",
     };
     response.statusCode = 200;
     response.setHeader(

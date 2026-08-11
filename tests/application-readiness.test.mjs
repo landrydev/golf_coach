@@ -20,6 +20,17 @@ const READY_ENVIRONMENT = {
   DATA_REQUEST_OPERATOR_ACCESS_PEPPER:
     "synthetic-data-request-operator-pepper-for-readiness-tests",
   DATA_REQUEST_OPERATOR_EMAIL_DIGESTS: VALID_OPERATOR_DIGEST,
+  INSTRUCTOR_AUTH_MODE: "oidc_v1",
+  OIDC_ISSUER: "https://issuer.roadmap.example",
+  OIDC_CLIENT_ID: "synthetic-readiness-client",
+  OIDC_CLIENT_SECRET: "synthetic-readiness-client-secret",
+  OIDC_TOKEN_ENDPOINT_AUTH_METHOD: "client_secret_basic",
+  OIDC_ID_TOKEN_SIGNING_ALG: "RS256",
+  AUTH_SESSION_LIFETIME_SECONDS: "3600",
+  AUTH_SESSION_PEPPER:
+    "synthetic-instructor-session-pepper-for-readiness-tests",
+  AUTH_TRANSACTION_ENCRYPTION_KEY:
+    "ERERERERERERERERERERERERERERERERERERERERERE",
   INSTRUCTOR_ACCESS_MODE: "owner_private",
   OWNER_PRIVATE_ACCESS_PEPPER:
     "synthetic-owner-access-pepper-for-readiness-tests",
@@ -48,6 +59,7 @@ test("application readiness marks reachable D1 and R2 dependencies ready", async
       abuseProtection: true,
       billingCheckoutPolicy: true,
       instructorAccessPolicy: true,
+      instructorAuthentication: true,
       consentPolicy: true,
       dataRequestOperatorAccessPolicy: true,
       applicationWritesEnabled: true,
@@ -109,19 +121,19 @@ test("D1 and R2 readiness deadlines run concurrently and fail closed", async () 
 });
 
 test(
-  "D1 readiness requires migration 0010 scope semantics and the exact expiry index",
+  "D1 readiness requires migration 0011 auth semantics and the exact expiry index",
   { timeout: 60_000 },
   async () => {
     const { loadApplicationReadiness } = await import(
       "../lib/application-readiness.ts"
     );
 
-    const beforeMigration0010 = await startD1Worker(
+    const beforeMigration0011 = await startD1Worker(
       {},
-      { migrationThroughIndex: 9 },
+      { migrationThroughIndex: 10 },
     );
     try {
-      const database = await beforeMigration0010.database();
+      const database = await beforeMigration0011.database();
       await withReadyEnvironment(async () => {
         const readiness = await loadApplicationReadiness({
           database,
@@ -133,7 +145,7 @@ test(
         assertSchemaDetailsPrivate(readiness);
       });
     } finally {
-      await beforeMigration0010.dispose();
+      await beforeMigration0011.dispose();
     }
 
     const currentSchema = await startD1Worker();
@@ -317,6 +329,9 @@ function assertSchemaDetailsPrivate(readiness) {
     "abuse_rate_limits",
     "share_close_network",
     "share_close_session",
+    "auth_login_network",
+    "oidc_login_transactions",
+    "instructor_sessions",
     "window_expires_at",
   ]) {
     assert.equal(serialized.includes(detail), false);

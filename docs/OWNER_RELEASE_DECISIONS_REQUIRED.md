@@ -9,6 +9,11 @@ remains owner-only, new Stripe Checkout sessions remain disabled, media upload i
 absent, deletion remains an identity-verified request, and working legal/support
 copy does not claim a staffed public service.
 
+`TECH-006` supersedes Sites as the final paid live-V1 host and retains exact v16
+only as private staging/evidence. Direct Cloudflare Workers/D1/R2 is the
+least-change verification candidate, not an authorized account, deployed release,
+public origin, selected OIDC provider, approved data location, or acceptance.
+
 ## Decision order and readiness
 
 | Decision | Current state | Why |
@@ -19,7 +24,7 @@ copy does not claim a staffed public service.
 | `OWNER-COMM-001` offer and consequences | **PREREQUISITE MISSING** | Exact policy and Stripe Product/Price are not supplied or validated |
 | `OWNER-PRIV-001` privacy and retention | **PREREQUISITE MISSING** | Versioned policy and qualified Canadian review do not exist |
 | `OWNER-MEDIA-001` text-first exclusion | **READY FOR DECISION** | Exclusion matches the implemented fail-closed state |
-| `OWNER-PROD-001` origin/providers/access | **PREREQUISITE MISSING; `LOG-PRIV-001` OPEN** | Origin, accounts, access scope, budgets, and provider evidence are unresolved; v15 proved that all packaged Sites logging switches were ineffective, and no v16 provider-log query was run |
+| `OWNER-PROD-001` origin/providers/access | **PREREQUISITE MISSING; `HOST-SUIT-001` CONTAINED; `LOG-PRIV-001` OPEN** | Supply/approve the exact Cloudflare account, credential authority, budget, domain, direct-host access scope, OIDC provider/policy, provider privacy/data-residency baseline, alert/cost owner, and exact hosted evidence. `TECH-006` selects a candidate only. |
 | `OWNER-VALIDATION-001` controlled real operation | **INELIGIBLE WHILE `LOG-PRIV-001` IS OPEN** | Policy, consent, operators, participants, and any transaction limit must be exact, and provider log-privacy enforcement must pass first |
 | `OWNER-ACCEPT-001` exact-release acceptance | **OWNER-ONLY REVIEW POSSIBLE; PUBLIC/REAL-USER INELIGIBLE** | The complete evidence packet and all applicable prerequisites must be attached; `LOG-PRIV-001` blocks public and controlled-real-user acceptance |
 
@@ -302,21 +307,37 @@ coach observations, and evidence limitations already work without it.
 
 ## Decision 5 — public origin, access scope, and production providers
 
-**Evidence:** OpenAI Sites, D1, private R2, dispatch-owned Sign in with ChatGPT, and
-Stripe-hosted billing are selected under `AUTH-005`; a final domain, live Stripe
-account/configuration, provider-region record, budget owner, and public-auth support
-path are not supplied.
+**Evidence:** `TECH-006` retains exact Sites v16 only as owner-private
+staging/evidence and selects direct Cloudflare Workers/D1/R2 as the least-change
+successor candidate. Current official Sites guidance rules out its use as the final
+paid host. The Cloudflare account, credentials, plan/budget, domain, OIDC provider
+and policy, provider terms/privacy/data-residency baseline, live Stripe account,
+alert/cost owner, and hosted evidence are not supplied.
 
-**Viable choices:** keep owner-only access, permit an exact controlled allowlist, or authorize public access; use the Sites URL or an owner-controlled custom domain; approve or reject each attached provider/account/configuration baseline.
+**Viable choices:** keep only the current Sites staging release; authorize a private
+direct-Cloudflare successor verification deployment; and, after its security,
+privacy, recovery, accessibility, billing, and operational evidence passes,
+separately authorize controlled or public access on an owner-controlled domain.
 
-**Recommendation:** exercise the exact candidate owner-only on its Sites URL first; then approve one controlled allowlist before any public mode, and approve one domain plus the exact live provider accounts/configuration only after hosted authentication and operating evidence pass.
+**Recommendation:** authorize one exact Cloudflare account/credential scope and
+budget for a private successor deployment, select a supported public OIDC provider
+and identity/session policy, and approve public access only after the exact private
+candidate passes every recorded hosted control.
 
 **Exact proposed decision wording:**
 
-> `OWNER-PROD-001`: I approve **[owner-only / exact controlled allowlist / public]** access and **[Sites URL / owner-controlled domain]** as the entry point. I approve provider/account inventory **[version]**, with monthly budget/alert **[limits]** and owner **[name]**. I authorize only the exact configured Stripe, Sites, D1, R2, and SIWC operations described there. Public webhook ingress and instructor/golfer access boundaries are **[exact configuration]**. Review provider access and cost on **[date]**.
+> `OWNER-PROD-001`: I authorize Cloudflare account **[account]** and credential
+> scope **[scope]** for one private direct-Workers/D1/R2 successor deployment,
+> with budget/alerts **[limits]** and owner **[name]**. I approve OIDC provider
+> **[provider]**, issuer/client/redirect policy **[version]**, domain **[domain]**,
+> provider terms/privacy/data-residency baseline **[version]**, and access scope
+> **[owner-only / controlled allowlist / public]**. Stripe/webhook and instructor/
+> golfer boundaries are **[exact configuration]**. No broader charge, data migration,
+> user admission, or acceptance is authorized. Review access and cost on **[date]**.
 
-**Consequence of deferral:** the Sites release stays owner-only; no custom-domain,
-public-auth-suitability, or live-billing claim is made.
+**Consequence of deferral:** Sites v16 stays owner-only staging/evidence; the direct
+candidate remains local and un-deployed; no custom-domain, public-auth, data-
+migration, hosted-control, or live-billing claim is made.
 
 ## Decision 6 — controlled real-user and transaction authorization
 

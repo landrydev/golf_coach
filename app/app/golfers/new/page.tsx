@@ -9,6 +9,7 @@ import {
   listActivePackagesPage,
 } from "@/lib/repository";
 import styles from "../../workspace.module.css";
+import { AuthoringStepNav } from "../AuthoringStepNav";
 import { NewGolferForm } from "./NewGolferForm";
 import { StagedGolferForm } from "./StagedGolferForm";
 
@@ -71,6 +72,10 @@ export default async function NewGolferPage() {
           Back to golfers
         </Link>
       </header>
+      <AuthoringStepNav
+        current="goal"
+        links={{ goal: "#authoring-goal" }}
+      />
       <div className={styles.notice} role="note">
         <strong>Collect only what you need.</strong>
         <span>
@@ -93,10 +98,23 @@ export default async function NewGolferPage() {
         </div>
       ) : (
         <>
+      <section id="authoring-goal" className={styles.authoringStage} aria-labelledby="authoring-goal-heading">
+        <div className={styles.sectionHeader}>
+          <div>
+            <span className={styles.eyebrow}>Step 1 of 7</span>
+            <h2 id="authoring-goal-heading">Save the golfer and goal.</h2>
+            <p>
+              This is the durable first step. Assessment, priority, phases, optional evidence,
+              package, and exact preview follow on the resumable route.
+            </p>
+          </div>
+          <span className={styles.saveBadge}>Saved only after confirmation</span>
+        </div>
       <StagedGolferForm
         key={`staged-golfer:${account.id}`}
         recoveryScope={account.id}
       />
+      </section>
       {packagePage.hasMore ? (
         <div className={styles.notice} role="note">
           <strong>Package selection is bounded.</strong>
@@ -107,18 +125,21 @@ export default async function NewGolferPage() {
           </span>
         </div>
       ) : null}
-      <div className={styles.notice} role="note">
-        <strong>Prefer one complete authoring session?</strong>
-        <span>
-          The full-create form below remains available when you already have the complete
-          assessment, current priority, and phase sequence.
-        </span>
-      </div>
-      <NewGolferForm
-        key={`full-golfer:${account.id}`}
-        packages={packages}
-        recoveryScope={account.id}
-      />
+      <details className={styles.advancedAuthoring}>
+        <summary>Experienced path: complete all roadmap fields in one session</summary>
+        <div className={styles.notice} role="note">
+          <strong>This path is optional.</strong>
+          <span>
+            Use it only when the complete assessment, priority, and three- or four-phase
+            sequence are already prepared. It retains the same safe create-attempt recovery.
+          </span>
+        </div>
+        <NewGolferForm
+          key={`full-golfer:${account.id}`}
+          packages={packages}
+          recoveryScope={account.id}
+        />
+      </details>
         </>
       )}
     </div>

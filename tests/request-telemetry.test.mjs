@@ -5,6 +5,7 @@ import test from "node:test";
 register(new URL("./support/cloudflare-loader.mjs", import.meta.url));
 
 const SAFE_REQUEST_ID = "2d48a8b9-0777-4dd0-b36a-f2fe065e1e3c";
+const TEST_ORIGIN = "https://roadmap-telemetry.chatgpt.site";
 
 test("request telemetry emits only bounded, allowlisted dimensions", async () => {
   const { buildRequestTelemetry, requestRouteFamily } = await import(
@@ -148,6 +149,7 @@ test("Worker responses and structured logs share a generated safe request ID", a
         headers: {
           "oai-authenticated-user-email": email,
           "oai-authenticated-user-full-name": encodeURIComponent(name),
+          "oai-authenticated-user-full-name-encoding": "percent-encoded-utf-8",
         },
       },
     );
@@ -275,8 +277,10 @@ test("top-level Worker failures return a private generic response through the se
 
 function invokeWorker(worker, path, init) {
   return worker.fetch(
-    new Request(new URL(path, "https://roadmap.example"), init),
+    new Request(new URL(path, TEST_ORIGIN), init),
     {
+      APP_URL: TEST_ORIGIN,
+      INSTRUCTOR_AUTH_MODE: "sites_siwc",
       ASSETS: {
         fetch: async () => new Response("Not found", { status: 404 }),
       },

@@ -18,8 +18,8 @@ export function SiteHeader() {
         </nav>
 
         <div className="header-actions">
-          <Link className="sign-in-link" href="/app">Sign in</Link>
-          <Link className="button button-header" href="/app">Open Roadmap</Link>
+          <a className="sign-in-link" href="/auth/login?return_to=%2Fapp">Sign in</a>
+          <a className="button button-header" href="/auth/login?return_to=%2Fapp">Open Roadmap</a>
         </div>
       </div>
     </header>

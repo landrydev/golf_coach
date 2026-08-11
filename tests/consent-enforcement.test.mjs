@@ -304,7 +304,7 @@ test(
 );
 
 test("an expired grant denies mutation and a contradictory legacy grant is never effective", async (context) => {
-  const worker = await startD1Worker({}, { migrationThroughIndex: 8 });
+  const worker = await startD1Worker();
   context.after(() => worker.dispose());
   const profile = await jsonWrite(worker, "/api/profile", "PUT", {
     displayName: coach.name,
@@ -326,10 +326,12 @@ test("an expired grant denies mutation and a contradictory legacy grant is never
   );
 
   await worker.inspect([
+    { sql: "pragma ignore_check_constraints = on" },
     {
       sql: "update consent_records set expires_at = null, granted_at = null where id = ?",
       params: [grant.id],
     },
+    { sql: "pragma ignore_check_constraints = off" },
   ]);
   const corruptState = await currentPurpose(
     worker,

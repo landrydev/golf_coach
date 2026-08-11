@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { env as workerEnvironment } from "cloudflare:workers";
 import { RequestError } from "./http";
 
 type AbuseLimit = {
@@ -17,7 +17,9 @@ type AbuseLimit = {
     | "data_export_account"
     | "data_request_account"
     | "data_request_operator_network"
-    | "data_request_operator_identity";
+    | "data_request_operator_identity"
+    | "auth_login_network"
+    | "auth_callback_network";
   maximum: number;
   windowSeconds: number;
 };
@@ -49,6 +51,8 @@ export const ABUSE_LIMITS = {
     30,
     5 * 60,
   ),
+  authLoginNetwork: limit("auth_login_network", 20, 5 * 60),
+  authCallbackNetwork: limit("auth_callback_network", 30, 5 * 60),
 } as const satisfies Record<string, AbuseLimit>;
 
 type CounterRow = { request_count: number };
@@ -57,11 +61,13 @@ export async function enforceAbuseLimit(
   rule: AbuseLimit,
   subject: string,
   now = Date.now(),
+  environment: Pick<Cloudflare.Env, "DB" | "ABUSE_LIMIT_PEPPER"> =
+    workerEnvironment,
 ): Promise<void> {
   if (!subject) {
     throw new Error("A non-empty abuse-limit subject is required.");
   }
-  if (!env.DB) {
+  if (!environment.DB) {
     throw new Error("Cloudflare D1 binding `DB` is unavailable.");
   }
 
@@ -72,16 +78,17 @@ export async function enforceAbuseLimit(
     rule.scope,
     windowStartedAt,
     subject,
+    environment.ABUSE_LIMIT_PEPPER,
   );
 
   // D1 executes batch statements as one transaction. The UPSERT itself is a
   // single atomic SQLite statement, so concurrent edge requests cannot pass by
   // racing a read followed by a write. Expired digests are removed eagerly.
-  const [, counterResult] = await env.DB.batch<CounterRow>([
-    env.DB.prepare(
+  const [, counterResult] = await environment.DB.batch<CounterRow>([
+    environment.DB.prepare(
       "DELETE FROM abuse_rate_limits WHERE window_expires_at <= ?",
     ).bind(now),
-    env.DB.prepare(
+    environment.DB.prepare(
       `INSERT INTO abuse_rate_limits (
         scope,
         subject_key_hash,
@@ -145,10 +152,11 @@ async function hashSubject(
   scope: AbuseLimit["scope"],
   windowStartedAt: number,
   subject: string,
+  configuredPepper?: string,
 ) {
   const key = await crypto.subtle.importKey(
     "raw",
-    new TextEncoder().encode(abuseLimitPepper()),
+    new TextEncoder().encode(abuseLimitPepper(configuredPepper)),
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"],
@@ -163,8 +171,9 @@ async function hashSubject(
     .join("");
 }
 
-function abuseLimitPepper(): string {
-  const configured = process.env.ABUSE_LIMIT_PEPPER?.trim();
+function abuseLimitPepper(environmentValue?: string): string {
+  const configured =
+    environmentValue?.trim() ?? process.env.ABUSE_LIMIT_PEPPER?.trim();
   if (configured) {
     if (configured.length < 32) {
       throw new Error("ABUSE_LIMIT_PEPPER must contain at least 32 characters.");

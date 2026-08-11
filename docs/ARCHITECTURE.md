@@ -1,8 +1,8 @@
 # Production SaaS Architecture
 
-**Document status:** Selected implementation architecture under `AUTH-005`; not evidence of deployment, security, compliance, or production readiness
+**Document status:** Current architecture record under `AUTH-005` and `TECH-006`; direct Cloudflare is a verification candidate, not a deployed or accepted production release
 **Scope:** Bounded Canada-wide self-serve V1 for one independent golf instructor and the instructor's golfers
-**Last updated:** 2026-08-07
+**Last updated:** 2026-08-09
 **Related:** [Security and Privacy](SECURITY_PRIVACY.md), [Operations](OPERATIONS.md), [Requirements Traceability](REQUIREMENTS_TRACEABILITY.md)
 
 ## Authority and decision language
@@ -12,6 +12,12 @@
 `AUTH-005` authorizes production architecture selection and implementation for that bounded V1. In this document, **selected** means an implementation decision made under that authority. It does not mean the provider account is provisioned, the behavior is verified, or Aaron has accepted a live release.
 
 The historical design gate is not an active implementation gate. Unresolved matters named here are evidence or operational dependencies. Work may continue around them, but affected real operations must not be represented as working until direct evidence exists.
+
+`TECH-006` supersedes OpenAI Sites as the final paid live-V1 host. Exact Sites
+version 16 remains owner-only private staging/evidence. Direct Cloudflare Workers
+with D1/R2 is the least-change successor candidate to verify; no Cloudflare
+account, credentials, domain, public access, production data migration, OIDC
+provider, charge, deployment, or acceptance is implied by that selection.
 
 ## Bounded V1 system
 
@@ -26,15 +32,16 @@ The golfer's purchase, booking, or contact action remains an instructor-owned ex
 
 ```mermaid
 flowchart LR
-    Public[Public visitor] --> Sites[OpenAI Sites / Cloudflare Worker]
-    Instructor[Instructor] -->|dispatch-owned SIWC| Sites
-    Golfer[Golfer] -->|revocable capability| Sites
-    Sites --> D1[(Cloudflare D1)]
-    Sites --> R2[(Private Cloudflare R2)]
-    Sites -->|Checkout / Portal request| Stripe[Stripe hosted billing]
-    Stripe -->|signed webhook| Sites
-    Sites --> Audit[(First-party audit events)]
-    Sites --> Logs[Sites operational logs]
+    Public[Public visitor] --> Worker[Direct Cloudflare Worker candidate]
+    Instructor[Instructor] -->|verified OIDC session| Worker
+    Golfer[Golfer] -->|revocable capability| Worker
+    Worker --> D1[(Cloudflare D1)]
+    Worker --> R2[(Private Cloudflare R2)]
+    Worker -->|Checkout / Portal request| Stripe[Stripe hosted billing]
+    Stripe -->|signed webhook| Worker
+    Worker --> Audit[(First-party audit events)]
+    Worker --> Logs[Privacy-controlled Worker logs]
+    Owner[Owner only] --> Sites[Exact Sites v16 staging/evidence]
     Golfer -->|explicit external handoff| CoachLink[Instructor booking / purchase / contact]
 ```
 
@@ -42,24 +49,24 @@ flowchart LR
 
 | Decision | Selection | V1 responsibility | Important limitation or revisit trigger |
 |---|---|---|---|
-| `ARCH-001` application and hosting | OpenAI Sites, vinext, React, TypeScript, and a Cloudflare Worker runtime | Server-rendered and interactive public, instructor, golfer, and route-handler surfaces; static assets; deployment wiring | The runtime must remain Worker-compatible. A live Sites release and public-domain configuration are not yet evidenced. |
+| `ARCH-001` application and hosting | Direct Cloudflare Workers candidate using the existing vinext/React/TypeScript Worker bundle; exact Sites v16 retained only as owner-private staging/evidence | Server-rendered and interactive public, instructor, golfer, and route-handler surfaces; static assets; deployment wiring | The successor account/resources are not authorized or provisioned, its direct deployment profile remains local evidence, and no public-domain or accepted-release claim exists. |
 | `ARCH-002` structured persistence | Cloudflare D1, accessed through server-side data helpers and versioned migrations | Instructor accounts, tenant-owned product records, roadmap state, share-capability records, subscription projection, idempotency records, and audit events | Migration, backup, restore, capacity, and production-binding behavior require direct environment evidence. |
 | `ARCH-003` object storage | Private Cloudflare R2 | Approved coach branding, optional golfer evidence/media, generated exports, and other blobs; D1 retains metadata and ownership | Media policy, limits, validation/scanning behavior, retention, and restore handling remain unresolved. R2 is not a public file origin. |
-| `ARCH-004` instructor identity | Dispatch-owned Sign in with ChatGPT (SIWC); no app-owned password database | Instructor authentication and server-side attribution of account actions | `[REAL-WORLD VALIDATION REQUIRED]` Confirm that SIWC is supported and appropriate for public Canada-wide instructor sign-in, recovery, account continuity, and the intended Sites access policy. |
+| `ARCH-004` instructor identity | Provider-neutral OpenID Connect boundary for the direct host, with authorization code, PKCE, state, nonce, verified issuer/audience/signature, stable issuer-plus-subject identity, and revocable server-side sessions; exact provider/policy pending | Instructor authentication and server-side attribution of account actions without an app-owned password database | The deployed Sites runtime still depends on dispatch SIWC. Direct-host OIDC is implemented and locally tested, but no provider is configured, hosted, or accepted; missing/invalid configuration fails closed, and existing accounts are never silently merged by email. |
 | `ARCH-005` golfer access | High-entropy, revocable capability links whose verifier is hashed at rest; publish, exchange, every session read, and response require current account `golfer_record` plus golfer `roadmap_sharing` grants | Private read access to one published golfer experience without requiring a golfer account; withdrawal transactionally revokes links and sessions | A bearer capability can be forwarded by its recipient before revocation. Exact consent meaning/copy, recipient comprehension, and hosted acceptance evidence still require owner and qualified review. |
 | `ARCH-006` SaaS billing | Stripe Checkout, Customer Portal, and signed webhooks, planned behind server routes | Instructor subscription creation and self-service billing/account management | Production Stripe credentials, the exact approved Stripe Price, tax/refund/failure policy, webhook endpoint, and controlled live transaction evidence are unresolved. |
-| `ARCH-007` observability | First-party structured audit events plus Sites operational logs | Security/account/data-change traceability and runtime diagnosis | Sites log access, retention, redaction, alert routing, and correlation must be demonstrated in the deployed environment. |
+| `ARCH-007` observability | First-party structured audit events plus direct Workers observability with invocation logs disabled | Security/account/data-change traceability and runtime diagnosis | Official direct-Workers controls exist, but an exact hosted candidate must prove enforcement, retained-data disposition, privacy-safe diagnostics, correlation, alert routing, and failure delivery. Sites `LOG-PRIV-001` remains open for the staging host. |
 | `ARCH-008` delivery | Instructor copies a private golfer link and uses an existing communication channel | Completes the share operation without introducing an outbound messaging provider | The app records publish/link lifecycle, not delivery or message receipt. No success copy may imply an email or message was sent. |
-| `ARCH-009` privacy-operator access | Dispatch-owned SIWC plus a separate HMAC-SHA-256 normalized-email digest allowlist and dual network/operator abuse controls | Least-privilege access to a strict newest-first keyset queue, one-request count-only inventory, read-only verification/processing/terminal history, and only a non-attesting identity-verification-required marker | Verification method/evidence, named operator, approved policy, hosted identity evidence, processing, denial/cancellation authority, fulfillment, and deletion remain unresolved. Product owner/subscriber access does not imply this role. |
+| `ARCH-009` privacy-operator access | Verified instructor identity plus a separate HMAC-SHA-256 normalized-email digest allowlist and dual network/operator abuse controls | Least-privilege access to a strict newest-first keyset queue, one-request count-only inventory, read-only verification/processing/terminal history, and only a non-attesting identity-verification-required marker | The Sites staging path currently uses SIWC; the successor requires verified OIDC. Verification method/evidence, named operator, approved policy, hosted identity evidence, processing, denial/cancellation authority, fulfillment, and deletion remain unresolved. Product owner/subscriber access does not imply this role. |
 
 The package lockfile is the version authority for implementation dependencies. Documentation does not promise compatibility beyond the exact built and tested release.
 
 ## Component responsibilities
 
-### Sites application and Worker
+### Application Worker and hosting lineage
 
 - Render public pages without requiring authentication.
-- Require SIWC on all instructor-owned reads and writes.
+- Require a verified server-owned identity session on all instructor-owned reads and writes; Sites staging continues to use its outer SIWC boundary until superseded.
 - Perform every authorization decision on the server.
 - Validate inputs and output-encode coach-authored content.
 - Coordinate D1 transactions and private R2 access.
@@ -111,13 +118,26 @@ Every tenant-owned row carries an `instructor_id` or is reachable only through a
 
 ### Instructor
 
-Dispatch-owned SIWC is the selected identity mechanism. The application reads identity only from trusted request headers supplied by the Sites dispatch layer and never from browser-submitted headers or form fields. The app creates its own immutable `instructor_id` and maps the SIWC identity to it.
+Exact Sites v16 currently receives dispatch-owned SIWC identity. That mechanism is
+staging history, not the final public-host identity design. The current direct-host
+implementation strips all browser-supplied identity headers, completes a standards-
+based OIDC authorization-code flow with PKCE/state/nonce, validates discovery and
+ID-token issuer, audience, RS256 signature, expiry, and nonce, then injects identity
+only from a live revocable server-side session. The app keeps its immutable
+`instructor_id` and maps the stable `(issuer, subject)` pair to it. This boundary has
+local automated evidence only; no provider configuration or hosted identity journey
+exists.
 
-The current helper exposes email and an optional display name. Email must be normalized for lookup but should not become a foreign key. If the platform provides a stable opaque subject in the supported public-auth contract, that subject should become the preferred external identity key through a migration; the internal `instructor_id` remains stable.
+Email and display name are profile attributes, not identity keys. OpenID Connect
+only guarantees issuer plus subject as the stable identifier; a verified email
+collision with an existing different identity must fail closed into an explicit
+account-link/recovery process. The internal `instructor_id` remains stable.
 
-SIWC authenticates a user. It does not by itself establish a business entitlement. The server also checks account state and Stripe-derived entitlement for paid-only writes. Public content and the golfer capability flow do not use SIWC.
+Authentication does not by itself establish a business entitlement. The server
+also checks account state and Stripe-derived entitlement for paid-only writes.
+Public content and the golfer capability flow do not use instructor OIDC.
 
-`[REAL-WORLD VALIDATION REQUIRED]` Public self-serve suitability, sign-in UX, account recovery, identity-claim stability, sign-out, cross-device behavior, and support escalation must be verified with the exact hosted configuration. This is an unresolved evidence dependency, not a return to the retired design gate.
+`[REAL-WORLD VALIDATION REQUIRED]` The exact OIDC provider/policy, public self-serve suitability, sign-in UX, account linking/recovery, issuer-and-subject continuity, sign-out, session revocation, cross-device behavior, and support escalation must be approved and verified with the exact hosted configuration. This is an unresolved evidence dependency, not a return to the retired design gate.
 
 ### Golfer capability exchange
 
@@ -140,7 +160,7 @@ If fragment exchange is incompatible with the supported browser or accessibility
 
 ```text
 Public explanation and synthetic sample
-→ SIWC sign-in
+→ verified OIDC sign-in
 → account and coach identity
 → package and external action
 → adult golfer and goal
@@ -189,9 +209,15 @@ Authenticated instructor
 |---|---|---|---|
 | Local | Synthetic or generated test data only | Stripe test mode or fakes; no customer messages | Build, unit/integration tests, migrations, and developer checks |
 | Preview | Approved non-production test accounts and non-sensitive fixtures | Stripe test mode; no production package links unless explicitly controlled | Production-like journey, authorization, accessibility, and failure-path evidence |
-| Production | Authorized real adult user data under published policy | Real SIWC, D1/R2, Stripe, domain, and explicitly initiated external handoffs | Smoke checks, controlled transaction evidence, monitoring, backup/restore, and Aaron's exact-release acceptance |
+| Production | Authorized real adult user data under published policy | Approved OIDC, D1/R2, Stripe, domain, and explicitly initiated external handoffs | Smoke checks, controlled transaction evidence, monitoring, backup/restore, and Aaron's exact-release acceptance |
 
-Logical D1 and R2 bindings are declared in `.openai/hosting.json`; Sites owns actual Cloudflare resource creation and deployment wiring. Secrets and hosted runtime values are managed through the hosting control plane, never committed to the repository. Environment identity must be explicit so a preview cannot silently use production data or Stripe live mode.
+The Sites-only resource declaration in `.openai/hosting.json` remains the private
+staging manifest. A direct deployment profile must be generated from a fresh exact
+build using explicit non-secret Worker, D1, R2, and canonical-URL inputs, while all
+secrets stay in the authorized Cloudflare secret store. Generated deployment
+configuration is local evidence and must not be committed. Environment identity
+must be explicit so preview/staging cannot silently use production data, public
+OIDC, or Stripe live mode.
 
 ## Deliberate exclusions
 
@@ -212,14 +238,14 @@ Logical D1 and R2 bindings are declared in `.openai/hosting.json`; Sites owns ac
 
 | Area | Selected | Deferred/rejected for bounded V1 | Rationale |
 |---|---|---|---|
-| Hosting | Sites + Cloudflare Worker | Separate Node server or multi-service deployment | Keeps one deployable surface and matches the existing Sites project while supporting server routes. |
+| Hosting | Direct Cloudflare Worker/D1/R2 candidate; Sites v16 retained private for staging/evidence | Continued Sites use as the paid host, or a separate Node/multi-service deployment | Preserves the existing Worker-compatible bundle while moving to a surface with documented direct cron and log controls; exact hosted proof is still required. |
 | Persistence | D1 | Browser storage or an external managed SQL service | Durable tenant records require server-authoritative relational ownership and migrations. |
 | Files | Private R2 | Public asset URLs or blobs in D1 | Keeps file bytes private and separate from searchable ownership metadata. |
-| Instructor identity | Dispatch-owned SIWC | App-owned passwords, custom OAuth, or starter-scaffolded public auth | Avoids owning password/session infrastructure, subject to the unresolved public-auth suitability evidence. |
+| Instructor identity | Provider-neutral OIDC relying-party boundary; exact provider pending | Sites-dispatch SIWC as public identity, app-owned passwords, or hand-rolled JWT validation | Supports a portable public host while retaining provider-managed primary authentication; the application still owns short-lived transaction and revocable session state. |
 | Golfer access | Revocable capability | Mandatory golfer account or public link | Keeps the viewing path low-friction while providing revocation and server-side scope. |
 | SaaS billing | Stripe hosted surfaces | Custom card capture | Keeps card collection outside the app and makes webhook events the billing authority. |
 | Sharing delivery | Copy link | Email/SMS provider | Meets the V1 share need without introducing consent, deliverability, and messaging operations. |
-| Observability | First-party audit + Sites logs | Third-party product analytics by default | Minimizes disclosed data flows and separates accountable change history from runtime diagnostics. |
+| Observability | First-party audit + privacy-controlled direct Workers diagnostics | Sites logs or third-party product analytics by default | Separates accountable change history from minimal runtime diagnostics and creates a path to close `LOG-PRIV-001`; hosted enforcement remains unproved. |
 
 ## Unresolved evidence and operational dependencies
 
@@ -227,12 +253,12 @@ These do not invalidate the selected architecture and do not reinstate a design 
 
 | Dependency | Evidence required before the affected live claim |
 |---|---|
-| SIWC/public-auth suitability | Supported production contract, end-to-end sign-in/recovery/sign-out tests, identity-claim handling, and support path for external instructors |
+| Public OIDC provider and policy | Aaron-approved provider/account, issuer/client/redirect configuration, end-to-end sign-in/linking/recovery/sign-out/revocation tests, issuer-plus-subject handling, and support path for external instructors |
 | Stripe production credentials and exact price | Authorized account ownership, approved Price ID and commercial copy, webhook secret, tax/refund/failure policy, and controlled live transaction evidence |
 | Public domain | Authorized domain, DNS/hosting configuration, transport and redirect checks, and final-origin security-header/cookie verification |
 | Legal and privacy copy | Qualified review plus published copy that matches actual consent, sharing, retention, deletion, billing, and support behavior |
 | Backups and recovery | Documented D1/R2 procedure, retained evidence, successful restore exercise, measured recovery result, and named operator |
-| Sites logs | Demonstrated access, retention, redaction, correlation, alert routing, and capability-token exclusion in the real environment |
+| Direct-host logging and cron | Exact hosted enforcement of disabled invocation logs, retained-data disposition, privacy-safe correlation, trigger metadata, at least three observed intervals, and exercised alert delivery; Sites `LOG-PRIV-001` remains open for staging |
 | Live acceptance | Exact release/version, public URL, controlled critical-journey evidence, residual-risk record, and Aaron's dated acceptance decision |
 
 No section of this document claims legal compliance, security certification, availability level, successful restore, successful billing, production deployment, or owner acceptance.

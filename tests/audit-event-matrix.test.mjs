@@ -114,6 +114,26 @@ test("the audit-event matrix covers every production mutation route and emitted 
   );
 });
 
+test("drill demo-media attach and withdrawal retain explicit audit mappings", async () => {
+  const entries = parseMatrix(await readFile(matrixPath, "utf8"));
+  const attach = entries.find(
+    ({ method, routePath }) =>
+      method === "POST" && routePath === "/api/coaching/drills/[drillId]/media",
+  );
+  const withdraw = entries.find(
+    ({ method, routePath }) =>
+      method === "DELETE" && routePath === "/api/coaching/drills/[drillId]/media",
+  );
+
+  assert.deepEqual(attach?.producers, ["attachAccountMedia"]);
+  assert.deepEqual(attach?.actions, ["media_attachment.created"]);
+  assert.deepEqual(attach?.sources, ["lib/rich-coaching.ts"]);
+  assert.deepEqual(withdraw?.producers, ["withdrawAccountMediaAttachment"]);
+  assert.deepEqual(withdraw?.actions, ["media_attachment.withdrawn"]);
+  assert.deepEqual(withdraw?.sources, ["lib/rich-coaching.ts"]);
+  assert.match(withdraw?.noAuditBehavior ?? "", /wrong-drill identifiers commit neither state nor audit event/);
+});
+
 function parseMatrix(markdown) {
   const section = markdown.match(
     /<!-- AUDIT_EVENT_MATRIX_START -->([\s\S]*?)<!-- AUDIT_EVENT_MATRIX_END -->/,

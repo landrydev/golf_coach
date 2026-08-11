@@ -6,10 +6,12 @@ import { fileURLToPath } from "node:url";
 import {
   CLIENT_MUTATION_MAX_RESPONSE_BYTES,
   CLIENT_MUTATION_TIMEOUT_MS,
+  ClientReadError,
   ClientMutationApiError,
   ClientMutationOutcomeUnknownError,
   clientMutationErrorMessage,
   clientMutationMalformedSuccess,
+  requestClientRead,
   requestClientMutation,
   requireClientMutationJson,
   requireClientMutationSuccess,
@@ -139,6 +141,134 @@ test("retryable responses are outcome-unknown and are never replayed", async () 
       },
     );
     assert.equal(calls, 1);
+  }
+});
+
+test("bounded client reads force replay-safe methods and never replay responses", async () => {
+  for (const [requestedMethod, expectedMethod] of [
+    [undefined, "GET"],
+    ["HEAD", "HEAD"],
+  ]) {
+    let calls = 0;
+    let receivedInit;
+    const response = await requestClientRead(
+      "/api/synthetic",
+      requestedMethod ? { method: requestedMethod } : {},
+      {
+        timeoutMs: 100,
+        fetcher: async (_input, init) => {
+          calls += 1;
+          receivedInit = init;
+          return new Response(requestedMethod === "HEAD" ? null : "bounded", {
+            status: 503,
+          });
+        },
+      },
+    );
+    assert.equal(calls, 1);
+    assert.equal(receivedInit.method, expectedMethod);
+    assert.equal(receivedInit.redirect, "error");
+    assert.equal(receivedInit.signal instanceof AbortSignal, true);
+    assert.equal(response.status, 503);
+  }
+
+  await assert.rejects(
+    requestClientRead("/api/synthetic", { method: "POST" }),
+    /only GET or HEAD/,
+  );
+});
+
+test("client reads bound redirects, timeouts, transport failures, and response size", async () => {
+  let redirectedCalls = 0;
+  let redirectedCancelled = false;
+  const redirected = new Response(
+    new ReadableStream({
+      cancel() {
+        redirectedCancelled = true;
+      },
+    }),
+    { status: 200 },
+  );
+  Object.defineProperty(redirected, "redirected", { value: true });
+  await assert.rejects(
+    requestClientRead("/api/synthetic", {}, {
+      timeoutMs: 100,
+      fetcher: async () => {
+        redirectedCalls += 1;
+        return redirected;
+      },
+    }),
+    (error) =>
+      error instanceof ClientReadError &&
+      error.reason === "redirected_response" &&
+      error.status === 200,
+  );
+  await Promise.resolve();
+  assert.equal(redirectedCalls, 1);
+  assert.equal(redirectedCancelled, true);
+
+  let timeoutCalls = 0;
+  let timeoutSignal;
+  await assert.rejects(
+    requestClientRead("/api/synthetic", {}, {
+      timeoutMs: 5,
+      fetcher: async (_input, init) => {
+        timeoutCalls += 1;
+        timeoutSignal = init.signal;
+        return new Promise(() => {});
+      },
+    }),
+    (error) => error instanceof ClientReadError && error.reason === "timeout",
+  );
+  assert.equal(timeoutCalls, 1);
+  assert.equal(timeoutSignal.aborted, true);
+
+  let transportCalls = 0;
+  await assert.rejects(
+    requestClientRead("/api/synthetic", {}, {
+      timeoutMs: 100,
+      fetcher: async () => {
+        transportCalls += 1;
+        throw new Error("synthetic transport failure");
+      },
+    }),
+    (error) => error instanceof ClientReadError && error.reason === "transport",
+  );
+  assert.equal(transportCalls, 1);
+
+  let oversizedCalls = 0;
+  await assert.rejects(
+    requestClientRead("/api/synthetic", {}, {
+      timeoutMs: 100,
+      fetcher: async () => {
+        oversizedCalls += 1;
+        return new Response(
+          new Uint8Array(CLIENT_MUTATION_MAX_RESPONSE_BYTES + 1),
+          { status: 200 },
+        );
+      },
+    }),
+    (error) =>
+      error instanceof ClientReadError &&
+      error.reason === "response_too_large" &&
+      error.status === 200,
+  );
+  assert.equal(oversizedCalls, 1);
+});
+
+test("client reads return definitive 4xx responses without replay", async () => {
+  for (const status of [400, 401, 403, 404, 409, 422]) {
+    let calls = 0;
+    const response = await requestClientRead("/api/synthetic", {}, {
+      timeoutMs: 100,
+      fetcher: async () => {
+        calls += 1;
+        return new Response(JSON.stringify({ status }), { status });
+      },
+    });
+    assert.equal(calls, 1);
+    assert.equal(response.status, status);
+    assert.deepEqual(await response.json(), { status });
   }
 });
 
@@ -573,6 +703,15 @@ test("outcome-unknown copy distinguishes same-attempt retry from reload-first re
 
 test("every application client network call uses a bounded recovery helper", async () => {
   const expectedCalls = new Map([
+    ["app/app/coaching/drills/DrillLibrary.tsx", { mutation: 7, read: 2 }],
+    [
+      "app/app/coaching/plans/[planId]/RichCoachingWorkspace.tsx",
+      { mutation: 13, read: 2 },
+    ],
+    [
+      "app/app/coaching/roadmaps/RoadmapTemplateLibrary.tsx",
+      { mutation: 5, read: 1 },
+    ],
     ["app/app/golfers/[golferId]/LivingPlanForms.tsx", { mutation: 2 }],
     ["app/app/golfers/[golferId]/PublishControls.tsx", { mutation: 4 }],
     ["app/app/golfers/[golferId]/complete/StagedCompletionForm.tsx", { mutation: 1 }],
@@ -580,14 +719,17 @@ test("every application client network call uses a bounded recovery helper", asy
     ["app/app/golfers/[golferId]/settings/GolferSettingsForm.tsx", { mutation: 2 }],
     ["app/app/golfers/new/NewGolferForm.tsx", { mutation: 1 }],
     ["app/app/golfers/new/StagedGolferForm.tsx", { mutation: 1 }],
+    ["app/app/media/MediaLibrary.tsx", { mutation: 1, upload: 1 }],
     ["app/app/packages/PackageForm.tsx", { mutation: 1 }],
     ["app/app/packages/PackageLifecycleControls.tsx", { mutation: 1 }],
+    ["app/app/settings/BrandingMediaForm.tsx", { mutation: 2, upload: 1 }],
     ["app/app/settings/ProfileForm.tsx", { mutation: 1 }],
     ["app/app/settings/shares/ShareAccessControls.tsx", { mutation: 1 }],
     ["app/app/settings/data/DataRequestControls.tsx", { mutation: 4 }],
     ["app/r/ShareAccess.tsx", { shareExchange: 1 }],
     ["components/consent/ConsentPurposeControl.tsx", { mutation: 1 }],
     ["components/plan/CloseRoadmap.tsx", { mutation: 1 }],
+    ["components/plan/PracticeCheckIn.tsx", { mutation: 1 }],
     [
       "components/plan/GolferChoices.tsx",
       { golferResponse: 1, externalHandoff: 1 },
@@ -611,6 +753,8 @@ test("every application client network call uses a bounded recovery helper", asy
     );
     const calls = {
       mutation: countCalls(source, "requestClientMutation"),
+      read: countCalls(source, "requestClientRead"),
+      upload: countCalls(source, "requestClientUpload"),
       golferResponse: countCalls(source, "requestGolferResponse"),
       shareExchange: countCalls(source, "requestShareExchange"),
       externalHandoff: countCalls(source, "attemptExternalHandoffRecord"),
@@ -630,10 +774,12 @@ test("network primitives stay inside explicit browser and server transport allow
   const approvedBrowserTransports = new Map([
     ["lib/client-mutation-recovery.ts", ["fetch"]],
     ["lib/client-recovery.ts", ["fetch"]],
+    ["lib/client-upload-recovery.ts", ["XMLHttpRequest"]],
   ]);
   const approvedServerTransports = new Map([
+    ["lib/instructor-auth-protocol.ts", ["fetch"]],
     ["lib/stripe.ts", ["fetch"]],
-    ["lib/synthetic-concurrency-barrier.ts", ["fetch"]],
+    ["lib/synthetic-concurrency-barrier.ts", ["fetch", "fetch"]],
   ]);
   const approved = new Map([
     ...approvedBrowserTransports,

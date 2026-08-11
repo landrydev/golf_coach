@@ -60,6 +60,13 @@ const EVIDENCE_FIELDS = [
   "interpretation",
   "limitation",
   "nextEvidenceNeeded",
+  "comparisonRole",
+  "comparisonGroupId",
+  "metricName",
+  "metricValue",
+  "metricUnit",
+  "valueText",
+  "isRepresentative",
 ] as const;
 const REVIEW_FIELDS = [
   "kind",
@@ -183,6 +190,36 @@ export async function POST(
         "on_course_observation",
         "insufficient",
       ] as const);
+      const comparisonRole = enumValue(payload.comparisonRole ?? "standalone", "comparisonRole", [
+        "standalone",
+        "baseline",
+        "current",
+      ] as const);
+      const comparisonGroupId = optional(payload.comparisonGroupId, "comparisonGroupId", 80);
+      if (comparisonRole !== "standalone" && !comparisonGroupId) {
+        throw new RequestError(
+          400,
+          "comparison_group_required",
+          "Baseline and current evidence require a shared comparison group label.",
+        );
+      }
+      const metricName = optional(payload.metricName, "metricName", 160);
+      const metricUnit = optional(payload.metricUnit, "metricUnit", 80);
+      const metricValue = optionalFiniteNumber(payload.metricValue, "metricValue");
+      if (metricValue !== null && (!metricName || !metricUnit)) {
+        throw new RequestError(
+          400,
+          "metric_context_required",
+          "A numeric evidence value requires both its metric name and exact unit.",
+        );
+      }
+      if (metricValue === null && (metricName || metricUnit)) {
+        throw new RequestError(
+          400,
+          "metric_value_required",
+          "Metric name and unit require a numeric evidence value.",
+        );
+      }
       id = await addEvidenceItem(mutationContext, {
         phaseId,
         evidenceType,
@@ -196,6 +233,13 @@ export async function POST(
         limitation: required(payload.limitation, "limitation", 1_500),
         maturity,
         nextEvidenceNeeded: optional(payload.nextEvidenceNeeded, "nextEvidenceNeeded", 1_000),
+        comparisonRole,
+        comparisonGroupId,
+        metricName,
+        metricValue,
+        metricUnit,
+        valueText: optional(payload.valueText, "valueText", 1_000),
+        isRepresentative: booleanValue(payload.isRepresentative, "isRepresentative"),
       });
     } else if (kind === "review") {
       assertExactObjectKeys(payload, REVIEW_FIELDS);
@@ -333,6 +377,23 @@ function positiveInteger(value: unknown, field: string): number {
     throw new RequestError(400, "invalid_field", `${field} must be a positive integer.`);
   }
   return value;
+}
+
+function optionalFiniteNumber(value: unknown, field: string): number | null {
+  if (value === undefined || value === null || value === "") return null;
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(parsed) || Math.abs(parsed) > 1_000_000_000_000) {
+    throw new RequestError(400, "invalid_field", `${field} must be a finite number.`);
+  }
+  return parsed;
+}
+
+function booleanValue(value: unknown, field: string): boolean {
+  if (value === undefined || value === null || value === "" || value === false || value === "false") {
+    return false;
+  }
+  if (value === true || value === "true") return true;
+  throw new RequestError(400, "invalid_field", `${field} must be true or false.`);
 }
 
 function required(value: unknown, field: string, max: number): string {

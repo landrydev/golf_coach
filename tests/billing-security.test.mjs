@@ -7,6 +7,7 @@ import { RequestError } from "../lib/http.ts";
 import {
   identityHeaders,
   startD1Worker,
+  syntheticBillingCommercialPolicyJson,
 } from "./support/d1-worker.mjs";
 
 register(new URL("./support/cloudflare-loader.mjs", import.meta.url));
@@ -158,6 +159,11 @@ test(
       STRIPE_WEBHOOK_SECRET: "whsec_health_not_a_real_credential",
       ...validBillingPolicyEnvironment,
       STRIPE_CHECKOUT_SESSION_LIFETIME_SECONDS: "3600",
+      BILLING_COMMERCIAL_POLICY_JSON: syntheticBillingCommercialPolicyJson(
+        "price_server_configured",
+      ),
+      INSTRUCTOR_ACCESS_MODE: "subscription_required",
+      SUBSCRIPTION_ACCESS_STATUSES: "trialing,active",
     };
     const cases = [
       {

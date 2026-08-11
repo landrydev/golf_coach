@@ -25,20 +25,45 @@ import {
   requestMayReachApplicationWrites,
   SCHEDULED_WRITES_UNAVAILABLE_LOG,
 } from "../lib/application-write-control";
+import { prepareInstructorAuthRequest } from "../lib/instructor-auth-contract";
+import {
+  authenticateInstructorRequest,
+  handleInstructorAuthRoute,
+  withInstructorAuthCookies,
+  withTrustedInstructorAuthentication,
+  type InstructorAuthenticationResult,
+} from "../lib/instructor-auth-protocol";
+import { cleanupInstructorAuthState } from "../lib/instructor-auth-state";
 
 interface Env {
   ASSETS: Fetcher;
   DB: D1Database;
   MEDIA: R2Bucket;
   APP_URL?: string;
+  INSTRUCTOR_AUTH_MODE?: string;
+  OIDC_ISSUER?: string;
+  OIDC_CLIENT_ID?: string;
+  OIDC_TOKEN_ENDPOINT_AUTH_METHOD?: string;
+  OIDC_ID_TOKEN_SIGNING_ALG?: string;
+  AUTH_SESSION_LIFETIME_SECONDS?: string;
+  OIDC_CLIENT_SECRET?: string;
+  AUTH_SESSION_PEPPER?: string;
+  AUTH_TRANSACTION_ENCRYPTION_KEY?: string;
+  ABUSE_LIMIT_PEPPER?: string;
   INSTRUCTOR_ACCESS_MODE?: string;
   OWNER_PRIVATE_ACCESS_PEPPER?: string;
   OWNER_PRIVATE_EMAIL_DIGESTS?: string;
   DATA_REQUEST_OPERATOR_ACCESS_PEPPER?: string;
   DATA_REQUEST_OPERATOR_EMAIL_DIGESTS?: string;
   CONSENT_POLICY_REGISTRY_JSON?: string;
+  MEDIA_UPLOAD_POLICY_JSON?: string;
   SUBSCRIPTION_ACCESS_STATUSES?: string;
   STRIPE_CHECKOUT_PRICE_ID?: string;
+  STRIPE_SECRET_KEY?: string;
+  STRIPE_WEBHOOK_SECRET?: string;
+  STRIPE_CHECKOUT_SESSION_LIFETIME_SECONDS?: string;
+  BILLING_COMMERCIAL_POLICY_JSON?: string;
+  BILLING_CHECKOUT_ENABLED?: string;
   STRIPE_RECOGNIZED_PRICE_IDS?: string;
   SUBSCRIPTION_ENTITLEMENT_PRICE_IDS?: string;
   SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS?: string;
@@ -53,6 +78,8 @@ interface ExecutionContext {
 
 const worker = {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    const preparedAuthentication = prepareInstructorAuthRequest(request);
+    request = preparedAuthentication.request;
     const requestId = crypto.randomUUID();
     const startedAt = performance.now();
     const url = new URL(request.url);
@@ -61,6 +88,7 @@ const worker = {
       request,
       applicationPath,
     );
+    let authentication: InstructorAuthenticationResult | null = null;
 
     try {
       // Vinext's build-only prerender namespace must never be reachable from
@@ -114,17 +142,61 @@ const worker = {
         return response;
       }
 
-      const accessDecision = await evaluateInstructorRequestAccess({
+      const authenticationRouteResponse = await handleInstructorAuthRoute({
+        request,
+        environment: env,
+        requestId,
+        sitesIdentity: preparedAuthentication.sitesIdentity,
+      });
+      if (authenticationRouteResponse) {
+        const response = withSecurityHeaders(
+          authenticationRouteResponse,
+          request,
+          requestId,
+          contentSecurityPolicy,
+        );
+        emitRequestTelemetry({
+          request,
+          requestId,
+          status: response.status,
+          startedAt,
+        });
+        return response;
+      }
+
+      authentication = await authenticateInstructorRequest({
+        request,
+        environment: env,
+        sitesIdentity: preparedAuthentication.sitesIdentity,
+      });
+
+      let accessDecision = await evaluateInstructorRequestAccess({
         pathname: url.pathname,
-        authenticatedEmail: request.headers.get("oai-authenticated-user-email"),
+        authenticatedEmail:
+          authentication.status === "authenticated"
+            ? authentication.identity.email
+            : null,
+        authenticatedAccountId:
+          authentication.status === "authenticated"
+            ? authentication.identity.accountId
+            : null,
         environment: env,
       });
+      if (
+        authentication.status === "unavailable" &&
+        accessDecision === "authentication_required"
+      ) {
+        accessDecision = "unavailable";
+      }
       if (
         accessDecision !== "not_applicable" &&
         accessDecision !== "granted"
       ) {
         const response = withSecurityHeaders(
-          productAccessDeniedResponse(accessDecision, request),
+          withInstructorAuthCookies(
+            productAccessDeniedResponse(accessDecision, request),
+            authentication,
+          ),
           request,
           requestId,
           contentSecurityPolicy,
@@ -146,7 +218,10 @@ const worker = {
         !writeControl.writesEnabled
       ) {
         const response = withSecurityHeaders(
-          applicationWritesUnavailableResponse(request, applicationPath),
+          withInstructorAuthCookies(
+            applicationWritesUnavailableResponse(request, applicationPath),
+            authentication,
+          ),
           request,
           requestId,
           contentSecurityPolicy,
@@ -160,13 +235,23 @@ const worker = {
         return response;
       }
 
+      const authenticatedRequest =
+        authentication.status === "authenticated"
+          ? withTrustedInstructorAuthentication(
+              request,
+              authentication.identity,
+            )
+          : request;
       const trustedRequest = withTrustedRequestCorrelation(
-        request,
+        authenticatedRequest,
         requestId,
         contentSecurityPolicy ?? undefined,
       );
       const response = withSecurityHeaders(
-        await handler.fetch(trustedRequest, env, ctx),
+        withInstructorAuthCookies(
+          await handler.fetch(trustedRequest, env, ctx),
+          authentication,
+        ),
         request,
         requestId,
         contentSecurityPolicy,
@@ -179,14 +264,17 @@ const worker = {
       });
       return response;
     } catch (error) {
+      const failure = failureResponseForRequest(request, applicationPath, {
+        status: 500,
+        code: "internal_error",
+        heading: "This page could not be loaded",
+        message: "The request could not be completed.",
+        links: [{ href: "/support", label: "Get support guidance" }],
+      });
       const response = withSecurityHeaders(
-        failureResponseForRequest(request, applicationPath, {
-          status: 500,
-          code: "internal_error",
-          heading: "This page could not be loaded",
-          message: "The request could not be completed.",
-          links: [{ href: "/support", label: "Get support guidance" }],
-        }),
+        authentication
+          ? withInstructorAuthCookies(failure, authentication)
+          : failure,
         request,
         requestId,
         contentSecurityPolicy,
@@ -216,6 +304,10 @@ const worker = {
     });
 
     try {
+      const authCleanup = await cleanupInstructorAuthState({
+        database: env.DB,
+        now: controller.scheduledTime,
+      });
       const result = await runBillingReconciliationSweep({
         now: new Date(controller.scheduledTime),
       });
@@ -224,7 +316,10 @@ const worker = {
         attempt,
         result,
       });
-      console.log("Scheduled billing reconciliation sweep completed", result);
+      console.log("Scheduled billing reconciliation sweep completed", {
+        ...result,
+        authCleanup,
+      });
     } catch (error) {
       const failureCode = schedulerFailureCode(error);
       try {
@@ -305,6 +400,7 @@ function withSecurityHeaders(
     applicationPath === "/r" || applicationPath.startsWith("/r/");
   const isOperationalHealth = applicationPath === "/api/operations/health";
   const isPublicHealth = applicationPath === "/api/health";
+  const isAuthenticationPath = applicationPath.startsWith("/auth/");
 
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -323,7 +419,12 @@ function withSecurityHeaders(
     headers.set("Cache-Control", "private, no-store, max-age=0");
   }
 
-  if (isInstructorPath || isGolferPath || isOperationalHealth) {
+  if (
+    isInstructorPath ||
+    isGolferPath ||
+    isOperationalHealth ||
+    isAuthenticationPath
+  ) {
     headers.set("Cache-Control", "private, no-store, max-age=0");
     headers.set("Pragma", "no-cache");
     headers.set("Referrer-Policy", "no-referrer");
@@ -367,6 +468,10 @@ function contentSecurityPolicyForRequest(
       ? "form-action 'self' https://checkout.stripe.com https://billing.stripe.com"
       : "form-action 'self'",
     "img-src 'self' data: blob:",
+    // Local video inspection uses an object URL before any private upload is
+    // accepted. Keep media otherwise same-origin and do not broaden scripts,
+    // workers, frames, or object embedding.
+    "media-src 'self' blob:",
     "font-src 'self' data:",
     "style-src 'self' 'unsafe-inline'",
     `script-src 'self' 'nonce-${nonce}'`,

@@ -11,8 +11,30 @@ export type ClientMutationOutcomeUnknownReason =
   | "response_too_large"
   | "malformed_success_response";
 
+export type ClientReadFailureReason =
+  | "timeout"
+  | "transport"
+  | "redirected_response"
+  | "response_too_large";
+
 export const CLIENT_MUTATION_TIMEOUT_MS = 10_000;
 export const CLIENT_MUTATION_MAX_RESPONSE_BYTES = 8 * 1024 * 1024;
+
+export class ClientReadError extends Error {
+  readonly reason: ClientReadFailureReason;
+  readonly status: number | null;
+
+  constructor(reason: ClientReadFailureReason, status: number | null = null) {
+    super(
+      reason === "timeout"
+        ? "The request timed out. Check your connection and try again."
+        : "The requested information could not be loaded. Check your connection and try again.",
+    );
+    this.name = "ClientReadError";
+    this.reason = reason;
+    this.status = status;
+  }
+}
 
 const RETRYABLE_RESPONSE_STATUSES = new Set([408, 425, 429]);
 const SAFE_CLIENT_REQUEST_ID =
@@ -123,6 +145,12 @@ export async function requestClientMutation(
           activeReader = reader;
         },
         () => controller.abort(),
+        () =>
+          new ClientMutationOutcomeUnknownError(
+            "response_too_large",
+            response.status,
+            clientMutationResponseRequestId(response),
+          ),
       );
       activeReader = null;
       return new Response(body, {
@@ -153,6 +181,87 @@ export async function requestClientMutation(
       null,
       activeRequestId,
     );
+  } finally {
+    if (timeout) clearTimeout(timeout);
+    callerSignal?.removeEventListener("abort", forwardAbort);
+  }
+}
+
+/**
+ * Bounds a replay-safe browser read, rejects redirects, and buffers only a
+ * capped response. Unlike a mutation, an interrupted read has no ambiguous
+ * committed state, so callers may offer an ordinary retry.
+ */
+export async function requestClientRead(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+  options: {
+    timeoutMs?: number;
+    fetcher?: ClientFetch;
+  } = {},
+): Promise<Response> {
+  const method = (init.method ?? "GET").toUpperCase();
+  if (method !== "GET" && method !== "HEAD") {
+    throw new TypeError("Client reads support only GET or HEAD requests.");
+  }
+  const timeoutMs = options.timeoutMs ?? CLIENT_MUTATION_TIMEOUT_MS;
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+    throw new RangeError("Client read timeout must be a positive number.");
+  }
+
+  const fetcher = options.fetcher ?? browserFetch;
+  const controller = new AbortController();
+  const callerSignal = init.signal;
+  const forwardAbort = () => controller.abort();
+  if (callerSignal?.aborted) {
+    controller.abort();
+  } else {
+    callerSignal?.addEventListener("abort", forwardAbort, { once: true });
+  }
+
+  let activeReader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const operation = Promise.resolve().then(async () => {
+      const response = await fetcher(input, {
+        ...init,
+        method,
+        redirect: "error",
+        signal: controller.signal,
+      });
+      if (response.redirected) {
+        controller.abort();
+        void cancelResponseBody(response);
+        throw new ClientReadError("redirected_response", response.status);
+      }
+      const body = await bufferResponseBody(
+        response,
+        method,
+        (reader) => {
+          activeReader = reader;
+        },
+        () => controller.abort(),
+        () => new ClientReadError("response_too_large", response.status),
+      );
+      activeReader = null;
+      return new Response(body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+      });
+    });
+    const expired = new Promise<never>((_resolve, reject) => {
+      timeout = setTimeout(() => {
+        controller.abort();
+        void activeReader?.cancel().catch(() => undefined);
+        reject(new ClientReadError("timeout"));
+      }, timeoutMs);
+    });
+
+    return await Promise.race([operation, expired]);
+  } catch (error) {
+    if (error instanceof ClientReadError) throw error;
+    throw new ClientReadError("transport");
   } finally {
     if (timeout) clearTimeout(timeout);
     callerSignal?.removeEventListener("abort", forwardAbort);
@@ -382,6 +491,7 @@ async function bufferResponseBody(
     reader: ReadableStreamDefaultReader<Uint8Array> | null,
   ) => void,
   abortRequest: () => void,
+  responseTooLargeError: () => Error,
 ): Promise<BodyInit | null> {
   if (
     response.body === null ||
@@ -404,11 +514,7 @@ async function bufferResponseBody(
       if (nextByteLength > CLIENT_MUTATION_MAX_RESPONSE_BYTES) {
         abortRequest();
         void reader.cancel().catch(() => undefined);
-        throw new ClientMutationOutcomeUnknownError(
-          "response_too_large",
-          response.status,
-          clientMutationResponseRequestId(response),
-        );
+        throw responseTooLargeError();
       }
       chunks.push(value);
       byteLength = nextByteLength;

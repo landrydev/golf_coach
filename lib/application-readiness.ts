@@ -1,10 +1,8 @@
 import { requiredConsentPolicyConfigurationReady } from "@/lib/consent-repository";
 import { dataRequestOperatorAccessConfigurationReady } from "@/lib/data-request-operator-access";
 import { productAccessConfigurationReady } from "@/lib/product-access";
-import {
-  billingConfigured,
-  checkoutConfiguration,
-} from "@/lib/stripe";
+import { instructorAuthConfigurationReady } from "@/lib/instructor-auth-contract";
+import { checkoutEnabled } from "@/lib/stripe";
 import { shareTokenPepperConfigurationReady } from "@/lib/tokens";
 import {
   readApplicationWriteControl,
@@ -15,10 +13,10 @@ export const READINESS_DEPENDENCY_TIMEOUT_MS = 2_000;
 
 /**
  * Prove the latest security-sensitive D1 shape, not merely that D1 answers.
- * Migration 0010 rebuilds `abuse_rate_limits` so the two share-close scopes
- * are admitted. Its six-column composite-key shape and expiry index are also
- * required by every current rate-limit path. The query returns one boolean;
- * schema names and DDL never leave this private dependency check.
+ * Migration 0011 adds OIDC transactions, revocable HMAC sessions, stable
+ * issuer-subject account mappings, and the two authentication rate-limit
+ * scopes. The query returns one boolean; schema names and DDL never leave this
+ * private dependency check.
  */
 const DATABASE_SCHEMA_READINESS_QUERY = `WITH required_columns (
     name, declared_type, required_not_null, default_sql, primary_key_position
@@ -76,7 +74,37 @@ const DATABASE_SCHEMA_READINESS_QUERY = `WITH required_columns (
          AND instr(lower(sql), 'abuse_rate_limits_scope_check') > 0
          AND instr(lower(sql), '''share_close_network''') > 0
          AND instr(lower(sql), '''share_close_session''') > 0
+         AND instr(lower(sql), '''auth_login_network''') > 0
+         AND instr(lower(sql), '''auth_callback_network''') > 0
     )
+    AND EXISTS (
+      SELECT 1 FROM pragma_table_info('accounts')
+       WHERE name = 'auth_issuer' AND upper(trim(type)) = 'TEXT'
+    )
+    AND EXISTS (
+      SELECT 1 FROM pragma_table_info('accounts')
+       WHERE name = 'identity_version'
+         AND upper(trim(type)) = 'INTEGER'
+         AND "notnull" = 1 AND trim(dflt_value) = '1'
+    )
+    AND (
+      SELECT count(*) FROM sqlite_master
+       WHERE type = 'table'
+         AND name IN ('oidc_login_transactions', 'instructor_sessions')
+    ) = 2
+    AND (
+      SELECT count(*) FROM sqlite_master
+       WHERE type = 'index'
+         AND name IN (
+           'accounts_legacy_auth_identity_unique',
+           'accounts_oidc_auth_identity_unique',
+           'accounts_id_identity_version_unique',
+           'oidc_login_transactions_expiry_consumed_idx',
+           'instructor_sessions_token_hash_unique',
+           'instructor_sessions_account_revoked_idx',
+           'instructor_sessions_expiry_revoked_idx'
+         )
+    ) = 7
     THEN 1 ELSE 0 END AS healthy`;
 
 export type ApplicationReadiness = Readonly<{
@@ -92,6 +120,7 @@ export type ApplicationReadiness = Readonly<{
     abuseProtection: boolean;
     billingCheckoutPolicy: boolean;
     instructorAccessPolicy: boolean;
+    instructorAuthentication: boolean;
     consentPolicy: boolean;
     dataRequestOperatorAccessPolicy: boolean;
     applicationWritesEnabled: boolean;
@@ -126,6 +155,21 @@ export async function loadApplicationReadiness(input: {
         process.env.SUBSCRIPTION_ENTITLEMENT_PRICE_IDS,
       SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS:
         process.env.SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS,
+    }),
+    instructorAuthentication: instructorAuthConfigurationReady({
+      APP_URL: process.env.APP_URL,
+      INSTRUCTOR_AUTH_MODE: process.env.INSTRUCTOR_AUTH_MODE,
+      OIDC_ISSUER: process.env.OIDC_ISSUER,
+      OIDC_CLIENT_ID: process.env.OIDC_CLIENT_ID,
+      OIDC_TOKEN_ENDPOINT_AUTH_METHOD:
+        process.env.OIDC_TOKEN_ENDPOINT_AUTH_METHOD,
+      OIDC_ID_TOKEN_SIGNING_ALG: process.env.OIDC_ID_TOKEN_SIGNING_ALG,
+      AUTH_SESSION_LIFETIME_SECONDS:
+        process.env.AUTH_SESSION_LIFETIME_SECONDS,
+      OIDC_CLIENT_SECRET: process.env.OIDC_CLIENT_SECRET,
+      AUTH_SESSION_PEPPER: process.env.AUTH_SESSION_PEPPER,
+      AUTH_TRANSACTION_ENCRYPTION_KEY:
+        process.env.AUTH_TRANSACTION_ENCRYPTION_KEY,
     }),
     consentPolicy: requiredConsentPolicyConfigurationReady(
       process.env.CONSENT_POLICY_REGISTRY_JSON,
@@ -190,7 +234,7 @@ async function boundedDependencyCheck(
 function billingCheckoutPolicyReady(): boolean {
   const enabled = process.env.BILLING_CHECKOUT_ENABLED;
   if (enabled === "false") return true;
-  return enabled === "true" && billingConfigured() && Boolean(checkoutConfiguration());
+  return enabled === "true" && checkoutEnabled();
 }
 
 function validProductionOrigin(value: string | undefined): boolean {

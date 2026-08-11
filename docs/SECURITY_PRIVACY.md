@@ -293,7 +293,7 @@ authenticated/manual evidence described below.
 
 ## Security and privacy objectives
 
-1. Authenticate instructors through the selected dispatch-owned SIWC boundary and authorize every tenant operation server-side.
+1. Authenticate Sites-staging instructors through dispatch-owned SIWC and direct-host instructors through the verified OIDC/session boundary; authorize every tenant operation server-side.
 2. Prevent one instructor from reading or changing another instructor's account, golfer, roadmap, media, subscription, or audit data.
 3. Keep golfer experiences private unless an instructor intentionally creates a scoped, revocable capability.
 4. Preserve confidentiality and integrity of coach-authored content and optional media.
@@ -308,6 +308,7 @@ authenticated/manual evidence described below.
 |---|---|---|
 | Anonymous visitor | Read published public acquisition and synthetic sample content | No instructor, golfer, roadmap, billing, or private media access |
 | SIWC-authenticated instructor | Identity claim from the Sites dispatch boundary | Tenant entitlement or ownership is not inferred from client input; SIWC does not by itself prove a paid account |
+| OIDC-authenticated instructor | Stable issuer-plus-subject identity from a live revocable direct-host session | Email, display name, browser headers, and authentication alone do not prove tenant entitlement or ownership |
 | Golfer capability holder | Read the one published roadmap/version and approved private assets granted by the active capability | No authoring, instructor workspace, other golfer, billing, raw audit, or bucket access |
 | Sites/Worker runtime | Execute trusted server code and receive configured bindings/secrets | Browser-originated identity headers, tenant IDs, prices, or authorization decisions are never trusted |
 | D1 | Authoritative structured application state | It is not a file store and does not make application authorization decisions |
@@ -347,16 +348,31 @@ The product must not collect junior-golfer data in V1. It must not infer sensiti
 
 ### Instructor authentication
 
-- Use dispatch-owned SIWC routes and trusted identity headers; do not add app-owned passwords or OAuth callbacks.
-- Resolve the external identity to an app-generated immutable instructor ID on the server.
-- Treat optional full name as display data, not an authorization claim.
-- Reject protected API routes and server actions when identity is absent; hiding a button in the browser is not authorization.
-- Mark identity-dependent rendered routes dynamic so content cannot be shared through a static cache.
-- Use secure platform session behavior and same-origin relative return paths only.
-- Do not trust a browser-supplied `oai-authenticated-user-*` header in any environment where the dispatch boundary has not stripped/replaced it.
-- Reauthenticate or require a fresh server-side identity check for billing portal creation, account deletion, share rotation, and other high-impact actions.
+- Keep deployed Sites staging behind dispatch-owned SIWC; do not treat its trusted
+  headers as portable to a direct public Worker.
+- On the direct successor, use authorization code plus PKCE S256, state, nonce,
+  exact issuer/audience checks, RS256 signature verification, and allowed public
+  HTTPS provider endpoints with redirects rejected.
+- Resolve the stable `(issuer, subject)` pair to an app-generated immutable
+  instructor ID on the server. Never silently link an identity by email.
+- Keep OIDC transactions one-time and expiring, and keep only HMAC-fingerprinted,
+  revocable, expiring, identity-version-fenced server sessions in D1.
+- Treat email and full name as bounded display/contact attributes, not authorization
+  claims; reject malformed or header-unsafe values before persistence.
+- Strip every browser-supplied Sites/application-private identity header before the
+  direct Worker injects identity from a live session.
+- Reject protected API routes and server actions when identity is absent; hiding a
+  button in the browser is not authorization.
+- Mark identity-dependent rendered routes dynamic so content cannot be shared
+  through a static cache, and permit same-origin relative return paths only.
+- Reauthenticate or require a fresh server-side identity check for billing portal
+  creation, account deletion, share rotation, and other high-impact actions.
 
-`[REAL-WORLD VALIDATION REQUIRED]` Dispatch-owned SIWC's suitability for a public Canada-wide SaaS, identity continuity, recovery, session duration, sign-out, and incident support must be proven with the exact Sites configuration. Until then, the implementation choice is selected but the live public-auth claim is unresolved.
+`[REAL-WORLD VALIDATION REQUIRED]` The direct boundary is implemented and locally
+tested, but no exact OIDC provider, client, callback registration, secret, hosted
+session, account-link/recovery ceremony, cross-device journey, or support path is
+approved or evidenced. Sites SIWC remains staging history rather than the public
+identity plan. The live public-auth claim remains unresolved.
 
 ### Instructor product-access policy
 
@@ -631,7 +647,11 @@ rates still require exact-environment evidence.
 
 ## File and media controls
 
-R2 uploads remain disabled or feature-limited until the approved media policy is represented in the UI and operations. When enabled:
+Authenticated upload, private delivery, replacement, withdrawal, and removal routes
+and UI are implemented. They fail closed unless R2, a valid bounded media policy,
+and any required consent are active. Real-user activation remains configuration-
+limited until the owner approves the policy and the controls are exercised. The
+media lifecycle must:
 
 1. create an instructor-owned pending asset record before upload;
 2. enforce allowed media categories, byte limits, and content-type/magic-byte agreement;
@@ -830,7 +850,7 @@ Findings need severity, affected release, owner, mitigation, retest evidence, an
 
 | Dependency | Why it remains unresolved | What closes the evidence gap |
 |---|---|---|
-| SIWC for public instructors | The starter guidance describes dispatch-owned SIWC, but the exact public SaaS suitability and support contract are not evidenced | Hosted end-to-end and abuse tests plus a documented provider/support path |
+| Public OIDC provider and identity continuity | The relying-party and revocable-session boundary is implemented locally, but no provider tenant/client/callback, legacy SIWC link ceremony, hosted journey, or support contract is approved or evidenced | Approved provider/configuration and explicit continuity decision, then hosted discovery/JWKS/token/sign-in/linking/recovery/sign-out/revocation/spoof/cross-device/tenant tests plus a documented support path |
 | Consent-policy registry | Technical enforcement exists, but exact owner-approved entries are absent and grants fail closed | Owner decision, qualified review, exact versioned text/configuration, deployed path mapping, withdrawal/export verification, and comprehension evidence |
 | Privacy-operator authority | The least-privilege boundary exists, but the named role and independent access configuration are absent, so the API fails closed | Named accountable operator, approved method/policy/evidence, exact secret/digest configuration without values in evidence, authenticated hosted verification, and audited workflow exercise |
 | Legal/privacy copy and policy | No qualified review or exact owner-approved lifecycle terms are recorded | Versioned approved policy/copy mapped to actual code and operator workflows |

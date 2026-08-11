@@ -221,16 +221,45 @@ export type CompletedStagedGolferWorkspace = {
 };
 
 /**
- * Resolve the authenticated dispatch identity to an immutable local tenant.
- * The caller never supplies an account ID; email normalization and ownership
- * happen entirely on the server.
+ * Resolve only a Worker-verified identity to its immutable local tenant. OIDC
+ * sessions carry the server-selected account ID and never perform an email
+ * lookup; the legacy Sites adapter remains email-keyed only for that explicit
+ * staging mode.
  */
 export async function getOrCreateAccountForIdentity(
   identity: RequestIdentity,
 ): Promise<AccountRecord> {
+  const db = getDb();
+  if (identity.source === "oidc") {
+    if (!identity.accountId) {
+      throw new RequestError(
+        401,
+        "authentication_required",
+        "The verified account identity is unavailable.",
+      );
+    }
+    const [account] = await db
+      .select()
+      .from(accounts)
+      .where(eq(accounts.id, identity.accountId))
+      .limit(1);
+    if (
+      !account ||
+      account.authProvider !== "oidc" ||
+      !account.authIssuer ||
+      account.status !== "active"
+    ) {
+      throw new RequestError(
+        403,
+        "account_unavailable",
+        "This account is not available for product access.",
+      );
+    }
+    return account;
+  }
+
   const normalizedEmail = normalizeIdentityEmail(identity.email);
   const provider = identity.source === "siwc" ? "siwc" : "development";
-  const db = getDb();
 
   const [existing] = await db
     .select()
@@ -239,6 +268,13 @@ export async function getOrCreateAccountForIdentity(
     .limit(1);
 
   if (existing) {
+    if (existing.authProvider === "oidc") {
+      throw new RequestError(
+        409,
+        "identity_link_required",
+        "This email is already attached to a different sign-in identity.",
+      );
+    }
     return reconcileExistingAccount(
       existing,
       provider,
@@ -285,6 +321,13 @@ export async function getOrCreateAccountForIdentity(
       .where(eq(accounts.normalizedEmail, normalizedEmail))
       .limit(1);
     if (!racedAccount) throw error;
+    if (racedAccount.authProvider === "oidc") {
+      throw new RequestError(
+        409,
+        "identity_link_required",
+        "This email is already attached to a different sign-in identity.",
+      );
+    }
     return reconcileExistingAccount(
       racedAccount,
       provider,
@@ -832,6 +875,7 @@ export async function createCoachingPackage(
     ...input,
     externalActionVerifiedAt: null,
     archivedAt: input.status === "archived" ? now : null,
+    createdAt: now,
     updatedAt: now,
   });
   const audit = db.insert(auditEvents).values({
@@ -1796,7 +1840,7 @@ export async function getStagedGolferWorkspace(
         eq(developmentPlans.golferId, golferId),
       ),
     )
-    .orderBy(desc(developmentPlans.updatedAt))
+    .orderBy(desc(developmentPlans.updatedAt), desc(developmentPlans.id))
     .limit(1);
   if (!plan) return null;
 

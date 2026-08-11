@@ -1,10 +1,10 @@
 # Provider responsibility, cost, portability, and exit record
 
-**Status:** Production implementation record under `AUTH-005`, reconciled to the
-owner-private Sites version-16 candidate; selected architecture and limited provider
-observations, not provider-account approval, budget approval, SLA evidence, public
-operation, or live acceptance
-**Related decisions:** `TECH-001` through `TECH-004` in
+**Status:** Production implementation record under `AUTH-005`, reconciled to
+`TECH-006`; exact Sites version 16 is owner-private staging/evidence and direct
+Cloudflare Workers/D1/R2 is an un-deployed verification candidate—not provider-
+account approval, budget approval, SLA evidence, public operation, or live acceptance
+**Related decisions:** `TECH-001` through `TECH-006` in
 [the decision log](../../DECISION_LOG.md)
 **Related:** [Architecture](ARCHITECTURE.md), [Operations](OPERATIONS.md),
 [software supply chain](SOFTWARE_SUPPLY_CHAIN.md), [historical exact-v13 release evidence](release-evidence/ROADMAP-SITES-V13-2026-08-09.md),
@@ -14,7 +14,14 @@ and [historical exact-v13 local exercises](release-evidence/ROADMAP-SITES-V13-20
 for individual instructors. Provider choices must not introduce mandatory onboarding,
 facility administration, native coach-package payment, AI, or hidden concierge work.
 
-## Current provider-bound candidate observation
+Current official Sites guidance prohibits using Sites to enable financial
+transactions and states that data residency is unavailable at launch; it also
+warns that some background-service or hosting patterns are unsupported. Combined
+with open High `LOG-PRIV-001` and unproved Sites cron, that makes Sites unsuitable
+as the final paid live-V1 host. `TECH-006` preserves it only as contained private
+staging and selects direct Cloudflare as the least-change candidate to verify.
+
+## Current Sites staging observation
 
 | Field | Exact recorded observation |
 |---|---|
@@ -88,16 +95,15 @@ remains separate historical evidence. None of these results alters version 9's
 failed byte-rebuild, proves byte identity, makes version 16 public or accepted, or
 establishes rollback/restore suitability.
 
-## Current official-provider ambiguity and constraint
+## Current provider constraint and successor direction
 
-Official guidance was checked on 2026-08-08. The
+Official guidance was rechecked on 2026-08-09. The
 [Sites developer guide](https://learn.chatgpt.com/docs/sites) states that some
-background services or hosting patterns may be unsupported and directs builders
-not to use Sites to enable financial transactions. It does not document a
-cron/scheduled-trigger facility. The
-[Sites help article](https://help.openai.com/en/articles/20001339) also warns that
-some background services may be unsupported and says the operator remains
-responsible when using a third-party payment processor.
+background services or hosting patterns may be unsupported, data residency is
+unavailable at launch (including Sites code, D1/R2, artifacts, and logs), and Sites
+must not be used to process card data or enable financial transactions. It does not
+document a cron/scheduled-trigger facility. These are final-host constraints, not
+items that an owner approval can waive.
 
 The hosted invocation-log issue is no longer ambiguous. Cloudflare's
 [Workers Logs documentation](https://developers.cloudflare.com/workers/observability/logs/workers-logs/)
@@ -114,24 +120,23 @@ host that enforces the control, before real-user/public operation. Logging/alert
 the risk is High at that boundary, and Checkout remains disabled. This does not
 replace the application-owned D1 audit.
 
-The lack of cron documentation is an ambiguity, not direct proof that a trigger is
-absent. Combined with `scheduled=0` in the bounded post-version-11 and
-post-version-12 broad aggregates,
-it makes a deployment/trigger gap a working suspicion only. Provider-log
-completeness, scheduled-event visibility, and trigger metadata remain unavailable,
-so this does not prove scheduler absence. Before scheduled reconciliation, public
-access, or billing becomes an operational dependency, obtain explicit provider
-confirmation that the required background and payment pattern is supported, or
-record a superseding hosting/scheduler decision and exercise that architecture. Keep
-Checkout disabled in the meantime. An owner approval cannot override an actual
-provider constraint.
+The lack of Sites cron documentation is not direct proof that a trigger is absent.
+Combined with `scheduled=0` in bounded predecessor aggregates, it leaves the Sites
+trigger unproved. `TECH-006` resolves the architecture direction rather than that
+historical fact: direct Cloudflare documents Cron Triggers and documents
+`invocation_logs=false`, but neither control is effective release evidence until an
+exact successor deployment proves trigger provisioning/execution, privacy-safe log
+enforcement and retained-data disposition, heartbeat and alert delivery. Keep Sites
+owner-only and Checkout disabled.
 
 ## Responsibility boundary
 
 | Service/boundary | Provider responsibility | Roadmap/operator responsibility | Evidence or decision still open |
 |---|---|---|---|
-| OpenAI Sites and Cloudflare Worker runtime | Deployment/control-plane behavior, runtime execution, outer access-policy enforcement, binding delivery, and enforcement/disposition of provider-generated logs | Secure application logic, release/configuration control, server authorization, headers, least privilege, privacy-safe evidence, first-party D1 audit, smoke/rollback evidence | Provider support must demonstrate actual enforcement of the declared invocation-log disable control and provide retained-data disposition, or a verified host migration is required before real-user/public operation. Public access policy, custom origin, account ownership/support path, background scheduling/payment support, hosted alerting, terms, and budget also remain open. |
-| Dispatch-owned SIWC | Authentication/session claims delivered at the trusted dispatch boundary; the connector rotation contract invalidated the exposed prior bypass value | Internal immutable instructor ID, tenant authorization, entitlement, account lifecycle, spoof denial, recovery/support workflow, and keeping the replacement bypass bearer unused | Normal signed-in owner post-rotation retest, public Canada-wide suitability, stable subject/continuity, sign-in/out/recovery, provider support evidence, and resolution of provider-generated invocation metadata |
+| OpenAI Sites staging and its Worker runtime | Private deployment/control-plane behavior, outer owner-only policy, binding delivery, and provider-generated log behavior for the historical staging line | Keep exact v16 private, synthetic, and billing-disabled; preserve release evidence and never rely on the bypass credential | `LOG-PRIV-001`, absent data residency, financial-transaction restriction, and unproved cron prevent final paid/public use. Sites remains staging/evidence only. |
+| Direct Cloudflare Workers runtime | Authorized-account control plane, Worker execution, direct cron provisioning, D1/R2 bindings, and enforcement of configured platform controls | Exact generated config, least privilege, secrets, server authorization, privacy-safe logging, heartbeats/alerts, smoke, rollback/forward-fix, cost control, and immutable release evidence | Account, credentials, budget, domain, deployment, terms/privacy/data-residency review, log/cron proof, recovery, alert, cost, and owner acceptance are all absent. |
+| Public OIDC provider | Primary authentication, issuer metadata/JWKS, subject continuity, provider session/recovery and support according to the approved contract | Authorization-code/PKCE/state/nonce validation, exact issuer/audience/signature checks, server-side revocable sessions, secure cookies, account isolation/linking, sign-out and audit | Exact provider/account/policy is unselected; no client credentials, hosted flow, account-link/recovery evidence, security review, or public suitability approval exists. Do not silently merge identities by email. |
+| Dispatch-owned SIWC | Authentication/session claims delivered at the Sites staging boundary; the connector rotation contract invalidated the exposed prior bypass value | Preserve owner-only staging containment and internal immutable instructor ID; never treat client-supplied identity headers as trusted on a direct host | Normal signed-in owner post-rotation staging retest remains absent; SIWC is superseded for final-host identity under `TECH-006`. |
 | Cloudflare D1 | Managed database service and provider-native recovery capabilities according to the current account/plan | Schema/migrations, tenant constraints, query integrity, retention, backups beyond provider limits, restore testing, RPO/RTO | Exact production plan/region, hosted restore result, recovery owner and retention schedule |
 | Private Cloudflare R2 | Private object service and its provider durability/operations | Object authorization, D1 metadata/ownership, validation, lifecycle, independent recoverability, cost controls | Media remains excluded; plan/region, recovery design, retention/deletion and exercise remain open |
 | Stripe hosted billing | Hosted Checkout/Portal, payment processing, provider billing records, signed event delivery | Exact offer/policy, server-created sessions, webhook verification/idempotency, local entitlement projection, reconciliation, support/refunds under approved policy | Sites guidance currently directs builders not to use Sites to enable financial transactions; provider confirmation or superseding hosting decision, account, Product/Price, policy, webhook ingress, credentials/transaction and budget remain open |
@@ -153,7 +158,7 @@ dated, owner-approved cost sheet before public operation.
 |---|---|---|
 | Sites/Worker | Requests, CPU duration, build/deploy frequency, log volume, scheduled invocations | Provider usage/cost view, route-family telemetry, bounded pagination/work, rate limits, release cadence |
 | D1 | Rows/storage, reads/writes, indexes, migrations, backup/export activity | Operations/storage trend, slow/error signals, data minimization, bounded queries, archive/retention policy |
-| R2 | Stored bytes, put/get/list/delete operations, egress or retrieval pattern, independent backup copy | Private inventory/checksums, media disabled by default, format/size limits if later approved, lifecycle and budget alerts |
+| R2 | Stored bytes, put/get/list/delete operations, egress or retrieval pattern, independent backup copy | Private inventory/checksums, uploads fail closed without approved bounded policy/configuration, format/size limits, lifecycle and budget alerts |
 | Stripe | Subscription transactions, refunds/disputes, currency/tax features, webhook/reconciliation work | Stripe reports plus local projection/reconciliation; exact commercial policy and owner budget required |
 | Identity/access | Auth/session/provider support load and account-recovery cases | Sign-in failure/support records without personal log content; stop if public support is inadequate |
 | Operations | Domain, qualified legal/privacy/accessibility review, support/incident labour, backup storage/exercises, dependency maintenance | Named owner, time by reason, monthly cost review; founder/research time reported separately |

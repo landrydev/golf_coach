@@ -15,6 +15,7 @@ import {
   isShareMutationEnvelope,
   type ShareMutationEnvelope,
 } from "@/lib/share-client-response";
+import { ShareQrCode } from "@/components/share/ShareQrCode";
 import styles from "../../workspace.module.css";
 
 const ERROR_SUMMARY_ID = "publish-controls-error-summary";
@@ -428,6 +429,17 @@ export function PublishControls({
     }
   }
 
+  async function copyPreparedMessage() {
+    if (!revealedShare || shareMutationInFlightRef.current) return;
+    const preparedMessage = `Hi ${golferName}, your private coaching roadmap is ready to review: ${revealedShare.url}\n\nRoadmap did not send this message automatically. Please keep the link private and contact me if you have questions.`;
+    try {
+      await navigator.clipboard.writeText(preparedMessage);
+      setMessage("Prepared message copied. Roadmap has not sent it.");
+    } catch {
+      setMessage("Copy was unavailable. Select and copy the prepared message below.");
+    }
+  }
+
   return (
     <section className={styles.formCard} aria-labelledby="publish-heading">
       <div className={styles.cardHeader}>
@@ -694,6 +706,36 @@ export function PublishControls({
             <button className={styles.secondaryButton} type="button" onClick={copyLink}>
               Copy private link
             </button>
+            <button
+              className={styles.secondaryButton}
+              type="button"
+              onClick={copyPreparedMessage}
+            >
+              Copy prepared message
+            </button>
+          </div>
+          <div className={styles.gridTwo}>
+            <div className={styles.card}>
+              <span className={styles.eyebrow}>Scan on a phone</span>
+              <ShareQrCode value={revealedShare.url} />
+              <small>
+                This QR code contains the same private link above. Share it only with the
+                intended golfer.
+              </small>
+            </div>
+            <label className={styles.fullField}>
+              Prepared message
+              <textarea
+                readOnly
+                rows={7}
+                value={`Hi ${golferName}, your private coaching roadmap is ready to review: ${revealedShare.url}\n\nRoadmap did not send this message automatically. Please keep the link private and contact me if you have questions.`}
+                onFocus={(event) => event.currentTarget.select()}
+              />
+              <small>
+                Copy and send this through your usual communication tool. Roadmap records no
+                delivery claim.
+              </small>
+            </label>
           </div>
         </div>
       ) : null}

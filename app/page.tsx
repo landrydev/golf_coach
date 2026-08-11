@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { RoadmapSample } from "./_components/RoadmapSample";
 import { SiteFooter } from "./_components/SiteFooter";
 import { SiteHeader } from "./_components/SiteHeader";
@@ -89,14 +88,18 @@ export default function Home() {
                 lesson package fits.
               </p>
               <div className="button-row">
-                <Link className="button button-primary" href="/app">
+                <a className="button button-primary" href="/auth/login?return_to=%2Fapp">
                   Start your first roadmap
                   <span aria-hidden="true">→</span>
-                </Link>
+                </a>
                 <a className="button button-secondary" href="#sample">
                   See the fictional sample
                 </a>
               </div>
+              <p className="auth-entry-note">
+                New here? The same secure identity entry handles sign-in and account
+                creation when the selected provider enables signup.
+              </p>
               <ul className="reassurance-list" aria-label="Key product assurances">
                 <li>No sales call</li>
                 <li>No custom proposal</li>
@@ -205,6 +208,11 @@ export default function Home() {
               </p>
             </div>
             <RoadmapSample />
+            <div className="button-row" style={{ marginTop: "2rem" }}>
+              <a className="button button-primary" href="/demo">
+                Explore the resettable synthetic journey
+              </a>
+            </div>
           </div>
         </section>
 
@@ -295,10 +303,10 @@ export default function Home() {
               <ul className="included-list">
                 {included.map((item) => <li key={item}>{item}</li>)}
               </ul>
-              <Link className="button button-primary button-full" href="/app">
+              <a className="button button-primary button-full" href="/auth/login?return_to=%2Fapp">
                 Open Roadmap
                 <span aria-hidden="true">→</span>
-              </Link>
+              </a>
               <p className="pricing-fineprint">
                 Exact recurrence, cancellation, pause, and refund details are
                 shown before any paid confirmation.
@@ -336,10 +344,10 @@ export default function Home() {
               Bring your coaching judgment. Roadmap helps you shape, preview,
               and share the story around it.
             </p>
-            <Link className="button button-light" href="/app">
+            <a className="button button-light" href="/auth/login?return_to=%2Fapp">
               Start your first roadmap
               <span aria-hidden="true">→</span>
-            </Link>
+            </a>
           </div>
         </section>
       </main>

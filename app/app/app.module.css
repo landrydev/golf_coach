@@ -1,4 +1,5 @@
 .productShell {
+  --workspace-accent: #1f5a48;
   min-height: 100vh;
   background: #f5f3ec;
   color: #19362e;
@@ -26,27 +27,76 @@
   display: flex;
   flex-direction: column;
   padding: 2rem 1.5rem;
-  background: #17352d;
+  background: var(--workspace-accent);
   color: #f7f4e9;
 }
 
 .wordmark {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   color: inherit;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 1.6rem;
-  line-height: 1;
   text-decoration: none;
 }
 
-.wordmark span {
+.brandCopy {
+  min-width: 0;
+}
+
+.brandCopy strong,
+.brandCopy small {
   display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brandCopy strong {
+  color: #fff;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.12rem;
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+.brandCopy small {
   margin-top: 0.4rem;
-  color: #b8cbbf;
+  color: rgba(255, 255, 255, 0.76);
   font-family: Arial, sans-serif;
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+}
+
+.brandLogo,
+.accountPhoto {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: #fff;
+  color: var(--workspace-accent);
+  font-family: Arial, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 800;
+  object-fit: contain;
+}
+
+.brandLogo {
+  width: 2.65rem;
+  height: 2.65rem;
+  border-radius: 0.5rem;
+}
+
+.accountPhoto {
+  grid-row: 1 / span 2;
+  width: 2.65rem;
+  height: 2.65rem;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .primaryNav {
@@ -65,6 +115,7 @@
 .primaryNav a:hover,
 .primaryNav a:focus-visible {
   background: #26483e;
+  background: color-mix(in srgb, var(--workspace-accent) 82%, white);
   color: #fff;
 }
 
@@ -86,36 +137,40 @@
   min-width: 0;
 }
 
-.accountBlock strong,
-.accountBlock span {
+.accountBlock div strong,
+.accountBlock div span {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.accountBlock span {
+.accountBlock div span {
   color: #b8cbbf;
   font-size: 0.75rem;
 }
 
-.accountBlock a {
+.accountBlock form {
   grid-column: 2;
-  color: #dce7df;
-  font-size: 0.78rem;
+  margin: 0;
 }
 
-.avatar {
-  grid-row: 1 / span 2;
-  width: 2.5rem;
-  height: 2.5rem;
-  display: grid !important;
-  place-items: center;
-  border: 1px solid #789488;
-  border-radius: 50%;
-  color: #fff !important;
-  font-size: 0.72rem !important;
-  font-weight: 800;
+.accountBlock button {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #dce7df;
+  cursor: pointer;
+  font-size: 0.78rem;
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+.accountBlock button:focus-visible,
+.mobileAccount button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
 }
 
 .main {
@@ -159,29 +214,45 @@
     align-items: center;
     min-height: 3.75rem;
     padding: 0 1.1rem;
-    background: #17352d;
+    background: var(--workspace-accent);
     color: #fff;
   }
 
-  .mobileBar a {
+  .mobileBrand {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
     color: inherit;
     font-family: Georgia, "Times New Roman", serif;
-    font-size: 1.35rem;
+    font-size: 1rem;
     text-decoration: none;
   }
 
-  .mobileAccount span {
-    width: 2.2rem;
-    height: 2.2rem;
-    display: grid;
-    place-items: center;
-    border: 1px solid #789488;
-    border-radius: 50%;
-    font-size: 0.7rem;
+  .mobileBrand > span:last-child {
+    max-width: min(42vw, 16rem);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .mobileAccount a {
+  .mobileBar .brandLogo,
+  .mobileBar .accountPhoto {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .mobileAccount form {
+    margin: 0;
+  }
+
+  .mobileAccount button {
+    appearance: none;
+    border: 0;
+    padding: 0;
+    background: transparent;
     color: #fff;
+    cursor: pointer;
     font-family: Arial, sans-serif;
     font-size: 0.74rem;
     font-weight: 700;
@@ -209,7 +280,7 @@
     min-height: 3.75rem;
     display: grid;
     place-items: center;
-    color: #36564b;
+    color: var(--workspace-accent);
     font-size: 0.7rem;
     font-weight: 700;
     text-decoration: none;

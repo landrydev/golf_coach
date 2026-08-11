@@ -1,8 +1,10 @@
 import { requirePageIdentity } from "@/lib/identity";
 import type { Metadata } from "next";
 import { getOrCreateAccountForIdentity, getProfile } from "@/lib/repository";
+import { getProfileBrandingState, listMediaAssets } from "@/lib/media";
 import styles from "../workspace.module.css";
 import { ProfileForm } from "./ProfileForm";
+import { BrandingMediaForm } from "./BrandingMediaForm";
 
 export const metadata: Metadata = {
   title: "Coach settings | Roadmap",
@@ -13,7 +15,11 @@ export const dynamic = "force-dynamic";
 export default async function SettingsPage() {
   const identity = await requirePageIdentity("/app/settings");
   const account = await getOrCreateAccountForIdentity(identity);
-  const profile = await getProfile(account.id);
+  const [profile, mediaAssets, branding] = await Promise.all([
+    getProfile(account.id),
+    listMediaAssets(account.id),
+    getProfileBrandingState(account.id),
+  ]);
 
   return (
     <div className={styles.page}>
@@ -41,6 +47,59 @@ export default async function SettingsPage() {
         accentColor={profile?.accentColor || undefined}
         expectedUpdatedAt={profile?.updatedAt ?? null}
       />
+
+      <BrandingMediaForm
+        accentColor={profile?.accentColor || "#1b4f40"}
+        businessName={profile?.businessName || profile?.displayName || identity.displayName}
+        assets={mediaAssets
+          .filter((asset) => asset.status === "ready" && asset.mediaKind === "image")
+          .map((asset) => ({
+            id: asset.id,
+            label: asset.caption || asset.originalFilename || asset.altText || "Untitled image",
+            altText: asset.altText || "",
+            url: `/api/media/${encodeURIComponent(asset.id)}`,
+          }))}
+        current={{
+          logo: branding.logoMediaAssetId
+            ? {
+                mediaAssetId: branding.logoMediaAssetId,
+                attachmentId:
+                  branding.attachments.find(
+                    (item) => item.role === "logo" && item.mediaAssetId === branding.logoMediaAssetId,
+                  )?.id ?? null,
+              }
+            : null,
+          profilePhoto: branding.profilePhotoMediaAssetId
+            ? {
+                mediaAssetId: branding.profilePhotoMediaAssetId,
+                attachmentId:
+                  branding.attachments.find(
+                    (item) =>
+                      item.role === "profile_photo" &&
+                      item.mediaAssetId === branding.profilePhotoMediaAssetId,
+                  )?.id ?? null,
+              }
+            : null,
+        }}
+      />
+
+      <section className={styles.formCard} style={{ marginTop: "1rem" }}>
+        <div className={styles.cardHeader}>
+          <h2>Packages and Roadmap billing</h2>
+        </div>
+        <p className={styles.muted}>
+          Your golfer-facing coaching packages and your Roadmap SaaS subscription are
+          separate. Roadmap never processes the golfer&apos;s coaching-package payment.
+        </p>
+        <div className={styles.actions} style={{ marginTop: "1rem" }}>
+          <a className={styles.secondaryButton} href="/app/packages">
+            Manage coaching packages
+          </a>
+          <a className={styles.primaryButton} href="/app/billing">
+            Review Roadmap plan and billing
+          </a>
+        </div>
+      </section>
 
       <section className={styles.formCard} style={{ marginTop: "1rem" }}>
         <div className={styles.cardHeader}>

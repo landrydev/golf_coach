@@ -5,6 +5,11 @@ import {
   readBillingPolicy,
   type BillingPolicy,
 } from "./billing-policy";
+import {
+  billingCommercialPolicyMatchesProviderCredential,
+  configuredBillingCommercialPolicy,
+} from "./billing-commercial-policy";
+import { productAccessConfigurationReady } from "./product-access";
 
 const STRIPE_API = "https://api.stripe.com/v1";
 const WEBHOOK_TOLERANCE_SECONDS = 300;
@@ -80,9 +85,32 @@ export function billingConfigured(): boolean {
 }
 
 export function checkoutEnabled(): boolean {
+  const billingPolicy = configuredBillingPolicy();
+  const commercialPolicy = configuredBillingCommercialPolicy();
+  const subscriptionAccessReady =
+    process.env.INSTRUCTOR_ACCESS_MODE === "subscription_required" &&
+    productAccessConfigurationReady({
+      INSTRUCTOR_ACCESS_MODE: process.env.INSTRUCTOR_ACCESS_MODE,
+      SUBSCRIPTION_ACCESS_STATUSES: process.env.SUBSCRIPTION_ACCESS_STATUSES,
+      STRIPE_CHECKOUT_PRICE_ID: process.env.STRIPE_CHECKOUT_PRICE_ID,
+      STRIPE_RECOGNIZED_PRICE_IDS:
+        process.env.STRIPE_RECOGNIZED_PRICE_IDS,
+      SUBSCRIPTION_ENTITLEMENT_PRICE_IDS:
+        process.env.SUBSCRIPTION_ENTITLEMENT_PRICE_IDS,
+      SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS:
+        process.env.SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS,
+    });
   return Boolean(
     billingConfigured() &&
       checkoutConfiguration() &&
+      billingPolicy &&
+      commercialPolicy &&
+      commercialPolicy.priceId === billingPolicy.checkoutPriceId &&
+      billingCommercialPolicyMatchesProviderCredential(
+        commercialPolicy,
+        process.env.STRIPE_SECRET_KEY,
+      ) &&
+      subscriptionAccessReady &&
       process.env.BILLING_CHECKOUT_ENABLED === "true",
   );
 }

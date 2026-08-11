@@ -54,5 +54,17 @@ test("the local recovery exercise boots the exact build against restored D1 and 
   );
   assert.match(exercise, /"\/api\/operations\/health"/u);
   assert.match(exercise, /restoredApplicationRuntime: applicationResult/u);
+  assert.match(exercise, /delete from oidc_login_transactions/u);
+  assert.match(
+    exercise,
+    /update instructor_sessions[\s\S]*?revoke_reason = 'restore_session_invalidation'/u,
+  );
+  assert.match(
+    exercise,
+    /update accounts[\s\S]*?identity_version = identity_version \+ 1/u,
+  );
+  assert.match(exercise, /auth-session-alpha-live/u);
+  assert.match(exercise, /auth-session-alpha-revoked/u);
+  assert.match(exercise, /auth-session-beta-expired/u);
   assert.match(workerSupport, /media\(\) \{[\s\S]*?getR2Bucket\("MEDIA"\)/u);
 });

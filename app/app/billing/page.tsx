@@ -4,9 +4,12 @@ import {
   type SubscriptionStatus,
 } from "@/lib/billing-repository";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { requirePageIdentity } from "@/lib/identity";
 import { getOrCreateAccountForIdentity } from "@/lib/repository";
 import { billingConfigured, checkoutEnabled } from "@/lib/stripe";
+import { configuredBillingCommercialPolicy } from "@/lib/billing-commercial-policy";
+import { loadCommercialActivationReadiness } from "@/lib/commercial-activation";
 import styles from "../workspace.module.css";
 
 export const metadata: Metadata = {
@@ -30,6 +33,8 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   ]);
   const account = await getOrCreateAccountForIdentity(identity);
   const subscription = await getSubscriptionForAccount(account.id);
+  const commercialPolicy = configuredBillingCommercialPolicy();
+  const commercialActivation = loadCommercialActivationReadiness();
   const isConfigured = billingConfigured();
   const isCheckoutEnabled = checkoutEnabled();
   const hasOpenSubscription = subscription
@@ -80,12 +85,20 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
         </div>
       ) : null}
 
-      {!isCheckoutEnabled ? (
+      {!commercialPolicy ? (
         <div className={styles.notice} role="note">
           <strong>Price is not yet approved for a live charge.</strong>
           <span>
             Planning amounts remain pricing hypotheses. Checkout stays unavailable until the
             exact production price and policy are approved, configured, and explicitly enabled.
+          </span>
+        </div>
+      ) : !isCheckoutEnabled ? (
+        <div className={styles.notice} role="note">
+          <strong>The exact offer is configured, but Checkout remains off.</strong>
+          <span>
+            No charge can start until the identity, Stripe, entitlement, and controlled
+            activation checks below are complete and Checkout is explicitly enabled.
           </span>
         </div>
       ) : (
@@ -110,9 +123,13 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
         </div>
         <p className={styles.muted}>
           One coach identity, coaching packages, private golfer roadmaps, living plan updates,
-          controlled sharing, and account/data controls. Team accounts and coach-package
-          transactions are outside this V1.
+          controlled sharing, and account/data controls. This is the instructor&apos;s Roadmap
+          SaaS subscription; it never represents a golfer&apos;s coaching-package purchase.
         </p>
+        <div className={styles.notice} role="status">
+          <strong>{subscriptionStateGuidance(subscription?.status ?? null).title}</strong>
+          <span>{subscriptionStateGuidance(subscription?.status ?? null).message}</span>
+        </div>
         {subscription ? (
           <ul className={styles.list} aria-label="Current Stripe subscription state">
             <li>
@@ -123,6 +140,32 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
                 </span>
               </div>
             </li>
+            {subscription.unitAmountMinor !== null && subscription.currency ? (
+              <li>
+                <div>
+                  <strong>Provider-recorded recurring price</strong>
+                  <span>
+                    {formatProviderPrice(
+                      subscription.unitAmountMinor,
+                      subscription.currency,
+                      subscription.billingInterval,
+                    )}
+                  </span>
+                </div>
+              </li>
+            ) : null}
+            {subscription.status === "trialing" ? (
+              <li>
+                <div>
+                  <strong>Trial window</strong>
+                  <span>
+                    {subscription.trialEndsAt
+                      ? `Stripe currently reports a trial end of ${formatBillingDate(subscription.trialEndsAt, account.timezone)}.`
+                      : "Stripe has not reported a trial end date."}
+                  </span>
+                </div>
+              </li>
+            ) : null}
             <li>
               <div>
                 <strong>Current billing period</strong>
@@ -194,6 +237,103 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
             Billing management becomes available after Stripe creates and reports a customer.
           </p>
         ) : null}
+      </section>
+
+      {commercialPolicy ? (
+        <section className={styles.formCard} style={{ marginTop: "1rem" }}>
+          <div className={styles.cardHeader}>
+            <h2>Configured Roadmap Solo terms</h2>
+            <span className={styles.status}>{commercialPolicy.providerMode} mode</span>
+          </div>
+          <p className={styles.muted}>
+            {formatCommercialPrice(commercialPolicy.amountMinor, commercialPolicy.billingInterval)}.
+            These are Roadmap SaaS terms, not the instructor&apos;s golfer-facing coaching-package terms.
+          </p>
+          <ul className={styles.list} aria-label="Exact configured Roadmap commercial terms">
+            {[
+              ["Trial", commercialPolicy.trialTerms],
+              ["Cancellation", commercialPolicy.cancellationTerms],
+              ["Pause or resume", commercialPolicy.pauseResumeTerms],
+              ["Tax", commercialPolicy.taxTerms],
+              ["Refunds", commercialPolicy.refundTerms],
+              ["Failed payment", commercialPolicy.failedPaymentTerms],
+              ["Data after access ends", commercialPolicy.dataAfterEndTerms],
+              ["Support", commercialPolicy.supportContact],
+            ].map(([label, value]) => (
+              <li key={label}>
+                <div>
+                  <strong>{label}</strong>
+                  <span>{value}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <p className={styles.muted}>
+            Policy {commercialPolicy.version} · approval reference {commercialPolicy.approvalReference}.
+            Stripe Checkout remains the final provider display before any paid confirmation.
+          </p>
+        </section>
+      ) : null}
+
+      <section className={styles.formCard} style={{ marginTop: "1rem" }}>
+        <div className={styles.cardHeader}>
+          <h2>Commercial activation checklist</h2>
+          <span className={styles.status}>
+            {commercialActivation.status === "configuration_ready_external_activation_pending"
+              ? "External activation pending"
+              : "Controlled evidence required"}
+          </span>
+        </div>
+        <p className={styles.muted}>
+          <strong>
+            {commercialActivation.status === "configuration_ready_external_activation_pending"
+              ? "CONFIGURATION READY — EXTERNAL ACTIVATION PENDING."
+              : "CONFIGURATION SUPPLIED — CONTROLLED EVIDENCE REQUIRED."}
+          </strong>{" "}
+          The candidate fails closed when an owner decision, provider account, or secret is
+          absent. This checklist reports readiness categories only; it never displays secret
+          values.
+        </p>
+        <ul className={styles.list} aria-label="Commercial activation dependencies">
+          {commercialActivation.checks.map((check) => (
+            <li key={check.id}>
+              <div>
+                <strong>{check.label}</strong>
+                <span>{check.detail}</span>
+              </div>
+              <span className={styles.status}>{check.ready ? "Configured" : "Pending"}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className={styles.formCard} style={{ marginTop: "1rem" }}>
+        <div className={styles.cardHeader}>
+          <h2>Roadmap billing and coaching packages are separate</h2>
+        </div>
+        <ul className={styles.list} aria-label="Separate payment paths">
+          <li>
+            <div>
+              <strong>Roadmap SaaS subscription</strong>
+              <span>
+                Pays for this instructor workspace. Stripe Checkout, signed webhooks,
+                reconciliation, and the Stripe Portal control this account state.
+              </span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Your golfer coaching package</strong>
+              <span>
+                Uses the external booking, purchase, or contact link you choose. Roadmap does
+                not charge the golfer or infer that an external click became a sale.
+              </span>
+            </div>
+            <Link className={styles.textLink} href="/app/packages">
+              Review coaching packages
+            </Link>
+          </li>
+        </ul>
       </section>
     </div>
   );
@@ -325,6 +465,81 @@ function subscriptionStatusLabel(status: SubscriptionStatus): string {
     ended: "Ended",
   };
   return labels[status];
+}
+
+function subscriptionStateGuidance(status: SubscriptionStatus | null): {
+  title: string;
+  message: string;
+} {
+  const guidance: Record<SubscriptionStatus, { title: string; message: string }> = {
+    incomplete: {
+      title: "Subscription setup is incomplete.",
+      message: "No active access is assumed. Open Stripe billing management when available or start a new Checkout only after the provider state is resolved.",
+    },
+    trialing: {
+      title: "Stripe reports a trialing subscription.",
+      message: "Workspace access and the transition after trial follow the exact configured entitlement and trial terms shown on this page.",
+    },
+    active: {
+      title: "Stripe reports an active subscription.",
+      message: "The period, price, and cancellation state below are the latest provider-authoritative projection saved for this account.",
+    },
+    past_due: {
+      title: "Payment needs attention.",
+      message: "Use Stripe billing management to review the payment method. Access consequences follow the configured failed-payment and entitlement policy; this page does not infer recovery.",
+    },
+    paused: {
+      title: "Stripe reports the subscription as paused.",
+      message: "Access and resumption follow the exact configured pause and entitlement policy. Use Stripe billing management when available.",
+    },
+    canceled: {
+      title: "Stripe reports a canceled subscription.",
+      message: "No future access or charge is inferred. Review the provider period and configured cancellation/data terms before starting another Checkout.",
+    },
+    unpaid: {
+      title: "Stripe reports the subscription as unpaid.",
+      message: "No payment recovery is assumed. Use Stripe billing management and review the configured failed-payment and access consequences.",
+    },
+    ended: {
+      title: "The prior subscription has ended.",
+      message: "No current paid access is assumed. Data availability and a new Checkout follow the configured ended-account policy.",
+    },
+  };
+  return status
+    ? guidance[status]
+    : {
+        title: "No Stripe subscription is recorded.",
+        message: "No paid access or charge is assumed. Checkout remains unavailable unless every configured commercial dependency is ready.",
+      };
+}
+
+function formatCommercialPrice(
+  amountMinor: number,
+  interval: "month" | "year",
+): string {
+  return `${new Intl.NumberFormat("en-CA", {
+    style: "currency",
+    currency: "CAD",
+    currencyDisplay: "code",
+  }).format(amountMinor / 100)} every ${interval}`;
+}
+
+function formatProviderPrice(
+  amountMinor: number,
+  currency: string,
+  interval: string | null,
+): string {
+  let amount: string;
+  try {
+    amount = new Intl.NumberFormat("en-CA", {
+      style: "currency",
+      currency: currency.toUpperCase(),
+      currencyDisplay: "code",
+    }).format(amountMinor / 100);
+  } catch {
+    amount = `${currency.toUpperCase()} ${(amountMinor / 100).toFixed(2)}`;
+  }
+  return interval ? `${amount} every ${interval}.` : `${amount}.`;
 }
 
 function billingPeriodLabel(

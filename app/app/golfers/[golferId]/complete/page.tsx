@@ -5,11 +5,16 @@ import { GolferRecordAccessBlocked } from "@/components/consent/GolferRecordAcce
 import { golferRecordProcessingConsentCurrent } from "@/lib/consent-enforcement";
 import { requirePageIdentity } from "@/lib/identity";
 import {
+  listRoadmapTemplates,
+  type RoadmapTemplateContent,
+} from "@/lib/rich-coaching";
+import {
   getOrCreateAccountForIdentity,
   getStagedGolferWorkspace,
   listActivePackagesPage,
 } from "@/lib/repository";
 import styles from "../../../workspace.module.css";
+import { AuthoringStepNav } from "../../AuthoringStepNav";
 import { StagedCompletionForm } from "./StagedCompletionForm";
 
 export const metadata: Metadata = {
@@ -46,6 +51,22 @@ export default async function CompleteStagedGolferPage({
     staged.plan.publishedRevision === null;
   const packagePage = await listActivePackagesPage(account.id, { limit: 100 });
   const packages = packagePage.items;
+  const roadmapTemplates = await listRoadmapTemplates({
+    accountId: account.id,
+    limit: 100,
+  });
+  const compatibleRoadmapTemplates = roadmapTemplates.flatMap((template) => {
+    const content = template.content as RoadmapTemplateContent;
+    if (content.phases.length !== 3 && content.phases.length !== 4) return [];
+    return [{
+      id: template.id,
+      title: template.title,
+      description: template.description,
+      isFavourite: template.isFavourite,
+      origin: template.origin,
+      content,
+    }];
+  });
 
   return (
     <div className={styles.page}>
@@ -63,9 +84,24 @@ export default async function CompleteStagedGolferPage({
           </p>
         </div>
         <Link className={styles.secondaryButton} href="/app/golfers">
-          Save and return later
+          Back to golfers
         </Link>
       </header>
+
+      <AuthoringStepNav
+        current="assessment"
+        completed={["goal"]}
+        optional={["evidence", "package"]}
+        links={{
+          goal: "#saved-basics-heading",
+          assessment: "#authoring-assessment",
+          priority: "#authoring-priority",
+          phases: "#authoring-phases",
+          evidence: "#authoring-evidence",
+          package: "#authoring-package",
+          preview: "#authoring-preview",
+        }}
+      />
 
       <section className={styles.panel} aria-labelledby="saved-basics-heading">
         <div className={styles.panelHeader}>
@@ -102,6 +138,9 @@ export default async function CompleteStagedGolferPage({
           ) : null}
           <StagedCompletionForm
             golferId={staged.golfer.id}
+            golferName={staged.golfer.preferredName || staged.golfer.displayName}
+            planTitle={staged.plan.title}
+            goalStatement={staged.goal?.desiredOutcome || ""}
             planId={staged.plan.id}
             expectedRevision={staged.plan.revision}
             recoveryScope={account.id}
@@ -110,6 +149,7 @@ export default async function CompleteStagedGolferPage({
               name: coachingPackage.name,
               fitDescription: coachingPackage.fitDescription,
             }))}
+            templates={compatibleRoadmapTemplates}
           />
         </>
       ) : (

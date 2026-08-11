@@ -37,6 +37,7 @@ export function ProfileForm(props: {
     "idle" | "saving" | "saved" | "error" | "reload_required"
   >("idle");
   const [message, setMessage] = useState("");
+  const [accentPreview, setAccentPreview] = useState(props.accentColor || "#1b4f40");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -151,9 +152,33 @@ export function ProfileForm(props: {
             </label>
             <label className={styles.field}>
               Accent colour
-              <input name="accentColor" type="color" defaultValue={props.accentColor || "#1b4f40"} />
+              <input
+                name="accentColor"
+                type="color"
+                value={accentPreview}
+                onChange={(event) => setAccentPreview(event.target.value)}
+              />
               <small>Choose a dark accent. Roadmap rejects colours that would make text hard to read.</small>
             </label>
+          </div>
+          <div
+            className={styles.brandingPreview}
+            style={{ "--branding-preview-accent": accentPreview } as React.CSSProperties}
+            aria-label="Live accent colour preview"
+          >
+            <span aria-hidden="true">
+              {props.displayName
+                .split(/\s+/)
+                .map((part) => part[0])
+                .join("")
+                .slice(0, 2)
+                .toUpperCase()}
+            </span>
+            <div>
+              <small>Private coaching plan</small>
+              <strong>{props.businessName || props.displayName}</strong>
+            </div>
+            <b>Example primary action</b>
           </div>
         </fieldset>
       </section>
