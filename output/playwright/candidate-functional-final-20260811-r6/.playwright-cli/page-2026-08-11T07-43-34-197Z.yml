@@ -1,0 +1,183 @@
+- generic [ref=e2]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=e4]:
+    - link "Prairie Three Phase Golf Roadmap home" [ref=e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=e6]: PT
+      - generic [ref=e7]:
+        - strong [ref=e8]: Prairie Three Phase Golf
+        - generic [ref=e9]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=e10]:
+      - link "Overview" [ref=e11] [cursor=pointer]:
+        - /url: /app
+      - link "Golfers" [ref=e12] [cursor=pointer]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=e13] [cursor=pointer]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=e14] [cursor=pointer]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=e15] [cursor=pointer]:
+        - /url: /app/media
+      - link "Packages" [ref=e16] [cursor=pointer]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=e17] [cursor=pointer]:
+        - /url: /app/billing
+      - link "Settings" [ref=e18] [cursor=pointer]:
+        - /url: /app/settings
+    - generic [ref=e19]:
+      - generic [ref=e20]: CT
+      - generic [ref=e21]:
+        - strong [ref=e22]: Coach Three phases without
+        - generic [ref=e23]: qa.three-phase@example.test
+      - button "Sign out" [ref=e25] [cursor=pointer]
+  - main [ref=e26]:
+    - generic [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - generic [ref=e30]: Rich coaching workspace
+          - heading "Taylor Three Phase" [level=1] [ref=e135]
+          - paragraph [ref=e32]: Manage reusable drills, lesson lifecycle, evidence, media, launch-monitor data, reviews, and milestones without leaving this golfer record.
+        - generic [ref=e33]:
+          - link "Back to golfers" [ref=e136] [cursor=pointer]:
+            - /url: /app/golfers
+          - link "Media library" [ref=e137] [cursor=pointer]:
+            - /url: /app/media
+      - navigation "Rich coaching destinations" [ref=e138]:
+        - generic [ref=e139]:
+          - button "Practice (0)" [ref=e140] [cursor=pointer]
+          - button "Lessons (1)" [ref=e194] [cursor=pointer]
+          - button "Evidence (3)" [ref=e325] [cursor=pointer]
+          - button "Media (0)" [ref=e143] [cursor=pointer]
+          - button "Launch data (0)" [ref=e144] [cursor=pointer]
+          - button "Review sources (0)" [ref=e145] [cursor=pointer]
+          - button "Milestones (0)" [ref=e146] [cursor=pointer]
+          - button "Timeline (4)" [ref=e326] [cursor=pointer]
+        - generic [ref=e148]: Plan revision 5
+      - status [ref=e196]: Evidence record created and available to lessons and phase reviews.
+      - region [ref=e239]:
+        - generic [ref=e241]:
+          - generic [ref=e242]: Evidence record
+          - heading "Record what was observed, measured, reported, or captured" [level=2] [ref=e243]
+          - paragraph [ref=e244]: Evidence stays explicit about its source, limitation, maturity, and whether it represents the golfer’s wider pattern. Media is selected from the ready media library.
+        - generic [ref=e245]:
+          - generic [ref=e246]:
+            - generic [ref=e247]:
+              - generic [ref=e248]: Evidence type
+              - combobox "Evidence type" [ref=e249]:
+                - option "Choose one"
+                - option "Coach observation"
+                - option "Golfer report"
+                - option "Measurement"
+                - option "Outcome count" [selected]
+                - option "Media"
+                - option "Comparison"
+                - option "Note"
+            - generic [ref=e250]:
+              - generic [ref=e251]: Context
+              - combobox "Context" [ref=e252]:
+                - option "Choose one"
+                - option "Lesson" [selected]
+                - option "Practice"
+                - option "Assessment"
+                - option "On course"
+                - option "Phase review"
+                - option "Other"
+            - generic [ref=e253]:
+              - generic [ref=e254]: Phase
+              - combobox "Phase" [ref=e255]:
+                - option "Choose one"
+                - option "Own centered contact" [selected]
+                - option "Shape trajectory"
+                - option "Choose targets"
+            - generic [ref=e256]:
+              - generic [ref=e257]: Lesson
+              - combobox "Lesson" [ref=e258]:
+                - option "Choose one" [selected]
+                - option "R6 transition lesson"
+            - generic [ref=e259]:
+              - generic [ref=e260]: Evidence title
+              - textbox "Evidence title" [ref=e261]
+            - generic [ref=e262]:
+              - generic [ref=e263]: Source label
+              - textbox "Source label" [ref=e264]
+            - generic [ref=e265]:
+              - generic [ref=e266]: Source type
+              - combobox "Source type" [ref=e267]:
+                - option "Choose one" [selected]
+                - option "Coach observed"
+                - option "Golfer reported"
+                - option "Device"
+                - option "Document"
+                - option "Mixed"
+            - generic [ref=e268]:
+              - generic [ref=e269]: Observed date and time (optional)
+              - textbox "Observed date and time (optional)" [ref=e270]
+            - generic [ref=e271]:
+              - generic [ref=e272]: Bounded claim (optional)
+              - textbox "Bounded claim (optional)" [ref=e273]
+            - generic [ref=e274]:
+              - generic [ref=e275]: Interpretation
+              - textbox "Interpretation" [ref=e276]
+            - generic [ref=e277]:
+              - generic [ref=e278]: Limitation
+              - textbox "Limitation" [ref=e279]
+            - generic [ref=e280]:
+              - generic [ref=e281]: Evidence maturity
+              - combobox "Evidence maturity" [ref=e282]:
+                - option "Choose one" [selected]
+                - option "Single observation"
+                - option "Early indication"
+                - option "Repeated practice"
+                - option "On-course observation"
+                - option "Insufficient"
+            - generic [ref=e283]:
+              - generic [ref=e284]: Next evidence needed (optional)
+              - textbox "Next evidence needed (optional)" [ref=e285]
+            - generic [ref=e286]:
+              - generic [ref=e287]: Metric name (optional)
+              - textbox "Metric name (optional)" [ref=e288]
+            - generic [ref=e289]:
+              - generic [ref=e290]: Metric value (optional)
+              - spinbutton "Metric value (optional)" [ref=e291]
+            - generic [ref=e292]:
+              - generic [ref=e293]: Exact metric unit (optional)
+              - textbox "Exact metric unit (optional)" [ref=e294]
+            - generic [ref=e295]:
+              - generic [ref=e296]: Non-numeric value or context (optional)
+              - textbox "Non-numeric value or context (optional)" [ref=e297]
+            - generic [ref=e298]:
+              - generic [ref=e299]: Comparison role
+              - combobox "Comparison role" [ref=e300]:
+                - option "Choose one" [selected]
+                - option "Standalone"
+                - option "Baseline"
+                - option "Current"
+            - generic [ref=e301]:
+              - generic [ref=e302]: Comparison group label (optional)
+              - textbox "Comparison group label (optional)" [ref=e303]
+          - generic [ref=e304]:
+            - checkbox "This record is representative beyond this one observation" [ref=e305]
+            - text: This record is representative beyond this one observation
+          - button "Create evidence record" [ref=e306] [cursor=pointer]
+        - generic [ref=e307]:
+          - heading "Available evidence" [level=3] [ref=e308]
+          - list [ref=e312]:
+            - listitem [ref=e327]:
+              - generic [ref=e328]:
+                - strong [ref=e329]: R6 strike measurement
+                - generic [ref=e330]: measurement
+              - paragraph [ref=e331]: Median carry was recorded without converting the source unit.
+              - generic [ref=e332]: "Synthetic launch monitor summary · Carry distance: 142.5 yd"
+            - listitem [ref=e320]:
+              - generic [ref=e321]:
+                - strong [ref=e322]: R6 golfer report
+                - generic [ref=e323]: golfer report
+              - paragraph [ref=e324]: The golfer reported that the comfortable tempo felt easier to repeat.
+              - text: Golfer reflection recorded after the lesson
+            - listitem [ref=e313]:
+              - generic [ref=e314]:
+                - strong [ref=e315]: R6 coach observation
+                - generic [ref=e316]: coach observation
+              - paragraph [ref=e317]: Contact improved when transition tempo stayed comfortable.
+              - text: Coach observation during bounded indoor set

@@ -1,0 +1,85 @@
+- generic [ref=e2]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=e4]:
+    - link "Coach Fresh empty coach Roadmap home" [ref=e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=e6]: CF
+      - generic [ref=e7]:
+        - strong [ref=e8]: Coach Fresh empty coach
+        - generic [ref=e9]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=e10]:
+      - link "Overview" [ref=e11] [cursor=pointer]:
+        - /url: /app
+      - link "Golfers" [ref=e12] [cursor=pointer]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=e13] [cursor=pointer]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=e14] [cursor=pointer]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=e15] [cursor=pointer]:
+        - /url: /app/media
+      - link "Packages" [active] [ref=e16] [cursor=pointer]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=e17] [cursor=pointer]:
+        - /url: /app/billing
+      - link "Settings" [ref=e18] [cursor=pointer]:
+        - /url: /app/settings
+    - generic [ref=e19]:
+      - generic [ref=e20]: CF
+      - generic [ref=e21]:
+        - strong [ref=e22]: Coach Fresh empty coach
+        - generic [ref=e23]: qa.fresh@example.test
+      - button "Sign out" [ref=e25] [cursor=pointer]
+  - main [ref=e26]:
+    - generic [ref=e27]:
+      - generic [ref=e29]:
+        - generic [ref=e30]: Coaching packages
+        - heading "Connect the phase to a package you already offer." [level=1] [ref=e127]
+        - paragraph [ref=e32]: Roadmap explains the recommendation and then sends the golfer to your existing booking, purchase, or contact route. It does not process coach-package payments.
+      - note [ref=e128]:
+        - strong [ref=e129]: Package facts can affect private golfer plans.
+        - generic [ref=e130]: Editing or archiving a linked package creates a new withdrawn plan revision, clears publication approval, and revokes active links until you review and publish again. Roadmap never treats an external click as a booking, purchase, or sale.
+      - generic [ref=e131]:
+        - group "Add a package you already sell" [ref=e133]:
+          - generic [ref=e135]:
+            - generic [ref=e136]:
+              - text: Package name
+              - textbox "Package name" [ref=e137]
+            - generic [ref=e138]:
+              - text: Why it fits
+              - textbox "Why it fits" [ref=e139]
+            - generic [ref=e140]:
+              - text: Price in CAD (optional)
+              - spinbutton "Price in CAD (optional) This is the instructor’s coaching-package price, not the Roadmap subscription." [ref=e141]
+              - generic [ref=e142]: This is the instructor’s coaching-package price, not the Roadmap subscription.
+            - generic [ref=e143]:
+              - text: Current details when no price is shown
+              - textbox "Current details when no price is shown Provide either an exact price or an honest current-details message." [ref=e144]:
+                - /placeholder: Confirm current price with me
+              - generic [ref=e145]: Provide either an exact price or an honest current-details message.
+            - generic [ref=e146]:
+              - text: Material inclusions — one per line
+              - textbox "Material inclusions — one per line List only what this package currently includes. Do not imply booking or payment has occurred." [ref=e147]:
+                - /placeholder: "Four individual lessons\nWritten practice direction\nEnd-of-phase review"
+              - generic [ref=e148]: List only what this package currently includes. Do not imply booking or payment has occurred.
+            - generic [ref=e149]:
+              - text: Cadence (optional)
+              - textbox "Cadence (optional)" [ref=e150]:
+                - /placeholder: Four lessons over six to eight weeks
+            - generic [ref=e151]:
+              - text: Practice expectation (optional)
+              - textbox "Practice expectation (optional)" [ref=e152]
+            - generic [ref=e153]:
+              - text: Evaluation approach (optional)
+              - textbox "Evaluation approach (optional)" [ref=e154]
+            - generic [ref=e155]:
+              - text: Terms
+              - textbox "Terms" [ref=e156]:
+                - /placeholder: Sessions, expected window, expiry, rescheduling, and renewal terms.
+            - generic [ref=e157]:
+              - text: Existing HTTPS booking, purchase, or contact link
+              - textbox "Existing HTTPS booking, purchase, or contact link Roadmap makes the handoff clear; it does not claim the external action completed." [ref=e158]
+              - generic [ref=e159]: Roadmap makes the handoff clear; it does not claim the external action completed.
+        - alert [ref=e160]
+        - button "Save package" [ref=e162] [cursor=pointer]

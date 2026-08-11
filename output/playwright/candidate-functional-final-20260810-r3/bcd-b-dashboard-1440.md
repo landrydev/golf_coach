@@ -1,0 +1,163 @@
+- generic [ref=e2] [box=0,0,1425,1502]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer] [box=16,-96,179,50]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=e4] [box=0,0,280,1000]:
+    - link "Foothills Golf Studio Roadmap home" [ref=e5] [cursor=pointer] [box=24,32,232,43]:
+      - /url: /app
+      - generic [ref=e6] [box=24,32,42,42]: FG
+      - generic [ref=e7] [box=78,32,178,43]:
+        - strong [ref=e8] [box=78,32,178,21]: Foothills Golf Studio
+        - generic [ref=e9] [box=78,59,178,16]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=e10] [box=24,131,232,444]:
+      - link "Overview" [ref=e11] [cursor=pointer] [box=24,131,232,51]:
+        - /url: /app
+      - link "Golfers" [ref=e12] [cursor=pointer] [box=24,187,232,51]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=e13] [cursor=pointer] [box=24,243,232,51]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=e14] [cursor=pointer] [box=24,299,232,51]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=e15] [cursor=pointer] [box=24,355,232,51]:
+        - /url: /app/media
+      - link "Packages" [ref=e16] [cursor=pointer] [box=24,412,232,51]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=e17] [cursor=pointer] [box=24,468,232,51]:
+        - /url: /app/billing
+      - link "Settings" [ref=e18] [cursor=pointer] [box=24,524,232,51]:
+        - /url: /app/settings
+    - generic [ref=e19] [box=24,886,232,82]:
+      - generic [ref=e20] [box=24,906,42,42]: CR
+      - generic [ref=e21] [box=78,886,178,45]:
+        - strong [ref=e22] [box=78,886,178,26]: Coach Rowan
+        - generic [ref=e23] [box=78,911,178,19]: visual.coach@example.test
+      - button "Sign out" [ref=e25] [cursor=pointer] [box=78,948,46,17]
+  - main [ref=e26] [box=280,0,1145,1502]:
+    - generic [ref=e27] [box=338,40,1029,1382]:
+      - generic [ref=e28] [box=338,40,1029,152]:
+        - generic [ref=e29] [box=338,40,736,152]:
+          - generic [ref=e30] [box=338,40,736,18]: Coaching command centre
+          - heading "Welcome back, Coach." [level=1] [ref=e31] [box=338,67,707,59]
+          - paragraph [ref=e32] [box=338,140,736,53]: Start with the few coaching records that need attention. Counts describe stored Roadmap state only; they do not imply a message, booking, sale, or golfer outcome.
+        - generic [ref=e33] [box=1122,147,245,46]:
+          - link "Add a golfer" [ref=e34] [cursor=pointer] [box=1122,147,116,46]:
+            - /url: /app/golfers/new
+          - link "Find a golfer" [ref=e35] [cursor=pointer] [box=1250,147,117,46]:
+            - /url: /app/golfers
+      - region [ref=e36] [box=338,224,1029,304]:
+        - generic [ref=e37] [box=362,249,980,62]:
+          - generic [ref=e38] [box=362,249,980,18]: Quick actions
+          - heading "Start the next coaching task." [level=2] [ref=e39] [box=362,276,980,35]
+        - list [ref=e40] [box=362,327,980,177]:
+          - listitem [ref=e41] [box=362,327,320,83]:
+            - link "New golfer Start an adult golfer record and first roadmap." [ref=e42] [cursor=pointer] [box=362,327,320,83]:
+              - /url: /app/golfers/new
+              - strong [ref=e43] [box=376,346,293,26]: New golfer
+              - generic [ref=e44] [box=376,375,293,16]: Start an adult golfer record and first roadmap.
+          - listitem [ref=e45] [box=692,327,320,83]:
+            - link "Add package Publish an external coaching offer or enquiry route." [ref=e46] [cursor=pointer] [box=692,327,320,83]:
+              - /url: /app/packages
+              - strong [ref=e47] [box=706,346,293,26]: Add package
+              - generic [ref=e48] [box=706,375,293,16]: Publish an external coaching offer or enquiry route.
+          - listitem [ref=e49] [box=1023,327,320,83]:
+            - link "New lesson Plan or record a lesson for Jordan Synthetic." [ref=e50] [cursor=pointer] [box=1023,327,320,83]:
+              - /url: /app/coaching/plans/024ae7b2-9873-4796-a49d-6b57606a17d9?tab=lessons
+              - strong [ref=e51] [box=1036,346,293,26]: New lesson
+              - generic [ref=e52] [box=1036,375,293,16]: Plan or record a lesson for Jordan Synthetic.
+          - listitem [ref=e53] [box=362,420,320,83]:
+            - link "Add evidence Record evidence and its limits for Jordan Synthetic." [ref=e54] [cursor=pointer] [box=362,420,320,83]:
+              - /url: /app/coaching/plans/024ae7b2-9873-4796-a49d-6b57606a17d9?tab=evidence
+              - strong [ref=e55] [box=376,439,293,26]: Add evidence
+              - generic [ref=e56] [box=376,469,293,16]: Record evidence and its limits for Jordan Synthetic.
+          - listitem [ref=e57] [box=692,420,320,83]:
+            - link "New drill Create a reusable private coaching drill." [ref=e58] [cursor=pointer] [box=692,420,320,83]:
+              - /url: /app/coaching/drills
+              - strong [ref=e59] [box=706,439,293,26]: New drill
+              - generic [ref=e60] [box=706,469,293,16]: Create a reusable private coaching drill.
+          - listitem [ref=e61] [box=1023,420,320,83]:
+            - link "Upload media Add a private file, then attach it to coaching work." [ref=e62] [cursor=pointer] [box=1023,420,320,83]:
+              - /url: /app/media#upload-media
+              - strong [ref=e63] [box=1036,439,293,26]: Upload media
+              - generic [ref=e64] [box=1036,469,293,16]: Add a private file, then attach it to coaching work.
+      - region [ref=e65] [box=338,544,1029,252]:
+        - generic [ref=e66] [box=362,569,980,62]:
+          - generic [ref=e67] [box=362,569,317,62]:
+            - generic [ref=e68] [box=362,569,317,18]: Persisted setup
+            - heading "Your first-value path is complete." [level=2] [ref=e69] [box=362,596,317,35]
+          - generic [ref=e70] [box=1209,569,134,26]: 4 of 4 required steps
+        - list [ref=e71] [box=362,647,980,124]:
+          - listitem [ref=e72] [box=362,647,188,124]:
+            - generic [ref=e73] [box=362,664,188,17]: ✓
+            - generic [ref=e74] [box=362,681,188,64]:
+              - strong [ref=e75] [box=362,681,188,26]: Coach identity
+              - generic [ref=e76] [box=362,711,188,35]: Saved and ready for the golfer view.
+            - link "Review" [ref=e77] [cursor=pointer] [box=362,748,49,21]:
+              - /url: /app/settings
+          - listitem [ref=e78] [box=560,647,188,124]:
+            - generic [ref=e79] [box=560,664,188,17]: ✓
+            - generic [ref=e80] [box=560,681,188,64]:
+              - strong [ref=e81] [box=560,681,188,26]: Current package
+              - generic [ref=e82] [box=560,711,188,35]: An active external coaching option is available.
+            - link "Review" [ref=e83] [cursor=pointer] [box=560,748,49,21]:
+              - /url: /app/packages
+          - listitem [ref=e84] [box=758,647,188,124]:
+            - generic [ref=e85] [box=758,664,188,17]: ✓
+            - generic [ref=e86] [box=758,681,188,64]:
+              - strong [ref=e87] [box=758,681,188,26]: First golfer
+              - generic [ref=e88] [box=758,711,188,35]: A private adult-golfer record is saved.
+            - link "Review" [ref=e89] [cursor=pointer] [box=758,748,49,21]:
+              - /url: /app/golfers/new
+          - listitem [ref=e90] [box=957,647,188,124]:
+            - generic [ref=e91] [box=957,664,188,17]: ✓
+            - generic [ref=e92] [box=957,681,188,64]:
+              - strong [ref=e93] [box=957,681,188,26]: Complete roadmap
+              - generic [ref=e94] [box=957,711,188,35]: A three- or four-phase roadmap is ready for review.
+            - link "Review" [ref=e95] [cursor=pointer] [box=957,748,49,21]:
+              - /url: /app/golfers?status=setup_incomplete
+          - listitem [ref=e96] [box=1155,647,188,124]:
+            - generic [ref=e97] [box=1155,664,188,17]: ✓
+            - generic [ref=e98] [box=1155,681,188,64]:
+              - strong [ref=e99] [box=1155,681,188,26]: Review and share
+              - generic [ref=e100] [box=1155,711,188,35]: At least one exact revision has been deliberately published.
+            - link "Review" [ref=e101] [cursor=pointer] [box=1155,748,49,21]:
+              - /url: /app/golfers?review=needs_review
+      - region [ref=e102] [box=338,824,1029,378]:
+        - generic [ref=e103] [box=338,824,1029,62]:
+          - generic [ref=e104] [box=338,824,419,62]:
+            - generic [ref=e105] [box=338,824,419,18]: Needs attention
+            - heading "Bounded coaching work, not vanity metrics." [level=2] [ref=e106] [box=338,851,419,35]
+          - link "Open filtered golfer list" [ref=e107] [cursor=pointer] [box=1215,865,152,21]:
+            - /url: /app/golfers?sort=attention
+        - generic [ref=e108] [box=338,898,1029,303]:
+          - article [ref=e109] [box=338,898,508,103]:
+            - generic [ref=e110] [box=356,917,471,34]:
+              - heading "Incomplete roadmaps" [level=3] [ref=e111] [box=356,917,164,26]
+              - generic "0 stored incomplete roadmaps" [ref=e112] [box=795,917,32,34]: "0"
+            - paragraph [ref=e113] [box=356,953,471,18]: No staged roadmaps are waiting for completion.
+          - article [ref=e114] [box=859,898,508,103]:
+            - generic [ref=e115] [box=877,917,471,34]:
+              - heading "Coach reviews" [level=3] [ref=e116] [box=877,917,107,26]
+              - generic "0 stored coach reviews" [ref=e117] [box=1317,917,32,34]: "0"
+            - paragraph [ref=e118] [box=877,953,471,18]: No roadmap or phase-review drafts need a decision.
+          - article [ref=e119] [box=338,1015,508,187]:
+            - generic [ref=e120] [box=356,1033,471,34]:
+              - heading "Active practice" [level=3] [ref=e121] [box=356,1033,111,26]
+              - generic "1 stored active practice" [ref=e122] [box=795,1033,32,34]: "1"
+            - list [ref=e123] [box=356,1080,471,104]:
+              - listitem [ref=e124] [box=356,1080,471,104]:
+                - generic [ref=e125] [box=356,1091,471,67]:
+                  - strong [ref=e126] [box=356,1093,126,21]: Jordan Synthetic
+                  - generic [ref=e127] [box=356,1120,471,18]: Editable centered-contact window
+                  - generic [ref=e128] [box=356,1140,471,18]: Due Aug 14, 2026 · Aug 11
+                - link "Open task" [ref=e129] [cursor=pointer] [box=356,1160,79,21]:
+                  - /url: /app/coaching/plans/024ae7b2-9873-4796-a49d-6b57606a17d9?tab=practice&practiceId=0cc355a9-1262-4c7b-8713-19ac384e6e32
+          - article [ref=e130] [box=859,1015,508,187]:
+            - generic [ref=e131] [box=877,1033,471,34]:
+              - heading "Latest responses & check-ins" [level=3] [ref=e132] [box=877,1033,215,26]
+              - generic "0 stored latest responses & check-ins" [ref=e133] [box=1317,1033,32,34]: "0"
+            - paragraph [ref=e134] [box=877,1070,471,18]: No golfer response or practice check-in has been recorded through a private link.
+      - region [ref=e135] [box=338,1215,1029,207]:
+        - generic [ref=e136] [box=366,1240,977,115]:
+          - generic [ref=e137] [box=366,1240,977,18]: Stored failure signals
+          - heading "Media and launch-data work that needs review" [level=2] [ref=e138] [box=366,1278,977,38]
+          - paragraph [ref=e139] [box=366,1337,977,19]: This list reports only failed or quarantined media and failed or mapping-required launch-data imports that Roadmap can prove exist.
+        - paragraph [ref=e140] [box=366,1368,977,18]: No failed media or launch-data import needs attention.

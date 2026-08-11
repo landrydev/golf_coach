@@ -1,0 +1,143 @@
+- generic [ref=e2]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=e4]:
+    - link "Coach Fresh empty coach Roadmap home" [ref=e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=e6]: CF
+      - generic [ref=e7]:
+        - strong [ref=e8]: Coach Fresh empty coach
+        - generic [ref=e9]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=e10]:
+      - link "Overview" [ref=e11] [cursor=pointer]:
+        - /url: /app
+      - link "Golfers" [ref=e12] [cursor=pointer]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=e13] [cursor=pointer]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=e14] [cursor=pointer]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=e15] [cursor=pointer]:
+        - /url: /app/media
+      - link "Packages" [ref=e16] [cursor=pointer]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=e17] [cursor=pointer]:
+        - /url: /app/billing
+      - link "Settings" [ref=e18] [cursor=pointer]:
+        - /url: /app/settings
+    - generic [ref=e19]:
+      - generic [ref=e20]: CF
+      - generic [ref=e21]:
+        - strong [ref=e22]: Coach Fresh empty coach
+        - generic [ref=e23]: qa.fresh@example.test
+      - button "Sign out" [ref=e25] [cursor=pointer]
+  - main [ref=e26]:
+    - generic [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - generic [ref=e30]: New golfer roadmap
+          - heading "Start with the facts you know, then finish the coaching judgment." [level=1] [ref=e294]
+          - paragraph [ref=e32]: Save the golfer, plan title, and primary goal now, then resume the assessment and phase sequence without losing the record. Nothing can be published until that real coaching content is complete.
+        - link "Back to golfers" [active] [ref=e295] [cursor=pointer]:
+          - /url: /app/golfers
+      - navigation "Roadmap authoring steps" [ref=e296]:
+        - list [ref=e297]:
+          - listitem [ref=e298]:
+            - link "Goal Current" [ref=e299] [cursor=pointer]:
+              - /url: "#authoring-goal"
+              - generic [ref=e300]: "1"
+              - generic [ref=e301]:
+                - strong [ref=e302]: Goal
+                - generic [ref=e303]: Current
+          - listitem [ref=e304]:
+            - generic [ref=e305]:
+              - generic [ref=e306]: "2"
+              - generic [ref=e307]:
+                - strong [ref=e308]: Assessment
+                - generic [ref=e309]: After save
+          - listitem [ref=e310]:
+            - generic [ref=e311]:
+              - generic [ref=e312]: "3"
+              - generic [ref=e313]:
+                - strong [ref=e314]: Priority
+                - generic [ref=e315]: After save
+          - listitem [ref=e316]:
+            - generic [ref=e317]:
+              - generic [ref=e318]: "4"
+              - generic [ref=e319]:
+                - strong [ref=e320]: Phases
+                - generic [ref=e321]: After save
+          - listitem [ref=e322]:
+            - generic [ref=e323]:
+              - generic [ref=e324]: "5"
+              - generic [ref=e325]:
+                - strong [ref=e326]: Evidence
+                - generic [ref=e327]: Optional
+          - listitem [ref=e328]:
+            - generic [ref=e329]:
+              - generic [ref=e330]: "6"
+              - generic [ref=e331]:
+                - strong [ref=e332]: Package
+                - generic [ref=e333]: Optional
+          - listitem [ref=e334]:
+            - generic [ref=e335]:
+              - generic [ref=e336]: "7"
+              - generic [ref=e337]:
+                - strong [ref=e338]: Preview
+                - generic [ref=e339]: After save
+      - note [ref=e340]:
+        - strong [ref=e341]: Collect only what you need.
+        - generic [ref=e342]: Do not add medical details, payment information, or unrelated personal history. Media is optional and requires a suitable consent basis.
+      - region [ref=e343]:
+        - generic [ref=e345]:
+          - generic [ref=e346]: Authorization control
+          - heading "Golfer record processing" [level=2] [ref=e347]
+        - paragraph [ref=e348]: Synthetic authorization for test-only golfer records; no real person is represented.
+        - paragraph [ref=e349]: "Policy version: synthetic-golfer-record-v1"
+        - paragraph [ref=e350]: "Current state: authorized"
+        - button "Withdraw authorization" [ref=e351] [cursor=pointer]
+      - region [ref=e352]:
+        - generic [ref=e353]:
+          - generic [ref=e354]:
+            - generic [ref=e355]: Step 1 of 7
+            - heading "Save the golfer and goal." [level=2] [ref=e356]
+            - paragraph [ref=e357]: This is the durable first step. Assessment, priority, phases, optional evidence, package, and exact preview follow on the resumable route.
+          - generic [ref=e358]: Saved only after confirmation
+        - generic [ref=e359]:
+          - status [ref=e360]:
+            - generic [ref=e361]:
+              - strong [ref=e362]: Goal-step save state
+              - generic [ref=e363]: Not saved yet. Submit once to create the durable resumable record.
+          - group "Save the real basics first" [ref=e365]:
+            - paragraph [ref=e367]: This creates a private, resumable record with no invented assessment, priority, phase, or package content. It cannot be previewed or published until you finish the coaching roadmap.
+            - generic [ref=e368]:
+              - generic [ref=e369]:
+                - text: Golfer display name
+                - textbox "Golfer display name" [ref=e370]
+              - generic [ref=e371]:
+                - text: Preferred name (optional)
+                - textbox "Preferred name (optional)" [ref=e372]
+              - generic [ref=e373]:
+                - text: Contact email (optional)
+                - textbox "Contact email (optional) Roadmap does not send a message or private link automatically." [ref=e374]
+                - generic [ref=e375]: Roadmap does not send a message or private link automatically.
+              - generic [ref=e376]:
+                - text: Plan title
+                - textbox "Plan title" [ref=e377]:
+                  - /placeholder: Predictable contact roadmap
+              - generic [ref=e378]:
+                - text: Primary goal
+                - textbox "Primary goal" [ref=e379]:
+                  - /placeholder: What does the golfer want to make more useful or predictable?
+              - group [ref=e380]:
+                - generic "Add optional goal meaning and practical context" [ref=e381] [cursor=pointer]
+              - generic [ref=e382]:
+                - checkbox "I confirm this golfer is an adult and I have a suitable basis to create this private coaching record." [ref=e383]
+                - generic [ref=e384]: I confirm this golfer is an adult and I have a suitable basis to create this private coaching record.
+          - alert [ref=e385]
+          - button "Save basics and continue" [ref=e387] [cursor=pointer]
+      - group [ref=e388]:
+        - 'generic "Experienced path: complete all roadmap fields in one session" [ref=e389] [cursor=pointer]'
+        - option "No package attached — golfer can ask, wait, or practise independently" [selected]
+        - option "3 directional phases"
+        - option "4 directional phases" [selected]

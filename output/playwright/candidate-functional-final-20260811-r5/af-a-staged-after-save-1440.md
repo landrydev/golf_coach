@@ -1,0 +1,147 @@
+- generic [ref=e2] [box=0,0,1440,2141]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer] [box=16,-96,179,50]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=e4] [box=0,0,280,1000]:
+    - link "Northline Golf Coaching Roadmap home" [ref=e226] [cursor=pointer] [box=24,32,232,43]:
+      - /url: /app
+      - generic [ref=e6] [box=24,32,42,42]: NG
+      - generic [ref=e7] [box=78,32,178,43]:
+        - strong [ref=e8] [box=78,32,178,21]: Northline Golf Coaching
+        - generic [ref=e9] [box=78,59,178,16]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=e10] [box=24,131,232,443]:
+      - link "Overview" [ref=e11] [cursor=pointer] [box=24,131,232,51]:
+        - /url: /app
+      - link "Golfers" [ref=e12] [cursor=pointer] [box=24,187,232,51]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=e13] [cursor=pointer] [box=24,243,232,51]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=e14] [cursor=pointer] [box=24,299,232,51]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=e15] [cursor=pointer] [box=24,355,232,51]:
+        - /url: /app/media
+      - link "Packages" [ref=e16] [cursor=pointer] [box=24,412,232,51]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=e17] [cursor=pointer] [box=24,468,232,51]:
+        - /url: /app/billing
+      - link "Settings" [ref=e18] [cursor=pointer] [box=24,524,232,51]:
+        - /url: /app/settings
+    - generic [ref=e19] [box=24,886,232,82]:
+      - generic [ref=e20] [box=24,906,42,42]: CA
+      - generic [ref=e21] [box=78,886,178,45]:
+        - strong [ref=e22] [box=78,886,178,26]: Coach Avery North
+        - generic [ref=e23] [box=78,911,178,19]: qa.fresh@example.test
+      - button "Sign out" [ref=e25] [cursor=pointer] [box=78,948,46,16]
+  - main [ref=e26] [box=280,0,1160,2141]:
+    - generic [ref=e27] [box=338,40,1045,2021]:
+      - generic [ref=e28] [box=338,40,1045,270]:
+        - generic [ref=e29] [box=338,40,736,270]:
+          - generic [ref=e30] [box=338,40,736,18]: New golfer roadmap
+          - heading "Start with the facts you know, then finish the coaching judgment." [level=1] [ref=e337] [box=338,67,707,176]
+          - paragraph [ref=e32] [box=338,257,736,53]: Save the golfer, plan title, and primary goal now, then resume the assessment and phase sequence without losing the record. Nothing can be published until that real coaching content is complete.
+        - link "Back to golfers" [ref=e338] [cursor=pointer] [box=1248,263,134,47]:
+          - /url: /app/golfers
+      - navigation "Roadmap authoring steps" [ref=e339] [box=338,342,1045,66]:
+        - list [ref=e340] [box=338,342,1045,66]:
+          - listitem [ref=e341] [box=343,347,143,55]:
+            - link "Goal Current" [ref=e342] [cursor=pointer] [box=343,347,143,55]:
+              - /url: "#authoring-goal"
+              - generic [ref=e343] [box=394,366,6,19]: "1"
+              - generic [ref=e344] [box=400,356,36,37]:
+                - strong [ref=e345] [box=400,356,36,19]: Goal
+                - generic [ref=e346] [box=400,377,36,17]: Current
+          - listitem [ref=e347] [box=492,347,143,55]:
+            - generic [ref=e348] [box=492,347,143,55]:
+              - generic [ref=e349] [box=526,366,7,19]: "2"
+              - generic [ref=e350] [box=533,356,68,37]:
+                - strong [ref=e351] [box=533,356,68,19]: Assessment
+                - generic [ref=e352] [box=533,377,68,17]: After save
+          - listitem [ref=e353] [box=640,347,143,55]:
+            - generic [ref=e354] [box=640,347,143,55]:
+              - generic [ref=e355] [box=684,366,7,19]: "3"
+              - generic [ref=e356] [box=691,356,47,37]:
+                - strong [ref=e357] [box=691,356,47,19]: Priority
+                - generic [ref=e358] [box=691,377,47,17]: After save
+          - listitem [ref=e359] [box=789,347,143,55]:
+            - generic [ref=e360] [box=789,347,143,55]:
+              - generic [ref=e361] [box=833,366,7,19]: "4"
+              - generic [ref=e362] [box=840,356,47,37]:
+                - strong [ref=e363] [box=840,356,47,19]: Phases
+                - generic [ref=e364] [box=840,377,47,17]: After save
+          - listitem [ref=e365] [box=937,347,143,55]:
+            - generic [ref=e366] [box=937,347,143,55]:
+              - generic [ref=e367] [box=980,366,7,19]: "5"
+              - generic [ref=e368] [box=987,356,51,37]:
+                - strong [ref=e369] [box=987,356,51,19]: Evidence
+                - generic [ref=e370] [box=987,377,51,17]: Optional
+          - listitem [ref=e371] [box=1085,347,143,55]:
+            - generic [ref=e372] [box=1085,347,143,55]:
+              - generic [ref=e373] [box=1130,366,7,19]: "6"
+              - generic [ref=e374] [box=1137,356,48,37]:
+                - strong [ref=e375] [box=1137,356,48,19]: Package
+                - generic [ref=e376] [box=1137,377,48,17]: Optional
+          - listitem [ref=e377] [box=1234,347,143,55]:
+            - generic [ref=e378] [box=1234,347,143,55]:
+              - generic [ref=e379] [box=1278,366,7,19]: "7"
+              - generic [ref=e380] [box=1285,356,47,37]:
+                - strong [ref=e381] [box=1285,356,47,19]: Preview
+                - generic [ref=e382] [box=1285,377,47,17]: After save
+      - note [ref=e383] [box=338,424,1045,79]:
+        - strong [ref=e384] [box=358,439,1008,26]: Collect only what you need.
+        - generic [ref=e385] [box=358,468,1008,19]: Do not add medical details, payment information, or unrelated personal history. Media is optional and requires a suitable consent basis.
+      - region [ref=e386] [box=338,519,1045,285]:
+        - generic [ref=e388] [box=366,547,234,62]:
+          - generic [ref=e389] [box=366,547,234,18]: Authorization control
+          - heading "Golfer record processing" [level=2] [ref=e390] [box=366,574,234,35]
+        - paragraph [ref=e391] [box=366,625,988,26]: Synthetic authorization for test-only golfer records; no real person is represented.
+        - paragraph [ref=e392] [box=366,666,988,19]: "Policy version: synthetic-golfer-record-v1"
+        - paragraph [ref=e393] [box=366,697,988,19]: "Current state: authorized"
+        - button "Withdraw authorization" [ref=e394] [cursor=pointer] [box=366,729,193,47]
+      - region [ref=e395] [box=338,803,1045,1186]:
+        - generic [ref=e396] [box=363,856,995,145]:
+          - generic [ref=e397] [box=363,856,823,145]:
+            - generic [ref=e398] [box=363,856,823,18]: Step 1 of 7
+            - heading "Save the golfer and goal." [level=2] [ref=e399] [box=363,884,823,35]
+            - paragraph [ref=e400] [box=363,934,823,51]: This is the durable first step. Assessment, priority, phases, optional evidence, package, and exact preview follow on the resumable route.
+          - generic [ref=e401] [box=1202,958,156,43]: Saved only after confirmation
+        - generic [ref=e402] [box=363,1014,995,950]:
+          - status [ref=e403] [box=363,1014,995,58]:
+            - generic [ref=e404] [box=380,1025,964,36]:
+              - strong [ref=e405] [box=380,1025,964,18]: Goal-step save state
+              - generic [ref=e406] [box=380,1046,964,15]: The server confirmed the golfer and goal. Opening the next step…
+          - group "Save the real basics first" [ref=e408] [box=391,1119,938,687]:
+            - paragraph [ref=e410] [box=391,1178,938,37]: This creates a private, resumable record with no invented assessment, priority, phase, or package content. It cannot be previewed or published until you finish the coaching roadmap.
+            - generic [ref=e411] [box=391,1244,938,562]:
+              - generic [ref=e412] [box=391,1244,461,75]:
+                - text: Golfer display name
+                - textbox "Golfer display name" [disabled] [ref=e413] [box=391,1272,461,48]: Jordan Rivers
+              - generic [ref=e414] [box=868,1244,461,75]:
+                - text: Preferred name (optional)
+                - textbox "Preferred name (optional)" [disabled] [ref=e415] [box=868,1272,461,48]: Jordan
+              - generic [ref=e416] [box=391,1335,938,98]:
+                - text: Contact email (optional)
+                - textbox "Contact email (optional) Roadmap does not send a message or private link automatically." [disabled] [ref=e417] [box=391,1363,938,48]: jordan.rivers@example.test
+                - generic [ref=e418] [box=391,1417,938,16]: Roadmap does not send a message or private link automatically.
+              - generic [ref=e419] [box=391,1449,938,75]:
+                - text: Plan title
+                - textbox "Plan title" [disabled] [ref=e420] [box=391,1477,938,48]:
+                  - /placeholder: Predictable contact roadmap
+                  - text: Reliable contact roadmap
+              - generic [ref=e421] [box=391,1541,938,139]:
+                - text: Primary goal
+                - textbox "Primary goal" [disabled] [ref=e422] [box=391,1568,938,112]:
+                  - /placeholder: What does the golfer want to make more useful or predictable?
+                  - text: Make centred contact predictable enough to choose targets with confidence.
+              - group [ref=e423] [box=391,1696,938,72]:
+                - generic "Add optional goal meaning and practical context" [ref=e424] [cursor=pointer] [box=408,1710,904,44]
+              - generic [ref=e425] [box=391,1784,938,23]:
+                - checkbox "I confirm this golfer is an adult and I have a suitable basis to create this private coaching record." [checked] [disabled] [ref=e426] [box=395,1785,18,18]
+                - generic [ref=e427] [box=427,1784,902,20]: I confirm this golfer is an adult and I have a suitable basis to create this private coaching record.
+          - alert [ref=e428] [box=362,1013,1,1]
+          - button "Save basics and continue" [disabled] [ref=e430] [box=363,1854,198,47]
+          - status [ref=e433] [box=363,1920,995,44]: Resumable golfer draft saved.
+      - group [ref=e431] [box=338,1989,1045,72]:
+        - 'generic "Experienced path: complete all roadmap fields in one session" [ref=e432] [cursor=pointer] [box=355,2003,1011,44]'
+        - option "No package attached — golfer can ask, wait, or practise independently" [selected] [box=0,0,0,0]
+        - option "Foundation rebuild" [box=0,0,0,0]
+        - option "3 directional phases" [box=0,0,0,0]
+        - option "4 directional phases" [selected] [box=0,0,0,0]

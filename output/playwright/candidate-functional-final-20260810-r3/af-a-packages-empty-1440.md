@@ -1,0 +1,85 @@
+- generic [ref=e2] [box=0,0,1440,1839]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer] [box=16,-96,179,50]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=e4] [box=0,0,280,1000]:
+    - link "Northline Golf Coaching Roadmap home" [ref=e226] [cursor=pointer] [box=24,32,232,43]:
+      - /url: /app
+      - generic [ref=e6] [box=24,32,42,42]: NG
+      - generic [ref=e7] [box=78,32,178,43]:
+        - strong [ref=e8] [box=78,32,178,21]: Northline Golf Coaching
+        - generic [ref=e9] [box=78,59,178,16]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=e10] [box=24,131,232,443]:
+      - link "Overview" [ref=e11] [cursor=pointer] [box=24,131,232,51]:
+        - /url: /app
+      - link "Golfers" [ref=e12] [cursor=pointer] [box=24,187,232,51]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=e13] [cursor=pointer] [box=24,243,232,51]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=e14] [cursor=pointer] [box=24,299,232,51]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=e15] [cursor=pointer] [box=24,355,232,51]:
+        - /url: /app/media
+      - link "Packages" [active] [ref=e16] [cursor=pointer] [box=24,412,232,51]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=e17] [cursor=pointer] [box=24,468,232,51]:
+        - /url: /app/billing
+      - link "Settings" [ref=e18] [cursor=pointer] [box=24,524,232,51]:
+        - /url: /app/settings
+    - generic [ref=e19] [box=24,886,232,82]:
+      - generic [ref=e20] [box=24,906,42,42]: CA
+      - generic [ref=e21] [box=78,886,178,45]:
+        - strong [ref=e22] [box=78,886,178,26]: Coach Avery North
+        - generic [ref=e23] [box=78,911,178,19]: qa.fresh@example.test
+      - button "Sign out" [ref=e25] [cursor=pointer] [box=78,948,46,16]
+  - main [ref=e26] [box=280,0,1160,1839]:
+    - generic [ref=e27] [box=338,40,1045,1719]:
+      - generic [ref=e29] [box=338,40,736,211]:
+        - generic [ref=e30] [box=338,40,736,18]: Coaching packages
+        - heading "Connect the phase to a package you already offer." [level=1] [ref=e262] [box=338,67,707,117]
+        - paragraph [ref=e32] [box=338,198,736,53]: Roadmap explains the recommendation and then sends the golfer to your existing booking, purchase, or contact route. It does not process coach-package payments.
+      - note [ref=e263] [box=338,283,1045,98]:
+        - strong [ref=e264] [box=358,298,1008,26]: Package facts can affect private golfer plans.
+        - generic [ref=e265] [box=358,327,1008,38]: Editing or archiving a linked package creates a new withdrawn plan revision, clears publication approval, and revokes active links until you review and publish again. Roadmap never treats an external click as a booking, purchase, or sale.
+      - generic [ref=e266] [box=338,397,1045,1362]:
+        - group "Add a package you already sell" [ref=e268] [box=366,425,988,1240]:
+          - generic [ref=e270] [box=366,472,988,1194]:
+            - generic [ref=e271] [box=366,472,988,75]:
+              - text: Package name
+              - textbox "Package name" [ref=e272] [box=366,499,988,48]
+            - generic [ref=e273] [box=366,563,988,139]:
+              - text: Why it fits
+              - textbox "Why it fits" [ref=e274] [box=366,590,988,112]
+            - generic [ref=e275] [box=366,718,486,98]:
+              - text: Price in CAD (optional)
+              - spinbutton "Price in CAD (optional) This is the instructor’s coaching-package price, not the Roadmap subscription." [ref=e276] [box=366,746,486,48]
+              - generic [ref=e277] [box=366,800,486,16]: This is the instructor’s coaching-package price, not the Roadmap subscription.
+            - generic [ref=e278] [box=868,718,486,98]:
+              - text: Current details when no price is shown
+              - textbox "Current details when no price is shown Provide either an exact price or an honest current-details message." [ref=e279] [box=868,746,486,48]:
+                - /placeholder: Confirm current price with me
+              - generic [ref=e280] [box=868,800,486,16]: Provide either an exact price or an honest current-details message.
+            - generic [ref=e281] [box=366,832,988,162]:
+              - text: Material inclusions — one per line
+              - textbox "Material inclusions — one per line List only what this package currently includes. Do not imply booking or payment has occurred." [ref=e282] [box=366,860,988,112]:
+                - /placeholder: "Four individual lessons\nWritten practice direction\nEnd-of-phase review"
+              - generic [ref=e283] [box=366,978,988,16]: List only what this package currently includes. Do not imply booking or payment has occurred.
+            - generic [ref=e284] [box=366,1010,486,75]:
+              - text: Cadence (optional)
+              - textbox "Cadence (optional)" [ref=e285] [box=366,1037,486,48]:
+                - /placeholder: Four lessons over six to eight weeks
+            - generic [ref=e286] [box=366,1101,988,139]:
+              - text: Practice expectation (optional)
+              - textbox "Practice expectation (optional)" [ref=e287] [box=366,1129,988,112]
+            - generic [ref=e288] [box=366,1257,988,139]:
+              - text: Evaluation approach (optional)
+              - textbox "Evaluation approach (optional)" [ref=e289] [box=366,1284,988,112]
+            - generic [ref=e290] [box=366,1412,988,139]:
+              - text: Terms
+              - textbox "Terms" [ref=e291] [box=366,1440,988,112]:
+                - /placeholder: Sessions, expected window, expiry, rescheduling, and renewal terms.
+            - generic [ref=e292] [box=366,1568,988,98]:
+              - text: Existing HTTPS booking, purchase, or contact link
+              - textbox "Existing HTTPS booking, purchase, or contact link Roadmap makes the handoff clear; it does not claim the external action completed." [ref=e293] [box=366,1595,988,48]
+              - generic [ref=e294] [box=366,1649,988,16]: Roadmap makes the handoff clear; it does not claim the external action completed.
+        - alert [ref=e295] [box=337,396,1,1]
+        - button "Save package" [ref=e297] [cursor=pointer] [box=338,1713,123,47]

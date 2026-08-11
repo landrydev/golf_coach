@@ -1,0 +1,256 @@
+{
+  "schemaVersion": 1,
+  "recordType": "functional-qa-exact-candidate-completion-ledger",
+  "candidateId": "candidate-functional-final-20260811-r9",
+  "createdAt": "2026-08-11T09:50:13.213Z",
+  "workingManifest": {
+    "path": "output/playwright/candidate-functional-final-20260811-r9/candidate-manifest.json",
+    "schemaVersion": 2,
+    "eligibilityAuthority": false
+  },
+  "sourceIdentity": {
+    "inventoryPath": "output/playwright/candidate-functional-final-20260811-r9/source-identity.json",
+    "schemaVersion": 2,
+    "aggregateSha256": "bf27e9b45ff00401511bde350cca7319dbfd8ed89b8c0dbc434f52b19bc4a2f2",
+    "fileCount": 409,
+    "totalBytes": 10762954,
+    "status": "recorded"
+  },
+  "buildIdentity": {
+    "inventoryPath": "output/playwright/candidate-functional-final-20260811-r9/build-identity.json",
+    "schemaVersion": 1,
+    "aggregateSha256": "6b1b5d298536c951e074c1e495f909bb626a62ef58ba1a8590bc23e3f3329d44",
+    "fileCount": 65,
+    "totalBytes": 10422291,
+    "status": "recorded"
+  },
+  "verification": {
+    "command": "npm run verify",
+    "status": "passed",
+    "tests": 526,
+    "passed": 526,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "durationMs": 40865.1364,
+    "evidencePaths": [
+      "output/playwright/candidate-functional-final-20260811-r9/verify-functional-final-20260811-r9.log"
+    ]
+  },
+  "requiredViewports": [
+    {
+      "width": 320,
+      "height": 844,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "evidencePaths": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "evidencePaths": []
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "evidencePaths": []
+    },
+    {
+      "width": 1440,
+      "height": 1000,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "evidencePaths": []
+    }
+  ],
+  "fixtureScenarios": [
+    {
+      "id": "fresh",
+      "label": "Fresh empty coach",
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "evidencePaths": []
+    },
+    {
+      "id": "standard",
+      "label": "Standard four-phase roadmap",
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "evidencePaths": []
+    },
+    {
+      "id": "three-phase",
+      "label": "Three phases without a package",
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "evidencePaths": []
+    },
+    {
+      "id": "mixed-30",
+      "label": "Thirty mixed-state golfers",
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "evidencePaths": []
+    },
+    {
+      "id": "long-content",
+      "label": "Long-content roadmap",
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "evidencePaths": []
+    },
+    {
+      "id": "expired",
+      "label": "Expired private access",
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "evidencePaths": []
+    },
+    {
+      "id": "revoked",
+      "label": "Revoked private access",
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "evidencePaths": []
+    },
+    {
+      "id": "republished",
+      "label": "Republished roadmap",
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "evidencePaths": []
+    }
+  ],
+  "acceptanceScenarios": [
+    {
+      "id": "A",
+      "label": "First self-serve roadmap",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [
+        "QA-PLAYWRIGHT-DAEMON-PERMISSION"
+      ]
+    },
+    {
+      "id": "B",
+      "label": "Swing-video evidence",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [
+        "QA-PLAYWRIGHT-DAEMON-PERMISSION"
+      ]
+    },
+    {
+      "id": "C",
+      "label": "Practice-drill reuse",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [
+        "QA-PLAYWRIGHT-DAEMON-PERMISSION"
+      ]
+    },
+    {
+      "id": "D",
+      "label": "Launch-monitor import and comparison",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [
+        "QA-PLAYWRIGHT-DAEMON-PERMISSION"
+      ]
+    },
+    {
+      "id": "E",
+      "label": "Living journey and phase transition",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [
+        "QA-PLAYWRIGHT-DAEMON-PERMISSION"
+      ]
+    },
+    {
+      "id": "F",
+      "label": "Return and management",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [
+        "QA-PLAYWRIGHT-DAEMON-PERMISSION"
+      ]
+    },
+    {
+      "id": "G",
+      "label": "Golfer mobile and print experience",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [
+        "QA-PLAYWRIGHT-DAEMON-PERMISSION"
+      ]
+    },
+    {
+      "id": "H",
+      "label": "SaaS billing in test mode",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [
+        "QA-PLAYWRIGHT-DAEMON-PERMISSION"
+      ]
+    }
+  ],
+  "browserReview": {
+    "consoleErrorCount": null,
+    "failedNetworkRequestCount": null,
+    "keyboardResult": "not_recorded",
+    "touchEquivalentResult": "not_recorded",
+    "reducedMotionResult": "not_recorded",
+    "reflowAndOverflowResult": "not_recorded",
+    "manualVisualResult": "not_recorded",
+    "visualReviewer": null,
+    "evidencePaths": [
+      "output/playwright/candidate-functional-final-20260811-r9/QA_EXECUTION_BLOCKER.md"
+    ]
+  },
+  "completionEligibility": {
+    "eligible": false,
+    "reason": "Green automated verification is recorded, but exact-candidate Playwright A-H, fixture, viewport, keyboard, touch, reflow, console, network, visual, and print/PDF evidence is not recorded because the required Playwright daemon permission was rejected by the execution service usage limit."
+  }
+}

@@ -1,0 +1,44 @@
+- generic [ref=e2]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=e4]:
+    - link "Coach Fresh empty coach Roadmap home" [ref=e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=e6]: CF
+      - generic [ref=e7]:
+        - strong [ref=e8]: Coach Fresh empty coach
+        - generic [ref=e9]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=e10]:
+      - link "Overview" [ref=e11] [cursor=pointer]:
+        - /url: /app
+      - link "Golfers" [ref=e12] [cursor=pointer]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=e13] [cursor=pointer]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=e14] [cursor=pointer]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=e15] [cursor=pointer]:
+        - /url: /app/media
+      - link "Packages" [ref=e16] [cursor=pointer]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=e17] [cursor=pointer]:
+        - /url: /app/billing
+      - link "Settings" [ref=e18] [cursor=pointer]:
+        - /url: /app/settings
+    - generic [ref=e19]:
+      - generic [ref=e20]: CF
+      - generic [ref=e21]:
+        - strong [ref=e22]: Coach Fresh empty coach
+        - generic [ref=e23]: qa.fresh@example.test
+      - button "Sign out" [ref=e25] [cursor=pointer]
+  - main [ref=e26]:
+    - generic [ref=e27]:
+      - generic [ref=e29]:
+        - generic [ref=e30]: Coach identity required
+        - heading "Set the name your golfer will recognize first." [level=1] [ref=e127]
+        - paragraph [ref=e32]: A coach identity is required to render and review the exact private golfer experience. Your name is enough; branding remains optional.
+      - generic [ref=e128]:
+        - heading "No golfer information has been collected." [level=2] [ref=e129]
+        - paragraph [ref=e130]: Save your coach identity, then return here to create the private draft.
+        - link "Set up coach identity" [ref=e131] [cursor=pointer]:
+          - /url: /app/settings

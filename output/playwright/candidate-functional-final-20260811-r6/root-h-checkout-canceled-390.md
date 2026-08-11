@@ -1,0 +1,94 @@
+- generic [ref=f5e2]:
+  - link "Skip to main content" [ref=f5e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=f5e4]:
+    - link "Foothills Golf Studio Roadmap home" [ref=f5e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=f5e6]: FG
+      - generic [ref=f5e7]: Foothills Golf Studio
+    - generic [ref=f5e8]:
+      - generic [ref=f5e9]: CR
+      - button "Sign out" [ref=f5e11] [cursor=pointer]
+  - main [ref=f5e12]:
+    - generic [ref=f5e13]:
+      - generic [ref=f5e15]:
+        - generic [ref=f5e16]: Plan & billing
+        - heading "One focused workspace for an independent instructor." [level=1] [ref=f5e17]
+        - paragraph [ref=f5e18]: Billing is handled by Stripe. Roadmap never receives or stores your full card number. You can review the exact amount and terms before any charge.
+      - status [ref=f5e19]:
+        - strong [ref=f5e20]: Checkout was canceled or closed.
+        - generic [ref=f5e21]: This return does not change billing state. The latest provider-authoritative Stripe state is shown below.
+      - note [ref=f5e22]:
+        - strong [ref=f5e23]: Price is not yet approved for a live charge.
+        - generic [ref=f5e24]: Planning amounts remain pricing hypotheses. Checkout stays unavailable until the exact production price and policy are approved, configured, and explicitly enabled.
+      - generic [ref=f5e25]:
+        - generic [ref=f5e26]:
+          - heading "Solo plan" [level=2] [ref=f5e27]
+          - generic [ref=f5e28]: No subscription
+        - paragraph [ref=f5e29]: One coach identity, coaching packages, private golfer roadmaps, living plan updates, controlled sharing, and account/data controls. This is the instructor's Roadmap SaaS subscription; it never represents a golfer's coaching-package purchase.
+        - status [ref=f5e30]:
+          - strong [ref=f5e31]: No Stripe subscription is recorded.
+          - generic [ref=f5e32]: No paid access or charge is assumed. Checkout remains unavailable unless every configured commercial dependency is ready.
+        - paragraph [ref=f5e33]: No webhook-confirmed Stripe subscription is recorded for this account.
+        - generic [ref=f5e34]:
+          - button "Review secure checkout" [disabled] [ref=f5e36]
+          - button "Manage an existing subscription" [disabled] [ref=f5e38]
+          - button "Refresh billing status" [disabled] [ref=f5e40]
+        - paragraph [ref=f5e41]: No charge can be initiated from this environment.
+      - generic [ref=f5e42]:
+        - generic [ref=f5e43]:
+          - heading "Commercial activation checklist" [level=2] [ref=f5e44]
+          - generic [ref=f5e45]: External activation pending
+        - paragraph [ref=f5e46]:
+          - strong [ref=f5e47]: CONFIGURATION READY — EXTERNAL ACTIVATION PENDING.
+          - text: The candidate fails closed when an owner decision, provider account, or secret is absent. This checklist reports readiness categories only; it never displays secret values.
+        - list "Commercial activation dependencies" [ref=f5e48]:
+          - listitem [ref=f5e49]:
+            - generic [ref=f5e50]:
+              - strong [ref=f5e51]: Public identity boundary
+              - generic [ref=f5e52]: "Owner/provider input still required: public domain, OIDC issuer and client, approved signup policy, and secret/session configuration."
+            - generic [ref=f5e53]: Pending
+          - listitem [ref=f5e54]:
+            - generic [ref=f5e55]:
+              - strong [ref=f5e56]: Exact Roadmap Solo offer
+              - generic [ref=f5e57]: "Owner input still required: exact price, trial, cancellation, pause/resume, tax, refund, failed-payment, data-after-end, and support terms."
+            - generic [ref=f5e58]: Pending
+          - listitem [ref=f5e59]:
+            - generic [ref=f5e60]:
+              - strong [ref=f5e61]: Stripe test/live provider configuration
+              - generic [ref=f5e62]: "Provider input still required: Stripe account, Product/Price, test or live credentials, webhook signing secret, Portal configuration, and Checkout lifetime."
+            - generic [ref=f5e63]: Pending
+          - listitem [ref=f5e64]:
+            - generic [ref=f5e65]:
+              - strong [ref=f5e66]: Subscription entitlement policy
+              - generic [ref=f5e67]: "Owner input still required: the statuses and Prices that grant product access, plus failed-payment and ended-account consequences."
+            - generic [ref=f5e68]: Pending
+          - listitem [ref=f5e69]:
+            - generic [ref=f5e70]:
+              - strong [ref=f5e71]: Controlled commercial activation
+              - generic [ref=f5e72]: Checkout remains fail-closed. No charge can start until every dependency above is supplied and the explicit activation flag is enabled.
+            - generic [ref=f5e73]: Pending
+      - generic [ref=f5e74]:
+        - heading "Roadmap billing and coaching packages are separate" [level=2] [ref=f5e76]
+        - list "Separate payment paths" [ref=f5e77]:
+          - listitem [ref=f5e78]:
+            - generic [ref=f5e79]:
+              - strong [ref=f5e80]: Roadmap SaaS subscription
+              - generic [ref=f5e81]: Pays for this instructor workspace. Stripe Checkout, signed webhooks, reconciliation, and the Stripe Portal control this account state.
+          - listitem [ref=f5e82]:
+            - generic [ref=f5e83]:
+              - strong [ref=f5e84]: Your golfer coaching package
+              - generic [ref=f5e85]: Uses the external booking, purchase, or contact link you choose. Roadmap does not charge the golfer or infer that an external click became a sale.
+            - link "Review coaching packages" [ref=f5e86] [cursor=pointer]:
+              - /url: /app/packages
+  - navigation "Mobile coach workspace" [ref=f5e87]:
+    - link "Overview" [ref=f5e88] [cursor=pointer]:
+      - /url: /app
+    - link "Golfers" [ref=f5e89] [cursor=pointer]:
+      - /url: /app/golfers
+    - link "Drills" [ref=f5e90] [cursor=pointer]:
+      - /url: /app/coaching/drills
+    - link "Media" [ref=f5e91] [cursor=pointer]:
+      - /url: /app/media
+    - link "Settings" [ref=f5e92] [cursor=pointer]:
+      - /url: /app/settings

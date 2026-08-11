@@ -1,0 +1,98 @@
+- generic [ref=e2]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=e4]:
+    - link "Prairie Three Phase Golf Roadmap home" [ref=e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=e6]: PT
+      - generic [ref=e7]:
+        - strong [ref=e8]: Prairie Three Phase Golf
+        - generic [ref=e9]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=e10]:
+      - link "Overview" [ref=e11] [cursor=pointer]:
+        - /url: /app
+      - link "Golfers" [ref=e12] [cursor=pointer]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=e13] [cursor=pointer]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=e14] [cursor=pointer]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=e15] [cursor=pointer]:
+        - /url: /app/media
+      - link "Packages" [ref=e16] [cursor=pointer]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=e17] [cursor=pointer]:
+        - /url: /app/billing
+      - link "Settings" [ref=e18] [cursor=pointer]:
+        - /url: /app/settings
+    - generic [ref=e19]:
+      - generic [ref=e20]: CT
+      - generic [ref=e21]:
+        - strong [ref=e22]: Coach Three phases without
+        - generic [ref=e23]: qa.three-phase@example.test
+      - button "Sign out" [ref=e25] [cursor=pointer]
+  - main [ref=e26]:
+    - generic [ref=e356]:
+      - generic [ref=e357]:
+        - generic [ref=e358]:
+          - text: Private coaching media
+          - heading "Media library" [level=1] [ref=e359]
+          - paragraph [ref=e360]: Upload once, then reuse a swing clip, image, or source CSV in coaching content. Roadmap never analyzes the swing or claims a live device integration.
+        - link "Upload media" [ref=e361] [cursor=pointer]:
+          - /url: "#upload-media"
+      - generic [ref=e362]:
+        - generic [ref=e363]:
+          - generic [ref=e364]:
+            - text: New upload
+            - heading "Add a private file" [level=2] [ref=e365]
+          - generic [ref=e366]: Up to 48 MB · video up to 3:00
+        - generic [ref=e367]:
+          - generic [ref=e368]:
+            - generic [ref=e369]: Image, swing video, or source CSV
+            - button "Image, swing video, or source CSV The original stays private and is not published by uploading it." [ref=e370]
+            - generic [ref=e371]: The original stays private and is not published by uploading it.
+          - generic [ref=e372]:
+            - generic [ref=e373]:
+              - generic [ref=e374]: Accessible description
+              - textbox "Accessible description" [ref=e375]:
+                - /placeholder: Down-the-line swing at the range
+                - text: Synthetic Roadmap evidence image for the R6 transition lesson
+            - generic [ref=e376]:
+              - generic [ref=e377]: View or orientation label
+              - textbox "View or orientation label" [ref=e378]:
+                - /placeholder: Down the line
+                - text: Square synthetic reference
+            - generic [ref=e379]:
+              - generic [ref=e380]: Captured date
+              - textbox "Captured date" [active] [ref=e381]: 2026-08-11
+            - generic [ref=e382]:
+              - generic [ref=e383]: Frame orientation
+              - combobox "Frame orientation" [ref=e384]:
+                - option "Detect later / unknown"
+                - option "Landscape"
+                - option "Portrait"
+                - option "Square" [selected]
+          - generic [ref=e385]:
+            - generic [ref=e386]: Caption
+            - textbox "Caption" [ref=e387]:
+              - /placeholder: Baseline 7-iron swing
+          - generic [ref=e388]:
+            - generic [ref=e389]: Coach context
+            - textbox "Coach context" [ref=e390]:
+              - /placeholder: What should the golfer notice, and why is this clip included?
+          - group [ref=e391]:
+            - generic "Optional poster and transcript" [ref=e392] [cursor=pointer]
+            - option "Use the video's first available frame" [selected]
+          - button "Upload privately" [ref=e394] [cursor=pointer]
+      - region [ref=e395]:
+        - generic [ref=e396]:
+          - generic [ref=e397]:
+            - text: Reusable assets
+            - heading "Your private library" [level=2] [ref=e398]
+          - generic [ref=e399]: 0 stored items
+        - generic [ref=e400]:
+          - generic [ref=e401]: ▶
+          - heading "No media yet" [level=3] [ref=e402]
+          - paragraph [ref=e403]: Add a clearly labelled synthetic or consented coaching file when it helps tell the golfer’s story. Media is always optional.
+          - link "Upload the first file" [ref=e404] [cursor=pointer]:
+            - /url: "#upload-media"

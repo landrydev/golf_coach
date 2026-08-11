@@ -1,0 +1,284 @@
+{
+  "schemaVersion": 2,
+  "evidenceClass": "EXACT-FINAL-CANDIDATE LOCAL SYNTHETIC BROWSER QA",
+  "candidateId": "candidate-functional-final-20260810",
+  "createdAt": "2026-08-11T05:38:17.354Z",
+  "invalidatedAt": "2026-08-11T05:43:49.8055569Z",
+  "invalidationReason": "Playwright found an unexplained console error: the synthetic demo prefetched /auth/login.rsc and received HTTP 404. Source was changed to remove that prefetch, so this identity and every partial artifact are ineligible.",
+  "sourceIdentity": {
+    "inventoryPath": "output/playwright/candidate-functional-final-20260810/source-identity.json",
+    "schemaVersion": 2,
+    "aggregateSha256": "58fe377c1c41aa1f3e1684942ad14272927adfaccdc0b3916fcfb125ff0d291a",
+    "fileCount": 391,
+    "totalBytes": 10596748,
+    "exactCommitOrArchive": "source-identity-v2:58fe377c1c41aa1f3e1684942ad14272927adfaccdc0b3916fcfb125ff0d291a",
+    "releaseId": "candidate-functional-final-20260810",
+    "status": "BOUND TO RECORDED SOURCE IDENTITY"
+  },
+  "server": {
+    "command": "npm run qa:functional:server",
+    "origin": "http://127.0.0.1:4175",
+    "scenarioCatalogue": "http://127.0.0.1:4175/__qa/scenarios"
+  },
+  "playwright": {
+    "command": "npm run qa:playwright -- -CandidateId <candidate> -Session <session> <command>",
+    "mode": "CLI-first; no Playwright test specs",
+    "artifactDirectory": "output/playwright/candidate-functional-final-20260810"
+  },
+  "verification": {
+    "command": "npm run verify",
+    "status": "passed",
+    "tests": 485,
+    "passed": 485,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "durationMs": 43600.6016,
+    "wallDurationMs": 56900,
+    "logPath": "output/verify-functional-final-20260810.log"
+  },
+  "requiredViewports": [
+    {
+      "width": 320,
+      "height": 844
+    },
+    {
+      "width": 390,
+      "height": 844
+    },
+    {
+      "width": 768,
+      "height": 1024
+    },
+    {
+      "width": 1440,
+      "height": 1000
+    }
+  ],
+  "requiredSurfaces": [
+    "landing",
+    "onboarding",
+    "dashboard",
+    "authoring",
+    "golfer-hub",
+    "media",
+    "launch-data-import",
+    "drill-library-and-assignment",
+    "share-centre",
+    "golfer-roadmap"
+  ],
+  "requiredStates": [
+    "short",
+    "long",
+    "empty",
+    "loading",
+    "partial",
+    "error",
+    "recovery",
+    "expired",
+    "revoked",
+    "republished"
+  ],
+  "scenarios": [
+    {
+      "id": "fresh",
+      "label": "Fresh empty coach",
+      "appEntry": "http://127.0.0.1:4175/__qa/fresh/app",
+      "golferEntry": null,
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "standard",
+      "label": "Standard four-phase roadmap",
+      "appEntry": "http://127.0.0.1:4175/__qa/standard/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/standard/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "three-phase",
+      "label": "Three phases without a package",
+      "appEntry": "http://127.0.0.1:4175/__qa/three-phase/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/three-phase/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "mixed-30",
+      "label": "Thirty mixed-state golfers",
+      "appEntry": "http://127.0.0.1:4175/__qa/mixed-30/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/mixed-30/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "long-content",
+      "label": "Long-content roadmap",
+      "appEntry": "http://127.0.0.1:4175/__qa/long-content/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/long-content/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "expired",
+      "label": "Expired private access",
+      "appEntry": "http://127.0.0.1:4175/__qa/expired/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/expired/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "revoked",
+      "label": "Revoked private access",
+      "appEntry": "http://127.0.0.1:4175/__qa/revoked/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/revoked/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "republished",
+      "label": "Republished roadmap",
+      "appEntry": "http://127.0.0.1:4175/__qa/republished/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/republished/golfer",
+      "oldGolferEntry": "http://127.0.0.1:4175/__qa/republished/old-golfer",
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    }
+  ],
+  "acceptanceScenarios": [
+    {
+      "id": "A",
+      "label": "First self-serve roadmap",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [],
+      "notes": []
+    },
+    {
+      "id": "B",
+      "label": "Swing-video evidence",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [],
+      "notes": []
+    },
+    {
+      "id": "C",
+      "label": "Practice-drill reuse",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [],
+      "notes": []
+    },
+    {
+      "id": "D",
+      "label": "Launch-monitor import and comparison",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [],
+      "notes": []
+    },
+    {
+      "id": "E",
+      "label": "Living journey and phase transition",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [],
+      "notes": []
+    },
+    {
+      "id": "F",
+      "label": "Return and management",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [],
+      "notes": []
+    },
+    {
+      "id": "G",
+      "label": "Golfer mobile and print experience",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [],
+      "notes": []
+    },
+    {
+      "id": "H",
+      "label": "SaaS billing in test mode",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [],
+      "notes": []
+    }
+  ],
+  "browserReview": {
+    "unexplainedConsoleErrors": 1,
+    "failedNetworkRequests": 1,
+    "keyboardReview": "not_recorded",
+    "touchEquivalentReview": "not_recorded",
+    "reducedMotionReview": "not_recorded",
+    "reflowAndOverflowReview": "not_recorded",
+    "visualReviewer": null
+  },
+  "completionEligibility": {
+    "eligible": false,
+    "reason": "INVALIDATED. The exact source produced a demo /auth/login.rsc prefetch 404 console error; all artifacts in this candidate directory are ineligible."
+  }
+}

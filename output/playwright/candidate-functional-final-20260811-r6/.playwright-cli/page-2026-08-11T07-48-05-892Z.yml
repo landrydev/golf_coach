@@ -1,0 +1,740 @@
+- generic [ref=f1e2]:
+  - link "Skip to main content" [ref=f1e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=f1e4]:
+    - link "Foothills Golf Studio Roadmap home" [ref=f1e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=f1e6]: FG
+      - generic [ref=f1e7]:
+        - strong [ref=f1e8]: Foothills Golf Studio
+        - generic [ref=f1e9]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=f1e10]:
+      - link "Overview" [ref=f1e11] [cursor=pointer]:
+        - /url: /app
+      - link "Golfers" [ref=f1e12] [cursor=pointer]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=f1e13] [cursor=pointer]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=f1e14] [cursor=pointer]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=f1e15] [cursor=pointer]:
+        - /url: /app/media
+      - link "Packages" [ref=f1e16] [cursor=pointer]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=f1e17] [cursor=pointer]:
+        - /url: /app/billing
+      - link "Settings" [ref=f1e18] [cursor=pointer]:
+        - /url: /app/settings
+    - generic [ref=f1e19]:
+      - generic [ref=f1e20]: CR
+      - generic [ref=f1e21]:
+        - strong [ref=f1e22]: Coach Rowan
+        - generic [ref=f1e23]: visual.coach@example.test
+      - button "Sign out" [ref=f1e25] [cursor=pointer]
+  - main [ref=f1e26]:
+    - generic [ref=f1e27]:
+      - generic [ref=f1e28]:
+        - generic [ref=f1e29]:
+          - generic [ref=f1e30]: Golfer coaching hub
+          - heading "Jordan Synthetic" [level=1] [ref=f1e31]
+          - paragraph [ref=f1e32]: Move between the current roadmap, living coaching records, exact golfer preview, and private sharing without losing the next useful action.
+        - generic [ref=f1e33]:
+          - link "Edit roadmap" [ref=f1e34] [cursor=pointer]:
+            - /url: /app/golfers/fa23061a-1425-4adc-ae16-11d4d0a23026/edit
+          - link "Open coaching workspace" [ref=f1e35] [cursor=pointer]:
+            - /url: /app/coaching/plans/b0847e52-05e1-441d-b864-e66e97792f90?tab=practice&practiceId=62a6ae1e-d524-4f1f-b93b-fc738b1b2ef8
+          - link "Golfer settings" [ref=f1e36] [cursor=pointer]:
+            - /url: /app/golfers/fa23061a-1425-4adc-ae16-11d4d0a23026/settings
+          - link "Back to golfers" [ref=f1e37] [cursor=pointer]:
+            - /url: /app/golfers
+      - navigation "Golfer workspace destinations" [ref=f1e38]:
+        - link "Overview" [ref=f1e39] [cursor=pointer]:
+          - /url: "#hub-overview"
+        - link "Roadmap" [ref=f1e41] [cursor=pointer]:
+          - /url: "#hub-roadmap"
+        - link "Lessons 1" [ref=f1e43] [cursor=pointer]:
+          - /url: "#hub-lessons"
+          - generic [ref=f1e44]: Lessons
+          - generic [ref=f1e45]: "1"
+        - link "Practice 1" [ref=f1e46] [cursor=pointer]:
+          - /url: "#hub-practice"
+          - generic [ref=f1e47]: Practice
+          - generic [ref=f1e48]: "1"
+        - link "Media" [ref=f1e49] [cursor=pointer]:
+          - /url: "#hub-media"
+        - link "Data / Evidence 2" [ref=f1e51] [cursor=pointer]:
+          - /url: "#hub-evidence"
+          - generic [ref=f1e52]: Data / Evidence
+          - generic [ref=f1e53]: "2"
+        - link "Reviews 1" [ref=f1e54] [cursor=pointer]:
+          - /url: "#hub-reviews"
+          - generic [ref=f1e55]: Reviews
+          - generic [ref=f1e56]: "1"
+        - link "Share active" [ref=f1e57] [cursor=pointer]:
+          - /url: "#hub-share"
+          - generic [ref=f1e58]: Share
+          - generic [ref=f1e59]: active
+      - region "Golfer workspace summary" [ref=f1e60]:
+        - article [ref=f1e61]:
+          - generic [ref=f1e62]: Roadmap state
+          - strong [ref=f1e63]: draft
+          - generic [ref=f1e64]: Revision 14
+        - article [ref=f1e65]:
+          - generic [ref=f1e66]: Current practice
+          - strong [ref=f1e67]: Editable centered-contact window
+          - generic [ref=f1e68]: Three sets of four synthetic repetitions with a full reset between sets.
+        - article [ref=f1e69]:
+          - generic [ref=f1e70]: Latest recorded choice
+          - strong [ref=f1e71]: No response
+          - generic [ref=f1e72]: Roadmap does not infer delivery, booking, payment, or outcome.
+      - region [ref=f1e73]:
+        - generic [ref=f1e74]:
+          - generic [ref=f1e75]:
+            - generic [ref=f1e76]: Roadmap
+            - heading "Review the exact golfer experience." [level=2] [ref=f1e77]
+            - paragraph [ref=f1e78]: This uses the same renderer and content order as the private golfer view. Preview controls record nothing and do not open the external package action.
+          - link "Edit core roadmap" [ref=f1e79] [cursor=pointer]:
+            - /url: /app/golfers/fa23061a-1425-4adc-ae16-11d4d0a23026/edit#authoring-goal
+        - group [ref=f1e80]:
+          - generic "Open exact preview for revision 14" [ref=f1e81] [cursor=pointer]
+          - generic [ref=f1e83]:
+            - link "Skip to coaching plan" [ref=f1e84] [cursor=pointer]:
+              - /url: "#plan-content"
+            - status [ref=f1e85]: Coach preview — content, order, and choices match the golfer view. Response and external-action controls are disabled and record nothing here.
+            - generic [ref=f1e86]:
+              - link "Return to current plan" [ref=f1e87] [cursor=pointer]:
+                - /url: "#now"
+                - generic [ref=f1e88]: CR
+                - strong [ref=f1e89]: Foothills Golf Studio
+              - generic [ref=f1e90]:
+                - generic [ref=f1e91]:
+                  - generic [ref=f1e92]: Private coaching plan
+                  - strong [ref=f1e93]: Jordan Synthetic
+                - button "Print or save PDF" [ref=f1e94] [cursor=pointer]
+            - navigation "Coaching plan sections" [ref=f1e95]:
+              - link "Now" [ref=f1e96] [cursor=pointer]:
+                - /url: "#now"
+              - link "Goal" [ref=f1e97] [cursor=pointer]:
+                - /url: "#goal"
+              - link "Roadmap" [ref=f1e98] [cursor=pointer]:
+                - /url: "#roadmap"
+              - link "Lessons" [ref=f1e99] [cursor=pointer]:
+                - /url: "#lessons"
+              - link "Practice" [ref=f1e100] [cursor=pointer]:
+                - /url: "#practice"
+              - link "Media" [ref=f1e101] [cursor=pointer]:
+                - /url: "#media"
+              - link "Data" [ref=f1e102] [cursor=pointer]:
+                - /url: "#data"
+              - link "Evidence" [ref=f1e103] [cursor=pointer]:
+                - /url: "#evidence"
+              - link "Timeline" [ref=f1e104] [cursor=pointer]:
+                - /url: "#timeline"
+              - link "Phase review" [ref=f1e105] [cursor=pointer]:
+                - /url: "#review"
+            - generic [ref=f1e106]:
+              - generic [ref=f1e107]:
+                - generic [ref=f1e108]:
+                  - generic [ref=f1e109]: Now · Phase 1
+                  - heading "Centered contact at playing tempo" [level=2] [ref=f1e110]
+                  - paragraph [ref=f1e111]: Contact stability supports later trajectory and speed decisions.
+                - generic [ref=f1e112]:
+                  - article [ref=f1e113]:
+                    - text: Current coaching phase
+                    - strong [ref=f1e114]: Own centered contact
+                    - paragraph [ref=f1e115]: Create a stable strike window at controlled tempo.
+                  - article [ref=f1e116]:
+                    - text: Next useful action
+                    - strong [ref=f1e117]: Editable centered-contact window
+                    - paragraph [ref=f1e118]: Three sets of four synthetic repetitions with a full reset between sets.
+                - blockquote [ref=f1e119]:
+                  - generic [ref=f1e120]: Coach Rowan's current takeaway
+                  - text: “Keep the comfortable tempo and use strike location as the immediate feedback signal.”
+              - generic [ref=f1e121]:
+                - generic [ref=f1e122]:
+                  - text: Your goal
+                  - heading "Build predictable contact through a full league round." [level=2] [ref=f1e123]
+                  - paragraph [ref=f1e124]: Play confidently without guarding against a two-way miss.
+                - generic [ref=f1e125]:
+                  - article [ref=f1e126]:
+                    - text: Real-life context
+                    - paragraph [ref=f1e127]: Synthetic functional QA scenario for Coach Rowan.
+                  - article [ref=f1e128]:
+                    - text: Honest boundary
+                    - paragraph [ref=f1e129]: This plan supports the goal. It does not guarantee a score, result, timeline, or permanent change.
+              - generic [ref=f1e130]:
+                - generic [ref=f1e131]:
+                  - text: Development roadmap
+                  - heading "Predictable contact roadmap" [level=2] [ref=f1e132]
+                  - paragraph [ref=f1e133]: A directional sequence authored by your coach. Later phases can change as new evidence develops.
+                - generic [ref=f1e134]:
+                  - generic [ref=f1e135]:
+                    - text: Starting assessment
+                    - paragraph [ref=f1e136]: Strike drifts toward the heel when transition tempo increases.
+                  - generic [ref=f1e137]:
+                    - text: Strengths to preserve
+                    - paragraph [ref=f1e138]: Athletic setup and accurate awareness of strike location.
+                  - generic [ref=f1e139]:
+                    - text: Primary pattern
+                    - paragraph [ref=f1e140]: Heel contact appears as transition tempo increases.
+                  - generic [ref=f1e141]:
+                    - text: Evidence limits
+                    - paragraph [ref=f1e142]: A small indoor sample does not prove transfer to the course.
+                - list [ref=f1e143]:
+                  - listitem [ref=f1e144]:
+                    - generic [ref=f1e145]: "01"
+                    - generic [ref=f1e146]:
+                      - generic [ref=f1e147]: Current phase
+                      - strong [ref=f1e148]: Own centered contact
+                      - paragraph [ref=f1e149]: Create a stable strike window at controlled tempo.
+                      - paragraph [ref=f1e150]: "Why this phase leads: Centered contact is the narrowest observed foundation."
+                      - generic [ref=f1e151]:
+                        - text: Progress signals
+                        - list [ref=f1e152]:
+                          - listitem [ref=f1e153]: Centered contact repeats in a coach-reviewed set.
+                  - listitem [ref=f1e154]:
+                    - generic [ref=f1e155]: "02"
+                    - generic [ref=f1e156]:
+                      - generic [ref=f1e157]: Planned phase
+                      - strong [ref=f1e158]: Shape trajectory
+                      - paragraph [ref=f1e159]: Add launch windows without losing contact quality.
+                  - listitem [ref=f1e160]:
+                    - generic [ref=f1e161]: "03"
+                    - generic [ref=f1e162]:
+                      - generic [ref=f1e163]: Planned phase
+                      - strong [ref=f1e164]: Choose targets
+                      - paragraph [ref=f1e165]: Transfer the pattern into representative decisions.
+                  - listitem [ref=f1e166]:
+                    - generic [ref=f1e167]: "04"
+                    - generic [ref=f1e168]:
+                      - generic [ref=f1e169]: Planned phase
+                      - strong [ref=f1e170]: Perform under pressure
+                      - paragraph [ref=f1e171]: Test the pattern with scored constraints.
+              - generic [ref=f1e172]:
+                - generic [ref=f1e173]:
+                  - text: Lesson chapters
+                  - heading "What mattered, in the coach's words." [level=2] [ref=f1e174]
+                  - paragraph [ref=f1e175]: Concise chapters preserve direction without becoming a transcript or media archive. This bounded view shows up to 12 chapters, prioritizing the current phase before the newest retained history.
+                - article [ref=f1e177]:
+                  - generic [ref=f1e178]:
+                    - generic [ref=f1e179]: Lesson 1
+                    - time [ref=f1e180]: Aug 4, 2026
+                  - heading "Planned representative-transfer lesson" [level=3] [ref=f1e181]
+                  - text: Completed
+                  - paragraph [ref=f1e182]: Review the current contact window, preserve the golfer's stated priorities, and choose the next bounded evidence task.
+                  - generic [ref=f1e183]:
+                    - term [ref=f1e184]: Coach observation
+                    - definition [ref=f1e185]: The selected synthetic sample showed a wider strike window when transition tempo increased.
+                  - generic [ref=f1e186]:
+                    - term [ref=f1e187]: Takeaway
+                    - definition [ref=f1e188]: Keep the comfortable tempo and use strike location as the immediate feedback signal.
+                  - generic [ref=f1e189]:
+                    - term [ref=f1e190]: Next check
+                    - definition [ref=f1e191]: Repeat the representative set before changing the task.
+                  - generic [ref=f1e192]:
+                    - term [ref=f1e193]: Golfer learning
+                    - definition [ref=f1e194]: The synthetic golfer reported that the reset made the target decision easier to repeat.
+                  - generic [ref=f1e195]:
+                    - term [ref=f1e196]: Phase connection
+                    - definition [ref=f1e197]: This lesson establishes evidence for the current phase review.
+                  - generic [ref=f1e198]:
+                    - term [ref=f1e199]: Selected evidence from this lesson
+                    - definition [ref=f1e200]:
+                      - list [ref=f1e201]:
+                        - listitem [ref=f1e202]:
+                          - link "bcd-r6 baseline lesson video" [ref=f1e203] [cursor=pointer]:
+                            - /url: "#evidence-8c1e543f-e617-4e97-b5e1-06ca8cef15d9"
+                          - text: · Media · Use this clip to compare setup cues in the next lesson.
+                        - listitem [ref=f1e204]:
+                          - link "Selected launch-monitor comparison context" [ref=f1e205] [cursor=pointer]:
+                            - /url: "#evidence-8383b872-31ae-4965-b9e2-df8f79176b83"
+                          - text: · Comparison · The bounded comparison supports continuing the current priority while gathering more representative evidence.
+                  - generic [ref=f1e206]:
+                    - term [ref=f1e207]: Selected measurement sessions from this lesson
+                    - definition [ref=f1e208]:
+                      - list [ref=f1e209]:
+                        - listitem [ref=f1e210]:
+                          - strong [ref=f1e211]: Synthetic current vendor-neutral manual entry · Synthetic 7 iron · Aug 4, 2026
+                          - paragraph [ref=f1e212]: Use the selected values only as bounded context for the coach-authored current priority.
+                          - text: "Ball Speed: 134.8 mph · Carry: 212 yd · Launch Angle: 14.8 deg"
+                        - listitem [ref=f1e213]:
+                          - strong [ref=f1e214]: Synthetic baseline vendor-neutral manual entry · Synthetic 7 iron · Jul 14, 2026
+                          - paragraph [ref=f1e215]: Use the selected values only as bounded context for the coach-authored current priority.
+                          - text: "Ball Speed: 131.2 mph · Carry: 205 yd · Launch Angle: 14.1 deg"
+              - generic [ref=f1e216]:
+                - generic [ref=f1e217]:
+                  - text: Practice direction
+                  - heading "One focused task before more complexity." [level=2] [ref=f1e218]
+                  - paragraph [ref=f1e219]: Practice is coach-authored and should match the current phase and available evidence. This bounded view shows up to 8 items, prioritizing current-phase direction before the newest retained history.
+                - list [ref=f1e220]:
+                  - listitem [ref=f1e221]:
+                    - generic [ref=f1e222]: "1"
+                    - generic [ref=f1e223]:
+                      - text: active
+                      - heading "Editable centered-contact window" [level=3] [ref=f1e224]
+                      - paragraph [ref=f1e225]: Make four swings at a comfortable tempo. Record only the agreed strike-location feedback. Reset fully before the next set. Stop if discomfort or uncertainty appears.
+                      - strong [ref=f1e226]: Three sets of four synthetic repetitions with a full reset between sets.
+                      - emphasis [ref=f1e227]: "Look for: The agreed strike window repeats in the coach-defined representative set."
+                      - group [ref=f1e228]:
+                        - generic "Full drill guidance" [ref=f1e229] [cursor=pointer]
+                      - generic [ref=f1e230]:
+                        - group "Quick practice check-in" [ref=f1e231]:
+                          - generic [ref=f1e233]:
+                            - generic [ref=f1e234]:
+                              - radio "Completed" [disabled] [ref=f1e235]
+                              - text: Completed
+                            - generic [ref=f1e236]:
+                              - radio "Not completed" [disabled] [ref=f1e237]
+                              - text: Not completed
+                          - generic [ref=f1e238]:
+                            - generic [ref=f1e239]:
+                              - text: Difficulty (optional)
+                              - combobox "Difficulty (optional)" [disabled] [ref=f1e240]:
+                                - option "Choose" [disabled] [selected]
+                                - option "Very easy" [disabled]
+                                - option "Easy" [disabled]
+                                - option "About right" [disabled]
+                                - option "Hard" [disabled]
+                                - option "Very hard" [disabled]
+                            - generic [ref=f1e241]:
+                              - text: Confidence (optional)
+                              - combobox "Confidence (optional)" [disabled] [ref=f1e242]:
+                                - option "Choose" [disabled] [selected]
+                                - option "1 — not confident" [disabled]
+                                - option "2" [disabled]
+                                - option "3" [disabled]
+                                - option "4" [disabled]
+                                - option "5 — very confident" [disabled]
+                          - generic [ref=f1e243]:
+                            - text: Short note (optional)
+                            - textbox "Short note (optional)" [disabled] [ref=f1e244]:
+                              - /placeholder: What did you notice?
+                          - generic [ref=f1e245]:
+                            - checkbox "I would like help from my coach" [disabled] [ref=f1e246]
+                            - text: I would like help from my coach
+                          - button "Preview only" [disabled] [ref=f1e247]
+                        - status [ref=f1e248]: The live private roadmap enables this form. Coach preview records nothing.
+              - generic [ref=f1e249]:
+                - generic [ref=f1e250]:
+                  - text: Selected swing media
+                  - heading "Clips and images chosen by your coach." [level=2] [ref=f1e251]
+                  - paragraph [ref=f1e252]: Nothing autoplays and Roadmap does not analyze the swing. Captions and coach context explain why each item belongs in this exact roadmap revision.
+                - generic [ref=f1e253]:
+                  - article [ref=f1e254]:
+                    - generic "bcd-r6 synthetic down-the-line landscape swing clip" [ref=f1e256]: Synthetic clip. No spoken instruction.
+                    - generic [ref=f1e257]:
+                      - generic [ref=f1e258]: Supporting · bcd-r6 baseline lesson video
+                      - heading "bcd-r6 baseline swing" [level=3] [ref=f1e259]
+                      - paragraph [ref=f1e260]: Media evidence selected by the coach.
+                      - generic [ref=f1e261]: Down the line · Aug 9, 2026 · 0:01
+                      - group [ref=f1e262]:
+                        - generic "Read transcript" [ref=f1e263] [cursor=pointer]
+                  - article [ref=f1e264]:
+                    - generic "bcd-r6 synthetic down-the-line landscape swing clip" [ref=f1e266]: Synthetic clip. No spoken instruction.
+                    - generic [ref=f1e267]:
+                      - generic [ref=f1e268]: Baseline · Planned representative-transfer lesson
+                      - heading "bcd-r6 baseline swing" [level=3] [ref=f1e269]
+                      - paragraph [ref=f1e270]: Show before the lesson cue summary; synthetic media only.
+                      - generic [ref=f1e271]: Down the line · Aug 9, 2026 · 0:01
+                      - group [ref=f1e272]:
+                        - generic "Read transcript" [ref=f1e273] [cursor=pointer]
+              - generic [ref=f1e274]:
+                - generic [ref=f1e275]:
+                  - text: Selected launch data
+                  - heading "What changed, with the coach’s interpretation." [level=2] [ref=f1e276]
+                  - paragraph [ref=f1e277]: Only selected like-for-like metrics appear. Units are preserved exactly; missing values are never filled or converted.
+                - article [ref=f1e279]:
+                  - generic [ref=f1e280]:
+                    - text: Baseline / current
+                    - heading "Selected synthetic baseline and current values" [level=3] [ref=f1e281]
+                    - paragraph [ref=f1e282]: The selected current values differ from the bounded baseline; the coach uses them only as context for the existing priority.
+                    - generic [ref=f1e283]: "Limit: These synthetic indoor summary values are a selected interface fixture, not a diagnosis, forecast, score claim, or proof of transfer."
+                    - generic [ref=f1e284]: "Next evidence: Repeat a representative coach-reviewed set under an ordinary target constraint."
+                  - generic [ref=f1e285]:
+                    - 'figure "Ball Speed Change: +3.6 mph" [ref=f1e286]':
+                      - generic [ref=f1e287]:
+                        - strong [ref=f1e288]: Ball Speed
+                        - generic [ref=f1e289]: "Change: +3.6 mph"
+                      - generic [ref=f1e290]:
+                        - generic [ref=f1e291]: Baseline
+                        - generic [ref=f1e293]: 131.2 mph
+                      - generic [ref=f1e294]:
+                        - generic [ref=f1e295]: Current
+                        - generic [ref=f1e297]: 134.8 mph
+                      - paragraph [ref=f1e298]: "Ball Speed: baseline 131.2 mph; current 134.8 mph; change +3.6 mph."
+                    - 'figure "Carry Change: +7 yd" [ref=f1e299]':
+                      - generic [ref=f1e300]:
+                        - strong [ref=f1e301]: Carry
+                        - generic [ref=f1e302]: "Change: +7 yd"
+                      - generic [ref=f1e303]:
+                        - generic [ref=f1e304]: Baseline
+                        - generic [ref=f1e306]: 205 yd
+                      - generic [ref=f1e307]:
+                        - generic [ref=f1e308]: Current
+                        - generic [ref=f1e310]: 212 yd
+                      - paragraph [ref=f1e311]: "Carry: baseline 205 yd; current 212 yd; change +7 yd."
+                    - 'figure "Launch Angle Change: +0.7 deg" [ref=f1e312]':
+                      - generic [ref=f1e313]:
+                        - strong [ref=f1e314]: Launch Angle
+                        - generic [ref=f1e315]: "Change: +0.7 deg"
+                      - generic [ref=f1e316]:
+                        - generic [ref=f1e317]: Baseline
+                        - generic [ref=f1e319]: 14.1 deg
+                      - generic [ref=f1e320]:
+                        - generic [ref=f1e321]: Current
+                        - generic [ref=f1e323]: 14.8 deg
+                      - paragraph [ref=f1e324]: "Launch Angle: baseline 14.1 deg; current 14.8 deg; change +0.7 deg."
+              - generic [ref=f1e325]:
+                - generic [ref=f1e326]:
+                  - text: Progress evidence
+                  - heading "Claims stay proportional to what was actually observed." [level=2] [ref=f1e327]
+                  - paragraph [ref=f1e328]: This bounded view shows up to 20 published items, prioritizing current-phase evidence before the most recently observed retained history.
+                - generic [ref=f1e329]:
+                  - article [ref=f1e330]:
+                    - generic [ref=f1e331]:
+                      - generic [ref=f1e332]: Coach-captured synthetic clip
+                      - time [ref=f1e333]: Aug 9, 2026
+                    - heading "bcd-r6 baseline lesson video" [level=3] [ref=f1e334]
+                    - paragraph [ref=f1e335]: Use this clip to compare setup cues in the next lesson.
+                    - generic [ref=f1e336]:
+                      - text: "Lesson association:"
+                      - link "Planned representative-transfer lesson" [ref=f1e337] [cursor=pointer]:
+                        - /url: "#lesson-e0c0e960-fcfc-47c3-a3df-431702e9c688"
+                    - generic [ref=f1e338]: Coach Observed · Lesson · Single Observation
+                    - generic [ref=f1e339]: "Limit: One short synthetic clip cannot represent the wider pattern."
+                    - generic [ref=f1e340]: "Next evidence needed: Capture a second down-the-line clip after the practice block."
+                  - article [ref=f1e341]:
+                    - generic [ref=f1e342]:
+                      - generic [ref=f1e343]: Coach-selected synthetic manual summary metrics
+                      - time [ref=f1e344]: Aug 4, 2026
+                    - heading "Selected launch-monitor comparison context" [level=3] [ref=f1e345]
+                    - paragraph [ref=f1e346]: The bounded comparison supports continuing the current priority while gathering more representative evidence.
+                    - generic [ref=f1e347]:
+                      - text: "Lesson association:"
+                      - link "Planned representative-transfer lesson" [ref=f1e348] [cursor=pointer]:
+                        - /url: "#lesson-e0c0e960-fcfc-47c3-a3df-431702e9c688"
+                    - paragraph [ref=f1e349]: Synthetic comparison context only.
+                    - generic [ref=f1e350]: Device · Lesson · Early Indication
+                    - generic [ref=f1e351]: "Limit: Small synthetic samples and selected indoor conditions limit the conclusion."
+                    - generic [ref=f1e352]: "Next evidence needed: A representative coach-reviewed set under an ordinary target constraint."
+              - generic [ref=f1e353]:
+                - generic [ref=f1e354]:
+                  - text: Coaching timeline
+                  - heading "The journey, with history kept understandable." [level=2] [ref=f1e355]
+                  - paragraph [ref=f1e356]: Lessons, practice, check-ins, evidence, measurements, reviews, and private milestones are ordered by their recorded date. Use the filter when you need a narrower view.
+                - generic "Selected milestones" [ref=f1e357]:
+                  - article [ref=f1e358]:
+                    - generic [ref=f1e359]: Milestone · Aug 4, 2026
+                    - heading "First representative reset completed" [level=3] [ref=f1e360]
+                    - paragraph [ref=f1e361]: A private synthetic milestone recording that the bounded reset and evidence review were completed.
+                - generic [ref=f1e362]:
+                  - generic [ref=f1e363]:
+                    - text: Show timeline entries
+                    - combobox "Show timeline entries" [ref=f1e364]:
+                      - option "All coaching activity" [selected]
+                      - option "Phase review"
+                      - option "Practice assignment"
+                      - option "Evidence"
+                      - option "Milestone"
+                      - option "Lesson"
+                      - option "Launch-monitor session"
+                  - list [ref=f1e365]:
+                    - listitem [ref=f1e366]:
+                      - generic [ref=f1e368]:
+                        - generic [ref=f1e369]:
+                          - generic [ref=f1e370]: Phase review
+                          - time [ref=f1e371]: Aug 11, 2026
+                        - heading "Phase review" [level=3] [ref=f1e372]
+                        - paragraph [ref=f1e373]: Continue the current phase and gather one more representative coach-reviewed set.
+                        - generic [ref=f1e374]: "Status: Partially Complete"
+                    - listitem [ref=f1e375]:
+                      - generic [ref=f1e377]:
+                        - generic [ref=f1e378]:
+                          - generic [ref=f1e379]: Practice assignment
+                          - time [ref=f1e380]: Aug 11, 2026
+                        - heading "Editable centered-contact window" [level=3] [ref=f1e381]
+                        - paragraph [ref=f1e382]: Observe whether a comfortable-tempo strike window repeats without chasing speed or a promised result.
+                        - generic [ref=f1e383]: "Status: Active"
+                    - listitem [ref=f1e384]:
+                      - generic [ref=f1e386]:
+                        - generic [ref=f1e387]:
+                          - generic [ref=f1e388]: Evidence
+                          - time [ref=f1e389]: Aug 9, 2026
+                        - heading "bcd-r6 baseline lesson video" [level=3] [ref=f1e390]
+                        - paragraph [ref=f1e391]: Use this clip to compare setup cues in the next lesson.
+                        - generic [ref=f1e392]: "Status: Single Observation"
+                    - listitem [ref=f1e393]:
+                      - generic [ref=f1e395]:
+                        - generic [ref=f1e396]:
+                          - generic [ref=f1e397]: Milestone
+                          - time [ref=f1e398]: Aug 4, 2026
+                        - heading "First representative reset completed" [level=3] [ref=f1e399]
+                        - paragraph [ref=f1e400]: A private synthetic milestone recording that the bounded reset and evidence review were completed.
+                        - generic [ref=f1e401]: "Status: Published"
+                    - listitem [ref=f1e402]:
+                      - generic [ref=f1e404]:
+                        - generic [ref=f1e405]:
+                          - generic [ref=f1e406]: Evidence
+                          - time [ref=f1e407]: Aug 4, 2026
+                        - heading "Selected launch-monitor comparison context" [level=3] [ref=f1e408]
+                        - paragraph [ref=f1e409]: The bounded comparison supports continuing the current priority while gathering more representative evidence.
+                        - generic [ref=f1e410]: "Status: Early Indication"
+                    - listitem [ref=f1e411]:
+                      - generic [ref=f1e413]:
+                        - generic [ref=f1e414]:
+                          - generic [ref=f1e415]: Lesson
+                          - time [ref=f1e416]: Aug 4, 2026
+                        - heading "Planned representative-transfer lesson" [level=3] [ref=f1e417]
+                        - paragraph [ref=f1e418]: Keep the comfortable tempo and use strike location as the immediate feedback signal.
+                        - generic [ref=f1e419]: "Status: Completed"
+                    - listitem [ref=f1e420]:
+                      - generic [ref=f1e422]:
+                        - generic [ref=f1e423]:
+                          - generic [ref=f1e424]: Launch-monitor session
+                          - time [ref=f1e425]: Aug 4, 2026
+                        - heading "Synthetic current vendor-neutral manual entry · Synthetic 7 iron" [level=3] [ref=f1e426]
+                        - paragraph [ref=f1e427]: Use the selected values only as bounded context for the coach-authored current priority.
+                        - generic [ref=f1e428]: "Status: Limited"
+                    - listitem [ref=f1e429]:
+                      - generic [ref=f1e431]:
+                        - generic [ref=f1e432]:
+                          - generic [ref=f1e433]: Launch-monitor session
+                          - time [ref=f1e434]: Jul 14, 2026
+                        - heading "Synthetic baseline vendor-neutral manual entry · Synthetic 7 iron" [level=3] [ref=f1e435]
+                        - paragraph [ref=f1e436]: Use the selected values only as bounded context for the coach-authored current priority.
+                        - generic [ref=f1e437]: "Status: Limited"
+              - generic [ref=f1e438]:
+                - generic [ref=f1e439]:
+                  - text: Phase review
+                  - heading "What changed, what remains uncertain, and what happens next?" [level=2] [ref=f1e440]
+                - generic [ref=f1e441]:
+                  - strong [ref=f1e442]: The selected current sample was more predictable while the broader transfer question remains open.
+                  - generic [ref=f1e443]:
+                    - text: Original phase purpose
+                    - paragraph [ref=f1e444]: Create a stable strike window at a comfortable, representative tempo.
+                  - generic [ref=f1e445]:
+                    - text: Evidence considered
+                    - paragraph [ref=f1e446]: The synthetic golfer completed a lesson, assigned practice, and two manual launch-monitor summaries.
+                  - generic [ref=f1e447]:
+                    - text: Exact selected source records
+                    - list [ref=f1e448]:
+                      - listitem [ref=f1e449]:
+                        - strong [ref=f1e450]: Lesson
+                        - text: ": Planned representative-transfer lesson"
+                        - generic [ref=f1e451]: · reviewed at roadmap revision 9
+                        - paragraph [ref=f1e452]: The selected synthetic sample showed a wider strike window when transition tempo increased.
+                        - list [ref=f1e453]:
+                          - listitem [ref=f1e454]: "Evidence: Selected launch-monitor comparison context (comparison)"
+                          - listitem [ref=f1e455]: "Measurement session: Synthetic baseline vendor-neutral manual entry · Synthetic 7 iron · 2026-07-14"
+                          - listitem [ref=f1e456]: "Measurement session: Synthetic current vendor-neutral manual entry · Synthetic 7 iron · 2026-08-04"
+                      - listitem [ref=f1e457]:
+                        - strong [ref=f1e458]: Practice
+                        - text: ": Editable centered-contact window"
+                      - listitem [ref=f1e459]:
+                        - strong [ref=f1e460]: Launch Session
+                        - text: ": Synthetic baseline vendor-neutral manual entry · Synthetic 7 iron · 2026-07-14"
+                      - listitem [ref=f1e461]:
+                        - strong [ref=f1e462]: Launch Session
+                        - text: ": Synthetic current vendor-neutral manual entry · Synthetic 7 iron · 2026-08-04"
+                      - listitem [ref=f1e463]:
+                        - strong [ref=f1e464]: Launch Comparison
+                        - text: ": Selected synthetic baseline and current values"
+                      - listitem [ref=f1e465]:
+                        - strong [ref=f1e466]: Evidence
+                        - text: ": Selected launch-monitor comparison context"
+                  - generic [ref=f1e467]:
+                    - text: Reliability
+                    - paragraph [ref=f1e468]: Early indication in bounded synthetic evidence
+                  - generic [ref=f1e469]:
+                    - text: What remains uncertain
+                    - paragraph [ref=f1e470]: No real golfer, automated swing analysis, on-course outcome, or durable coaching result is represented.
+                  - generic [ref=f1e471]:
+                    - text: Golfer contribution
+                    - paragraph [ref=f1e472]: The synthetic golfer reported that the reset made the target decision easier to repeat.
+                  - generic [ref=f1e473]:
+                    - text: Coach conclusion
+                    - paragraph [ref=f1e474]: Continue the current phase and gather one more representative coach-reviewed set.
+                  - generic [ref=f1e475]:
+                    - text: Remaining opportunity
+                    - paragraph [ref=f1e476]: Test the decision under an ordinary target constraint without adding speed.
+                  - generic [ref=f1e477]:
+                    - text: Coach recommendation
+                    - paragraph [ref=f1e478]: Continue the documented bounded practice and use the stop-or-ask rule.
+                - article [ref=f1e479]:
+                  - generic [ref=f1e480]:
+                    - text: Coach-recommended next option
+                    - heading "Four-session development phase" [level=3] [ref=f1e481]
+                    - strong [ref=f1e482]: CAD 480.00
+                  - generic [ref=f1e483]:
+                    - paragraph [ref=f1e484]: Four focused sessions connected to the first roadmap phase.
+                    - generic [ref=f1e485]:
+                      - strong [ref=f1e486]: What is included
+                      - list [ref=f1e487]:
+                        - listitem [ref=f1e488]: Four private lessons
+                        - listitem [ref=f1e489]: Coach-authored practice direction
+                    - generic [ref=f1e490]: Synthetic QA package. Confirm current terms with the coach.
+                    - paragraph [ref=f1e491]: You will leave Roadmap. Booking or payment happens on the coach's external service and is not complete until that service confirms it.
+                - generic [ref=f1e492]:
+                  - generic [ref=f1e493]:
+                    - text: Choose without pressure
+                    - heading "What would you like to do next?" [level=3] [ref=f1e494]
+                    - paragraph [ref=f1e495]: "Preview only: these are the choices the golfer will receive. Controls are disabled and nothing is recorded for Coach Rowan."
+                  - generic [ref=f1e496]:
+                    - button "Continue to the coach’s external page" [disabled] [ref=f1e497]
+                    - button "Ask Coach Rowan a question" [disabled] [ref=f1e498]
+                    - button "Review later" [disabled] [ref=f1e499]
+                    - button "Request reassessment" [disabled] [ref=f1e500]
+                    - button "Practise independently" [disabled] [ref=f1e501]
+                    - button "Not pursuing this option" [disabled] [ref=f1e502]
+            - generic [ref=f1e503]:
+              - generic [ref=f1e504]:
+                - generic [ref=f1e505]: CR
+                - generic [ref=f1e506]:
+                  - strong [ref=f1e507]: Foothills Golf Studio
+                  - generic [ref=f1e508]: Coach-authored private development plan
+              - generic [ref=f1e509]: Updated Aug 11, 2026
+      - generic [ref=f1e511]:
+        - region [ref=f1e512]:
+          - generic [ref=f1e513]: Lessons
+          - heading "1 retained chapter" [level=2] [ref=f1e514]
+          - paragraph [ref=f1e515]: "Latest: Planned representative-transfer lesson"
+          - link "Review latest lesson" [ref=f1e516] [cursor=pointer]:
+            - /url: /app/coaching/plans/b0847e52-05e1-441d-b864-e66e97792f90?tab=lessons&lessonId=e0c0e960-fcfc-47c3-a3df-431702e9c688
+        - region [ref=f1e517]:
+          - generic [ref=f1e518]: Practice
+          - heading "One active direction" [level=2] [ref=f1e519]
+          - paragraph [ref=f1e520]: Editable centered-contact window
+          - link "Review active practice" [ref=f1e521] [cursor=pointer]:
+            - /url: /app/coaching/plans/b0847e52-05e1-441d-b864-e66e97792f90?tab=practice&practiceId=62a6ae1e-d524-4f1f-b93b-fc738b1b2ef8
+        - region [ref=f1e522]:
+          - generic [ref=f1e523]: Private coaching media
+          - heading "Private media library" [level=2] [ref=f1e524]
+          - paragraph [ref=f1e525]: Upload privately, then attach a file to a specific lesson, practice assignment, evidence item, assessment, or phase review in this golfer’s coaching workspace.
+          - link "Open media library" [ref=f1e526] [cursor=pointer]:
+            - /url: /app/media
+          - link "Manage golfer attachments" [ref=f1e527] [cursor=pointer]:
+            - /url: /app/coaching/plans/b0847e52-05e1-441d-b864-e66e97792f90?tab=media&attachmentId=3a916b33-bd8b-4e8c-8e2d-033034a49491
+        - region [ref=f1e528]:
+          - generic [ref=f1e529]: Data / evidence
+          - heading "2 evidence items" [level=2] [ref=f1e530]
+          - paragraph [ref=f1e531]: Add bounded observations, launch-monitor measurements, and explicit coach interpretation.
+          - link "Open evidence workspace" [ref=f1e532] [cursor=pointer]:
+            - /url: /app/coaching/plans/b0847e52-05e1-441d-b864-e66e97792f90?tab=evidence
+        - region [ref=f1e533]:
+          - generic [ref=f1e534]: Reviews
+          - heading "Current phase review retained" [level=2] [ref=f1e535]
+          - paragraph [ref=f1e536]: The selected current sample was more predictable while the broader transfer question remains open.
+          - link "Select review sources" [ref=f1e537] [cursor=pointer]:
+            - /url: /app/coaching/plans/b0847e52-05e1-441d-b864-e66e97792f90?tab=reviews
+      - region [ref=f1e538]:
+        - generic [ref=f1e540]:
+          - generic [ref=f1e541]: Living coaching records
+          - heading "Add the next useful chapter." [level=2] [ref=f1e542]
+          - paragraph [ref=f1e543]: Lesson, practice, evidence, and review mutations retain their existing recovery controls.
+        - region [ref=f1e544]:
+          - generic [ref=f1e546]:
+            - generic [ref=f1e547]: Living plan updates
+            - heading "Add only the next useful chapter." [level=2] [ref=f1e548]
+          - paragraph [ref=f1e549]: Every update creates a new plan revision and revokes previous access until you review and republish the exact golfer view.
+          - group [ref=f1e550]:
+            - generic [ref=f1e551]:
+              - group [ref=f1e552]:
+                - generic "Add a completed lesson chapter" [ref=f1e553]
+                - option "Phase 1 — Own centered contact" [selected]
+                - option "Phase 2 — Shape trajectory"
+                - option "Phase 3 — Choose targets"
+                - option "Phase 4 — Perform under pressure"
+              - group [ref=f1e554]:
+                - generic "Add or replace the current practice direction" [ref=f1e555]
+                - option "Phase 1 — Own centered contact" [selected]
+                - option "Phase 2 — Shape trajectory"
+                - option "Phase 3 — Choose targets"
+                - option "Phase 4 — Perform under pressure"
+              - group [ref=f1e556]:
+                - generic "Add evidence with its limits" [ref=f1e557]
+                - option "Phase 1 — Own centered contact" [selected]
+                - option "Phase 2 — Shape trajectory"
+                - option "Phase 3 — Choose targets"
+                - option "Phase 4 — Perform under pressure"
+                - option "Coach observation" [selected]
+                - option "Golfer report"
+                - option "Measurement"
+                - option "Outcome count"
+                - option "Comparison"
+                - option "Note"
+                - option "Assessment"
+                - option "Lesson"
+                - option "Practice" [selected]
+                - option "On course"
+                - option "Phase review"
+                - option "Other"
+                - option "Coach observed" [selected]
+                - option "Golfer reported"
+                - option "Device"
+                - option "Document"
+                - option "Mixed"
+                - option "Single observation" [selected]
+                - option "Early indication"
+                - option "Repeated practice"
+                - option "On-course observation"
+                - option "Insufficient"
+                - option "Standalone" [selected]
+                - option "Baseline"
+                - option "Current"
+                - option "No or not established" [selected]
+                - option "Yes — coach selected"
+              - group [ref=f1e558]:
+                - generic "Complete a source-backed phase review" [ref=f1e559]
+              - group [ref=f1e560]:
+                - generic "Correct or withdraw existing golfer-view content" [ref=f1e561]
+          - alert [ref=f1e562]
+      - region [ref=f1e563]:
+        - generic [ref=f1e565]:
+          - generic [ref=f1e566]: Share
+          - heading "Private access for one reviewed revision." [level=2] [ref=f1e567]
+          - paragraph [ref=f1e568]: Publishing creates revocable access; Roadmap still does not send a message automatically.
+        - region [ref=f1e569]:
+          - generic [ref=f1e571]:
+            - generic [ref=f1e572]: Authorization control
+            - heading "Private roadmap sharing" [level=2] [ref=f1e573]
+          - paragraph [ref=f1e574]: Synthetic authorization for test-only private roadmap sharing; no real person is represented.
+          - paragraph [ref=f1e575]: "Policy version: synthetic-roadmap-sharing-v1"
+          - paragraph [ref=f1e576]: "Current state: authorized"
+          - button "Withdraw authorization" [ref=f1e577] [cursor=pointer]
+        - region [ref=f1e578]:
+          - generic [ref=f1e580]:
+            - generic [ref=f1e581]: Publish & share
+            - heading "Review the exact golfer view before creating access." [level=2] [ref=f1e582]
+          - group "Private link details" [ref=f1e584]:
+            - generic [ref=f1e586]:
+              - text: Intended recipient and context
+              - textbox "Intended recipient and context Confirm who should receive this exact private view. Roadmap does not send it automatically." [ref=f1e587]: Jordan Synthetic — private golfer roadmap
+              - generic [ref=f1e588]: Confirm who should receive this exact private view. Roadmap does not send it automatically.
+            - generic [ref=f1e589]:
+              - text: Link expiry
+              - combobox "Link expiry You can revoke access sooner from the sharing record." [ref=f1e590]:
+                - option "1 day"
+                - option "7 days"
+                - option "30 days" [selected]
+                - option "90 days"
+              - generic [ref=f1e591]: You can revoke access sooner from the sharing record.
+            - generic [ref=f1e592]:
+              - checkbox "I reviewed the exact goal, assessment, evidence limits, phase sequence, package facts, and external-action wording shown below." [ref=f1e593]
+              - generic [ref=f1e594]: I reviewed the exact goal, assessment, evidence limits, phase sequence, package facts, and external-action wording shown below.
+            - button "Publish and create private link" [ref=f1e596] [cursor=pointer]
+          - alert [ref=f1e597]
+          - generic [ref=f1e598]:
+            - heading "Private access history" [level=3] [ref=f1e599]
+            - paragraph [ref=f1e600]: A link is not a delivered message or a confirmed read. “Opened” means only that the capability reached Roadmap successfully.
+            - generic [ref=f1e602]:
+              - strong [ref=f1e603]: Link revoked
+              - generic [ref=f1e604]: Created 2026-08-11, 1:35:39 a.m. · expires 2026-08-18, 1:35:39 a.m. · not opened
+            - generic [ref=f1e606]:
+              - strong [ref=f1e607]: Link revoked
+              - generic [ref=f1e608]: Created 2026-08-11, 1:35:38 a.m. · expires 2026-08-12, 1:35:38 a.m. · not opened
+      - region [ref=f1e609]:
+        - generic [ref=f1e611]:
+          - generic [ref=f1e612]: Golfer choices
+          - heading "Recorded response history" [level=2] [ref=f1e613]
+          - paragraph [ref=f1e614]: An external-page open is not evidence of a booking, payment, sale, or coaching outcome. Question and reassessment choices do not send a message.
+        - paragraph [ref=f1e615]: No golfer choice has been recorded for this plan.

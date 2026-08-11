@@ -1,0 +1,335 @@
+{
+  "schemaVersion": 1,
+  "candidate": "candidate-functional-final-20260811-r9",
+  "root": "dist",
+  "aggregateSha256": "6b1b5d298536c951e074c1e495f909bb626a62ef58ba1a8590bc23e3f3329d44",
+  "fileCount": 65,
+  "totalBytes": 10422291,
+  "files": [
+    {
+      "path": "dist/.openai/drizzle/0000_nappy_inertia.sql",
+      "bytes": 41710,
+      "sha256": "867192a1e43d8243985ca838a7bcaf146ccf3fdfb4b1a736b0bd6f13198e1ff2"
+    },
+    {
+      "path": "dist/.openai/drizzle/0001_sour_pete_wisdom.sql",
+      "bytes": 1175,
+      "sha256": "564742c53ad8d13427673deb69f96b24707a1e967525edc1bbadf559a685573c"
+    },
+    {
+      "path": "dist/.openai/drizzle/0002_nifty_lord_tyger.sql",
+      "bytes": 1951,
+      "sha256": "097331ea0ea50ab2d218843d64e915d6792bf333e52f4a5a4e26e49366c6241c"
+    },
+    {
+      "path": "dist/.openai/drizzle/0003_condemned_brood.sql",
+      "bytes": 12195,
+      "sha256": "944612d2312add149c97f4af19a0edf8acd69a78dc6858da8d6d6ad57e9aadbf"
+    },
+    {
+      "path": "dist/.openai/drizzle/0004_grey_ikaris.sql",
+      "bytes": 81,
+      "sha256": "852731ebe773f7b132e3542366c9a598eba434a605a5f45a1ba8c6ee9b20ba02"
+    },
+    {
+      "path": "dist/.openai/drizzle/0005_cultured_marrow.sql",
+      "bytes": 727,
+      "sha256": "b17621aea0f98cfd0cefdf8224b48e78d4f0432cd8790d31a2a8d5f19606caef"
+    },
+    {
+      "path": "dist/.openai/drizzle/0006_nervous_dragon_man.sql",
+      "bytes": 9413,
+      "sha256": "70d8bf569cc0f553194d835834e24b56643ffd14f7929407e17c8c5c2d5e009f"
+    },
+    {
+      "path": "dist/.openai/drizzle/0007_fearless_valeria_richards.sql",
+      "bytes": 3315,
+      "sha256": "e2ae559183026af697365979d2003bf0a383e5ab24237c51c69812b8cd84f7e0"
+    },
+    {
+      "path": "dist/.openai/drizzle/0008_reflective_mystique.sql",
+      "bytes": 1867,
+      "sha256": "77ed6edbc9e7a165f153b52ac2b8c030f27045041e0a9853a4a28d1a22402b65"
+    },
+    {
+      "path": "dist/.openai/drizzle/0009_cultured_namora.sql",
+      "bytes": 4724,
+      "sha256": "cee2fa46acf323ce5d7b1937cae1c0d32253a42e990a6b9685dc09ef16be544f"
+    },
+    {
+      "path": "dist/.openai/drizzle/0010_steep_hemingway.sql",
+      "bytes": 1913,
+      "sha256": "4e962ccb3cb9179f2e3799d42b61ac6c725a1ebd77b5752f279e090939878ee7"
+    },
+    {
+      "path": "dist/.openai/drizzle/0011_stormy_shard.sql",
+      "bytes": 6747,
+      "sha256": "5ec0f22615e2f0be3872a14b59c4385b1095ffe290f21f53b4985de194ee6024"
+    },
+    {
+      "path": "dist/.openai/drizzle/0012_giant_rockslide.sql",
+      "bytes": 45635,
+      "sha256": "373906c44496df8f5c2aabed09f5b138e02f26e75f97059feca439f3a43232af"
+    },
+    {
+      "path": "dist/.openai/drizzle/0013_mature_alex_power.sql",
+      "bytes": 125,
+      "sha256": "00d42ec87904f6a1eca536b926ba71b6eddb49ee8bd444cc065dfc7463d97410"
+    },
+    {
+      "path": "dist/.openai/drizzle/0014_easy_electro.sql",
+      "bytes": 1996,
+      "sha256": "c79ec99f78bd01a36b61f6108e083f2e4c896da5cd75010c794bef0a5fc66dc3"
+    },
+    {
+      "path": "dist/.openai/drizzle/0015_freezing_puma.sql",
+      "bytes": 11356,
+      "sha256": "b1afd1fe0d3a28404932d8682f8f573d7133da094ec791c80cc850fb6c85006b"
+    },
+    {
+      "path": "dist/.openai/drizzle/0016_handy_green_goblin.sql",
+      "bytes": 2192,
+      "sha256": "7cc0a3df0ed53d874e35ea2120f0d4bab71ed9fbef36b484fc7b60463681d988"
+    },
+    {
+      "path": "dist/.openai/drizzle/meta/0000_snapshot.json",
+      "bytes": 141266,
+      "sha256": "0f8eec9cfe42411c6c42ef87a3a3f3f53229eb1542e21e26ef38090272fa08d2"
+    },
+    {
+      "path": "dist/.openai/drizzle/meta/0001_snapshot.json",
+      "bytes": 144173,
+      "sha256": "c2412d50f5a4c5db5577bebe954bc7e7cf980c2d52d5d974a62ec63534791251"
+    },
+    {
+      "path": "dist/.openai/drizzle/meta/0002_snapshot.json",
+      "bytes": 149428,
+      "sha256": "72c0bb4abaf7663e20c59f38dd36e89cd408045b27dfbe4590069e0b0680e1b5"
+    },
+    {
+      "path": "dist/.openai/drizzle/meta/0003_snapshot.json",
+      "bytes": 161683,
+      "sha256": "7790b5a8f1c4e444f308d1ccbb363bce0db874ded72170e332da9d49087b2bc0"
+    },
+    {
+      "path": "dist/.openai/drizzle/meta/0004_snapshot.json",
+      "bytes": 161911,
+      "sha256": "03f28efc10df50c2402abc649c7b36ddfc0023c1552b95939faed6b1ad41e092"
+    },
+    {
+      "path": "dist/.openai/drizzle/meta/0005_snapshot.json",
+      "bytes": 164151,
+      "sha256": "7e3cdb47c527a308df59714e6ed0bfc6dff29cd9b7eaed14241a9c1bd5bef08f"
+    },
+    {
+      "path": "dist/.openai/drizzle/meta/0006_snapshot.json",
+      "bytes": 181132,
+      "sha256": "52339ccb05bbe4ce074a9d49a35e2431c24c6c1946b1753b1b6650ed8bcd5d37"
+    },
+    {
+      "path": "dist/.openai/drizzle/meta/0007_snapshot.json",
+      "bytes": 187766,
+      "sha256": "5607d671a5b450c987a9798ffb8cd5c1da8f5ca591f34f1895aec6b79870eac6"
+    },
+    {
+      "path": "dist/.openai/drizzle/meta/0008_snapshot.json",
+      "bytes": 187833,
+      "sha256": "105e7f0a9b3db160db40ff71ee2f87f55cc869df40c78592d9c601546020eb30"
+    },
+    {
+      "path": "dist/.openai/drizzle/meta/0009_snapshot.json",
+      "bytes": 189613,
+      "sha256": "d8adf3f489ab2515921eb4420865ba64d4158288d2a9d316e8fd3eefc55d8595"
+    },
+    {
+      "path": "dist/.openai/drizzle/meta/0010_snapshot.json",
+      "bytes": 189659,
+      "sha256": "6d2b23a6449532c4aea2d8192e16fe204d92465b154bb928d200ba84d9f5e179"
+    },
+    {
+      "path": "dist/.openai/drizzle/meta/0011_snapshot.json",
+      "bytes": 200709,
+      "sha256": "2622cb146156bf55a309b992ed419e0e433993c40e2fc251aef21650345d2b0f"
+    },
+    {
+      "path": "dist/.openai/drizzle/meta/0012_snapshot.json",
+      "bytes": 303990,
+      "sha256": "9e08d42473e864c7c3f91ac2f5d1da6b4f33bb67edaf85365c7d5609cd47fc6b"
+    },
+    {
+      "path": "dist/.openai/drizzle/meta/0013_snapshot.json",
+      "bytes": 304232,
+      "sha256": "225e89fb18d5b0bcab90cfc85e28e668b61370c0c4e3ae5ffa76b2cfe0d1805c"
+    },
+    {
+      "path": "dist/.openai/drizzle/meta/0014_snapshot.json",
+      "bytes": 311519,
+      "sha256": "8755c879cab8f12f5118937db74162ce2945084ea511306869ece1b33caa6385"
+    },
+    {
+      "path": "dist/.openai/drizzle/meta/0015_snapshot.json",
+      "bytes": 314723,
+      "sha256": "d249e664b8907d4001d9f43d6e3a4d562fa9df5d9dc0b7934dfc3f9caa150ce2"
+    },
+    {
+      "path": "dist/.openai/drizzle/meta/0016_snapshot.json",
+      "bytes": 319184,
+      "sha256": "76f81b146073c5f5915ccb8ec47200bb483cdf4d3ff7e4e90097050bd90ec03c"
+    },
+    {
+      "path": "dist/.openai/drizzle/meta/_journal.json",
+      "bytes": 2510,
+      "sha256": "622ebb2e7c0cec5a2afc07f2c8c8081b1b0abb35b774f56c409db56190f923e2"
+    },
+    {
+      "path": "dist/.openai/hosting.json",
+      "bytes": 94,
+      "sha256": "b5a8dcd7e593f2f90a2e084450ca64655077844f90ce763c7a8b8a449107b6ba"
+    },
+    {
+      "path": "dist/client/.assetsignore",
+      "bytes": 24,
+      "sha256": "4f83140d5f4293ab55bd1207327e995c83258f1e7d3145b1b5d7a3d17fdfe0a7"
+    },
+    {
+      "path": "dist/client/.vite/manifest.json",
+      "bytes": 1727,
+      "sha256": "2779430c421dfff6a92dae4edba43bb5dc73a541e85cda26b704d37733f96058"
+    },
+    {
+      "path": "dist/client/_headers",
+      "bytes": 125,
+      "sha256": "9e55124bccd40b43dbc6e002daa777fa8f32a230420152910784ca65501d9e0f"
+    },
+    {
+      "path": "dist/client/assets/framework-bym5aI3S.js",
+      "bytes": 189757,
+      "sha256": "a9b4ce28eb1fd24f44bd6afc700324f83feec30c0419725ce29a8c61bfa8996a"
+    },
+    {
+      "path": "dist/client/assets/index-D_AP4GPL.js",
+      "bytes": 58131,
+      "sha256": "19e58d8005153da1bc1f0fd3d8249efb5747dfdd60090cdbfd37bb82eab4cbda"
+    },
+    {
+      "path": "dist/client/assets/index-Dfm494ox.css",
+      "bytes": 85099,
+      "sha256": "88ec6e28a067ed80ed3a84561c40084371b97015b2f0a7349d33c5262f4ec57d"
+    },
+    {
+      "path": "dist/client/assets/rolldown-runtime-hePW80VL.js",
+      "bytes": 716,
+      "sha256": "580ad8c58061a4dde99bde0a56905e382f0568516ee2f5b84dbfb52085709021"
+    },
+    {
+      "path": "dist/client/assets/router-BSIHsn-a.js",
+      "bytes": 9164,
+      "sha256": "9d88990d002f2b614208fe8876937bd270c56464d4dec84508a91bc31c4ecaa6"
+    },
+    {
+      "path": "dist/client/assets/worker-entry-C1HsYmDX.css",
+      "bytes": 72692,
+      "sha256": "9767e426892c4e597e81c29d3ced0de6b30ff2755ca5a73676f47d59e7ba1095"
+    },
+    {
+      "path": "dist/client/assets/worker-entry-DRvUsia5.js",
+      "bytes": 385172,
+      "sha256": "dc11c6f8b52beebf30b6d110b6ed103c66d7063e24f2c9951da390444e5b14db"
+    },
+    {
+      "path": "dist/client/favicon.svg",
+      "bytes": 343,
+      "sha256": "15f46b60f8a3bbc7896d2c72ab23fb9f1f6a82cec47a68d59fa1934045551cc7"
+    },
+    {
+      "path": "dist/client/og.png",
+      "bytes": 2282761,
+      "sha256": "0de84f4854d9a73f020e63cad95622b382dc205f5bdff8cc398eff936d207afe"
+    },
+    {
+      "path": "dist/client/synthetic-swing-baseline.svg",
+      "bytes": 1307,
+      "sha256": "5891793f000c5cfaa2a0d6a1fa753b6b64cdd095b21ca27ba50a9cc41711e5c3"
+    },
+    {
+      "path": "dist/client/synthetic-swing-current.svg",
+      "bytes": 1304,
+      "sha256": "5cf0cf33f632ce6e6d9507e7dc33bc8483b3c372760c28823a773889a26646b7"
+    },
+    {
+      "path": "dist/server/.vite/manifest.json",
+      "bytes": 282,
+      "sha256": "18b3e16ab5ec74c3474a45cd859a807e239d84e07574648df1e69aca56d4fb3a"
+    },
+    {
+      "path": "dist/server/__vite_rsc_assets_manifest.js",
+      "bytes": 13280,
+      "sha256": "cbd96275884c398b74b1df975f728cdcee2feefdb1a5f22b498e448a1a584439"
+    },
+    {
+      "path": "dist/server/assets/index-Dfm494ox.css",
+      "bytes": 85099,
+      "sha256": "88ec6e28a067ed80ed3a84561c40084371b97015b2f0a7349d33c5262f4ec57d"
+    },
+    {
+      "path": "dist/server/image-config.json",
+      "bytes": 2,
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "path": "dist/server/index.js",
+      "bytes": 2054590,
+      "sha256": "3f7f11285895b3d40b4b7a3faf4b13509cf5751a4d528c0807823cddebde9eb8"
+    },
+    {
+      "path": "dist/server/ssr/__vite_rsc_assets_manifest.js",
+      "bytes": 13280,
+      "sha256": "cbd96275884c398b74b1df975f728cdcee2feefdb1a5f22b498e448a1a584439"
+    },
+    {
+      "path": "dist/server/ssr/assets/react-EGopOZvF.js",
+      "bytes": 16781,
+      "sha256": "74f5f261e506b9de80f9bc2dfeeefd94ee2a590281ffc0b57b126c3d874632ba"
+    },
+    {
+      "path": "dist/server/ssr/assets/router-BGS_AJwY.js",
+      "bytes": 21468,
+      "sha256": "41c474a10db95a46e339f7463ba4ff7a891c9fd5b2ac8d01aeabfa0bbabb6d25"
+    },
+    {
+      "path": "dist/server/ssr/assets/worker-entry-C1HsYmDX.css",
+      "bytes": 72692,
+      "sha256": "9767e426892c4e597e81c29d3ced0de6b30ff2755ca5a73676f47d59e7ba1095"
+    },
+    {
+      "path": "dist/server/ssr/assets/worker-entry-cF88xZbn.js",
+      "bytes": 742825,
+      "sha256": "70309467a0ff18d5401b09b95f4096ee7173a883745bb2887155cc1fe4d59be4"
+    },
+    {
+      "path": "dist/server/ssr/index.js",
+      "bytes": 549308,
+      "sha256": "231c715678f43ab65965e0f19c39de27570478c63e29218ef7502ba8e1c4b819"
+    },
+    {
+      "path": "dist/server/ssr/vinext-server.json",
+      "bytes": 86,
+      "sha256": "7140d100b237fcfab7a08af0b187136ffdcbff00d841e2d4bc3a419c2b530d62"
+    },
+    {
+      "path": "dist/server/vinext-externals.json",
+      "bytes": 3,
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+    },
+    {
+      "path": "dist/server/vinext-server.json",
+      "bytes": 86,
+      "sha256": "7140d100b237fcfab7a08af0b187136ffdcbff00d841e2d4bc3a419c2b530d62"
+    },
+    {
+      "path": "dist/server/wrangler.json",
+      "bytes": 1489,
+      "sha256": "b8b846d9a47d1a46811aea370ebd2ad3a4b573627e045c67069f0930ca191446"
+    }
+  ]
+}

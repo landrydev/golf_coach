@@ -1,0 +1,102 @@
+- generic [ref=e2]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=e4]:
+    - link "Foothills Golf Studio Roadmap home" [ref=e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=e6]: FG
+      - generic [ref=e7]:
+        - strong [ref=e8]: Foothills Golf Studio
+        - generic [ref=e9]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=e10]:
+      - link "Overview" [ref=e11] [cursor=pointer]:
+        - /url: /app
+      - link "Golfers" [ref=e12] [cursor=pointer]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=e13] [cursor=pointer]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=e14] [cursor=pointer]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=e15] [cursor=pointer]:
+        - /url: /app/media
+      - link "Packages" [ref=e16] [cursor=pointer]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=e17] [cursor=pointer]:
+        - /url: /app/billing
+      - link "Settings" [ref=e18] [cursor=pointer]:
+        - /url: /app/settings
+    - generic [ref=e19]:
+      - generic [ref=e20]: CR
+      - generic [ref=e21]:
+        - strong [ref=e22]: Coach Rowan
+        - generic [ref=e23]: visual.coach@example.test
+      - button "Sign out" [ref=e25] [cursor=pointer]
+  - main [ref=e26]:
+    - generic [ref=e141]:
+      - generic [ref=e142]:
+        - generic [ref=e143]:
+          - text: Private coaching media
+          - heading "Media library" [level=1] [ref=e144]
+          - paragraph [ref=e145]: Upload once, then reuse a swing clip, image, or source CSV in coaching content. Roadmap never analyzes the swing or claims a live device integration.
+        - link "Upload media" [ref=e146] [cursor=pointer]:
+          - /url: "#upload-media"
+      - generic [ref=e147]:
+        - generic [ref=e148]:
+          - generic [ref=e149]:
+            - text: New upload
+            - heading "Add a private file" [level=2] [ref=e150]
+          - generic [ref=e151]: Up to 48 MB · video up to 3:00
+        - generic [ref=e152]:
+          - generic [ref=e153]:
+            - generic [ref=e154]: Image, swing video, or source CSV
+            - button "Image, swing video, or source CSV The original stays private and is not published by uploading it." [disabled] [ref=e155]
+            - generic [ref=e156]: The original stays private and is not published by uploading it.
+          - generic [ref=e157]:
+            - generic [ref=e158]:
+              - generic [ref=e159]: Accessible description
+              - textbox "Accessible description" [disabled] [ref=e160]:
+                - /placeholder: Down-the-line swing at the range
+                - text: Roadmap brand graphic with the text Sell the plan, not another hour and Coach-branded golf development roadmaps beside a rising path on a dark green panel.
+            - generic [ref=e161]:
+              - generic [ref=e162]: View or orientation label
+              - textbox "View or orientation label" [disabled] [ref=e163]:
+                - /placeholder: Down the line
+                - text: Landscape brand artwork
+            - generic [ref=e164]:
+              - generic [ref=e165]: Captured date
+              - textbox "Captured date" [disabled] [ref=e166]: 2026-08-07
+            - generic [ref=e167]:
+              - generic [ref=e168]: Frame orientation
+              - combobox "Frame orientation" [disabled] [ref=e169]:
+                - option "Detect later / unknown"
+                - option "Landscape" [selected]
+                - option "Portrait"
+                - option "Square"
+          - generic [ref=e170]:
+            - generic [ref=e171]: Caption
+            - textbox "Caption" [disabled] [ref=e172]:
+              - /placeholder: Baseline 7-iron swing
+              - text: Roadmap social sharing graphic
+          - generic [ref=e173]:
+            - generic [ref=e174]: Coach context
+            - textbox "Coach context" [disabled] [ref=e175]:
+              - /placeholder: What should the golfer notice, and why is this clip included?
+              - text: Roadmap brand artwork explaining coach-branded golf development roadmaps; uploaded only to verify private image handling.
+          - group [ref=e176]:
+            - generic "Optional poster and transcript" [ref=e177] [cursor=pointer]
+            - option "Use the video's first available frame" [selected]
+          - button "Upload privately" [disabled] [ref=e179]
+      - alert [ref=e190]: "Roadmap could not confirm whether the media upload finished. Reload this page to check the current state before trying again. Reference: ef9ab274-9c2d-4ba1-a791-6ae25a108f15."
+      - button "Reload and inspect the media library" [ref=e191] [cursor=pointer]
+      - region [ref=e180]:
+        - generic [ref=e181]:
+          - generic [ref=e182]:
+            - text: Reusable assets
+            - heading "Your private library" [level=2] [ref=e183]
+          - generic [ref=e184]: 0 stored items
+        - generic [ref=e185]:
+          - generic [ref=e186]: ▶
+          - heading "No media yet" [level=3] [ref=e187]
+          - paragraph [ref=e188]: Add a clearly labelled synthetic or consented coaching file when it helps tell the golfer’s story. Media is always optional.
+          - link "Upload the first file" [ref=e189] [cursor=pointer]:
+            - /url: "#upload-media"

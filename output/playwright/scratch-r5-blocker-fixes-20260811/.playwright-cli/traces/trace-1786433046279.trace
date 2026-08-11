@@ -1,0 +1,9 @@
+{"version":8,"type":"context-options","origin":"library","browserName":"chromium","playwrightVersion":"1.63.0-alpha-2026-08-05","options":{"noDefaultViewport":false,"viewport":{"width":1280,"height":720},"selectorEngines":[],"acceptDownloads":"accept"},"platform":"win32","wallTime":1786433046280,"monotonicTime":11343.179,"sdkLanguage":"javascript","testIdAttributeName":"data-testid","contextId":"browser-context@64599fc470ed9848104106ec63f3acb3","channel":"chrome"}
+{"type":"before","callId":"call@26","startTime":11348.981,"class":"Frame","method":"title","params":{},"pageId":"page@9b871b202a568fe5f462629bf34bd485"}
+{"type":"after","callId":"call@26","endTime":11350.071,"result":{"value":"Roadmap | Coach-branded golf development roadmaps"}}
+{"type":"before","callId":"call@28","startTime":11350.387,"class":"Page","method":"consoleMessages","params":{"filter":"since-navigation"},"pageId":"page@9b871b202a568fe5f462629bf34bd485"}
+{"type":"after","callId":"call@28","endTime":11350.417,"result":{"messages":[]}}
+{"type":"before","callId":"call@30","startTime":11350.515,"class":"Page","method":"pageErrors","params":{"filter":"since-navigation"},"pageId":"page@9b871b202a568fe5f462629bf34bd485"}
+{"type":"after","callId":"call@30","endTime":11350.545,"result":{"errors":[]}}
+{"type":"screencast-frame","pageId":"page@9b871b202a568fe5f462629bf34bd485","sha1":"page@9b871b202a568fe5f462629bf34bd485-1786433046289.jpeg","width":1280,"height":720,"timestamp":11351.947,"frameSwapWallTime":1786433046292.5798}
+{"type":"event","time":24990.13,"class":"BrowserContext","method":"pageClosed","params":{"pageId":"page@9b871b202a568fe5f462629bf34bd485"}}

@@ -1,0 +1,364 @@
+{
+  "schemaVersion": 2,
+  "evidenceClass": "EXACT-FINAL-CANDIDATE LOCAL SYNTHETIC BROWSER QA",
+  "candidateId": "candidate-functional-final-20260811-r4",
+  "candidateStatus": {
+    "status": "invalidated",
+    "eligible": false,
+    "diagnosticEvidenceOnly": true,
+    "reason": "Real-browser Scenario B found that the application CSP blocks the blob: URL used to read selected video metadata. The ordinary video-upload journey cannot proceed, so A-H acceptance stopped and all partial artifacts are diagnostic only.",
+    "blockerIds": [
+      "BROWSER-B-CSP-BLOB-MEDIA"
+    ],
+    "blockers": [
+      {
+        "id": "BROWSER-B-CSP-BLOB-MEDIA",
+        "status": "confirmed",
+        "summary": "Selecting a Chromium-generated WebM in the real media form creates a blob: media URL, but the response CSP has no media-src allowance for blob:. Chromium blocks metadata loading, the UI reports that video metadata could not be read, and no video POST is issued.",
+        "evidencePaths": [
+          "output/playwright/candidate-functional-final-20260811-r4/scenario-af-report.md",
+          "output/playwright/candidate-functional-final-20260811-r4/scenario-bcd-report.md",
+          "output/playwright/candidate-functional-final-20260811-r4/scenario-eg-report.md",
+          "output/playwright/candidate-functional-final-20260811-r4/bcd-b-r4-defect-csp-video-metadata-1440.md",
+          "output/playwright/candidate-functional-final-20260811-r4/bcd-b-r4-defect-csp-video-metadata-1440.png",
+          "output/playwright/candidate-functional-final-20260811-r4/.playwright-cli/console-2026-08-11T06-34-50-436Z.log",
+          "output/playwright/candidate-functional-final-20260811-r4/.playwright-cli/traces/trace-1786430023693.trace",
+          "output/playwright/candidate-functional-final-20260811-r4/.playwright-cli/traces/trace-1786430023693.network"
+        ]
+      }
+    ]
+  },
+  "createdAt": "2026-08-11T06:30:34.778Z",
+  "sourceIdentity": {
+    "inventoryPath": "output/playwright/candidate-functional-final-20260811-r4/source-identity.json",
+    "schemaVersion": 2,
+    "aggregateSha256": "b680c92effac6af0521d1a7ed1d11f909a33721ea7f59d8fff1e25e38b7535c5",
+    "fileCount": 395,
+    "totalBytes": 10602779,
+    "exactCommitOrArchive": "source-identity:b680c92effac6af0521d1a7ed1d11f909a33721ea7f59d8fff1e25e38b7535c5",
+    "releaseId": "candidate-functional-final-20260811-r4",
+    "status": "recorded"
+  },
+  "server": {
+    "command": "npm run qa:functional:server",
+    "origin": "http://127.0.0.1:4175",
+    "scenarioCatalogue": "http://127.0.0.1:4175/__qa/scenarios"
+  },
+  "playwright": {
+    "command": "npm run qa:playwright -- -CandidateId <candidate> -Session <session> <command>",
+    "mode": "CLI-first; no Playwright test specs",
+    "artifactDirectory": "output/playwright/candidate-functional-final-20260811-r4"
+  },
+  "verification": {
+    "command": "npm run verify",
+    "status": "passed",
+    "tests": 489,
+    "passed": 489,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "durationMs": 42319.8125,
+    "wallDurationMs": 55417,
+    "logPath": "output/verify-functional-final-20260811-r4.log"
+  },
+  "requiredViewports": [
+    {
+      "width": 320,
+      "height": 844
+    },
+    {
+      "width": 390,
+      "height": 844
+    },
+    {
+      "width": 768,
+      "height": 1024
+    },
+    {
+      "width": 1440,
+      "height": 1000
+    }
+  ],
+  "requiredSurfaces": [
+    "landing",
+    "onboarding",
+    "dashboard",
+    "authoring",
+    "golfer-hub",
+    "media",
+    "launch-data-import",
+    "drill-library-and-assignment",
+    "share-centre",
+    "golfer-roadmap"
+  ],
+  "requiredStates": [
+    "short",
+    "long",
+    "empty",
+    "loading",
+    "partial",
+    "error",
+    "recovery",
+    "expired",
+    "revoked",
+    "republished"
+  ],
+  "scenarios": [
+    {
+      "id": "fresh",
+      "label": "Fresh empty coach",
+      "appEntry": "http://127.0.0.1:4175/__qa/fresh/app",
+      "golferEntry": null,
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "standard",
+      "label": "Standard four-phase roadmap",
+      "appEntry": "http://127.0.0.1:4175/__qa/standard/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/standard/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "three-phase",
+      "label": "Three phases without a package",
+      "appEntry": "http://127.0.0.1:4175/__qa/three-phase/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/three-phase/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "mixed-30",
+      "label": "Thirty mixed-state golfers",
+      "appEntry": "http://127.0.0.1:4175/__qa/mixed-30/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/mixed-30/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "long-content",
+      "label": "Long-content roadmap",
+      "appEntry": "http://127.0.0.1:4175/__qa/long-content/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/long-content/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "expired",
+      "label": "Expired private access",
+      "appEntry": "http://127.0.0.1:4175/__qa/expired/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/expired/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "revoked",
+      "label": "Revoked private access",
+      "appEntry": "http://127.0.0.1:4175/__qa/revoked/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/revoked/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "republished",
+      "label": "Republished roadmap",
+      "appEntry": "http://127.0.0.1:4175/__qa/republished/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/republished/golfer",
+      "oldGolferEntry": "http://127.0.0.1:4175/__qa/republished/old-golfer",
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    }
+  ],
+  "acceptanceScenarios": [
+    {
+      "id": "A",
+      "label": "First self-serve roadmap",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "partial_invalidated",
+      "browserVisualResult": "partial_invalidated",
+      "manualReviewResult": "partial_invalidated",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r4/scenario-af-report.md"
+      ],
+      "blockerIds": [
+        "BROWSER-B-CSP-BLOB-MEDIA"
+      ],
+      "notes": [
+        "Partial diagnostic run only; candidate invalidation stopped the remaining A journey. This is not acceptance evidence."
+      ]
+    },
+    {
+      "id": "B",
+      "label": "Swing-video evidence",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "failed",
+      "browserVisualResult": "failed",
+      "manualReviewResult": "defect_confirmed",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r4/scenario-bcd-report.md",
+        "output/playwright/candidate-functional-final-20260811-r4/bcd-b-r4-defect-csp-video-metadata-1440.md",
+        "output/playwright/candidate-functional-final-20260811-r4/bcd-b-r4-defect-csp-video-metadata-1440.png",
+        "output/playwright/candidate-functional-final-20260811-r4/.playwright-cli/console-2026-08-11T06-34-50-436Z.log",
+        "output/playwright/candidate-functional-final-20260811-r4/.playwright-cli/traces/trace-1786430023693.trace",
+        "output/playwright/candidate-functional-final-20260811-r4/.playwright-cli/traces/trace-1786430023693.network"
+      ],
+      "blockerIds": [
+        "BROWSER-B-CSP-BLOB-MEDIA"
+      ],
+      "notes": [
+        "Confirmed CSP/blob media defect prevents the ordinary browser video-upload flow before persistence. Scenario B is not accepted."
+      ]
+    },
+    {
+      "id": "C",
+      "label": "Practice-drill reuse",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_executed_invalidated",
+      "browserVisualResult": "not_executed_invalidated",
+      "manualReviewResult": "not_executed_invalidated",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r4/scenario-bcd-report.md"
+      ],
+      "blockerIds": [
+        "BROWSER-B-CSP-BLOB-MEDIA"
+      ],
+      "notes": [
+        "Scenario C was not started after candidate-wide invalidation. No acceptance claim."
+      ]
+    },
+    {
+      "id": "D",
+      "label": "Launch-monitor import and comparison",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_executed_invalidated",
+      "browserVisualResult": "not_executed_invalidated",
+      "manualReviewResult": "not_executed_invalidated",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r4/scenario-bcd-report.md"
+      ],
+      "blockerIds": [
+        "BROWSER-B-CSP-BLOB-MEDIA"
+      ],
+      "notes": [
+        "Scenario D was not started after candidate-wide invalidation. No acceptance claim."
+      ]
+    },
+    {
+      "id": "E",
+      "label": "Living journey and phase transition",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "partial_invalidated",
+      "browserVisualResult": "partial_invalidated",
+      "manualReviewResult": "partial_invalidated",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r4/scenario-eg-report.md"
+      ],
+      "blockerIds": [
+        "BROWSER-B-CSP-BLOB-MEDIA"
+      ],
+      "notes": [
+        "Partial diagnostic run only; candidate invalidation stopped the remaining E journey. This is not acceptance evidence."
+      ]
+    },
+    {
+      "id": "F",
+      "label": "Return and management",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_executed_invalidated",
+      "browserVisualResult": "not_executed_invalidated",
+      "manualReviewResult": "not_executed_invalidated",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r4/scenario-af-report.md"
+      ],
+      "blockerIds": [
+        "BROWSER-B-CSP-BLOB-MEDIA"
+      ],
+      "notes": [
+        "Scenario F was not started after candidate-wide invalidation. No acceptance claim."
+      ]
+    },
+    {
+      "id": "G",
+      "label": "Golfer mobile and print experience",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_executed_invalidated",
+      "browserVisualResult": "not_executed_invalidated",
+      "manualReviewResult": "not_executed_invalidated",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r4/scenario-eg-report.md"
+      ],
+      "blockerIds": [
+        "BROWSER-B-CSP-BLOB-MEDIA"
+      ],
+      "notes": [
+        "Scenario G was not started after candidate-wide invalidation. No acceptance claim."
+      ]
+    },
+    {
+      "id": "H",
+      "label": "SaaS billing in test mode",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_executed_invalidated",
+      "browserVisualResult": "not_executed_invalidated",
+      "manualReviewResult": "not_executed_invalidated",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [
+        "BROWSER-B-CSP-BLOB-MEDIA"
+      ],
+      "notes": [
+        "Scenario H was not started after candidate-wide invalidation. No acceptance claim."
+      ]
+    }
+  ],
+  "browserReview": {
+    "unexplainedConsoleErrors": null,
+    "failedNetworkRequests": null,
+    "keyboardReview": "not_recorded",
+    "touchEquivalentReview": "not_recorded",
+    "reducedMotionReview": "not_recorded",
+    "reflowAndOverflowReview": "not_recorded",
+    "visualReviewer": null
+  },
+  "completionEligibility": {
+    "eligible": false,
+    "invalidated": true,
+    "diagnosticEvidenceOnly": true,
+    "blockerIds": [
+      "BROWSER-B-CSP-BLOB-MEDIA"
+    ],
+    "reason": "Candidate r4 is ineligible. Scenario B confirmed that CSP blocks the blob: video-metadata path, and acceptance A-H stopped incomplete. Every retained browser artifact is diagnostic only and must not be promoted as acceptance evidence."
+  }
+}

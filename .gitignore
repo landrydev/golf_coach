@@ -1,0 +1,40 @@
+# Operating-system and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Dependencies and generated application output anywhere in the workspace
+**/node_modules/
+**/.next/
+**/.vinext/
+**/dist/
+**/out/
+**/coverage/
+**/.wrangler/
+**/.work/
+**/work/
+**/outputs/
+
+# Browser-test artifacts
+**/playwright-report/
+**/test-results/
+**/blob-report/
+
+# Local databases and runtime state
+*.sqlite
+*.sqlite3
+*.db
+
+# Environment files and credentials; documented examples remain trackable
+**/.env
+**/.env.*
+!**/.env.example
+*.pem
+
+# Debug and local process logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*

@@ -1,0 +1,91 @@
+- generic [ref=f2e2]:
+  - link "Skip to main content" [ref=f2e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=f2e4]:
+    - link "Foothills Golf Studio Roadmap home" [ref=f2e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=f2e6]: FG
+      - generic [ref=f2e7]: Foothills Golf Studio
+    - generic [ref=f2e8]:
+      - generic [ref=f2e9]: CR
+      - button "Sign out" [ref=f2e11] [cursor=pointer]
+  - main [ref=f2e12]:
+    - generic [ref=f2e13]:
+      - generic [ref=f2e15]:
+        - generic [ref=f2e16]: Plan & billing
+        - heading "One focused workspace for an independent instructor." [level=1] [ref=f2e17]
+        - paragraph [ref=f2e18]: Billing is handled by Stripe. Roadmap never receives or stores your full card number. You can review the exact amount and terms before any charge.
+      - note [ref=f2e19]:
+        - strong [ref=f2e20]: Price is not yet approved for a live charge.
+        - generic [ref=f2e21]: Planning amounts remain pricing hypotheses. Checkout stays unavailable until the exact production price and policy are approved, configured, and explicitly enabled.
+      - generic [ref=f2e22]:
+        - generic [ref=f2e23]:
+          - heading "Solo plan" [level=2] [ref=f2e24]
+          - generic [ref=f2e25]: No subscription
+        - paragraph [ref=f2e26]: One coach identity, coaching packages, private golfer roadmaps, living plan updates, controlled sharing, and account/data controls. This is the instructor's Roadmap SaaS subscription; it never represents a golfer's coaching-package purchase.
+        - status [ref=f2e27]:
+          - strong [ref=f2e28]: No Stripe subscription is recorded.
+          - generic [ref=f2e29]: No paid access or charge is assumed. Checkout remains unavailable unless every configured commercial dependency is ready.
+        - paragraph [ref=f2e30]: No webhook-confirmed Stripe subscription is recorded for this account.
+        - generic [ref=f2e31]:
+          - button "Review secure checkout" [disabled] [ref=f2e33]
+          - button "Manage an existing subscription" [disabled] [ref=f2e35]
+          - button "Refresh billing status" [disabled] [ref=f2e37]
+        - paragraph [ref=f2e38]: No charge can be initiated from this environment.
+      - generic [ref=f2e39]:
+        - generic [ref=f2e40]:
+          - heading "Commercial activation checklist" [level=2] [ref=f2e41]
+          - generic [ref=f2e42]: External activation pending
+        - paragraph [ref=f2e43]:
+          - strong [ref=f2e44]: CONFIGURATION READY — EXTERNAL ACTIVATION PENDING.
+          - text: The candidate fails closed when an owner decision, provider account, or secret is absent. This checklist reports readiness categories only; it never displays secret values.
+        - list "Commercial activation dependencies" [ref=f2e45]:
+          - listitem [ref=f2e46]:
+            - generic [ref=f2e47]:
+              - strong [ref=f2e48]: Public identity boundary
+              - generic [ref=f2e49]: "Owner/provider input still required: public domain, OIDC issuer and client, approved signup policy, and secret/session configuration."
+            - generic [ref=f2e50]: Pending
+          - listitem [ref=f2e51]:
+            - generic [ref=f2e52]:
+              - strong [ref=f2e53]: Exact Roadmap Solo offer
+              - generic [ref=f2e54]: "Owner input still required: exact price, trial, cancellation, pause/resume, tax, refund, failed-payment, data-after-end, and support terms."
+            - generic [ref=f2e55]: Pending
+          - listitem [ref=f2e56]:
+            - generic [ref=f2e57]:
+              - strong [ref=f2e58]: Stripe test/live provider configuration
+              - generic [ref=f2e59]: "Provider input still required: Stripe account, Product/Price, test or live credentials, webhook signing secret, Portal configuration, and Checkout lifetime."
+            - generic [ref=f2e60]: Pending
+          - listitem [ref=f2e61]:
+            - generic [ref=f2e62]:
+              - strong [ref=f2e63]: Subscription entitlement policy
+              - generic [ref=f2e64]: "Owner input still required: the statuses and Prices that grant product access, plus failed-payment and ended-account consequences."
+            - generic [ref=f2e65]: Pending
+          - listitem [ref=f2e66]:
+            - generic [ref=f2e67]:
+              - strong [ref=f2e68]: Controlled commercial activation
+              - generic [ref=f2e69]: Checkout remains fail-closed. No charge can start until every dependency above is supplied and the explicit activation flag is enabled.
+            - generic [ref=f2e70]: Pending
+      - generic [ref=f2e71]:
+        - heading "Roadmap billing and coaching packages are separate" [level=2] [ref=f2e73]
+        - list "Separate payment paths" [ref=f2e74]:
+          - listitem [ref=f2e75]:
+            - generic [ref=f2e76]:
+              - strong [ref=f2e77]: Roadmap SaaS subscription
+              - generic [ref=f2e78]: Pays for this instructor workspace. Stripe Checkout, signed webhooks, reconciliation, and the Stripe Portal control this account state.
+          - listitem [ref=f2e79]:
+            - generic [ref=f2e80]:
+              - strong [ref=f2e81]: Your golfer coaching package
+              - generic [ref=f2e82]: Uses the external booking, purchase, or contact link you choose. Roadmap does not charge the golfer or infer that an external click became a sale.
+            - link "Review coaching packages" [ref=f2e83] [cursor=pointer]:
+              - /url: /app/packages
+  - navigation "Mobile coach workspace" [ref=f2e84]:
+    - link "Overview" [ref=f2e85] [cursor=pointer]:
+      - /url: /app
+    - link "Golfers" [ref=f2e86] [cursor=pointer]:
+      - /url: /app/golfers
+    - link "Drills" [ref=f2e87] [cursor=pointer]:
+      - /url: /app/coaching/drills
+    - link "Media" [ref=f2e88] [cursor=pointer]:
+      - /url: /app/media
+    - link "Settings" [ref=f2e89] [cursor=pointer]:
+      - /url: /app/settings

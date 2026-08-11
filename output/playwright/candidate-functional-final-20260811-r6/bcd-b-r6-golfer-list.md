@@ -1,0 +1,99 @@
+- generic [ref=e2]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=e4]:
+    - link "Foothills Golf Studio Roadmap home" [ref=e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=e6]: FG
+      - generic [ref=e7]:
+        - strong [ref=e8]: Foothills Golf Studio
+        - generic [ref=e9]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=e10]:
+      - link "Overview" [ref=e11] [cursor=pointer]:
+        - /url: /app
+      - link "Golfers" [ref=e12] [cursor=pointer]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=e13] [cursor=pointer]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=e14] [cursor=pointer]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=e15] [cursor=pointer]:
+        - /url: /app/media
+      - link "Packages" [ref=e16] [cursor=pointer]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=e17] [cursor=pointer]:
+        - /url: /app/billing
+      - link "Settings" [ref=e18] [cursor=pointer]:
+        - /url: /app/settings
+    - generic [ref=e19]:
+      - generic [ref=e20]: CR
+      - generic [ref=e21]:
+        - strong [ref=e22]: Coach Rowan
+        - generic [ref=e23]: visual.coach@example.test
+      - button "Sign out" [ref=e25] [cursor=pointer]
+  - main [ref=e26]:
+    - generic [ref=e245]:
+      - generic [ref=e246]:
+        - generic [ref=e247]:
+          - generic [ref=e248]: Golfer workspace
+          - heading "Find the golfer, then open the next coaching task." [level=1] [ref=e513]
+          - paragraph [ref=e250]: Search and filters use only this coach account’s stored records. Roadmap remains a coaching workspace rather than a contact-management system.
+        - link "Add a golfer" [ref=e514] [cursor=pointer]:
+          - /url: /app/golfers/new
+      - search [ref=e515]:
+        - generic [ref=e516]:
+          - generic [ref=e517]: Search golfers
+          - searchbox "Search golfers" [ref=e518]
+        - generic [ref=e519]:
+          - text: Record status
+          - combobox "Record status" [ref=e520]:
+            - option "All records" [selected]
+            - option "Setup incomplete"
+            - option "Reviewable drafts"
+            - option "Published"
+            - option "Paused"
+            - option "Completed"
+            - option "Archived"
+            - option "Deletion review"
+        - generic [ref=e521]:
+          - text: Current phase
+          - combobox "Current phase" [ref=e522]:
+            - option "All phase states" [selected]
+            - option "Active phase"
+            - option "Paused phase"
+            - option "Planned phase"
+            - option "Completed phase"
+            - option "No phase yet"
+        - generic [ref=e523]:
+          - text: Review state
+          - combobox "Review state" [ref=e524]:
+            - option "All review states" [selected]
+            - option "Needs coach review"
+            - option "Draft phase review"
+            - option "No draft phase review"
+        - generic [ref=e525]:
+          - text: Sort
+          - combobox "Sort" [ref=e526]:
+            - option "Needs attention first" [selected]
+            - option "Recently updated"
+            - option "Golfer name"
+            - option "Phase order"
+        - button "Apply" [ref=e528] [cursor=pointer]
+      - region [ref=e529]:
+        - generic [ref=e531]:
+          - generic [ref=e532]: Results
+          - heading "1 golfer record" [level=2] [ref=e533]
+        - list [ref=e534]:
+          - listitem [ref=e535]:
+            - generic [ref=e536]:
+              - strong [ref=e537]: Jordan Synthetic
+              - generic [ref=e538]: No development plan
+              - generic [ref=e539]: golfer.4.1.visual.coach@example.test · Updated Aug 11, 2026
+            - generic [ref=e540]:
+              - generic [ref=e541]: setup incomplete
+              - generic [ref=e542]: "Phase 1: Own centered contact (active)"
+              - strong [ref=e543]: Coach review needed
+            - generic [ref=e544]:
+              - generic [ref=e545]: Complete the minimum goal and coach-authored roadmap.
+              - link "Continue setup" [ref=e546] [cursor=pointer]:
+                - /url: /app/golfers/fa23061a-1425-4adc-ae16-11d4d0a23026/complete

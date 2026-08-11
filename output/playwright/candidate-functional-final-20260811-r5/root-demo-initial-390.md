@@ -1,0 +1,55 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - link "Roadmap" [ref=e4] [cursor=pointer]:
+      - /url: /
+    - link "Sign in" [ref=e5] [cursor=pointer]:
+      - /url: /auth/login?return_to=%2Fapp
+  - status [ref=e6]: Interactive synthetic demo — fictional records, editable examples, no saved data
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - text: Fictional golfer · Mark Chen
+        - heading "A calm view of what matters now." [level=1] [ref=e10]
+        - paragraph [ref=e11]: This resettable example shows realistic coach-authored records across two phases. It does not prescribe instruction or promise improvement.
+      - button "Reset demo" [ref=e12] [cursor=pointer]
+    - navigation "Synthetic roadmap sections" [ref=e13]:
+      - button "Now" [pressed] [ref=e14] [cursor=pointer]
+      - button "Practice" [ref=e15] [cursor=pointer]
+      - button "Media & data" [ref=e16] [cursor=pointer]
+      - button "Journey" [ref=e17] [cursor=pointer]
+    - region [ref=e18]:
+      - generic [ref=e19]:
+        - text: Phase 2 of 3 · Current
+        - heading "Carry the contact pattern into variable targets." [level=2] [ref=e20]
+        - paragraph [ref=e21]: Coach Rowan selected this priority after two lessons, two practice assignments, Mark’s check-in, one swing comparison, and a small launch-monitor sample.
+      - generic [ref=e22]:
+        - article [ref=e23]:
+          - text: Current practice
+          - heading "Three-target start-line ladder" [level=3] [ref=e24]
+          - paragraph [ref=e25]: Two short sets of nine balls. Stop if the cue becomes forced.
+          - button "Open drill" [ref=e26] [cursor=pointer]
+        - article [ref=e27]:
+          - text: Coach’s next check
+          - heading "Observe start line under a changed target." [level=3] [ref=e28]
+          - paragraph [ref=e29]: No score or permanent-change claim is inferred from this practice sample.
+          - button "See selected evidence" [ref=e30] [cursor=pointer]
+      - list [ref=e31]:
+        - listitem [ref=e32]:
+          - generic [ref=e33]: "01"
+          - generic [ref=e34]:
+            - generic [ref=e35]: Complete
+            - strong [ref=e36]: Establish a repeatable contact reference
+        - listitem [ref=e37]:
+          - generic [ref=e38]: "02"
+          - generic [ref=e39]:
+            - generic [ref=e40]: Current
+            - strong [ref=e41]: Transfer the reference across targets
+        - listitem [ref=e42]:
+          - generic [ref=e43]: "03"
+          - generic [ref=e44]:
+            - generic [ref=e45]: Planned
+            - strong [ref=e46]: Test the pattern in on-course decisions
+    - generic [ref=e47]:
+      - paragraph [ref=e48]: This demo resets locally and saves nothing. A real private roadmap is coach-authored, access-controlled, and revocable.
+      - link "Open the real coach workspace" [ref=e49] [cursor=pointer]:
+        - /url: /auth/login?return_to=%2Fapp

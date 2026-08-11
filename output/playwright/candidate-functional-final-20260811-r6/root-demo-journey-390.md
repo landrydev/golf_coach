@@ -1,0 +1,76 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - link "Roadmap" [ref=e4] [cursor=pointer]:
+      - /url: /
+    - link "Sign in" [ref=e5] [cursor=pointer]:
+      - /url: /auth/login?return_to=%2Fapp
+  - status [ref=e6]: Interactive synthetic demo — fictional records, editable examples, no saved data
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - text: Fictional golfer · Mark Chen
+        - heading "A calm view of what matters now." [level=1] [ref=e10]
+        - paragraph [ref=e11]: This resettable example shows realistic coach-authored records across two phases. It does not prescribe instruction or promise improvement.
+      - button "Reset demo" [ref=e12] [cursor=pointer]
+    - navigation "Synthetic roadmap sections" [ref=e13]:
+      - button "Now" [ref=e14] [cursor=pointer]
+      - button "Practice" [ref=e15] [cursor=pointer]
+      - button "Media & data" [ref=e16] [cursor=pointer]
+      - button "Journey" [active] [pressed] [ref=e17] [cursor=pointer]
+    - region [ref=e106]:
+      - generic [ref=e107]:
+        - text: Living journey
+        - heading "The evidence behind a phase decision." [level=2] [ref=e108]
+      - generic [ref=e109]:
+        - text: Filter entries
+        - combobox "Filter entries" [ref=e110]:
+          - option "All activity" [selected]
+          - option "Lessons"
+          - option "Practice"
+          - option "Evidence and review"
+      - list [ref=e111]:
+        - listitem [ref=e112]:
+          - time [ref=e113]: Apr 12
+          - generic [ref=e114]:
+            - text: Lesson
+            - heading "Starting assessment" [level=3] [ref=e115]
+            - paragraph [ref=e116]: Coach recorded the goal, starting point, strengths, and evidence limits.
+        - listitem [ref=e117]:
+          - time [ref=e118]: Apr 18
+          - generic [ref=e119]:
+            - text: Practice
+            - heading "Low-tee contact gate" [level=3] [ref=e120]
+            - paragraph [ref=e121]: First assignment completed; the golfer reported appropriate difficulty.
+        - listitem [ref=e122]:
+          - time [ref=e123]: May 03
+          - generic [ref=e124]:
+            - text: Lesson
+            - heading "Contact reference follow-up" [level=3] [ref=e125]
+            - paragraph [ref=e126]: Golfer learning and the coach’s next check were retained.
+        - listitem [ref=e127]:
+          - time [ref=e128]: May 10
+          - generic [ref=e129]:
+            - text: Check-in
+            - heading "Second assignment needed help" [level=3] [ref=e130]
+            - paragraph [ref=e131]: The bounded request-help state became selected review context.
+        - listitem [ref=e132]:
+          - time [ref=e133]: May 24
+          - generic [ref=e134]:
+            - text: Media and data
+            - heading "Current evidence recorded" [level=3] [ref=e135]
+            - paragraph [ref=e136]: Two selected metrics and a current synthetic swing image were paired with limitations.
+        - listitem [ref=e137]:
+          - time [ref=e138]: May 26
+          - generic [ref=e139]:
+            - text: Phase review
+            - heading "Advance to variable targets" [level=3] [ref=e140]
+            - paragraph [ref=e141]: The coach advanced the plan and published the next phase after review.
+      - article [ref=e142]:
+        - text: Phase 1 review · advanced
+        - heading "Enough repeated evidence to change the next question." [level=3] [ref=e143]
+        - paragraph [ref=e144]: "Sources selected: lessons 1–2, practice assignments 1–2, golfer check-in, baseline/current image pair, and one limited launch session."
+        - text: "Uncertainty retained: on-course transfer has not yet been observed."
+    - generic [ref=e47]:
+      - paragraph [ref=e48]: This demo resets locally and saves nothing. A real private roadmap is coach-authored, access-controlled, and revocable.
+      - link "Open the real coach workspace" [ref=e49] [cursor=pointer]:
+        - /url: /auth/login?return_to=%2Fapp

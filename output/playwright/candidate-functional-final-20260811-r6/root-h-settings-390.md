@@ -1,0 +1,151 @@
+- generic [ref=e2]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e4]:
+    - link "Foothills Golf Studio Roadmap home" [ref=e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=e6]: FG
+      - generic [ref=e7]: Foothills Golf Studio
+    - generic [ref=e8]:
+      - generic [ref=e9]: CR
+      - button "Sign out" [ref=e11] [cursor=pointer]
+  - main [ref=e12]:
+    - generic [ref=e13]:
+      - generic [ref=e15]:
+        - generic [ref=e16]: Settings
+        - heading "Your name is enough to begin." [level=1] [ref=e133]
+        - paragraph [ref=e18]: Keep branding restrained and recognizable. The golfer’s goal, your judgment, and the evidence hierarchy remain more important than decoration.
+      - generic [ref=e134]:
+        - group "Identity your golfers recognize" [ref=e136]:
+          - generic [ref=e138]:
+            - generic [ref=e139]:
+              - text: Coach display name
+              - textbox "Coach display name" [ref=e140]: Coach Rowan
+            - generic [ref=e141]:
+              - text: Business name (optional)
+              - textbox "Business name (optional)" [ref=e142]: Foothills Golf Studio
+            - generic [ref=e143]:
+              - text: Professional title (optional)
+              - textbox "Professional title (optional)" [ref=e144]: Independent golf instructor
+            - generic [ref=e145]:
+              - text: Contact email
+              - textbox "Contact email" [ref=e146]: visual.coach@example.test
+            - generic [ref=e147]:
+              - text: Contact phone (optional)
+              - textbox "Contact phone (optional)" [ref=e148]
+            - generic [ref=e149]:
+              - text: Website (optional)
+              - textbox "Website (optional)" [ref=e150]:
+                - /placeholder: https://coach.example.ca
+                - text: https://coach.example.ca/
+            - generic [ref=e151]:
+              - text: City (optional)
+              - textbox "City (optional)" [ref=e152]:
+                - /placeholder: Calgary
+                - text: Calgary
+            - generic [ref=e153]:
+              - text: Province or territory (optional)
+              - textbox "Province or territory (optional)" [ref=e154]:
+                - /placeholder: Alberta
+                - text: Alberta
+            - generic [ref=e155]:
+              - text: Short coaching description (optional)
+              - textbox "Short coaching description (optional)" [ref=e156]: Clear priorities, honest evidence, and practical next steps.
+            - generic [ref=e157]:
+              - text: Accent colour
+              - textbox "Accent colour Choose a dark accent. Roadmap rejects colours that would make text hard to read." [ref=e158]: "#176b55"
+              - generic [ref=e159]: Choose a dark accent. Roadmap rejects colours that would make text hard to read.
+          - generic "Live accent colour preview" [ref=e160]:
+            - generic [ref=e161]: CR
+            - generic [ref=e162]:
+              - generic [ref=e163]: Private coaching plan
+              - strong [ref=e164]: Foothills Golf Studio
+            - generic [ref=e165]: Example primary action
+        - alert [ref=e166]
+        - button "Save coach identity" [ref=e168] [cursor=pointer]
+      - region [ref=e169]:
+        - generic [ref=e170]:
+          - generic [ref=e171]:
+            - text: Optional branding
+            - heading "Logo, coach photo, and live preview" [level=2] [ref=e172]
+          - link "Open media library" [ref=e173] [cursor=pointer]:
+            - /url: /app/media
+        - paragraph [ref=e174]: Crop a private image here or reuse one already uploaded. Branding is optional and stays within Roadmap’s restrained layout.
+        - generic [ref=e175]:
+          - article [ref=e176]:
+            - generic [ref=e177]: Current logo
+            - generic [ref=e178]: FG
+            - strong [ref=e180]: Not added — Roadmap initials are used
+          - article [ref=e181]:
+            - generic [ref=e182]: Current coach photo
+            - generic [ref=e183]: FG
+            - strong [ref=e185]: Not added — Roadmap initials are used
+        - generic [ref=e186]:
+          - group "Choose one branding slot" [ref=e187]:
+            - generic [ref=e189]:
+              - generic [ref=e190]:
+                - radio "Logo (3:1)" [checked] [ref=e191]
+                - text: Logo (3:1)
+              - generic [ref=e192]:
+                - radio "Coach photo (square)" [ref=e193]
+                - text: Coach photo (square)
+          - group "Choose the source" [ref=e194]:
+            - generic [ref=e196]:
+              - generic [ref=e197]:
+                - radio "Upload and crop" [checked] [ref=e198]
+                - text: Upload and crop
+              - generic [ref=e199]:
+                - radio "Reuse library image" [ref=e200]
+                - text: Reuse library image
+          - generic [ref=e201]:
+            - generic [ref=e202]:
+              - text: Image file
+              - button "Image file" [ref=e203]
+            - generic [ref=e204]:
+              - text: Accessible description
+              - textbox "Accessible description" [ref=e205]:
+                - /placeholder: Foothills Golf Studio logo
+            - generic [ref=e206]: Choose an image to preview the crop
+            - generic [ref=e208]:
+              - generic [ref=e209]:
+                - text: Zoom
+                - slider "Zoom" [ref=e210]: "1"
+              - generic [ref=e211]:
+                - text: Horizontal
+                - slider "Horizontal" [ref=e212]: "0"
+              - generic [ref=e213]:
+                - text: Vertical
+                - slider "Vertical" [ref=e214]: "0"
+          - generic [ref=e215]:
+            - generic [ref=e216]: FG
+            - generic [ref=e217]:
+              - generic [ref=e218]: Private coaching plan
+              - strong [ref=e219]: Foothills Golf Studio
+          - button "Save selected branding" [ref=e220] [cursor=pointer]
+      - generic [ref=e221]:
+        - heading "Packages and Roadmap billing" [level=2] [ref=e222]
+        - paragraph [ref=e223]: Your golfer-facing coaching packages and your Roadmap SaaS subscription are separate. Roadmap never processes the golfer's coaching-package payment.
+        - generic [ref=e224]:
+          - link "Manage coaching packages" [ref=e225] [cursor=pointer]:
+            - /url: /app/packages
+          - link "Review Roadmap plan and billing" [ref=e226] [cursor=pointer]:
+            - /url: /app/billing
+      - generic [ref=e227]:
+        - heading "Privacy and account controls" [level=2] [ref=e228]
+        - paragraph [ref=e126]: Authenticated JSON exports download directly. Deletion can only be submitted for identity and retention review; nothing is removed automatically.
+        - generic [ref=e229]:
+          - link "Review or revoke active private access" [ref=e230] [cursor=pointer]:
+            - /url: /app/settings/shares
+          - link "Export data or request deletion review" [ref=e231] [cursor=pointer]:
+            - /url: /app/settings/data
+  - navigation "Mobile coach workspace" [ref=e127]:
+    - link "Overview" [ref=e128] [cursor=pointer]:
+      - /url: /app
+    - link "Golfers" [ref=e129] [cursor=pointer]:
+      - /url: /app/golfers
+    - link "Drills" [ref=e130] [cursor=pointer]:
+      - /url: /app/coaching/drills
+    - link "Media" [ref=e131] [cursor=pointer]:
+      - /url: /app/media
+    - link "Settings" [active] [ref=e132] [cursor=pointer]:
+      - /url: /app/settings

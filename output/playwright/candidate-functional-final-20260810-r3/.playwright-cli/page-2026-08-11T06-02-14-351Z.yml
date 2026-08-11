@@ -1,0 +1,51 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - link "Roadmap" [ref=e4] [cursor=pointer]:
+      - /url: /
+    - link "Sign in" [ref=e5] [cursor=pointer]:
+      - /url: /auth/login?return_to=%2Fapp
+  - status [ref=e6]: Interactive synthetic demo — fictional records, editable examples, no saved data
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - text: Fictional golfer · Mark Chen
+        - heading "A calm view of what matters now." [level=1] [ref=e10]
+        - paragraph [ref=e11]: This resettable example shows realistic coach-authored records across two phases. It does not prescribe instruction or promise improvement.
+      - button "Reset demo" [ref=e12] [cursor=pointer]
+    - navigation "Synthetic roadmap sections" [ref=e13]:
+      - button "Now" [ref=e14] [cursor=pointer]
+      - button "Practice" [ref=e15] [cursor=pointer]
+      - button "Media & data" [active] [pressed] [ref=e16] [cursor=pointer]
+      - button "Journey" [ref=e17] [cursor=pointer]
+    - region [ref=e77]:
+      - generic [ref=e78]:
+        - text: Coach-selected evidence · exact units preserved
+        - heading "A small comparison, not a data dump." [level=2] [ref=e79]
+        - paragraph [ref=e80]: "Coach interpretation: this limited range sample supports checking start line again under variable targets."
+      - generic [ref=e81]:
+        - img "Current abstract down-the-line synthetic swing illustration" [ref=e83]
+        - generic [ref=e84]:
+          - text: Synthetic swing-image pair
+          - heading "Current · May 24" [level=3] [ref=e85]
+          - paragraph [ref=e86]: "Coach context: compare the setup reference only. Roadmap does not infer or diagnose a movement pattern."
+          - generic [ref=e87]:
+            - button "Baseline" [ref=e88] [cursor=pointer]
+            - button "Current" [pressed] [ref=e89] [cursor=pointer]
+      - generic [ref=e90]:
+        - article [ref=e91]:
+          - generic [ref=e92]: Carry
+          - strong [ref=e93]: 142 → 148 yd
+          - generic [ref=e94]: +6 yd · same stored unit
+        - article [ref=e95]:
+          - generic [ref=e96]: Launch angle
+          - strong [ref=e97]: 15.1 → 15.8°
+          - generic [ref=e98]: +0.7° · same stored unit
+        - article [ref=e99]:
+          - generic [ref=e100]: Sample
+          - strong [ref=e101]: 8 → 9 shots
+          - generic [ref=e102]: Limited synthetic range sets
+      - paragraph [ref=e103]: "Limitation: different days and small samples; this comparison is not proof of an on-course outcome."
+    - generic [ref=e47]:
+      - paragraph [ref=e48]: This demo resets locally and saves nothing. A real private roadmap is coach-authored, access-controlled, and revocable.
+      - link "Open the real coach workspace" [ref=e49] [cursor=pointer]:
+        - /url: /auth/login?return_to=%2Fapp

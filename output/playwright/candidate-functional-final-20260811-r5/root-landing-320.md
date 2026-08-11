@@ -1,0 +1,275 @@
+- generic [ref=f1e2]:
+  - link "Skip to main content" [ref=f1e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - banner [ref=f1e4]:
+    - generic [ref=f1e5]:
+      - link "Roadmap home" [ref=f1e6] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f1e7]: R
+        - generic [ref=f1e8]: Roadmap
+      - link "Open Roadmap" [ref=f1e10] [cursor=pointer]:
+        - /url: /auth/login?return_to=%2Fapp
+  - main [ref=f1e11]:
+    - region [ref=f1e12]:
+      - generic [ref=f1e13]:
+        - generic [ref=f1e14]:
+          - paragraph [ref=f1e15]: For independent golf instructors across Canada
+          - heading "Sell the plan, not another hour." [level=1] [ref=f1e16]
+          - paragraph [ref=f1e17]: Turn one assessment into a personalized, coach-branded roadmap that shows a golfer what comes first, why it matters, and which lesson package fits.
+          - generic [ref=f1e18]:
+            - link "Start your first roadmap" [ref=f1e19] [cursor=pointer]:
+              - /url: /auth/login?return_to=%2Fapp
+              - text: Start your first roadmap
+              - generic [ref=f1e20]: →
+            - link "See the fictional sample" [ref=f1e21] [cursor=pointer]:
+              - /url: "#sample"
+          - paragraph [ref=f1e22]: New here? The same secure identity entry handles sign-in and account creation when the selected provider enables signup.
+          - list "Key product assurances" [ref=f1e23]:
+            - listitem [ref=f1e24]: No sales call
+            - listitem [ref=f1e25]: No custom proposal
+            - listitem [ref=f1e26]: Your coaching method stays yours
+        - generic "Fictional roadmap preview" [ref=f1e27]:
+          - generic [ref=f1e28]:
+            - generic [ref=f1e29]:
+              - generic [ref=f1e30]:
+                - paragraph [ref=f1e31]: Bennett Golf Coaching
+                - paragraph [ref=f1e32]: Prepared for Mark Chen
+              - generic [ref=f1e33]: Synthetic sample
+            - generic [ref=f1e34]:
+              - generic [ref=f1e35]: Your goal
+              - heading "Break 90 more consistently." [level=2] [ref=f1e36]
+              - paragraph [ref=f1e37]: Build a playable driver pattern so one or two holes no longer decide the round.
+            - generic [ref=f1e38]:
+              - generic [ref=f1e39]: "01"
+              - generic [ref=f1e40]:
+                - generic [ref=f1e41]: Recommended first
+                - heading "Start-Line Control" [level=3] [ref=f1e42]
+                - paragraph [ref=f1e43]: A more predictable initial direction at manageable speed.
+            - generic [ref=f1e44]:
+              - generic [ref=f1e45]: Connected to Maya’s existing 3-session package
+              - generic [ref=f1e46]: ↗
+          - paragraph [ref=f1e47]: Maya Bennett, Mark Chen, the coaching details, and outcomes are fictional. This is not a customer result.
+    - region [ref=f1e48]:
+      - generic [ref=f1e49]:
+        - paragraph [ref=f1e50]: 01 / The gap
+        - generic [ref=f1e51]:
+          - heading "A good assessment can still end with an unclear next step." [level=2] [ref=f1e52]
+          - paragraph [ref=f1e53]: You may see the pattern clearly while the golfer leaves with separate notes, clips, numbers, and advice—but no coherent picture of why structured coaching should continue.
+        - paragraph [ref=f1e54]: Roadmap brings the goal, your evidence, the sequence, and the appropriate first package into one calm development story.
+    - region [ref=f1e55]:
+      - generic [ref=f1e56]:
+        - generic [ref=f1e57]:
+          - generic [ref=f1e58]:
+            - paragraph [ref=f1e59]: One assessment. One clear handoff.
+            - heading "From coaching judgment to golfer clarity." [level=2] [ref=f1e60]
+          - paragraph [ref=f1e61]: Short, coach-owned inputs become a structured view the golfer can understand—without a custom report or mandatory onboarding.
+        - list [ref=f1e62]:
+          - listitem [ref=f1e63]:
+            - generic [ref=f1e64]: "01"
+            - heading "Add your coaching judgment" [level=3] [ref=f1e65]
+            - paragraph [ref=f1e66]: Record the golfer’s goal, your starting assessment, the priority barriers, and only the evidence that explains the decision.
+          - listitem [ref=f1e67]:
+            - generic [ref=f1e68]: "02"
+            - heading "Shape the development roadmap" [level=3] [ref=f1e69]
+            - paragraph [ref=f1e70]: Set three or four directional phases, choose what comes first, and connect it to a lesson package you already sell.
+          - listitem [ref=f1e71]:
+            - generic [ref=f1e72]: "03"
+            - heading "Preview and share" [level=3] [ref=f1e73]
+            - paragraph [ref=f1e74]: Review the golfer’s exact view, then hand off to your existing booking, purchase, or contact process.
+    - region [ref=f1e75]:
+      - generic [ref=f1e76]:
+        - generic [ref=f1e77]:
+          - generic [ref=f1e78]:
+            - paragraph [ref=f1e79]: Fictional sample · Mark Chen
+            - heading "See what the coach enters—and what the golfer understands." [level=2] [ref=f1e80]
+          - paragraph [ref=f1e81]: Synthetic coaching scenario. It demonstrates structure, not a validated result, timeline, or performance promise.
+        - article "Synthetic input and output example" [ref=f1e82]:
+          - region [ref=f1e83]:
+            - generic [ref=f1e84]:
+              - generic [ref=f1e85]: A
+              - generic [ref=f1e86]:
+                - paragraph [ref=f1e87]: Coach provides
+                - heading "Maya’s assessment" [level=3] [ref=f1e88]
+            - generic [ref=f1e89]:
+              - generic [ref=f1e90]:
+                - term [ref=f1e91]: Desired outcome
+                - definition [ref=f1e92]: Break 90 often enough that it no longer feels exceptional.
+              - generic [ref=f1e93]:
+                - term [ref=f1e94]: Strength to preserve
+                - definition [ref=f1e95]: Enough usable distance, with controlled-tempo mid-iron contact.
+              - generic [ref=f1e96]:
+                - term [ref=f1e97]: Primary pattern
+                - definition [ref=f1e98]: At higher speed, the ball can start right and curve farther right. Aiming left and slowing down protects some misses but introduces pulls.
+            - generic [ref=f1e99]:
+              - paragraph [ref=f1e100]: Priority barriers
+              - list [ref=f1e101]:
+                - listitem [ref=f1e102]: Unpredictable start direction
+                - listitem [ref=f1e103]: Protective aim-and-speed compensation
+                - listitem [ref=f1e104]: Course transfer not yet proven
+            - generic [ref=f1e105]:
+              - paragraph [ref=f1e106]: Evidence limit
+              - paragraph [ref=f1e107]: Ten shots are a small sample. No launch-monitor data was collected, and on-course penalty frequency is self-reported. This does not predict when Mark will break 90.
+          - region [ref=f1e108]:
+            - generic [ref=f1e109]:
+              - generic [ref=f1e110]: B
+              - generic [ref=f1e111]:
+                - paragraph [ref=f1e112]: Golfer sees
+                - heading "Mark’s development roadmap" [level=3] [ref=f1e113]
+              - generic [ref=f1e114]: Private view
+            - generic [ref=f1e115]:
+              - paragraph [ref=f1e116]: The goal
+              - paragraph [ref=f1e117]: “A clearer path to breaking 90—without one or two driver holes deciding the round.”
+            - list [ref=f1e118]:
+              - listitem [ref=f1e119]:
+                - generic [ref=f1e120]: "01"
+                - generic [ref=f1e121]:
+                  - generic [ref=f1e122]:
+                    - heading "Start-Line Control" [level=4] [ref=f1e123]
+                    - generic [ref=f1e124]: Recommended now
+                  - paragraph [ref=f1e125]: Make initial direction more predictable at manageable speed.
+              - listitem [ref=f1e126]:
+                - generic [ref=f1e127]: "02"
+                - generic [ref=f1e128]:
+                  - heading "Playable Driver Pattern" [level=4] [ref=f1e130]
+                  - paragraph [ref=f1e131]: Reduce the severe right miss and build one recognizable stock pattern.
+              - listitem [ref=f1e132]:
+                - generic [ref=f1e133]: "03"
+                - generic [ref=f1e134]:
+                  - heading "On-Course Transfer" [level=4] [ref=f1e136]
+                  - paragraph [ref=f1e137]: Test the pattern across targets, pressure, and club-choice decisions.
+              - listitem [ref=f1e138]:
+                - generic [ref=f1e139]: "04"
+                - generic [ref=f1e140]:
+                  - heading "Scoring Consolidation" [level=4] [ref=f1e142]
+                  - paragraph [ref=f1e143]: Compare driver penalties with the rest of the scoring evidence.
+            - generic [ref=f1e144]:
+              - generic [ref=f1e145]:
+                - paragraph [ref=f1e146]: Connected package
+                - heading "Start-Line Control Coaching Phase" [level=4] [ref=f1e147]
+                - paragraph [ref=f1e148]: Three 50-minute sessions · estimated five to seven weeks
+              - generic [ref=f1e149]: →
+            - paragraph [ref=f1e150]: Future phases may change as Mark’s pattern and on-course evidence change.
+        - link "Explore the resettable synthetic journey" [ref=f1e152] [cursor=pointer]:
+          - /url: /demo
+    - region [ref=f1e153]:
+      - generic [ref=f1e154]:
+        - generic [ref=f1e155]:
+          - generic [ref=f1e156]:
+            - paragraph [ref=f1e157]: Designed to sit above your workflow
+            - heading "Keep the tools and method that already work." [level=2] [ref=f1e158]
+          - paragraph [ref=f1e159]: Roadmap is a presentation and continuity layer. It is not a new coaching system or an all-in-one operations platform.
+        - generic [ref=f1e160]:
+          - article [ref=f1e161]:
+            - paragraph [ref=f1e162]: Works with
+            - heading "Your existing coaching stack" [level=3] [ref=f1e163]
+            - list [ref=f1e164]:
+              - listitem [ref=f1e165]: ✓ Assessment and lesson workflow
+              - listitem [ref=f1e166]: ✓ Swing video or analysis tools
+              - listitem [ref=f1e167]: ✓ Launch-monitor data when useful
+              - listitem [ref=f1e168]: ✓ Booking, payment, and contact links
+              - listitem [ref=f1e169]: ✓ Email, text, or normal client communication
+          - article [ref=f1e170]:
+            - paragraph [ref=f1e171]: Does not replace
+            - heading "The work only you can do" [level=3] [ref=f1e172]
+            - list [ref=f1e173]:
+              - listitem [ref=f1e174]: — Your judgment or coaching methodology
+              - listitem [ref=f1e175]: — Booking or payment processing
+              - listitem [ref=f1e176]: — Swing diagnosis or instruction
+              - listitem [ref=f1e177]: — Client messaging
+              - listitem [ref=f1e178]: — A full CRM or academy-management system
+        - generic [ref=f1e179]:
+          - generic [ref=f1e180]:
+            - paragraph [ref=f1e181]: Before you begin
+            - heading "Three things make a first roadmap." [level=3] [ref=f1e182]
+          - list [ref=f1e183]:
+            - listitem [ref=f1e184]:
+              - generic [ref=f1e185]: "1"
+              - text: A golfer’s desired outcome
+            - listitem [ref=f1e186]:
+              - generic [ref=f1e187]: "2"
+              - text: Your assessment and priority barriers
+            - listitem [ref=f1e188]:
+              - generic [ref=f1e189]: "3"
+              - text: One current package and its next-step link
+          - paragraph [ref=f1e190]: Logo, video, launch data, measurements, and a detailed biography are optional.
+    - region [ref=f1e191]:
+      - generic [ref=f1e192]:
+        - generic [ref=f1e193]:
+          - paragraph [ref=f1e194]: Built for one independent instructor
+          - heading "A focused solo plan, without a custom quote." [level=2] [ref=f1e195]
+          - paragraph [ref=f1e196]: Start in the product, build around a real assessment, and review the exact golfer experience before you share it.
+          - paragraph [ref=f1e197]: Roadmap does not promise a package sale. It helps you present your own recommendation clearly and gives the golfer room to decide.
+        - article "Solo workspace" [ref=f1e198]:
+          - generic [ref=f1e199]:
+            - generic [ref=f1e200]:
+              - paragraph [ref=f1e201]: Solo workspace
+              - paragraph [ref=f1e202]: Final price before charge
+            - generic [ref=f1e203]: CAD
+          - paragraph [ref=f1e204]: The complete Canadian-dollar price and terms will appear before you make any paid choice. Nothing on this page creates a charge.
+          - list [ref=f1e205]:
+            - listitem [ref=f1e206]: ✓ One coach identity with clean, standard branding
+            - listitem [ref=f1e207]: ✓ Roadmap templates, prompts, and plain-language guidance
+            - listitem [ref=f1e208]: ✓ Golfer records and roadmaps for ordinary solo-instructor use
+            - listitem [ref=f1e209]: ✓ Your current packages and external next-step links
+            - listitem [ref=f1e210]: ✓ Private golfer preview and sharing
+            - listitem [ref=f1e211]: ✓ A clear self-serve choice with no custom quote or sales call
+          - link "Open Roadmap" [ref=f1e212] [cursor=pointer]:
+            - /url: /auth/login?return_to=%2Fapp
+            - text: Open Roadmap
+            - generic [ref=f1e213]: →
+          - paragraph [ref=f1e214]: Exact recurrence, cancellation, pause, and refund details are shown before any paid confirmation.
+    - region [ref=f1e215]:
+      - generic [ref=f1e216]:
+        - generic [ref=f1e217]:
+          - paragraph [ref=f1e218]: Plain answers
+          - heading "Know what Roadmap is—and what it is not." [level=2] [ref=f1e219]
+          - paragraph [ref=f1e220]: "The first version stays deliberately narrow: a clearer path from assessment to an appropriate package recommendation."
+        - generic [ref=f1e221]:
+          - group [ref=f1e222]:
+            - generic "Do I have to change my coaching method? −" [ref=f1e223] [cursor=pointer]
+            - paragraph [ref=f1e224]: No. You provide and approve the goal, assessment, barriers, phases, evidence, progress signals, and package fit. Roadmap organizes your judgment; it does not diagnose or coach the golfer.
+          - group [ref=f1e225]:
+            - generic "Do I need a launch monitor or swing video? +" [ref=f1e226] [cursor=pointer]
+          - group [ref=f1e227]:
+            - generic "What does the golfer receive? +" [ref=f1e228] [cursor=pointer]
+          - group [ref=f1e229]:
+            - generic "Does Roadmap handle booking or payment? +" [ref=f1e230] [cursor=pointer]
+          - group [ref=f1e231]:
+            - generic "Is this for academies or multi-coach facilities? +" [ref=f1e232] [cursor=pointer]
+          - group [ref=f1e233]:
+            - generic "When will I see the price? +" [ref=f1e234] [cursor=pointer]
+    - region [ref=f1e235]:
+      - generic [ref=f1e236]:
+        - paragraph [ref=f1e237]: Your next assessment can become a clearer plan.
+        - heading "Start with one golfer and one package." [level=2] [ref=f1e238]
+        - paragraph [ref=f1e239]: Bring your coaching judgment. Roadmap helps you shape, preview, and share the story around it.
+        - link "Start your first roadmap" [ref=f1e240] [cursor=pointer]:
+          - /url: /auth/login?return_to=%2Fapp
+          - text: Start your first roadmap
+          - generic [ref=f1e241]: →
+  - contentinfo [ref=f1e242]:
+    - generic [ref=f1e243]:
+      - generic [ref=f1e244]:
+        - link "Roadmap home" [ref=f1e245] [cursor=pointer]:
+          - /url: /
+          - generic [ref=f1e246]: R
+          - generic [ref=f1e247]: Roadmap
+        - paragraph [ref=f1e248]: Coach-branded golf development roadmaps.
+      - generic [ref=f1e249]:
+        - paragraph [ref=f1e250]: For independent golf instructors across Canada.
+        - paragraph [ref=f1e251]: Roadmap is a working product name.
+      - navigation "Footer navigation" [ref=f1e252]:
+        - link "How it works" [ref=f1e253] [cursor=pointer]:
+          - /url: "#how-it-works"
+        - link "Fictional sample" [ref=f1e254] [cursor=pointer]:
+          - /url: "#sample"
+        - link "Solo workspace" [ref=f1e255] [cursor=pointer]:
+          - /url: "#pricing"
+        - link "Privacy" [ref=f1e256] [cursor=pointer]:
+          - /url: /privacy
+        - link "Terms" [ref=f1e257] [cursor=pointer]:
+          - /url: /terms
+        - link "Support" [ref=f1e258] [cursor=pointer]:
+          - /url: /support
+        - link "Open the app" [ref=f1e259] [cursor=pointer]:
+          - /url: /auth/login?return_to=%2Fapp

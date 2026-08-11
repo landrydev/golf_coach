@@ -1,0 +1,17 @@
+{
+  "name": "roadmap-assumption-driven-local-prototype",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5180 --strictPort",
+    "build": "vite build",
+    "start": "vite --host 127.0.0.1 --port 5180 --strictPort"
+  },
+  "dependencies": {
+    "vite": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {}
+}

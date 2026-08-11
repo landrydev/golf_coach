@@ -1,0 +1,108 @@
+- generic [ref=e2]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=e4]:
+    - link "Prairie Three Phase Golf Roadmap home" [ref=e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=e6]: PT
+      - generic [ref=e7]:
+        - strong [ref=e8]: Prairie Three Phase Golf
+        - generic [ref=e9]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=e10]:
+      - link "Overview" [ref=e11] [cursor=pointer]:
+        - /url: /app
+      - link "Golfers" [ref=e12] [cursor=pointer]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=e13] [cursor=pointer]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=e14] [cursor=pointer]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=e15] [cursor=pointer]:
+        - /url: /app/media
+      - link "Packages" [ref=e16] [cursor=pointer]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=e17] [cursor=pointer]:
+        - /url: /app/billing
+      - link "Settings" [ref=e18] [cursor=pointer]:
+        - /url: /app/settings
+    - generic [ref=e19]:
+      - generic [ref=e20]: CT
+      - generic [ref=e21]:
+        - strong [ref=e22]: Coach Three phases without
+        - generic [ref=e23]: qa.three-phase@example.test
+      - button "Sign out" [ref=e25] [cursor=pointer]
+  - main [ref=e26]:
+    - generic [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - generic [ref=e30]: Rich coaching workspace
+          - heading "Taylor Three Phase" [level=1] [ref=e135]
+          - paragraph [ref=e32]: Manage reusable drills, lesson lifecycle, evidence, media, launch-monitor data, reviews, and milestones without leaving this golfer record.
+        - generic [ref=e33]:
+          - link "Back to golfers" [ref=e136] [cursor=pointer]:
+            - /url: /app/golfers
+          - link "Media library" [ref=e137] [cursor=pointer]:
+            - /url: /app/media
+      - navigation "Rich coaching destinations" [ref=e138]:
+        - generic [ref=e139]:
+          - button "Practice (0)" [ref=e140] [cursor=pointer]
+          - button "Lessons (0)" [ref=e141] [cursor=pointer]
+          - button "Evidence (0)" [ref=e142] [cursor=pointer]
+          - button "Media (0)" [ref=e143] [cursor=pointer]
+          - button "Launch data (0)" [ref=e144] [cursor=pointer]
+          - button "Review sources (0)" [ref=e145] [cursor=pointer]
+          - button "Milestones (0)" [ref=e146] [cursor=pointer]
+          - button "Timeline (0)" [ref=e147] [cursor=pointer]
+        - generic [ref=e148]: Plan revision 1
+      - region [ref=e149]:
+        - generic [ref=e151]:
+          - generic [ref=e152]: Lesson lifecycle
+          - heading "Plan, schedule, complete, cancel, or archive" [level=2] [ref=e153]
+          - paragraph [ref=e154]: A planned lesson can exist without pretending a booking occurred. Complete it only after adding the observed date and the coaching record you actually have.
+        - generic [ref=e155]:
+          - generic [ref=e156]:
+            - generic [ref=e157]:
+              - generic [ref=e158]: Lesson title
+              - textbox "Lesson title" [ref=e159]
+            - generic [ref=e160]:
+              - generic [ref=e161]: Purpose
+              - textbox "Purpose" [ref=e162]
+            - generic [ref=e163]:
+              - generic [ref=e164]: Phase (optional)
+              - combobox "Phase (optional)" [ref=e165]:
+                - option "None" [selected]
+                - option "Own centered contact"
+                - option "Shape trajectory"
+                - option "Choose targets"
+            - generic [ref=e166]:
+              - generic [ref=e167]: Initial state
+              - combobox "Initial state" [ref=e168]:
+                - option "Choose one" [selected]
+                - option "Planned"
+                - option "Scheduled"
+                - option "Completed"
+            - generic [ref=e169]:
+              - generic [ref=e170]: Scheduled date and time
+              - textbox "Scheduled date and time" [ref=e171]
+            - generic [ref=e172]:
+              - generic [ref=e173]: Completed date and time
+              - textbox "Completed date and time" [ref=e174]
+            - generic [ref=e175]:
+              - generic [ref=e176]: Coach observation (optional)
+              - textbox "Coach observation (optional)" [ref=e177]
+            - generic [ref=e178]:
+              - generic [ref=e179]: Golfer learning (optional)
+              - textbox "Golfer learning (optional)" [ref=e180]
+            - generic [ref=e181]:
+              - generic [ref=e182]: Takeaway (optional)
+              - textbox "Takeaway (optional)" [ref=e183]
+            - generic [ref=e184]:
+              - generic [ref=e185]: Next check (optional)
+              - textbox "Next check (optional)" [ref=e186]
+            - generic [ref=e187]:
+              - generic [ref=e188]: Phase connection (optional)
+              - textbox "Phase connection (optional)" [ref=e189]
+          - button "Create lesson" [ref=e190] [cursor=pointer]
+        - generic [ref=e191]:
+          - heading "Lesson records" [level=3] [ref=e192]
+          - paragraph [ref=e193]: No lesson records yet.

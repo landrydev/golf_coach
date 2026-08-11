@@ -1,0 +1,149 @@
+- generic [ref=e2]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=e4]:
+    - link "Foothills Golf Studio Roadmap home" [ref=e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=e6]: FG
+      - generic [ref=e7]:
+        - strong [ref=e8]: Foothills Golf Studio
+        - generic [ref=e9]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=e10]:
+      - link "Overview" [ref=e11] [cursor=pointer]:
+        - /url: /app
+      - link "Golfers" [ref=e12] [cursor=pointer]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=e13] [cursor=pointer]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=e14] [cursor=pointer]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=e15] [cursor=pointer]:
+        - /url: /app/media
+      - link "Packages" [ref=e16] [cursor=pointer]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=e17] [cursor=pointer]:
+        - /url: /app/billing
+      - link "Settings" [ref=e18] [cursor=pointer]:
+        - /url: /app/settings
+    - generic [ref=e19]:
+      - generic [ref=e20]: CR
+      - generic [ref=e21]:
+        - strong [ref=e22]: Coach Rowan
+        - generic [ref=e23]: visual.coach@example.test
+      - button "Sign out" [ref=e25] [cursor=pointer]
+  - main [ref=e26]:
+    - generic [ref=e141]:
+      - generic [ref=e142]:
+        - generic [ref=e143]:
+          - text: Private coaching media
+          - heading "Media library" [level=1] [ref=e144]
+          - paragraph [ref=e145]: Upload once, then reuse a swing clip, image, or source CSV in coaching content. Roadmap never analyzes the swing or claims a live device integration.
+        - link "Upload media" [ref=e146] [cursor=pointer]:
+          - /url: "#upload-media"
+      - generic [ref=e147]:
+        - generic [ref=e148]:
+          - generic [ref=e149]:
+            - text: New upload
+            - heading "Add a private file" [level=2] [ref=e150]
+          - generic [ref=e151]: Up to 48 MB · video up to 3:00
+        - generic [ref=e152]:
+          - generic [ref=e153]:
+            - generic [ref=e154]: Image, swing video, or source CSV
+            - button "Image, swing video, or source CSV The original stays private and is not published by uploading it." [ref=e155]
+            - generic [ref=e156]: The original stays private and is not published by uploading it.
+          - generic [ref=e157]:
+            - generic [ref=e158]:
+              - generic [ref=e159]: Accessible description
+              - textbox "Accessible description" [ref=e160]:
+                - /placeholder: Down-the-line swing at the range
+            - generic [ref=e161]:
+              - generic [ref=e162]: View or orientation label
+              - textbox "View or orientation label" [ref=e163]:
+                - /placeholder: Down the line
+            - generic [ref=e164]:
+              - generic [ref=e165]: Captured date
+              - textbox "Captured date" [ref=e166]
+            - generic [ref=e167]:
+              - generic [ref=e168]: Frame orientation
+              - combobox "Frame orientation" [ref=e169]:
+                - option "Detect later / unknown" [selected]
+                - option "Landscape"
+                - option "Portrait"
+                - option "Square"
+          - generic [ref=e170]:
+            - generic [ref=e171]: Caption
+            - textbox "Caption" [ref=e172]:
+              - /placeholder: Baseline 7-iron swing
+          - generic [ref=e173]:
+            - generic [ref=e174]: Coach context
+            - textbox "Coach context" [ref=e175]:
+              - /placeholder: What should the golfer notice, and why is this clip included?
+          - group [ref=e176]:
+            - generic "Optional poster and transcript" [ref=e177] [cursor=pointer]
+            - generic [ref=e213]:
+              - generic [ref=e214]: Video poster / thumbnail
+              - combobox "Video poster / thumbnail Upload a still image first, then select it here as this video's private poster. The poster follows the video into published coaching content." [ref=e215]:
+                - option "Use the video's first available frame" [selected]
+                - option "bcd-r6 private video poster"
+              - generic [ref=e216]: Upload a still image first, then select it here as this video's private poster. The poster follows the video into published coaching content.
+            - generic [ref=e217]:
+              - generic [ref=e218]: Spoken-content transcript
+              - textbox "Spoken-content transcript" [ref=e219]
+          - button "Upload privately" [ref=e179] [cursor=pointer]
+      - status [ref=e190]: Upload complete. It remains coach-only until you attach it to coaching content and publish that revision.
+      - region [ref=e180]:
+        - generic [ref=e181]:
+          - generic [ref=e182]:
+            - text: Reusable assets
+            - heading "Your private library" [level=2] [ref=e183]
+          - generic [ref=e184]: 2 stored items
+        - generic [ref=e185]:
+          - article [ref=e220]:
+            - generic [ref=e221]: Synthetic clip. No spoken instruction.
+            - generic [ref=e222]:
+              - generic [ref=e223]:
+                - generic [ref=e224]:
+                  - text: Ready
+                  - heading "bcd-r6 baseline swing" [level=3] [ref=e225]
+                - generic [ref=e226]: video
+              - paragraph [ref=e227]: bcd-r6 synthetic down-the-line landscape swing clip
+              - generic [ref=e228]:
+                - generic [ref=e229]:
+                  - term [ref=e230]: Captured
+                  - definition [ref=e231]: Aug 9, 2026
+                - generic [ref=e232]:
+                  - term [ref=e233]: View
+                  - definition [ref=e234]: Down the line
+                - generic [ref=e235]:
+                  - term [ref=e236]: File
+                  - definition [ref=e237]: 13 KB
+                - generic [ref=e238]:
+                  - term [ref=e239]: Poster
+                  - definition [ref=e240]: Selected image
+              - paragraph [ref=e241]: Synthetic baseline for setup comparison; observe start line only, not a diagnosis.
+              - generic [ref=e242]:
+                - button "Replace" [ref=e243] [cursor=pointer]
+                - button "Remove" [ref=e244] [cursor=pointer]
+          - article [ref=e191]:
+            - img "bcd-r6 synthetic landscape poster with teal and coral colour blocks" [ref=e192]
+            - generic [ref=e193]:
+              - generic [ref=e194]:
+                - generic [ref=e195]:
+                  - text: Ready
+                  - heading "bcd-r6 private video poster" [level=3] [ref=e196]
+                - generic [ref=e197]: image
+              - paragraph [ref=e198]: bcd-r6 synthetic landscape poster with teal and coral colour blocks
+              - generic [ref=e199]:
+                - generic [ref=e200]:
+                  - term [ref=e201]: Captured
+                  - definition [ref=e202]: Aug 11, 2026
+                - generic [ref=e203]:
+                  - term [ref=e204]: View
+                  - definition [ref=e205]: Reference poster
+                - generic [ref=e206]:
+                  - term [ref=e207]: File
+                  - definition [ref=e208]: 16 KB
+              - paragraph [ref=e209]: Synthetic reference image only; no diagnosis or outcome claim.
+              - generic [ref=e210]:
+                - button "Replace" [ref=e211] [cursor=pointer]
+                - button "Remove" [ref=e212] [cursor=pointer]

@@ -1,0 +1,105 @@
+- generic [ref=f2e2]:
+  - link "Skip to main content" [ref=f2e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=f2e4]:
+    - link "Prairie Path Golf Coaching Roadmap home" [ref=f2e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=f2e6]: PP
+      - generic [ref=f2e7]:
+        - strong [ref=f2e8]: Prairie Path Golf Coaching
+        - generic [ref=f2e9]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=f2e10]:
+      - link "Overview" [ref=f2e11] [cursor=pointer]:
+        - /url: /app
+      - link "Golfers" [ref=f2e12] [cursor=pointer]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=f2e13] [cursor=pointer]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=f2e14] [cursor=pointer]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=f2e15] [cursor=pointer]:
+        - /url: /app/media
+      - link "Packages" [ref=f2e16] [cursor=pointer]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=f2e17] [cursor=pointer]:
+        - /url: /app/billing
+      - link "Settings" [ref=f2e18] [cursor=pointer]:
+        - /url: /app/settings
+    - generic [ref=f2e19]:
+      - generic [ref=f2e20]: CF
+      - generic [ref=f2e21]:
+        - strong [ref=f2e22]: Coach Fresh empty coach
+        - generic [ref=f2e23]: qa.fresh@example.test
+      - button "Sign out" [ref=f2e25] [cursor=pointer]
+  - main [ref=f2e26]:
+    - generic [ref=f2e27]:
+      - generic [ref=f2e29]:
+        - generic [ref=f2e30]: Coaching packages
+        - heading "Connect the phase to a package you already offer." [level=1] [ref=f2e31]
+        - paragraph [ref=f2e32]: Roadmap explains the recommendation and then sends the golfer to your existing booking, purchase, or contact route. It does not process coach-package payments.
+      - note [ref=f2e33]:
+        - strong [ref=f2e34]: Package facts can affect private golfer plans.
+        - generic [ref=f2e35]: Editing or archiving a linked package creates a new withdrawn plan revision, clears publication approval, and revokes active links until you review and publish again. Roadmap never treats an external click as a booking, purchase, or sale.
+      - generic [ref=f2e68]:
+        - heading "Current packages" [level=2] [ref=f2e70]
+        - list [ref=f2e71]:
+          - listitem [ref=f2e72]:
+            - generic [ref=f2e73]:
+              - strong [ref=f2e74]: Three-session contact phase
+              - generic [ref=f2e75]: A focused sequence for building predictable contact and transfer.
+              - generic [ref=f2e76]: Confirm current price with me · Use within eight weeks; rescheduling by agreement.
+            - generic [ref=f2e77]: active
+            - generic [ref=f2e78]:
+              - group [ref=f2e79]:
+                - generic "Edit or archive this package" [ref=f2e80]
+                - option "Active" [selected]
+                - option "Draft"
+                - option "Booking" [selected]
+                - option "Purchase"
+                - option "Contact"
+                - option "Other"
+              - alert [ref=f2e81]
+      - generic [ref=f2e36]:
+        - group "Add a package you already sell" [ref=f2e38]:
+          - generic [ref=f2e40]:
+            - generic [ref=f2e41]:
+              - text: Package name
+              - textbox "Package name" [disabled] [ref=f2e42]
+            - generic [ref=f2e43]:
+              - text: Why it fits
+              - textbox "Why it fits" [disabled] [ref=f2e44]
+            - generic [ref=f2e45]:
+              - text: Price in CAD (optional)
+              - spinbutton "Price in CAD (optional) This is the instructor’s coaching-package price, not the Roadmap subscription." [disabled] [ref=f2e46]
+              - generic [ref=f2e47]: This is the instructor’s coaching-package price, not the Roadmap subscription.
+            - generic [ref=f2e48]:
+              - text: Current details when no price is shown
+              - textbox "Current details when no price is shown Provide either an exact price or an honest current-details message." [disabled] [ref=f2e49]:
+                - /placeholder: Confirm current price with me
+              - generic [ref=f2e50]: Provide either an exact price or an honest current-details message.
+            - generic [ref=f2e51]:
+              - text: Material inclusions — one per line
+              - textbox "Material inclusions — one per line List only what this package currently includes. Do not imply booking or payment has occurred." [disabled] [ref=f2e52]:
+                - /placeholder: "Four individual lessons\nWritten practice direction\nEnd-of-phase review"
+              - generic [ref=f2e53]: List only what this package currently includes. Do not imply booking or payment has occurred.
+            - generic [ref=f2e54]:
+              - text: Cadence (optional)
+              - textbox "Cadence (optional)" [disabled] [ref=f2e55]:
+                - /placeholder: Four lessons over six to eight weeks
+            - generic [ref=f2e56]:
+              - text: Practice expectation (optional)
+              - textbox "Practice expectation (optional)" [disabled] [ref=f2e57]
+            - generic [ref=f2e58]:
+              - text: Evaluation approach (optional)
+              - textbox "Evaluation approach (optional)" [disabled] [ref=f2e59]
+            - generic [ref=f2e60]:
+              - text: Terms
+              - textbox "Terms" [disabled] [ref=f2e61]:
+                - /placeholder: Sessions, expected window, expiry, rescheduling, and renewal terms.
+            - generic [ref=f2e62]:
+              - text: Existing HTTPS booking, purchase, or contact link
+              - textbox "Existing HTTPS booking, purchase, or contact link Roadmap makes the handoff clear; it does not claim the external action completed." [disabled] [ref=f2e63]
+              - generic [ref=f2e64]: Roadmap makes the handoff clear; it does not claim the external action completed.
+        - alert [ref=f2e65]
+        - status [ref=f2e82]: Package saved. It can now be connected to a coaching phase.
+        - button "Save package" [disabled] [ref=f2e67]

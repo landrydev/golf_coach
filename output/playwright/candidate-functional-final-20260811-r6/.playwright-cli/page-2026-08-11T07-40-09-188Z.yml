@@ -1,0 +1,152 @@
+- generic [ref=e2]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e4]:
+    - link "Foothills Golf Studio Roadmap home" [ref=e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=e6]: FG
+      - generic [ref=e7]: Foothills Golf Studio
+    - generic [ref=e8]:
+      - generic [ref=e9]: CR
+      - button "Sign out" [ref=e11] [cursor=pointer]
+  - main [ref=e12]:
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - generic [ref=e16]: Coaching command centre
+          - heading "Welcome back, Coach." [level=1] [ref=e17]
+          - paragraph [ref=e18]: Start with the few coaching records that need attention. Counts describe stored Roadmap state only; they do not imply a message, booking, sale, or golfer outcome.
+        - generic [ref=e19]:
+          - link "Add a golfer" [ref=e20] [cursor=pointer]:
+            - /url: /app/golfers/new
+          - link "Find a golfer" [ref=e21] [cursor=pointer]:
+            - /url: /app/golfers
+      - region [ref=e22]:
+        - generic [ref=e23]:
+          - generic [ref=e24]: Quick actions
+          - heading "Start the next coaching task." [level=2] [ref=e25]
+        - list [ref=e26]:
+          - listitem [ref=e27]:
+            - link "New golfer Start an adult golfer record and first roadmap." [ref=e28] [cursor=pointer]:
+              - /url: /app/golfers/new
+              - strong [ref=e29]: New golfer
+              - generic [ref=e30]: Start an adult golfer record and first roadmap.
+          - listitem [ref=e31]:
+            - link "Add package Publish an external coaching offer or enquiry route." [ref=e32] [cursor=pointer]:
+              - /url: /app/packages
+              - strong [ref=e33]: Add package
+              - generic [ref=e34]: Publish an external coaching offer or enquiry route.
+          - listitem [ref=e35]:
+            - link "New lesson Plan or record a lesson for Jordan Synthetic." [ref=e36] [cursor=pointer]:
+              - /url: /app/coaching/plans/b0847e52-05e1-441d-b864-e66e97792f90?tab=lessons
+              - strong [ref=e37]: New lesson
+              - generic [ref=e38]: Plan or record a lesson for Jordan Synthetic.
+          - listitem [ref=e39]:
+            - link "Add evidence Record evidence and its limits for Jordan Synthetic." [ref=e40] [cursor=pointer]:
+              - /url: /app/coaching/plans/b0847e52-05e1-441d-b864-e66e97792f90?tab=evidence
+              - strong [ref=e41]: Add evidence
+              - generic [ref=e42]: Record evidence and its limits for Jordan Synthetic.
+          - listitem [ref=e43]:
+            - link "New drill Create a reusable private coaching drill." [ref=e44] [cursor=pointer]:
+              - /url: /app/coaching/drills
+              - strong [ref=e45]: New drill
+              - generic [ref=e46]: Create a reusable private coaching drill.
+          - listitem [ref=e47]:
+            - link "Upload media Add a private file, then attach it to coaching work." [ref=e48] [cursor=pointer]:
+              - /url: /app/media#upload-media
+              - strong [ref=e49]: Upload media
+              - generic [ref=e50]: Add a private file, then attach it to coaching work.
+      - region [ref=e51]:
+        - generic [ref=e52]:
+          - generic [ref=e53]:
+            - generic [ref=e54]: Persisted setup
+            - heading "Your first-value path is complete." [level=2] [ref=e55]
+          - generic [ref=e56]: 4 of 4 required steps
+        - list [ref=e57]:
+          - listitem [ref=e58]:
+            - generic [ref=e59]: ✓
+            - generic [ref=e60]:
+              - strong [ref=e61]: Coach identity
+              - generic [ref=e62]: Saved and ready for the golfer view.
+            - link "Review" [ref=e63] [cursor=pointer]:
+              - /url: /app/settings
+          - listitem [ref=e64]:
+            - generic [ref=e65]: ✓
+            - generic [ref=e66]:
+              - strong [ref=e67]: Current package
+              - generic [ref=e68]: An active external coaching option is available.
+            - link "Review" [ref=e69] [cursor=pointer]:
+              - /url: /app/packages
+          - listitem [ref=e70]:
+            - generic [ref=e71]: ✓
+            - generic [ref=e72]:
+              - strong [ref=e73]: First golfer
+              - generic [ref=e74]: A private adult-golfer record is saved.
+            - link "Review" [ref=e75] [cursor=pointer]:
+              - /url: /app/golfers/new
+          - listitem [ref=e76]:
+            - generic [ref=e77]: ✓
+            - generic [ref=e78]:
+              - strong [ref=e79]: Complete roadmap
+              - generic [ref=e80]: A three- or four-phase roadmap is ready for review.
+            - link "Review" [ref=e81] [cursor=pointer]:
+              - /url: /app/golfers?status=setup_incomplete
+          - listitem [ref=e82]:
+            - generic [ref=e83]: ✓
+            - generic [ref=e84]:
+              - strong [ref=e85]: Review and share
+              - generic [ref=e86]: At least one exact revision has been deliberately published.
+            - link "Review" [ref=e87] [cursor=pointer]:
+              - /url: /app/golfers?review=needs_review
+      - region [ref=e88]:
+        - generic [ref=e89]:
+          - generic [ref=e90]:
+            - generic [ref=e91]: Needs attention
+            - heading "Bounded coaching work, not vanity metrics." [level=2] [ref=e92]
+          - link "Open filtered golfer list" [ref=e93] [cursor=pointer]:
+            - /url: /app/golfers?sort=attention
+        - generic [ref=e94]:
+          - article [ref=e95]:
+            - generic [ref=e96]:
+              - heading "Incomplete roadmaps" [level=3] [ref=e97]
+              - generic "0 stored incomplete roadmaps" [ref=e98]: "0"
+            - paragraph [ref=e99]: No staged roadmaps are waiting for completion.
+          - article [ref=e100]:
+            - generic [ref=e101]:
+              - heading "Coach reviews" [level=3] [ref=e102]
+              - generic "0 stored coach reviews" [ref=e103]: "0"
+            - paragraph [ref=e104]: No roadmap or phase-review drafts need a decision.
+          - article [ref=e105]:
+            - generic [ref=e106]:
+              - heading "Active practice" [level=3] [ref=e107]
+              - generic "1 stored active practice" [ref=e108]: "1"
+            - list [ref=e109]:
+              - listitem [ref=e110]:
+                - generic [ref=e111]:
+                  - strong [ref=e112]: Jordan Synthetic
+                  - generic [ref=e113]: Editable centered-contact window
+                  - generic [ref=e114]: Due Aug 14, 2026 · Aug 11
+                - link "Open task" [ref=e115] [cursor=pointer]:
+                  - /url: /app/coaching/plans/b0847e52-05e1-441d-b864-e66e97792f90?tab=practice&practiceId=62a6ae1e-d524-4f1f-b93b-fc738b1b2ef8
+          - article [ref=e116]:
+            - generic [ref=e117]:
+              - heading "Latest responses & check-ins" [level=3] [ref=e118]
+              - generic "0 stored latest responses & check-ins" [ref=e119]: "0"
+            - paragraph [ref=e120]: No golfer response or practice check-in has been recorded through a private link.
+      - region [ref=e121]:
+        - generic [ref=e122]:
+          - generic [ref=e123]: Stored failure signals
+          - heading "Media and launch-data work that needs review" [level=2] [ref=e124]
+          - paragraph [ref=e125]: This list reports only failed or quarantined media and failed or mapping-required launch-data imports that Roadmap can prove exist.
+        - paragraph [ref=e126]: No failed media or launch-data import needs attention.
+  - navigation "Mobile coach workspace" [ref=e127]:
+    - link "Overview" [ref=e128] [cursor=pointer]:
+      - /url: /app
+    - link "Golfers" [ref=e129] [cursor=pointer]:
+      - /url: /app/golfers
+    - link "Drills" [ref=e130] [cursor=pointer]:
+      - /url: /app/coaching/drills
+    - link "Media" [ref=e131] [cursor=pointer]:
+      - /url: /app/media
+    - link "Settings" [ref=e132] [cursor=pointer]:
+      - /url: /app/settings

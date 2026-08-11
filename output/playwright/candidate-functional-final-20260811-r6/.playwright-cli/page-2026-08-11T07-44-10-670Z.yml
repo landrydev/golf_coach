@@ -1,0 +1,117 @@
+- generic [ref=e2]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=e4]:
+    - link "Foothills Golf Studio Roadmap home" [ref=e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=e6]: FG
+      - generic [ref=e7]:
+        - strong [ref=e8]: Foothills Golf Studio
+        - generic [ref=e9]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=e10]:
+      - link "Overview" [ref=e11] [cursor=pointer]:
+        - /url: /app
+      - link "Golfers" [ref=e12] [cursor=pointer]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=e13] [cursor=pointer]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=e14] [cursor=pointer]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=e15] [cursor=pointer]:
+        - /url: /app/media
+      - link "Packages" [ref=e16] [cursor=pointer]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=e17] [cursor=pointer]:
+        - /url: /app/billing
+      - link "Settings" [ref=e18] [cursor=pointer]:
+        - /url: /app/settings
+    - generic [ref=e19]:
+      - generic [ref=e20]: CR
+      - generic [ref=e21]:
+        - strong [ref=e22]: Coach Rowan
+        - generic [ref=e23]: visual.coach@example.test
+      - button "Sign out" [ref=e25] [cursor=pointer]
+  - main [ref=e26]:
+    - generic [ref=e245]:
+      - generic [ref=e246]:
+        - generic [ref=e247]:
+          - generic [ref=e248]: Rich coaching workspace
+          - heading "Jordan Synthetic" [level=1] [ref=e359]
+          - paragraph [ref=e250]: Manage reusable drills, lesson lifecycle, evidence, media, launch-monitor data, reviews, and milestones without leaving this golfer record.
+        - generic [ref=e251]:
+          - link "Back to golfers" [ref=e360] [cursor=pointer]:
+            - /url: /app/golfers
+          - link "Media library" [ref=e361] [cursor=pointer]:
+            - /url: /app/media
+      - navigation "Rich coaching destinations" [ref=e362]:
+        - generic [ref=e363]:
+          - button "Practice (1)" [ref=e364] [cursor=pointer]
+          - button "Lessons (1)" [ref=e365] [cursor=pointer]
+          - button "Evidence (2)" [ref=e452] [cursor=pointer]
+          - button "Media (1)" [active] [ref=e453] [cursor=pointer]
+          - button "Launch data (2)" [ref=e368] [cursor=pointer]
+          - button "Review sources (1)" [ref=e369] [cursor=pointer]
+          - button "Milestones (1)" [ref=e370] [cursor=pointer]
+          - button "Timeline (8)" [ref=e454] [cursor=pointer]
+        - generic [ref=e372]: Plan revision 13
+      - status [ref=e455]: Evidence record created and available to lessons and phase reviews.
+      - region [ref=e461]:
+        - generic [ref=e462]:
+          - generic [ref=e463]:
+            - generic [ref=e464]: Optional private media
+            - heading "Attach, reuse, or withdraw" [level=2] [ref=e465]
+            - paragraph [ref=e466]: Uploading never publishes. Attaching never analyzes. Republish controls golfer visibility.
+          - link "Upload or manage files" [ref=e467] [cursor=pointer]:
+            - /url: /app/media
+        - generic [ref=e468]:
+          - generic [ref=e469]:
+            - generic [ref=e470]:
+              - generic [ref=e471]: Media file
+              - combobox "Media file" [ref=e472]:
+                - option "Choose one"
+                - option "bcd-r6 baseline swing" [selected]
+                - option "bcd-r6 private video poster"
+            - generic [ref=e473]:
+              - generic [ref=e474]: Content type
+              - combobox "Content type" [ref=e475]:
+                - option "Choose one"
+                - option "Assessment" [selected]
+                - option "Lesson"
+                - option "Practice assignment"
+                - option "Evidence"
+                - option "Phase review"
+            - generic [ref=e476]:
+              - generic [ref=e477]: Assessment record
+              - combobox "Assessment record" [ref=e478]:
+                - option "Choose one" [selected]
+                - option "Starting assessment"
+            - generic [ref=e479]:
+              - generic [ref=e480]: Role
+              - combobox "Role" [ref=e481]:
+                - option "Choose one" [selected]
+                - option "Primary"
+                - option "Supporting"
+                - option "Demonstration"
+                - option "Baseline"
+                - option "Current"
+                - option "Review source"
+            - generic [ref=e482]:
+              - generic [ref=e483]: Golfer-facing label (optional)
+              - textbox "Golfer-facing label (optional)" [ref=e484]
+            - generic [ref=e485]:
+              - generic [ref=e486]: Coach context (optional)
+              - textbox "Coach context (optional)" [ref=e487]
+            - generic [ref=e488]:
+              - generic [ref=e489]: Order
+              - spinbutton "Order" [ref=e490]: "0"
+          - button "Attach media" [ref=e491] [cursor=pointer]
+        - generic [ref=e492]:
+          - heading "Plan attachments" [level=3] [ref=e493]
+          - list [ref=e494]:
+            - listitem [ref=e495]:
+              - generic [ref=e496]:
+                - generic [ref=e497]:
+                  - heading "bcd-r6 baseline swing" [level=3] [ref=e498]
+                  - generic [ref=e499]: evidence ·
+                - generic [ref=e500]: video
+              - button "Withdraw attachment" [ref=e501] [cursor=pointer]

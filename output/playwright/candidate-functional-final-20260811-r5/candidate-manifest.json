@@ -1,0 +1,375 @@
+{
+  "schemaVersion": 2,
+  "evidenceClass": "EXACT-FINAL-CANDIDATE LOCAL SYNTHETIC BROWSER QA",
+  "candidateId": "candidate-functional-final-20260811-r5",
+  "candidateStatus": {
+    "status": "invalidated",
+    "eligible": false,
+    "diagnosticEvidenceOnly": true,
+    "reason": "Real-browser r5 acceptance found independent normal-journey defects in Scenario A and the required Scenario G expired state. All A-H work stopped; retained artifacts are diagnostic only.",
+    "blockerIds": [
+      "BROWSER-A-STAGED-GOLFER-SAVE-DEAD-END",
+      "BROWSER-G-EXPIRED-SESSION-404-CONSOLE"
+    ],
+    "blockers": [
+      {
+        "id": "BROWSER-A-STAGED-GOLFER-SAVE-DEAD-END",
+        "status": "confirmed",
+        "summary": "A fresh staged golfer POST succeeds and the UI reports that the resumable draft was saved, but Save basics and continue leaves the user on /app/golfers/new with the populated form disabled and no usable continuation control.",
+        "evidencePaths": [
+          "output/playwright/candidate-functional-final-20260811-r5/af-a-staged-after-save-1440.md",
+          "output/playwright/candidate-functional-final-20260811-r5/scenario-af-report.md"
+        ]
+      },
+      {
+        "id": "BROWSER-G-EXPIRED-SESSION-404-CONSOLE",
+        "status": "confirmed",
+        "summary": "The required expired golfer entry renders the expected unavailable screen but performs POST /r/session, receives 404, and emits a browser console resource error instead of treating expiry as a clean expected state.",
+        "evidencePaths": [
+          "output/playwright/candidate-functional-final-20260811-r5/scenario-eg-report.md"
+        ]
+      }
+    ]
+  },
+  "createdAt": "2026-08-11T06:57:42.442Z",
+  "sourceIdentity": {
+    "inventoryPath": "output/playwright/candidate-functional-final-20260811-r5/source-identity.json",
+    "schemaVersion": 2,
+    "aggregateSha256": "3bd41168b2b7116c547a6ba947f37297a6121220936fb8d8e32c3ae7bcfbe492",
+    "fileCount": 395,
+    "totalBytes": 10605055,
+    "exactCommitOrArchive": "source-identity:3bd41168b2b7116c547a6ba947f37297a6121220936fb8d8e32c3ae7bcfbe492",
+    "releaseId": "candidate-functional-final-20260811-r5",
+    "status": "recorded"
+  },
+  "server": {
+    "command": "npm run qa:functional:server",
+    "origin": "http://127.0.0.1:4175",
+    "scenarioCatalogue": "http://127.0.0.1:4175/__qa/scenarios"
+  },
+  "playwright": {
+    "command": "npm run qa:playwright -- -CandidateId <candidate> -Session <session> <command>",
+    "mode": "CLI-first; no Playwright test specs",
+    "artifactDirectory": "output/playwright/candidate-functional-final-20260811-r5"
+  },
+  "verification": {
+    "command": "npm run verify",
+    "status": "passed",
+    "tests": 489,
+    "passed": 489,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "durationMs": 43269.947,
+    "wallDurationMs": 56883,
+    "logPath": "output/verify-functional-final-20260811-r5.log"
+  },
+  "requiredViewports": [
+    {
+      "width": 320,
+      "height": 844
+    },
+    {
+      "width": 390,
+      "height": 844
+    },
+    {
+      "width": 768,
+      "height": 1024
+    },
+    {
+      "width": 1440,
+      "height": 1000
+    }
+  ],
+  "requiredSurfaces": [
+    "landing",
+    "onboarding",
+    "dashboard",
+    "authoring",
+    "golfer-hub",
+    "media",
+    "launch-data-import",
+    "drill-library-and-assignment",
+    "share-centre",
+    "golfer-roadmap"
+  ],
+  "requiredStates": [
+    "short",
+    "long",
+    "empty",
+    "loading",
+    "partial",
+    "error",
+    "recovery",
+    "expired",
+    "revoked",
+    "republished"
+  ],
+  "scenarios": [
+    {
+      "id": "fresh",
+      "label": "Fresh empty coach",
+      "appEntry": "http://127.0.0.1:4175/__qa/fresh/app",
+      "golferEntry": null,
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "standard",
+      "label": "Standard four-phase roadmap",
+      "appEntry": "http://127.0.0.1:4175/__qa/standard/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/standard/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "three-phase",
+      "label": "Three phases without a package",
+      "appEntry": "http://127.0.0.1:4175/__qa/three-phase/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/three-phase/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "mixed-30",
+      "label": "Thirty mixed-state golfers",
+      "appEntry": "http://127.0.0.1:4175/__qa/mixed-30/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/mixed-30/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "long-content",
+      "label": "Long-content roadmap",
+      "appEntry": "http://127.0.0.1:4175/__qa/long-content/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/long-content/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "expired",
+      "label": "Expired private access",
+      "appEntry": "http://127.0.0.1:4175/__qa/expired/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/expired/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "revoked",
+      "label": "Revoked private access",
+      "appEntry": "http://127.0.0.1:4175/__qa/revoked/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/revoked/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "republished",
+      "label": "Republished roadmap",
+      "appEntry": "http://127.0.0.1:4175/__qa/republished/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/republished/golfer",
+      "oldGolferEntry": "http://127.0.0.1:4175/__qa/republished/old-golfer",
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    }
+  ],
+  "acceptanceScenarios": [
+    {
+      "id": "A",
+      "label": "First self-serve roadmap",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "failed",
+      "browserVisualResult": "partial_invalidated",
+      "manualReviewResult": "defect_confirmed",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r5/scenario-af-report.md",
+        "output/playwright/candidate-functional-final-20260811-r5/af-a-staged-after-save-1440.md",
+        "output/playwright/candidate-functional-final-20260811-r5/.playwright-cli/traces/trace-1786431690626.trace",
+        "output/playwright/candidate-functional-final-20260811-r5/.playwright-cli/traces/trace-1786431690626.network"
+      ],
+      "blockerIds": [
+        "BROWSER-A-STAGED-GOLFER-SAVE-DEAD-END"
+      ],
+      "notes": [
+        "The staged golfer POST and completion-route RSC request succeeded, but a subsequent old-route refresh returned the browser to a disabled /app/golfers/new dead end. Scenario A is not accepted."
+      ]
+    },
+    {
+      "id": "B",
+      "label": "Swing-video evidence",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "partial_invalidated",
+      "browserVisualResult": "partial_invalidated",
+      "manualReviewResult": "partial_invalidated",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r5/scenario-bcd-report.md"
+      ],
+      "blockerIds": [
+        "BROWSER-A-STAGED-GOLFER-SAVE-DEAD-END",
+        "BROWSER-G-EXPIRED-SESSION-404-CONSOLE"
+      ],
+      "notes": [
+        "A real poster upload reached Ready. The video submission was not reached before the candidate-wide stop, so Scenario B remains unaccepted."
+      ]
+    },
+    {
+      "id": "C",
+      "label": "Practice-drill reuse",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_executed_invalidated",
+      "browserVisualResult": "not_executed_invalidated",
+      "manualReviewResult": "not_executed_invalidated",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r5/scenario-bcd-report.md"
+      ],
+      "blockerIds": [
+        "BROWSER-A-STAGED-GOLFER-SAVE-DEAD-END",
+        "BROWSER-G-EXPIRED-SESSION-404-CONSOLE"
+      ],
+      "notes": [
+        "Scenario C was not started after candidate invalidation."
+      ]
+    },
+    {
+      "id": "D",
+      "label": "Launch-monitor import and comparison",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_executed_invalidated",
+      "browserVisualResult": "not_executed_invalidated",
+      "manualReviewResult": "not_executed_invalidated",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r5/scenario-bcd-report.md"
+      ],
+      "blockerIds": [
+        "BROWSER-A-STAGED-GOLFER-SAVE-DEAD-END",
+        "BROWSER-G-EXPIRED-SESSION-404-CONSOLE"
+      ],
+      "notes": [
+        "Scenario D was not started after candidate invalidation."
+      ]
+    },
+    {
+      "id": "E",
+      "label": "Living journey and phase transition",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_executed_invalidated",
+      "browserVisualResult": "not_executed_invalidated",
+      "manualReviewResult": "not_executed_invalidated",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r5/scenario-eg-report.md"
+      ],
+      "blockerIds": [
+        "BROWSER-A-STAGED-GOLFER-SAVE-DEAD-END",
+        "BROWSER-G-EXPIRED-SESSION-404-CONSOLE"
+      ],
+      "notes": [
+        "Scenario E was not started after candidate invalidation."
+      ]
+    },
+    {
+      "id": "F",
+      "label": "Return and management",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_executed_invalidated",
+      "browserVisualResult": "not_executed_invalidated",
+      "manualReviewResult": "not_executed_invalidated",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r5/scenario-af-report.md"
+      ],
+      "blockerIds": [
+        "BROWSER-A-STAGED-GOLFER-SAVE-DEAD-END",
+        "BROWSER-G-EXPIRED-SESSION-404-CONSOLE"
+      ],
+      "notes": [
+        "Scenario F was not started after candidate invalidation."
+      ]
+    },
+    {
+      "id": "G",
+      "label": "Golfer mobile and print experience",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "failed",
+      "browserVisualResult": "partial_invalidated",
+      "manualReviewResult": "defect_confirmed",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r5/scenario-eg-report.md",
+        "output/playwright/candidate-functional-final-20260811-r5/eg-g-r5-expired-console-defect-390.png",
+        "output/playwright/candidate-functional-final-20260811-r5/.playwright-cli/console-2026-08-11T07-05-54-582Z.log",
+        "output/playwright/candidate-functional-final-20260811-r5/.playwright-cli/traces/trace-1786431961180.trace"
+      ],
+      "blockerIds": [
+        "BROWSER-G-EXPIRED-SESSION-404-CONSOLE"
+      ],
+      "notes": [
+        "Long-content responsive and print checks were partially clean, but the required expired entry emitted a POST /r/session 404 browser console/network error. Scenario G is not accepted."
+      ]
+    },
+    {
+      "id": "H",
+      "label": "SaaS billing in test mode",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_executed_invalidated",
+      "browserVisualResult": "not_executed_invalidated",
+      "manualReviewResult": "not_executed_invalidated",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [
+        "BROWSER-A-STAGED-GOLFER-SAVE-DEAD-END",
+        "BROWSER-G-EXPIRED-SESSION-404-CONSOLE"
+      ],
+      "notes": [
+        "Source-bound Scenario H was not started after candidate invalidation."
+      ]
+    }
+  ],
+  "browserReview": {
+    "unexplainedConsoleErrors": null,
+    "failedNetworkRequests": null,
+    "keyboardReview": "not_recorded",
+    "touchEquivalentReview": "not_recorded",
+    "reducedMotionReview": "not_recorded",
+    "reflowAndOverflowReview": "not_recorded",
+    "visualReviewer": null
+  },
+  "completionEligibility": {
+    "eligible": false,
+    "invalidated": true,
+    "diagnosticEvidenceOnly": true,
+    "blockerIds": [
+      "BROWSER-A-STAGED-GOLFER-SAVE-DEAD-END",
+      "BROWSER-G-EXPIRED-SESSION-404-CONSOLE"
+    ],
+    "reason": "Candidate r5 is ineligible. Scenario A confirmed a staged-golfer continuation dead end and Scenario G confirmed an expected expired-state 404 console/network error; A-H acceptance stopped incomplete."
+  }
+}

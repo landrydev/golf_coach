@@ -1,0 +1,90 @@
+- generic [ref=e2]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=e4]:
+    - link "Coach Fresh empty coach Roadmap home" [ref=e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=e6]: CF
+      - generic [ref=e7]:
+        - strong [ref=e8]: Coach Fresh empty coach
+        - generic [ref=e9]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=e10]:
+      - link "Overview" [ref=e11] [cursor=pointer]:
+        - /url: /app
+      - link "Golfers" [active] [ref=e12] [cursor=pointer]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=e13] [cursor=pointer]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=e14] [cursor=pointer]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=e15] [cursor=pointer]:
+        - /url: /app/media
+      - link "Packages" [ref=e16] [cursor=pointer]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=e17] [cursor=pointer]:
+        - /url: /app/billing
+      - link "Settings" [ref=e18] [cursor=pointer]:
+        - /url: /app/settings
+    - generic [ref=e19]:
+      - generic [ref=e20]: CF
+      - generic [ref=e21]:
+        - strong [ref=e22]: Coach Fresh empty coach
+        - generic [ref=e23]: qa.fresh@example.test
+      - button "Sign out" [ref=e25] [cursor=pointer]
+  - main [ref=e26]:
+    - generic [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - generic [ref=e30]: Golfer workspace
+          - heading "Find the golfer, then open the next coaching task." [level=1] [ref=e269]
+          - paragraph [ref=e32]: Search and filters use only this coach account’s stored records. Roadmap remains a coaching workspace rather than a contact-management system.
+        - link "Add a golfer" [ref=e270] [cursor=pointer]:
+          - /url: /app/golfers/new
+      - search [ref=e271]:
+        - generic [ref=e272]:
+          - generic [ref=e273]: Search golfers
+          - searchbox "Search golfers" [ref=e274]
+        - generic [ref=e275]:
+          - text: Record status
+          - combobox "Record status" [ref=e276]:
+            - option "All records" [selected]
+            - option "Setup incomplete"
+            - option "Reviewable drafts"
+            - option "Published"
+            - option "Paused"
+            - option "Completed"
+            - option "Archived"
+            - option "Deletion review"
+        - generic [ref=e277]:
+          - text: Current phase
+          - combobox "Current phase" [ref=e278]:
+            - option "All phase states" [selected]
+            - option "Active phase"
+            - option "Paused phase"
+            - option "Planned phase"
+            - option "Completed phase"
+            - option "No phase yet"
+        - generic [ref=e279]:
+          - text: Review state
+          - combobox "Review state" [ref=e280]:
+            - option "All review states" [selected]
+            - option "Needs coach review"
+            - option "Draft phase review"
+            - option "No draft phase review"
+        - generic [ref=e281]:
+          - text: Sort
+          - combobox "Sort" [ref=e282]:
+            - option "Needs attention first" [selected]
+            - option "Recently updated"
+            - option "Golfer name"
+            - option "Phase order"
+        - button "Apply" [ref=e284] [cursor=pointer]
+      - region [ref=e285]:
+        - generic [ref=e287]:
+          - generic [ref=e288]: Results
+          - heading "0 golfer records" [level=2] [ref=e289]
+        - generic [ref=e290]:
+          - heading "No golfer records yet." [level=2] [ref=e291]
+          - paragraph [ref=e292]: Start with an adult golfer, a real goal, and the smallest useful set of details.
+          - link "Create the first golfer record" [ref=e293] [cursor=pointer]:
+            - /url: /app/golfers/new

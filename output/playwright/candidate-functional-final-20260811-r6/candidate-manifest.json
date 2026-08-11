@@ -1,0 +1,475 @@
+{
+  "schemaVersion": 2,
+  "evidenceClass": "EXACT-FINAL-CANDIDATE LOCAL SYNTHETIC BROWSER QA",
+  "candidateId": "candidate-functional-final-20260811-r6",
+  "candidateStatus": {
+    "status": "invalidated",
+    "eligible": false,
+    "diagnosticEvidenceOnly": true,
+    "reason": "Real-browser r6 acceptance confirmed two independent ordinary-journey blockers: Scenario E rejected a valid 2.28 MB PNG with HTTP 413 despite the advertised 48 MB limit, and Scenario B's golfer directory misclassified a fully authored revision-14 plan as incomplete before its offered continuation route failed blank with a Server Components render error. All A-H work stopped; every retained artifact is diagnostic only.",
+    "blockerIds": [
+      "BROWSER-E-MEDIA-UPLOAD-ADVERTISED-LIMIT-413",
+      "BROWSER-B-GOLFER-DIRECTORY-AUTHORED-PLAN-DEAD-END"
+    ],
+    "blockers": [
+      {
+        "id": "BROWSER-E-MEDIA-UPLOAD-ADVERTISED-LIMIT-413",
+        "status": "confirmed",
+        "summary": "The ordinary media UI advertises uploads up to 48 MB, but POST /api/media rejected a valid 2,282,761-byte PNG multipart request with HTTP 413 and emitted a browser console resource error.",
+        "evidencePaths": [
+          "output/playwright/candidate-functional-final-20260811-r6/scenario-eg-report.md",
+          "output/playwright/candidate-functional-final-20260811-r6/eg-e-r6-media-upload-413.png",
+          "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/console-2026-08-11T07-38-10-985Z.log",
+          "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/trace-1786433889952.trace",
+          "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/trace-1786433889952.network",
+          "output/playwright/candidate-functional-final-20260811-r6/functional-qa-server.stdout.log"
+        ]
+      },
+      {
+        "id": "BROWSER-B-GOLFER-DIRECTORY-AUTHORED-PLAN-DEAD-END",
+        "status": "confirmed",
+        "summary": "The ordinary Golfers directory twice labelled a fully authored revision-14 golfer plan as 'No development plan' and 'setup incomplete'; its offered Continue setup transition then left /app/golfers blank and emitted a production Server Components render error even though the direct golfer hub rendered the exact plan and publication controls.",
+        "evidencePaths": [
+          "output/playwright/candidate-functional-final-20260811-r6/scenario-bcd-report.md",
+          "output/playwright/candidate-functional-final-20260811-r6/bcd-b-r6-golfer-list.md",
+          "output/playwright/candidate-functional-final-20260811-r6/bcd-b-r6-golfer-list-recheck.md",
+          "output/playwright/candidate-functional-final-20260811-r6/bcd-b-r6-golfer-hub.md",
+          "output/playwright/candidate-functional-final-20260811-r6/bcd-b-r6-defect-directory-dead-end.png",
+          "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/console-2026-08-11T07-48-05-680Z.log",
+          "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/trace-1786433886674.trace",
+          "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/trace-1786433886674.network",
+          "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/resources/71936d2bb31a743db93dc758871bfb12b3d8bddc.htc"
+        ]
+      }
+    ]
+  },
+  "diagnosticArtifactGroups": [
+    {
+      "id": "AF",
+      "status": "partial_invalidated",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r6/scenario-af-report.md",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/trace-1786433846016.trace",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/trace-1786433846016.network"
+      ]
+    },
+    {
+      "id": "BCD",
+      "status": "partial_invalidated",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r6/scenario-bcd-report.md",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/trace-1786433886674.trace",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/trace-1786433886674.network"
+      ]
+    },
+    {
+      "id": "EG",
+      "status": "partial_invalidated",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r6/scenario-eg-report.md",
+        "output/playwright/candidate-functional-final-20260811-r6/eg-e-r6-media-upload-413.png",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/trace-1786433889952.trace",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/trace-1786433889952.network"
+      ]
+    },
+    {
+      "id": "root-landing-demo",
+      "status": "locally_clean_but_candidate_invalidated",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r6/root-landing-demo-report.md",
+        "output/playwright/candidate-functional-final-20260811-r6/root-landing-1440.png",
+        "output/playwright/candidate-functional-final-20260811-r6/root-landing-320.png",
+        "output/playwright/candidate-functional-final-20260811-r6/root-demo-initial-390.png",
+        "output/playwright/candidate-functional-final-20260811-r6/root-demo-reset-1440.png",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/trace-1786433813194.trace",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/trace-1786433813194.network",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/trace-1786433894755.trace",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/trace-1786433894755.network"
+      ]
+    },
+    {
+      "id": "H",
+      "status": "partial_invalidated",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r6/scenario-h-report.md",
+        "output/playwright/candidate-functional-final-20260811-r6/root-h-billing-fail-closed-390.png",
+        "output/playwright/candidate-functional-final-20260811-r6/root-h-billing-fail-closed-1440.png",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/trace-1786434008040.trace",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/trace-1786434008040.network"
+      ]
+    }
+  ],
+  "createdAt": "2026-08-11T07:34:37.213Z",
+  "sourceIdentity": {
+    "inventoryPath": "output/playwright/candidate-functional-final-20260811-r6/source-identity.json",
+    "schemaVersion": 2,
+    "aggregateSha256": "cb650bf6ee78f5a63615f2f40289b096933b3938b82c09bd001b74a1526c9e2f",
+    "fileCount": 397,
+    "totalBytes": 10615185,
+    "exactCommitOrArchive": "source-identity:cb650bf6ee78f5a63615f2f40289b096933b3938b82c09bd001b74a1526c9e2f",
+    "releaseId": "candidate-functional-final-20260811-r6",
+    "status": "recorded"
+  },
+  "server": {
+    "command": "npm run qa:functional:server",
+    "origin": "http://127.0.0.1:4175",
+    "scenarioCatalogue": "http://127.0.0.1:4175/__qa/scenarios"
+  },
+  "playwright": {
+    "command": "npm run qa:playwright -- -CandidateId <candidate> -Session <session> <command>",
+    "mode": "CLI-first; no Playwright test specs",
+    "artifactDirectory": "output/playwright/candidate-functional-final-20260811-r6"
+  },
+  "verification": {
+    "command": "npm run verify",
+    "status": "passed",
+    "tests": 496,
+    "passed": 496,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "durationMs": 40310.7532,
+    "wallDurationMs": 53801,
+    "logPath": "output/verify-functional-final-20260811-r6.log"
+  },
+  "requiredViewports": [
+    {
+      "width": 320,
+      "height": 844
+    },
+    {
+      "width": 390,
+      "height": 844
+    },
+    {
+      "width": 768,
+      "height": 1024
+    },
+    {
+      "width": 1440,
+      "height": 1000
+    }
+  ],
+  "requiredSurfaces": [
+    "landing",
+    "onboarding",
+    "dashboard",
+    "authoring",
+    "golfer-hub",
+    "media",
+    "launch-data-import",
+    "drill-library-and-assignment",
+    "share-centre",
+    "golfer-roadmap"
+  ],
+  "requiredStates": [
+    "short",
+    "long",
+    "empty",
+    "loading",
+    "partial",
+    "error",
+    "recovery",
+    "expired",
+    "revoked",
+    "republished"
+  ],
+  "scenarios": [
+    {
+      "id": "fresh",
+      "label": "Fresh empty coach",
+      "appEntry": "http://127.0.0.1:4175/__qa/fresh/app",
+      "golferEntry": null,
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "standard",
+      "label": "Standard four-phase roadmap",
+      "appEntry": "http://127.0.0.1:4175/__qa/standard/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/standard/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "three-phase",
+      "label": "Three phases without a package",
+      "appEntry": "http://127.0.0.1:4175/__qa/three-phase/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/three-phase/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "mixed-30",
+      "label": "Thirty mixed-state golfers",
+      "appEntry": "http://127.0.0.1:4175/__qa/mixed-30/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/mixed-30/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "long-content",
+      "label": "Long-content roadmap",
+      "appEntry": "http://127.0.0.1:4175/__qa/long-content/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/long-content/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "expired",
+      "label": "Expired private access",
+      "appEntry": "http://127.0.0.1:4175/__qa/expired/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/expired/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "revoked",
+      "label": "Revoked private access",
+      "appEntry": "http://127.0.0.1:4175/__qa/revoked/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/revoked/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "republished",
+      "label": "Republished roadmap",
+      "appEntry": "http://127.0.0.1:4175/__qa/republished/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/republished/golfer",
+      "oldGolferEntry": "http://127.0.0.1:4175/__qa/republished/old-golfer",
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    }
+  ],
+  "acceptanceScenarios": [
+    {
+      "id": "A",
+      "label": "First self-serve roadmap",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "partial_invalidated",
+      "browserVisualResult": "partial_invalidated",
+      "manualReviewResult": "partial_invalidated",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r6/scenario-af-report.md",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/page-2026-08-11T07-37-39-190Z.yml",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/page-2026-08-11T07-41-07-203Z.yml",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/page-2026-08-11T07-44-59-470Z.yml",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/page-2026-08-11T07-46-51-893Z.yml",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/page-2026-08-11T07-47-21-891Z.yml",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/page-2026-08-11T07-47-45-580Z.yml",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/page-2026-08-11T07-48-57-673Z.yml",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/trace-1786433846016.trace",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/trace-1786433846016.network"
+      ],
+      "blockerIds": [
+        "BROWSER-E-MEDIA-UPLOAD-ADVERTISED-LIMIT-413",
+        "BROWSER-B-GOLFER-DIRECTORY-AUTHORED-PLAN-DEAD-END"
+      ],
+      "notes": [
+        "Scenario A stopped while golfer-specific authoring was still in progress. Its fresh-account, branding fallback, package, three-phase template, interruption, and exact-ID resume observations are diagnostic only; preview, publication, sharing, golfer access, second-case, and responsive evidence were not completed."
+      ]
+    },
+    {
+      "id": "B",
+      "label": "Swing-video evidence",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "partial_invalidated",
+      "browserVisualResult": "partial_invalidated",
+      "manualReviewResult": "partial_invalidated",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r6/scenario-bcd-report.md",
+        "output/playwright/candidate-functional-final-20260811-r6/bcd-b-r6-poster-ready.md",
+        "output/playwright/candidate-functional-final-20260811-r6/bcd-b-r6-poster-ready.png",
+        "output/playwright/candidate-functional-final-20260811-r6/bcd-b-r6-baseline-ready.md",
+        "output/playwright/candidate-functional-final-20260811-r6/bcd-b-r6-baseline-ready.png",
+        "output/playwright/candidate-functional-final-20260811-r6/bcd-b-r6-media-evidence-created.md",
+        "output/playwright/candidate-functional-final-20260811-r6/bcd-b-r6-media-evidence-created.png",
+        "output/playwright/candidate-functional-final-20260811-r6/bcd-b-r6-lesson-and-evidence-attached.md",
+        "output/playwright/candidate-functional-final-20260811-r6/bcd-b-r6-golfer-list.md",
+        "output/playwright/candidate-functional-final-20260811-r6/bcd-b-r6-golfer-list-recheck.md",
+        "output/playwright/candidate-functional-final-20260811-r6/bcd-b-r6-golfer-hub.md",
+        "output/playwright/candidate-functional-final-20260811-r6/bcd-b-r6-defect-directory-dead-end.png",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/console-2026-08-11T07-48-05-680Z.log",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/trace-1786433886674.trace",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/trace-1786433886674.network"
+      ],
+      "blockerIds": [
+        "BROWSER-B-GOLFER-DIRECTORY-AUTHORED-PLAN-DEAD-END",
+        "BROWSER-E-MEDIA-UPLOAD-ADVERTISED-LIMIT-413"
+      ],
+      "notes": [
+        "Ordinary UI work reached a ready private image and video plus revision-14 media evidence and lesson attachment, but replacement, republishing/share revocation, golfer playback, withdrawal fallback, and storage-failure recovery were not executed. The same run independently confirmed the authored-plan directory misclassification and dead-end continuation defect. No Scenario B acceptance claim is made."
+      ]
+    },
+    {
+      "id": "C",
+      "label": "Practice-drill reuse",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_executed_invalidated",
+      "browserVisualResult": "not_executed_invalidated",
+      "manualReviewResult": "not_executed_invalidated",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r6/scenario-bcd-report.md"
+      ],
+      "blockerIds": [
+        "BROWSER-E-MEDIA-UPLOAD-ADVERTISED-LIMIT-413",
+        "BROWSER-B-GOLFER-DIRECTORY-AUTHORED-PLAN-DEAD-END"
+      ],
+      "notes": [
+        "Scenario C was not started before candidate-wide invalidation."
+      ]
+    },
+    {
+      "id": "D",
+      "label": "Launch-monitor import and comparison",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_executed_invalidated",
+      "browserVisualResult": "not_executed_invalidated",
+      "manualReviewResult": "not_executed_invalidated",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r6/scenario-bcd-report.md"
+      ],
+      "blockerIds": [
+        "BROWSER-E-MEDIA-UPLOAD-ADVERTISED-LIMIT-413",
+        "BROWSER-B-GOLFER-DIRECTORY-AUTHORED-PLAN-DEAD-END"
+      ],
+      "notes": [
+        "Scenario D was not started before candidate-wide invalidation."
+      ]
+    },
+    {
+      "id": "E",
+      "label": "Living journey and phase transition",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "partial_invalidated",
+      "browserVisualResult": "partial_invalidated",
+      "manualReviewResult": "partial_invalidated",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r6/scenario-eg-report.md",
+        "output/playwright/candidate-functional-final-20260811-r6/eg-e-r6-media-upload-413.png",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/console-2026-08-11T07-38-10-985Z.log",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/page-2026-08-11T07-46-31-095Z.yml",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/trace-1786433889952.trace",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/trace-1786433889952.network"
+      ],
+      "blockerIds": [
+        "BROWSER-E-MEDIA-UPLOAD-ADVERTISED-LIMIT-413",
+        "BROWSER-B-GOLFER-DIRECTORY-AUTHORED-PLAN-DEAD-END"
+      ],
+      "notes": [
+        "Scenario E created a scheduled lesson and six distinct source-bounded evidence types through ordinary UI controls, then stopped when the seventh media evidence path exposed the advertised-limit HTTP 413 blocker. Lesson completion, media evidence, practice/check-in, source linking, phase review, publication, and history/deep-link coverage remain incomplete; no acceptance claim is made."
+      ]
+    },
+    {
+      "id": "F",
+      "label": "Return and management",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_executed_invalidated",
+      "browserVisualResult": "not_executed_invalidated",
+      "manualReviewResult": "not_executed_invalidated",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r6/scenario-af-report.md"
+      ],
+      "blockerIds": [
+        "BROWSER-E-MEDIA-UPLOAD-ADVERTISED-LIMIT-413",
+        "BROWSER-B-GOLFER-DIRECTORY-AUTHORED-PLAN-DEAD-END"
+      ],
+      "notes": [
+        "Scenario F was not started before candidate-wide invalidation."
+      ]
+    },
+    {
+      "id": "G",
+      "label": "Golfer mobile and print experience",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_executed_invalidated",
+      "browserVisualResult": "not_executed_invalidated",
+      "manualReviewResult": "not_executed_invalidated",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r6/scenario-eg-report.md"
+      ],
+      "blockerIds": [
+        "BROWSER-E-MEDIA-UPLOAD-ADVERTISED-LIMIT-413",
+        "BROWSER-B-GOLFER-DIRECTORY-AUTHORED-PLAN-DEAD-END"
+      ],
+      "notes": [
+        "Scenario G was not started before candidate-wide invalidation; responsive golfer, keyboard/touch, sharing lifecycle, QR, and print/PDF evidence are absent for r6."
+      ]
+    },
+    {
+      "id": "H",
+      "label": "SaaS billing in test mode",
+      "automatedResult": "candidate_baseline_invalidated",
+      "browserFunctionalResult": "partial_invalidated",
+      "browserVisualResult": "partial_invalidated",
+      "manualReviewResult": "partial_invalidated",
+      "externalDependencyResult": "configuration_ready_owner_provider_activation_pending",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260811-r6/scenario-h-report.md",
+        "output/playwright/candidate-functional-final-20260811-r6/root-h-billing-fail-closed-390.png",
+        "output/playwright/candidate-functional-final-20260811-r6/root-h-billing-fail-closed-1440.png",
+        "output/playwright/candidate-functional-final-20260811-r6/root-h-checkout-canceled-390.md",
+        "output/playwright/candidate-functional-final-20260811-r6/root-h-checkout-complete-390.md",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/trace-1786434008040.trace",
+        "output/playwright/candidate-functional-final-20260811-r6/.playwright-cli/traces/trace-1786434008040.network"
+      ],
+      "blockerIds": [
+        "BROWSER-E-MEDIA-UPLOAD-ADVERTISED-LIMIT-413",
+        "BROWSER-B-GOLFER-DIRECTORY-AUTHORED-PLAN-DEAD-END"
+      ],
+      "notes": [
+        "The local H path was clean, but candidate-wide invalidation makes every r6 browser artifact diagnostic only and records no accepting outcome. Checkout, Portal, and reconciliation fail closed until exact owner/provider inputs exist; canceled and returned states make no payment-success claim."
+      ]
+    }
+  ],
+  "browserReview": {
+    "unexplainedConsoleErrors": null,
+    "failedNetworkRequests": null,
+    "keyboardReview": "not_recorded",
+    "touchEquivalentReview": "not_recorded",
+    "reducedMotionReview": "not_recorded",
+    "reflowAndOverflowReview": "not_recorded",
+    "visualReviewer": null
+  },
+  "completionEligibility": {
+    "eligible": false,
+    "invalidated": true,
+    "diagnosticEvidenceOnly": true,
+    "blockerIds": [
+      "BROWSER-E-MEDIA-UPLOAD-ADVERTISED-LIMIT-413",
+      "BROWSER-B-GOLFER-DIRECTORY-AUTHORED-PLAN-DEAD-END"
+    ],
+    "reason": "Candidate r6 is ineligible and diagnostic-only. Scenario E confirmed that the advertised media-upload size contract rejects an ordinary valid 2.28 MB PNG with HTTP 413; Scenario B independently confirmed that the golfer directory misclassifies a fully authored plan and offers a continuation route that fails blank with a Server Components render error. A, B, E, and H are only partial invalidated runs; C, D, F, and G were not executed after invalidation. No accepting A-H outcome remains."
+  }
+}

@@ -1,0 +1,161 @@
+- generic [ref=f1e2]:
+  - link "Skip to main content" [ref=f1e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=f1e4]:
+    - link "Prairie Path Golf Coaching Roadmap home" [ref=f1e226] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=f1e6]: PP
+      - generic [ref=f1e7]:
+        - strong [ref=f1e8]: Prairie Path Golf Coaching
+        - generic [ref=f1e9]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=f1e10]:
+      - link "Overview" [ref=f1e11] [cursor=pointer]:
+        - /url: /app
+      - link "Golfers" [ref=f1e12] [cursor=pointer]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=f1e13] [cursor=pointer]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=f1e14] [cursor=pointer]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=f1e15] [cursor=pointer]:
+        - /url: /app/media
+      - link "Packages" [ref=f1e16] [cursor=pointer]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=f1e17] [cursor=pointer]:
+        - /url: /app/billing
+      - link "Settings" [ref=f1e18] [cursor=pointer]:
+        - /url: /app/settings
+    - generic [ref=f1e19]:
+      - generic [ref=f1e20]: CF
+      - generic [ref=f1e21]:
+        - strong [ref=f1e22]: Coach Fresh empty coach
+        - generic [ref=f1e23]: qa.fresh@example.test
+      - button "Sign out" [ref=f1e25] [cursor=pointer]
+  - main [ref=f1e26]:
+    - generic [ref=f1e27]:
+      - generic [ref=f1e29]:
+        - generic [ref=f1e30]: Settings
+        - heading "Your name is enough to begin." [level=1] [ref=f1e127]
+        - paragraph [ref=f1e32]: Keep branding restrained and recognizable. The golfer’s goal, your judgment, and the evidence hierarchy remain more important than decoration.
+      - generic [ref=f1e227]:
+        - group "Identity your golfers recognize" [ref=f1e229]:
+          - generic [ref=f1e231]:
+            - generic [ref=f1e232]:
+              - text: Coach display name
+              - textbox "Coach display name" [ref=f1e233]: Coach Fresh empty coach
+            - generic [ref=f1e234]:
+              - text: Business name (optional)
+              - textbox "Business name (optional)" [ref=f1e235]: Prairie Path Golf Coaching
+            - generic [ref=f1e236]:
+              - text: Professional title (optional)
+              - textbox "Professional title (optional)" [ref=f1e237]: Independent golf instructor
+            - generic [ref=f1e238]:
+              - text: Contact email
+              - textbox "Contact email" [ref=f1e239]: qa.fresh@example.test
+            - generic [ref=f1e240]:
+              - text: Contact phone (optional)
+              - textbox "Contact phone (optional)" [ref=f1e241]
+            - generic [ref=f1e242]:
+              - text: Website (optional)
+              - textbox "Website (optional)" [ref=f1e243]:
+                - /placeholder: https://coach.example.ca
+            - generic [ref=f1e244]:
+              - text: City (optional)
+              - textbox "City (optional)" [ref=f1e245]:
+                - /placeholder: Calgary
+                - text: Calgary
+            - generic [ref=f1e246]:
+              - text: Province or territory (optional)
+              - textbox "Province or territory (optional)" [ref=f1e247]:
+                - /placeholder: Alberta
+                - text: Alberta
+            - generic [ref=f1e248]:
+              - text: Short coaching description (optional)
+              - textbox "Short coaching description (optional)" [ref=f1e249]: Practical coaching plans built around observable progress.
+            - generic [ref=f1e250]:
+              - text: Accent colour
+              - textbox "Accent colour Choose a dark accent. Roadmap rejects colours that would make text hard to read." [ref=f1e251]: "#1b4f40"
+              - generic [ref=f1e252]: Choose a dark accent. Roadmap rejects colours that would make text hard to read.
+          - generic "Live accent colour preview" [ref=f1e253]:
+            - generic [ref=f1e254]: CF
+            - generic [ref=f1e255]:
+              - generic [ref=f1e256]: Private coaching plan
+              - strong [ref=f1e257]: Prairie Path Golf Coaching
+            - generic [ref=f1e258]: Example primary action
+        - alert [ref=f1e259]
+        - button "Save coach identity" [ref=f1e261] [cursor=pointer]
+      - region [ref=f1e163]:
+        - generic [ref=f1e164]:
+          - generic [ref=f1e165]:
+            - text: Optional branding
+            - heading "Logo, coach photo, and live preview" [level=2] [ref=f1e166]
+          - link "Open media library" [ref=f1e167] [cursor=pointer]:
+            - /url: /app/media
+        - paragraph [ref=f1e168]: Crop a private image here or reuse one already uploaded. Branding is optional and stays within Roadmap’s restrained layout.
+        - generic [ref=f1e169]:
+          - article [ref=f1e170]:
+            - generic [ref=f1e171]: Current logo
+            - generic [ref=f1e172]: PP
+            - strong [ref=f1e174]: Not added — Roadmap initials are used
+          - article [ref=f1e175]:
+            - generic [ref=f1e176]: Current coach photo
+            - generic [ref=f1e177]: PP
+            - strong [ref=f1e179]: Not added — Roadmap initials are used
+        - generic [ref=f1e180]:
+          - group "Choose one branding slot" [ref=f1e181]:
+            - generic [ref=f1e183]:
+              - generic [ref=f1e184]:
+                - radio "Logo (3:1)" [checked] [ref=f1e185]
+                - text: Logo (3:1)
+              - generic [ref=f1e186]:
+                - radio "Coach photo (square)" [ref=f1e187]
+                - text: Coach photo (square)
+          - group "Choose the source" [ref=f1e188]:
+            - generic [ref=f1e190]:
+              - generic [ref=f1e191]:
+                - radio "Upload and crop" [checked] [ref=f1e192]
+                - text: Upload and crop
+              - generic [ref=f1e193]:
+                - radio "Reuse library image" [disabled] [ref=f1e194]
+                - text: Reuse library image
+          - generic [ref=f1e195]:
+            - generic [ref=f1e196]:
+              - text: Image file
+              - button "Image file" [ref=f1e197]
+            - generic [ref=f1e198]:
+              - text: Accessible description
+              - textbox "Accessible description" [ref=f1e199]:
+                - /placeholder: Prairie Path Golf Coaching logo
+            - generic [ref=f1e200]: Choose an image to preview the crop
+            - generic [ref=f1e202]:
+              - generic [ref=f1e203]:
+                - text: Zoom
+                - slider "Zoom" [ref=f1e204]: "1"
+              - generic [ref=f1e205]:
+                - text: Horizontal
+                - slider "Horizontal" [ref=f1e206]: "0"
+              - generic [ref=f1e207]:
+                - text: Vertical
+                - slider "Vertical" [ref=f1e208]: "0"
+          - generic [ref=f1e209]:
+            - generic [ref=f1e210]: PP
+            - generic [ref=f1e211]:
+              - generic [ref=f1e212]: Private coaching plan
+              - strong [ref=f1e213]: Prairie Path Golf Coaching
+          - button "Save selected branding" [ref=f1e214] [cursor=pointer]
+      - generic [ref=f1e215]:
+        - heading "Packages and Roadmap billing" [level=2] [ref=f1e216]
+        - paragraph [ref=f1e217]: Your golfer-facing coaching packages and your Roadmap SaaS subscription are separate. Roadmap never processes the golfer's coaching-package payment.
+        - generic [ref=f1e218]:
+          - link "Manage coaching packages" [ref=f1e219] [cursor=pointer]:
+            - /url: /app/packages
+          - link "Review Roadmap plan and billing" [ref=f1e220] [cursor=pointer]:
+            - /url: /app/billing
+      - generic [ref=f1e221]:
+        - heading "Privacy and account controls" [level=2] [ref=f1e222]
+        - paragraph [ref=f1e126]: Authenticated JSON exports download directly. Deletion can only be submitted for identity and retention review; nothing is removed automatically.
+        - generic [ref=f1e223]:
+          - link "Review or revoke active private access" [ref=f1e224] [cursor=pointer]:
+            - /url: /app/settings/shares
+          - link "Export data or request deletion review" [ref=f1e225] [cursor=pointer]:
+            - /url: /app/settings/data

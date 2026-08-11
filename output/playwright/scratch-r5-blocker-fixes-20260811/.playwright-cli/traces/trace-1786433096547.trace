@@ -1,0 +1,146 @@
+{"version":8,"type":"context-options","origin":"library","browserName":"chromium","playwrightVersion":"1.63.0-alpha-2026-08-05","options":{"noDefaultViewport":false,"viewport":{"width":1280,"height":720},"selectorEngines":[],"acceptDownloads":"accept"},"platform":"win32","wallTime":1786433096548,"monotonicTime":2229.714,"sdkLanguage":"javascript","testIdAttributeName":"data-testid","contextId":"browser-context@c588dc104a9700dbc7ac3b2d7cad1dc5","channel":"chrome"}
+{"type":"before","callId":"call@30","startTime":2234.937,"class":"Frame","method":"title","params":{},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@30","endTime":2235.849,"result":{"value":""}}
+{"type":"before","callId":"call@32","startTime":2236.17,"class":"Page","method":"consoleMessages","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@32","endTime":2236.202,"result":{"messages":[]}}
+{"type":"before","callId":"call@34","startTime":2236.332,"class":"Page","method":"pageErrors","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@34","endTime":2236.354,"result":{"errors":[]}}
+{"type":"screencast-frame","pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9","sha1":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9-1786433096560.jpeg","width":390,"height":844,"timestamp":2241.658,"frameSwapWallTime":1786433096571.27}
+{"type":"before","callId":"call@36","startTime":3196.907,"class":"Frame","method":"goto","params":{"url":"http://127.0.0.1:4175/__qa/expired/golfer","waitUntil":"domcontentloaded","timeout":60000},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9","beforeSnapshot":"before@call@36"}
+{"type":"frame-snapshot","snapshot":{"callId":"call@36","snapshotName":"before@call@36","pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9","frameId":"frame@f708d324e2db93956389c28d431cd368","frameUrl":"about:blank","html":["HTML",{},["HEAD",{},["BASE",{"href":"about:blank"}]],["BODY"]],"viewport":{"width":390,"height":844},"timestamp":3198.733,"wallTime":1786433097529,"collectionTime":0.5,"resourceOverrides":[],"isMainFrame":true}}
+{"type":"log","callId":"call@36","time":3199.074,"message":"navigating to \"http://127.0.0.1:4175/__qa/expired/golfer\", waiting until \"domcontentloaded\""}
+{"type":"after","callId":"call@36","endTime":3825.483,"result":{"response":"<Response>"},"afterSnapshot":"after@call@36"}
+{"type":"screencast-frame","pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9","sha1":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9-1786433098145.jpeg","width":390,"height":844,"timestamp":3827.56,"frameSwapWallTime":1786433098156.982}
+{"type":"frame-snapshot","snapshot":{"callId":"call@36","snapshotName":"after@call@36","pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9","frameId":"frame@f708d324e2db93956389c28d431cd368","frameUrl":"http://127.0.0.1:4175/r#token=vxtNvUp-XDM-3t8-4qB-caBm_qOiam_6ey5YFqkqw8I","doctype":"html","html":["HTML",{"lang":"en-CA"},["HEAD",{},["BASE",{"href":"http://127.0.0.1:4175/r#token=vxtNvUp-XDM-3t8-4qB-caBm_qOiam_6ey5YFqkqw8I"}],["META",{"charset":"utf-8"}],["META",{"name":"viewport","content":"width=device-width, initial-scale=1"}],["LINK",{"rel":"stylesheet","href":"/assets/worker-entry-C1HsYmDX.css","data-precedence":"vite-rsc/client-reference"}],["LINK",{"rel":"stylesheet","href":"/assets/index-Dfm494ox.css","data-rsc-css-href":"/assets/index-Dfm494ox.css","data-precedence":"vite-rsc/importer-resources"}],["LINK",{"rel":"modulepreload","href":"/assets/worker-entry-O6roTrf7.js","crossorigin":""}],["LINK",{"rel":"modulepreload","href":"/assets/rolldown-runtime-hePW80VL.js","crossorigin":""}],["LINK",{"rel":"modulepreload","href":"/assets/framework-bym5aI3S.js","crossorigin":""}],["LINK",{"rel":"modulepreload","href":"/assets/index-BJF52p9w.js","crossorigin":""}],["TITLE",{},"Private coaching plan | Roadmap"],["META",{"name":"description","content":"Turn a golf assessment into a clear, coach-branded development roadmap and an appropriate first lesson-package recommendation."}],["META",{"name":"application-name","content":"Roadmap"}],["META",{"name":"category","content":"business"}],["META",{"name":"robots","content":"noindex, nofollow, nocache"}],["META",{"property":"og:title","content":"Roadmap | Coach-branded golf development roadmaps"}],["META",{"property":"og:description","content":"Turn a golf assessment into a clear, coach-branded development roadmap and an appropriate first lesson-package recommendation."}],["META",{"property":"og:site_name","content":"Roadmap"}],["META",{"property":"og:type","content":"website"}],["META",{"property":"og:locale","content":"en_CA"}],["META",{"property":"og:image","content":"http://127.0.0.1:4175/og.png"}],["META",{"property":"og:image:width","content":"1734"}],["META",{"property":"og:image:height","content":"909"}],["META",{"property":"og:image:alt","content":"Roadmap — Sell the plan, not another hour."}],["META",{"name":"twitter:card","content":"summary_large_image"}],["META",{"name":"twitter:title","content":"Roadmap | Coach-branded golf development roadmaps"}],["META",{"name":"twitter:description","content":"Turn a golf assessment into a clear, coach-branded development roadmap and an appropriate first lesson-package recommendation."}],["META",{"name":"twitter:image","content":"http://127.0.0.1:4175/og.png"}],["LINK",{"rel":"shortcut icon","href":"http://127.0.0.1:4175/favicon.svg"}],["LINK",{"rel":"icon","href":"http://127.0.0.1:4175/favicon.svg","type":"image/svg+xml"}],["META",{"name":"theme-color","content":"#173d31"}],["META",{"name":"color-scheme","content":"light"}],["LINK",{"rel":"modulepreload","nonce":"","href":"/assets/index-BJF52p9w.js"}],"\n"],["BODY",{},["MAIN",{"class":"_shell_3w0z9_1"},["DIV",{"class":"_wordmark_3w0z9_12"},"Roadmap"],["SECTION",{"class":"_card_3w0z9_17","aria-busy":"true","aria-live":"polite"},["SPAN",{},"Private coaching plan"],["H1",{},"Opening your roadmap…"],["P",{},"The private access link is being checked. No coaching details are shown until it is valid."]]]]],"viewport":{"width":390,"height":844},"timestamp":3840.07,"wallTime":1786433098168,"collectionTime":0.9000000059604645,"resourceOverrides":[],"isMainFrame":true}}
+{"type":"before","callId":"call@38","startTime":3841.694,"title":"Wait for load state \"load\"","class":"Page","method":"__waitInfo__","params":{"waitId":"92f0289ca30e29c350dcca1444798d1d","phase":"before","event":""},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"log","callId":"call@38","time":3841.77,"message":"  not waiting, \"load\" event already fired"}
+{"type":"after","callId":"call@38","endTime":3841.783}
+{"type":"before","callId":"call@42","startTime":3841.85,"class":"Frame","method":"ariaSnapshot","params":{"mode":"ai","timeout":30000},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@42","endTime":3862.425,"result":{"snapshot":"- main [ref=e2]:\n  - generic [ref=e3]: Roadmap\n  - generic [ref=e4]:\n    - text: Private coaching plan\n    - heading \"Opening your roadmap…\" [level=1] [ref=e5]\n    - paragraph [ref=e6]: The private access link is being checked. No coaching details are shown until it is valid."}}
+{"type":"before","callId":"call@44","startTime":3862.781,"class":"Frame","method":"title","params":{},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@44","endTime":3864.153,"result":{"value":"Private coaching plan | Roadmap"}}
+{"type":"before","callId":"call@46","startTime":3864.625,"class":"Page","method":"consoleMessages","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@46","endTime":3864.656,"result":{"messages":[]}}
+{"type":"before","callId":"call@48","startTime":3864.817,"class":"Page","method":"pageErrors","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@48","endTime":3864.845,"result":{"errors":[]}}
+{"type":"screencast-frame","pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9","sha1":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9-1786433098227.jpeg","width":390,"height":844,"timestamp":3908.793,"frameSwapWallTime":1786433098238.154}
+{"type":"before","callId":"call@50","startTime":4875.265,"class":"Frame","method":"ariaSnapshot","params":{"mode":"ai","timeout":30000},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@50","endTime":4877.195,"result":{"snapshot":"- main [ref=e2]:\n  - generic [ref=e3]: Roadmap\n  - generic [ref=e4]:\n    - text: Plan unavailable\n    - heading \"This private roadmap cannot be opened.\" [level=1] [ref=e7]\n    - paragraph [ref=e8]: \"The link may be expired, revoked, replaced by a newer plan, or incomplete. No golfer information has been disclosed. Ask the coach to send a current link. Reference: 16fd7957-0161-4a9d-9b8a-8f9c92312e3b.\""}}
+{"type":"before","callId":"call@52","startTime":4877.443,"class":"Frame","method":"title","params":{},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@52","endTime":4877.935,"result":{"value":"Private coaching plan | Roadmap"}}
+{"type":"before","callId":"call@54","startTime":4878.157,"class":"Page","method":"consoleMessages","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@54","endTime":4878.19,"result":{"messages":[]}}
+{"type":"before","callId":"call@56","startTime":4878.358,"class":"Page","method":"pageErrors","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@56","endTime":4878.399,"result":{"errors":[]}}
+{"type":"before","callId":"call@58","startTime":5930.471,"class":"Page","method":"screenshot","params":{"type":"png","scale":"css","timeout":5000},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9","beforeSnapshot":"before@call@58"}
+{"type":"frame-snapshot","snapshot":{"callId":"call@58","snapshotName":"before@call@58","pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9","frameId":"frame@f708d324e2db93956389c28d431cd368","frameUrl":"http://127.0.0.1:4175/r","doctype":"html","html":["HTML",{"lang":"en-CA"},[[1,34]],["BODY",{},["MAIN",{"class":"_shell_3w0z9_1"},[[1,36]],["SECTION",{"class":"_card_3w0z9_17","aria-busy":"false","aria-live":"polite"},["SPAN",{},"Plan unavailable"],["H1",{},"This private roadmap cannot be opened."],["P",{},"The link may be expired, revoked, replaced by a newer plan, or incomplete. No golfer information has been disclosed. Ask the coach to send a current link. Reference: 16fd7957-0161-4a9d-9b8a-8f9c92312e3b."]]]]],"viewport":{"width":390,"height":844},"timestamp":5931.467,"wallTime":1786433100261,"collectionTime":0.30000001192092896,"resourceOverrides":[],"isMainFrame":true}}
+{"type":"log","callId":"call@58","time":5931.971,"message":"taking page screenshot"}
+{"type":"log","callId":"call@58","time":5932.891,"message":"waiting for fonts to load..."}
+{"type":"log","callId":"call@58","time":5933.552,"message":"fonts loaded"}
+{"type":"screencast-frame","pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9","sha1":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9-1786433100266.jpeg","width":390,"height":844,"timestamp":5948.217,"frameSwapWallTime":1786433100274.397}
+{"type":"after","callId":"call@58","endTime":5948.663,"result":{"binary":"<Buffer>"},"afterSnapshot":"after@call@58"}
+{"type":"frame-snapshot","snapshot":{"callId":"call@58","snapshotName":"after@call@58","pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9","frameId":"frame@f708d324e2db93956389c28d431cd368","frameUrl":"http://127.0.0.1:4175/r","doctype":"html","html":[[1,9]],"viewport":{"width":390,"height":844},"timestamp":5949.195,"wallTime":1786433100279,"collectionTime":0.10000002384185791,"resourceOverrides":[],"isMainFrame":true}}
+{"type":"before","callId":"call@60","startTime":5972.177,"class":"Frame","method":"title","params":{},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@60","endTime":5972.8,"result":{"value":"Private coaching plan | Roadmap"}}
+{"type":"before","callId":"call@62","startTime":5973.016,"class":"Page","method":"consoleMessages","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@62","endTime":5973.046,"result":{"messages":[]}}
+{"type":"before","callId":"call@64","startTime":5973.231,"class":"Page","method":"pageErrors","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@64","endTime":5973.255,"result":{"errors":[]}}
+{"type":"before","callId":"call@66","startTime":6872.837,"class":"Frame","method":"title","params":{},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@66","endTime":6873.565,"result":{"value":"Private coaching plan | Roadmap"}}
+{"type":"before","callId":"call@68","startTime":6873.804,"class":"Page","method":"consoleMessages","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@68","endTime":6873.835,"result":{"messages":[]}}
+{"type":"before","callId":"call@70","startTime":6874.023,"class":"Page","method":"pageErrors","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@70","endTime":6874.044,"result":{"errors":[]}}
+{"type":"before","callId":"call@72","startTime":7815.377,"class":"Page","method":"consoleMessages","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@72","endTime":7815.478,"result":{"messages":[]}}
+{"type":"before","callId":"call@74","startTime":7815.666,"class":"Page","method":"pageErrors","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@74","endTime":7815.714,"result":{"errors":[]}}
+{"type":"before","callId":"call@76","startTime":7816.007,"class":"Page","method":"consoleMessages","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@76","endTime":7816.037,"result":{"messages":[]}}
+{"type":"before","callId":"call@78","startTime":7816.232,"class":"Page","method":"pageErrors","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@78","endTime":7816.251,"result":{"errors":[]}}
+{"type":"before","callId":"call@80","startTime":7816.476,"class":"Frame","method":"title","params":{},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@80","endTime":7817.254,"result":{"value":"Private coaching plan | Roadmap"}}
+{"type":"before","callId":"call@82","startTime":7817.577,"class":"Page","method":"consoleMessages","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@82","endTime":7817.604,"result":{"messages":[]}}
+{"type":"before","callId":"call@84","startTime":7817.79,"class":"Page","method":"pageErrors","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@84","endTime":7817.82,"result":{"errors":[]}}
+{"type":"before","callId":"call@86","startTime":8768.496,"class":"BrowserContext","method":"cookies","params":{"urls":[]}}
+{"type":"after","callId":"call@86","endTime":8769.279,"result":{"cookies":[{"name":"roadmap_qa_scenario","value":"expired","domain":"127.0.0.1","path":"/","expires":-1,"httpOnly":true,"secure":false,"sameSite":"Strict"}]}}
+{"type":"before","callId":"call@88","startTime":8769.621,"class":"Frame","method":"title","params":{},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@88","endTime":8770.21,"result":{"value":"Private coaching plan | Roadmap"}}
+{"type":"before","callId":"call@90","startTime":8770.47,"class":"Page","method":"consoleMessages","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@90","endTime":8770.497,"result":{"messages":[]}}
+{"type":"before","callId":"call@92","startTime":8770.673,"class":"Page","method":"pageErrors","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@92","endTime":8770.703,"result":{"errors":[]}}
+{"type":"before","callId":"call@94","startTime":46259.562,"class":"Frame","method":"title","params":{},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@94","endTime":46260.41,"result":{"value":"Private coaching plan | Roadmap"}}
+{"type":"before","callId":"call@96","startTime":46260.775,"class":"Page","method":"consoleMessages","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@96","endTime":46260.806,"result":{"messages":[]}}
+{"type":"before","callId":"call@98","startTime":46261.053,"class":"Page","method":"pageErrors","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@98","endTime":46261.075,"result":{"errors":[]}}
+{"type":"before","callId":"call@100","startTime":62135.372,"class":"Frame","method":"title","params":{},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@100","endTime":62136.238,"result":{"value":"Private coaching plan | Roadmap"}}
+{"type":"before","callId":"call@102","startTime":62136.461,"class":"Page","method":"consoleMessages","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@102","endTime":62136.483,"result":{"messages":[]}}
+{"type":"before","callId":"call@104","startTime":62136.965,"class":"Page","method":"pageErrors","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@104","endTime":62136.99,"result":{"errors":[]}}
+{"type":"before","callId":"call@106","startTime":63096.917,"class":"Frame","method":"title","params":{},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@106","endTime":63097.68,"result":{"value":"Private coaching plan | Roadmap"}}
+{"type":"before","callId":"call@108","startTime":63097.927,"class":"Page","method":"consoleMessages","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@108","endTime":63097.961,"result":{"messages":[]}}
+{"type":"before","callId":"call@110","startTime":63098.156,"class":"Page","method":"pageErrors","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@110","endTime":63098.176,"result":{"errors":[]}}
+{"type":"before","callId":"call@112","startTime":64026.384,"class":"Response","method":"body","params":{},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@112","endTime":64026.553,"result":{"binary":"<Buffer>"}}
+{"type":"before","callId":"call@114","startTime":64026.823,"class":"Frame","method":"title","params":{},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@114","endTime":64028.072,"result":{"value":"Private coaching plan | Roadmap"}}
+{"type":"before","callId":"call@116","startTime":64028.289,"class":"Page","method":"consoleMessages","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@116","endTime":64028.306,"result":{"messages":[]}}
+{"type":"before","callId":"call@118","startTime":64028.503,"class":"Page","method":"pageErrors","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@118","endTime":64028.52,"result":{"errors":[]}}
+{"type":"before","callId":"call@120","startTime":64947.651,"class":"Page","method":"consoleMessages","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@120","endTime":64947.729,"result":{"messages":[]}}
+{"type":"before","callId":"call@122","startTime":64947.904,"class":"Page","method":"pageErrors","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@122","endTime":64947.919,"result":{"errors":[]}}
+{"type":"before","callId":"call@124","startTime":64948.092,"class":"Page","method":"consoleMessages","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@124","endTime":64948.11,"result":{"messages":[]}}
+{"type":"before","callId":"call@126","startTime":64948.232,"class":"Page","method":"pageErrors","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@126","endTime":64948.249,"result":{"errors":[]}}
+{"type":"before","callId":"call@128","startTime":64948.412,"class":"Frame","method":"title","params":{},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@128","endTime":64949.185,"result":{"value":"Private coaching plan | Roadmap"}}
+{"type":"before","callId":"call@130","startTime":64949.756,"class":"Page","method":"consoleMessages","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@130","endTime":64949.8,"result":{"messages":[]}}
+{"type":"before","callId":"call@132","startTime":64949.999,"class":"Page","method":"pageErrors","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@132","endTime":64950.019,"result":{"errors":[]}}
+{"type":"before","callId":"call@134","startTime":65929.458,"class":"BrowserContext","method":"cookies","params":{"urls":[]}}
+{"type":"after","callId":"call@134","endTime":65930.089,"result":{"cookies":[{"name":"roadmap_qa_scenario","value":"expired","domain":"127.0.0.1","path":"/","expires":-1,"httpOnly":true,"secure":false,"sameSite":"Strict"}]}}
+{"type":"before","callId":"call@136","startTime":65930.587,"class":"Frame","method":"title","params":{},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@136","endTime":65931.396,"result":{"value":"Private coaching plan | Roadmap"}}
+{"type":"before","callId":"call@138","startTime":65931.684,"class":"Page","method":"consoleMessages","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@138","endTime":65931.715,"result":{"messages":[]}}
+{"type":"before","callId":"call@140","startTime":65932.028,"class":"Page","method":"pageErrors","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@140","endTime":65932.062,"result":{"errors":[]}}
+{"type":"before","callId":"call@142","startTime":104359.465,"class":"Frame","method":"evaluateExpression","params":{"expression":"async (expr) => {\n              const value = eval(`(${expr})`);\n              const isFunction = typeof value === \"function\";\n              const result = await (isFunction ? value() : value);\n              return { result, isFunction };\n            }","isFunction":true,"arg":{"value":{"s":"() => ({url: location.href, title: document.title, body: document.body.innerText})"},"handles":[]}},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9","beforeSnapshot":"before@call@142"}
+{"type":"frame-snapshot","snapshot":{"callId":"call@142","snapshotName":"before@call@142","pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9","frameId":"frame@f708d324e2db93956389c28d431cd368","frameUrl":"http://127.0.0.1:4175/r","doctype":"html","html":[[2,9]],"viewport":{"width":390,"height":844},"timestamp":104360.776,"wallTime":1786433198691,"collectionTime":0.20000001788139343,"resourceOverrides":[],"isMainFrame":true}}
+{"type":"after","callId":"call@142","endTime":104362.694,"result":{"value":{"o":[{"k":"result","v":{"o":[{"k":"url","v":{"s":"http://127.0.0.1:4175/r"}},{"k":"title","v":{"s":"Private coaching plan | Roadmap"}},{"k":"body","v":{"s":"Roadmap\nPLAN UNAVAILABLE\nThis private roadmap cannot be opened.\n\nThe link may be expired, revoked, replaced by a newer plan, or incomplete. No golfer information has been disclosed. Ask the coach to send a current link. Reference: 16fd7957-0161-4a9d-9b8a-8f9c92312e3b."}}],"id":2}},{"k":"isFunction","v":{"b":true}}],"id":1}},"afterSnapshot":"after@call@142"}
+{"type":"frame-snapshot","snapshot":{"callId":"call@142","snapshotName":"after@call@142","pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9","frameId":"frame@f708d324e2db93956389c28d431cd368","frameUrl":"http://127.0.0.1:4175/r","doctype":"html","html":[[3,9]],"viewport":{"width":390,"height":844},"timestamp":104363.327,"wallTime":1786433198693,"collectionTime":0.09999999403953552,"resourceOverrides":[],"isMainFrame":true}}
+{"type":"before","callId":"call@144","startTime":104363.714,"class":"Frame","method":"evaluateExpression","params":{"expression":"(ms) => new Promise((f) => setTimeout(f, ms))","isFunction":true,"arg":{"value":{"n":500},"handles":[]}},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9","beforeSnapshot":"before@call@144"}
+{"type":"frame-snapshot","snapshot":{"callId":"call@144","snapshotName":"before@call@144","pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9","frameId":"frame@f708d324e2db93956389c28d431cd368","frameUrl":"http://127.0.0.1:4175/r","doctype":"html","html":[[4,9]],"viewport":{"width":390,"height":844},"timestamp":104364.234,"wallTime":1786433198694,"collectionTime":0.20000001788139343,"resourceOverrides":[],"isMainFrame":true}}
+{"type":"after","callId":"call@144","endTime":104883.026,"result":{"value":{"v":"undefined"}},"afterSnapshot":"after@call@144"}
+{"type":"frame-snapshot","snapshot":{"callId":"call@144","snapshotName":"after@call@144","pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9","frameId":"frame@f708d324e2db93956389c28d431cd368","frameUrl":"http://127.0.0.1:4175/r","doctype":"html","html":[[5,9]],"viewport":{"width":390,"height":844},"timestamp":104883.948,"wallTime":1786433199214,"collectionTime":0.19999998807907104,"resourceOverrides":[],"isMainFrame":true}}
+{"type":"before","callId":"call@146","startTime":104884.353,"class":"Frame","method":"title","params":{},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@146","endTime":104884.836,"result":{"value":"Private coaching plan | Roadmap"}}
+{"type":"before","callId":"call@148","startTime":104885.012,"class":"Page","method":"consoleMessages","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@148","endTime":104885.029,"result":{"messages":[]}}
+{"type":"before","callId":"call@150","startTime":104885.18,"class":"Page","method":"pageErrors","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@150","endTime":104885.194,"result":{"errors":[]}}
+{"type":"before","callId":"call@152","startTime":105822.934,"class":"Frame","method":"ariaSnapshot","params":{"mode":"ai","timeout":30000},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@152","endTime":105824.601,"result":{"snapshot":"- main [ref=e2]:\n  - generic [ref=e3]: Roadmap\n  - generic [ref=e4]:\n    - text: Plan unavailable\n    - heading \"This private roadmap cannot be opened.\" [level=1] [ref=e7]\n    - paragraph [ref=e8]: \"The link may be expired, revoked, replaced by a newer plan, or incomplete. No golfer information has been disclosed. Ask the coach to send a current link. Reference: 16fd7957-0161-4a9d-9b8a-8f9c92312e3b.\""}}
+{"type":"before","callId":"call@154","startTime":105824.819,"class":"Frame","method":"title","params":{},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@154","endTime":105825.385,"result":{"value":"Private coaching plan | Roadmap"}}
+{"type":"before","callId":"call@156","startTime":105825.769,"class":"Page","method":"consoleMessages","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@156","endTime":105825.792,"result":{"messages":[]}}
+{"type":"before","callId":"call@158","startTime":105825.901,"class":"Page","method":"pageErrors","params":{"filter":"since-navigation"},"pageId":"page@b4dbb7e1f8ef02dbb780c71f5cc0f2c9"}
+{"type":"after","callId":"call@158","endTime":105825.913,"result":{"errors":[]}}

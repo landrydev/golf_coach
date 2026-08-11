@@ -1,0 +1,171 @@
+- generic [ref=e2]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=e4]:
+    - link "Foothills Golf Studio Roadmap home" [ref=e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=e6]: FG
+      - generic [ref=e7]:
+        - strong [ref=e8]: Foothills Golf Studio
+        - generic [ref=e9]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=e10]:
+      - link "Overview" [ref=e11] [cursor=pointer]:
+        - /url: /app
+      - link "Golfers" [ref=e12] [cursor=pointer]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=e13] [cursor=pointer]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=e14] [cursor=pointer]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=e15] [cursor=pointer]:
+        - /url: /app/media
+      - link "Packages" [ref=e16] [cursor=pointer]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=e17] [cursor=pointer]:
+        - /url: /app/billing
+      - link "Settings" [ref=e18] [cursor=pointer]:
+        - /url: /app/settings
+    - generic [ref=e19]:
+      - generic [ref=e20]: CR
+      - generic [ref=e21]:
+        - strong [ref=e22]: Coach Rowan
+        - generic [ref=e23]: visual.coach@example.test
+      - button "Sign out" [ref=e25] [cursor=pointer]
+  - main [ref=e26]:
+    - generic [ref=e245]:
+      - generic [ref=e246]:
+        - generic [ref=e247]:
+          - generic [ref=e248]: Rich coaching workspace
+          - heading "Jordan Synthetic" [level=1] [ref=e359]
+          - paragraph [ref=e250]: Manage reusable drills, lesson lifecycle, evidence, media, launch-monitor data, reviews, and milestones without leaving this golfer record.
+        - generic [ref=e251]:
+          - link "Back to golfers" [ref=e360] [cursor=pointer]:
+            - /url: /app/golfers
+          - link "Media library" [ref=e361] [cursor=pointer]:
+            - /url: /app/media
+      - navigation "Rich coaching destinations" [ref=e362]:
+        - generic [ref=e363]:
+          - button "Practice (1)" [ref=e364] [cursor=pointer]
+          - button "Lessons (1)" [ref=e365] [cursor=pointer]
+          - button "Evidence (1)" [ref=e366] [cursor=pointer]
+          - button "Media (0)" [ref=e367] [cursor=pointer]
+          - button "Launch data (2)" [ref=e368] [cursor=pointer]
+          - button "Review sources (1)" [ref=e369] [cursor=pointer]
+          - button "Milestones (1)" [ref=e370] [cursor=pointer]
+          - button "Timeline (7)" [ref=e371] [cursor=pointer]
+        - generic [ref=e372]: Plan revision 12
+      - region [ref=e373]:
+        - generic [ref=e375]:
+          - generic [ref=e376]: Evidence record
+          - heading "Record what was observed, measured, reported, or captured" [level=2] [ref=e377]
+          - paragraph [ref=e378]: Evidence stays explicit about its source, limitation, maturity, and whether it represents the golfer’s wider pattern. Media is selected from the ready media library.
+        - generic [ref=e379]:
+          - generic [ref=e380]:
+            - generic [ref=e381]:
+              - generic [ref=e382]: Evidence type
+              - combobox "Evidence type" [ref=e383]:
+                - option "Choose one"
+                - option "Coach observation" [selected]
+                - option "Golfer report"
+                - option "Measurement"
+                - option "Outcome count"
+                - option "Media"
+                - option "Comparison"
+                - option "Note"
+            - generic [ref=e384]:
+              - generic [ref=e385]: Context
+              - combobox "Context" [ref=e386]:
+                - option "Choose one"
+                - option "Lesson" [selected]
+                - option "Practice"
+                - option "Assessment"
+                - option "On course"
+                - option "Phase review"
+                - option "Other"
+            - generic [ref=e387]:
+              - generic [ref=e388]: Phase
+              - combobox "Phase" [ref=e389]:
+                - option "Choose one" [selected]
+                - option "Own centered contact"
+                - option "Shape trajectory"
+                - option "Choose targets"
+                - option "Perform under pressure"
+            - generic [ref=e390]:
+              - generic [ref=e391]: Lesson
+              - combobox "Lesson" [ref=e392]:
+                - option "Choose one" [selected]
+                - option "Planned representative-transfer lesson"
+            - generic [ref=e393]:
+              - generic [ref=e394]: Evidence title
+              - textbox "Evidence title" [ref=e395]
+            - generic [ref=e396]:
+              - generic [ref=e397]: Source label
+              - textbox "Source label" [ref=e398]
+            - generic [ref=e399]:
+              - generic [ref=e400]: Source type
+              - combobox "Source type" [ref=e401]:
+                - option "Choose one" [selected]
+                - option "Coach observed"
+                - option "Golfer reported"
+                - option "Device"
+                - option "Document"
+                - option "Mixed"
+            - generic [ref=e402]:
+              - generic [ref=e403]: Observed date and time (optional)
+              - textbox "Observed date and time (optional)" [ref=e404]
+            - generic [ref=e405]:
+              - generic [ref=e406]: Bounded claim (optional)
+              - textbox "Bounded claim (optional)" [ref=e407]
+            - generic [ref=e408]:
+              - generic [ref=e409]: Interpretation
+              - textbox "Interpretation" [ref=e410]
+            - generic [ref=e411]:
+              - generic [ref=e412]: Limitation
+              - textbox "Limitation" [ref=e413]
+            - generic [ref=e414]:
+              - generic [ref=e415]: Evidence maturity
+              - combobox "Evidence maturity" [ref=e416]:
+                - option "Choose one" [selected]
+                - option "Single observation"
+                - option "Early indication"
+                - option "Repeated practice"
+                - option "On-course observation"
+                - option "Insufficient"
+            - generic [ref=e417]:
+              - generic [ref=e418]: Next evidence needed (optional)
+              - textbox "Next evidence needed (optional)" [ref=e419]
+            - generic [ref=e420]:
+              - generic [ref=e421]: Metric name (optional)
+              - textbox "Metric name (optional)" [ref=e422]
+            - generic [ref=e423]:
+              - generic [ref=e424]: Metric value (optional)
+              - spinbutton "Metric value (optional)" [ref=e425]
+            - generic [ref=e426]:
+              - generic [ref=e427]: Exact metric unit (optional)
+              - textbox "Exact metric unit (optional)" [ref=e428]
+            - generic [ref=e429]:
+              - generic [ref=e430]: Non-numeric value or context (optional)
+              - textbox "Non-numeric value or context (optional)" [ref=e431]
+            - generic [ref=e432]:
+              - generic [ref=e433]: Comparison role
+              - combobox "Comparison role" [ref=e434]:
+                - option "Choose one" [selected]
+                - option "Standalone"
+                - option "Baseline"
+                - option "Current"
+            - generic [ref=e435]:
+              - generic [ref=e436]: Comparison group label (optional)
+              - textbox "Comparison group label (optional)" [ref=e437]
+          - generic [ref=e438]:
+            - checkbox "This record is representative beyond this one observation" [ref=e439]
+            - text: This record is representative beyond this one observation
+          - button "Create evidence record" [ref=e440] [cursor=pointer]
+        - generic [ref=e441]:
+          - heading "Available evidence" [level=3] [ref=e442]
+          - list [ref=e443]:
+            - listitem [ref=e444]:
+              - generic [ref=e445]:
+                - strong [ref=e446]: Selected launch-monitor comparison context
+                - generic [ref=e447]: comparison
+              - paragraph [ref=e448]: The bounded comparison supports continuing the current priority while gathering more representative evidence.
+              - text: Coach-selected synthetic manual summary metrics

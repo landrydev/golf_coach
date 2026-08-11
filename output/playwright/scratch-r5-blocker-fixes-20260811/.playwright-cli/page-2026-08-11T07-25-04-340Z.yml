@@ -1,0 +1,159 @@
+- generic [ref=e2]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=e4]:
+    - link "Coach Fresh empty coach Roadmap home" [ref=e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=e6]: CF
+      - generic [ref=e7]:
+        - strong [ref=e8]: Coach Fresh empty coach
+        - generic [ref=e9]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=e10]:
+      - link "Overview" [ref=e11] [cursor=pointer]:
+        - /url: /app
+      - link "Golfers" [ref=e12] [cursor=pointer]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=e13] [cursor=pointer]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=e14] [cursor=pointer]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=e15] [cursor=pointer]:
+        - /url: /app/media
+      - link "Packages" [ref=e16] [cursor=pointer]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=e17] [cursor=pointer]:
+        - /url: /app/billing
+      - link "Settings" [ref=e18] [cursor=pointer]:
+        - /url: /app/settings
+    - generic [ref=e19]:
+      - generic [ref=e20]: CF
+      - generic [ref=e21]:
+        - strong [ref=e22]: Coach Fresh empty coach
+        - generic [ref=e23]: qa.fresh@example.test
+      - button "Sign out" [ref=e25] [cursor=pointer]
+  - main [ref=e26]:
+    - generic [ref=e27]:
+      - generic [ref=e29]:
+        - generic [ref=e30]: Settings
+        - heading "Your name is enough to begin." [level=1] [ref=e132]
+        - paragraph [ref=e32]: Keep branding restrained and recognizable. The golfer’s goal, your judgment, and the evidence hierarchy remain more important than decoration.
+      - generic [ref=e133]:
+        - group "Identity your golfers recognize" [ref=e135]:
+          - generic [ref=e137]:
+            - generic [ref=e138]:
+              - text: Coach display name
+              - textbox "Coach display name" [ref=e139]: Coach Fresh empty coach
+            - generic [ref=e140]:
+              - text: Business name (optional)
+              - textbox "Business name (optional)" [ref=e141]
+            - generic [ref=e142]:
+              - text: Professional title (optional)
+              - textbox "Professional title (optional)" [ref=e143]
+            - generic [ref=e144]:
+              - text: Contact email
+              - textbox "Contact email" [ref=e145]: qa.fresh@example.test
+            - generic [ref=e146]:
+              - text: Contact phone (optional)
+              - textbox "Contact phone (optional)" [ref=e147]
+            - generic [ref=e148]:
+              - text: Website (optional)
+              - textbox "Website (optional)" [ref=e149]:
+                - /placeholder: https://coach.example.ca
+            - generic [ref=e150]:
+              - text: City (optional)
+              - textbox "City (optional)" [ref=e151]:
+                - /placeholder: Calgary
+            - generic [ref=e152]:
+              - text: Province or territory (optional)
+              - textbox "Province or territory (optional)" [ref=e153]:
+                - /placeholder: Alberta
+            - generic [ref=e154]:
+              - text: Short coaching description (optional)
+              - textbox "Short coaching description (optional)" [ref=e155]
+            - generic [ref=e156]:
+              - text: Accent colour
+              - textbox "Accent colour Choose a dark accent. Roadmap rejects colours that would make text hard to read." [ref=e157]: "#1b4f40"
+              - generic [ref=e158]: Choose a dark accent. Roadmap rejects colours that would make text hard to read.
+          - generic "Live accent colour preview" [ref=e159]:
+            - generic [ref=e160]: CF
+            - generic [ref=e161]:
+              - generic [ref=e162]: Private coaching plan
+              - strong [ref=e163]: Coach Fresh empty coach
+            - generic [ref=e164]: Example primary action
+        - alert [ref=e165]
+        - button "Save coach identity" [ref=e167] [cursor=pointer]
+      - region [ref=e168]:
+        - generic [ref=e169]:
+          - generic [ref=e170]:
+            - text: Optional branding
+            - heading "Logo, coach photo, and live preview" [level=2] [ref=e171]
+          - link "Open media library" [ref=e172] [cursor=pointer]:
+            - /url: /app/media
+        - paragraph [ref=e173]: Crop a private image here or reuse one already uploaded. Branding is optional and stays within Roadmap’s restrained layout.
+        - generic [ref=e174]:
+          - article [ref=e175]:
+            - generic [ref=e176]: Current logo
+            - generic [ref=e177]: CF
+            - strong [ref=e179]: Not added — Roadmap initials are used
+          - article [ref=e180]:
+            - generic [ref=e181]: Current coach photo
+            - generic [ref=e182]: CF
+            - strong [ref=e184]: Not added — Roadmap initials are used
+        - generic [ref=e185]:
+          - group "Choose one branding slot" [ref=e186]:
+            - generic [ref=e188]:
+              - generic [ref=e189]:
+                - radio "Logo (3:1)" [checked] [ref=e190]
+                - text: Logo (3:1)
+              - generic [ref=e191]:
+                - radio "Coach photo (square)" [ref=e192]
+                - text: Coach photo (square)
+          - group "Choose the source" [ref=e193]:
+            - generic [ref=e195]:
+              - generic [ref=e196]:
+                - radio "Upload and crop" [checked] [ref=e197]
+                - text: Upload and crop
+              - generic [ref=e198]:
+                - radio "Reuse library image" [disabled] [ref=e199]
+                - text: Reuse library image
+          - generic [ref=e200]:
+            - generic [ref=e201]:
+              - text: Image file
+              - button "Image file" [ref=e202]
+            - generic [ref=e203]:
+              - text: Accessible description
+              - textbox "Accessible description" [ref=e204]:
+                - /placeholder: Coach Fresh empty coach logo
+            - generic [ref=e205]: Choose an image to preview the crop
+            - generic [ref=e207]:
+              - generic [ref=e208]:
+                - text: Zoom
+                - slider "Zoom" [ref=e209]: "1"
+              - generic [ref=e210]:
+                - text: Horizontal
+                - slider "Horizontal" [ref=e211]: "0"
+              - generic [ref=e212]:
+                - text: Vertical
+                - slider "Vertical" [ref=e213]: "0"
+          - generic [ref=e214]:
+            - generic [ref=e215]: CF
+            - generic [ref=e216]:
+              - generic [ref=e217]: Private coaching plan
+              - strong [ref=e218]: Coach Fresh empty coach
+          - button "Save selected branding" [ref=e219] [cursor=pointer]
+      - generic [ref=e220]:
+        - heading "Packages and Roadmap billing" [level=2] [ref=e222]
+        - paragraph [ref=e223]: Your golfer-facing coaching packages and your Roadmap SaaS subscription are separate. Roadmap never processes the golfer's coaching-package payment.
+        - generic [ref=e224]:
+          - link "Manage coaching packages" [ref=e225] [cursor=pointer]:
+            - /url: /app/packages
+          - link "Review Roadmap plan and billing" [ref=e226] [cursor=pointer]:
+            - /url: /app/billing
+      - generic [ref=e227]:
+        - heading "Privacy and account controls" [level=2] [ref=e229]
+        - paragraph [ref=e230]: Authenticated JSON exports download directly. Deletion can only be submitted for identity and retention review; nothing is removed automatically.
+        - generic [ref=e231]:
+          - link "Review or revoke active private access" [ref=e232] [cursor=pointer]:
+            - /url: /app/settings/shares
+          - link "Export data or request deletion review" [ref=e233] [cursor=pointer]:
+            - /url: /app/settings/data

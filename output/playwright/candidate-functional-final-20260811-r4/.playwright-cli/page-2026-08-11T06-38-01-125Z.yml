@@ -1,0 +1,180 @@
+- generic [ref=e2]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=e4]:
+    - link "Foothills Long-Form Independent Golf Coaching Studio Foothills Long-Form Independent Golf Coaching Studio Roadmap home" [ref=e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=e6]: FL
+      - generic [ref=e7]:
+        - strong [ref=e8]: Foothills Long-Form Independent Golf Coaching Studio Foothills Long-Form Independent Golf Coaching Studio
+        - generic [ref=e9]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=e10]:
+      - link "Overview" [ref=e11] [cursor=pointer]:
+        - /url: /app
+      - link "Golfers" [ref=e12] [cursor=pointer]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=e13] [cursor=pointer]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=e14] [cursor=pointer]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=e15] [cursor=pointer]:
+        - /url: /app/media
+      - link "Packages" [ref=e16] [cursor=pointer]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=e17] [cursor=pointer]:
+        - /url: /app/billing
+      - link "Settings" [ref=e18] [cursor=pointer]:
+        - /url: /app/settings
+    - generic [ref=e19]:
+      - generic [ref=e20]: CL
+      - generic [ref=e21]:
+        - strong [ref=e22]: Coach Longcontent roadmap
+        - generic [ref=e23]: qa.long-content@example.test
+      - button "Sign out" [ref=e25] [cursor=pointer]
+  - main [ref=e26]:
+    - generic [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - generic [ref=e30]: Rich coaching workspace
+          - heading "Alexandria Montgomery-Synthetic Extremely Long Golfer Name" [level=1] [ref=e147]
+          - paragraph [ref=e32]: Manage reusable drills, lesson lifecycle, evidence, media, launch-monitor data, reviews, and milestones without leaving this golfer record.
+        - generic [ref=e33]:
+          - link "Back to golfers" [ref=e148] [cursor=pointer]:
+            - /url: /app/golfers
+          - link "Media library" [ref=e149] [cursor=pointer]:
+            - /url: /app/media
+      - navigation "Rich coaching destinations" [ref=e150]:
+        - generic [ref=e151]:
+          - button "Practice (2)" [ref=e152] [cursor=pointer]
+          - button "Lessons (3)" [ref=e224] [cursor=pointer]
+          - button "Evidence (2)" [active] [ref=e154] [cursor=pointer]
+          - button "Media (0)" [ref=e155] [cursor=pointer]
+          - button "Launch data (2)" [ref=e156] [cursor=pointer]
+          - button "Review sources (1)" [ref=e157] [cursor=pointer]
+          - button "Milestones (1)" [ref=e158] [cursor=pointer]
+          - button "Timeline (11)" [ref=e225] [cursor=pointer]
+        - generic [ref=e160]: Plan revision 16
+      - status [ref=e226]: Lesson record created.
+      - region [ref=e273]:
+        - generic [ref=e275]:
+          - generic [ref=e276]: Evidence record
+          - heading "Record what was observed, measured, reported, or captured" [level=2] [ref=e277]
+          - paragraph [ref=e278]: Evidence stays explicit about its source, limitation, maturity, and whether it represents the golfer’s wider pattern. Media is selected from the ready media library.
+        - generic [ref=e279]:
+          - generic [ref=e280]:
+            - generic [ref=e281]:
+              - generic [ref=e282]: Evidence type
+              - combobox "Evidence type" [ref=e283]:
+                - option "Choose one"
+                - option "Coach observation" [selected]
+                - option "Golfer report"
+                - option "Measurement"
+                - option "Outcome count"
+                - option "Media"
+                - option "Comparison"
+                - option "Note"
+            - generic [ref=e284]:
+              - generic [ref=e285]: Context
+              - combobox "Context" [ref=e286]:
+                - option "Choose one"
+                - option "Lesson" [selected]
+                - option "Practice"
+                - option "Assessment"
+                - option "On course"
+                - option "Phase review"
+                - option "Other"
+            - generic [ref=e287]:
+              - generic [ref=e288]: Phase
+              - combobox "Phase" [ref=e289]:
+                - option "Choose one" [selected]
+                - option "Own centered contact with representative constraints Own centered contact with representative constraints"
+                - option "Shape trajectory with representative constraints Shape trajectory with representative constraints"
+                - option "Choose targets with representative constraints Choose targets with representative constraints"
+                - option "Perform under pressure with representative constraints Perform under pressure with representative constraints"
+            - generic [ref=e290]:
+              - generic [ref=e291]: Lesson
+              - combobox "Lesson" [ref=e292]:
+                - option "Choose one" [selected]
+                - option "EG r4 scheduled-to-completed representative lesson"
+                - option "Planned representative-transfer lesson with a deliberately descriptive synthetic title"
+                - option "Lesson chapter with a deliberately descriptive title Lesson chapter with a deliberately descriptive title"
+            - generic [ref=e293]:
+              - generic [ref=e294]: Evidence title
+              - textbox "Evidence title" [ref=e295]
+            - generic [ref=e296]:
+              - generic [ref=e297]: Source label
+              - textbox "Source label" [ref=e298]
+            - generic [ref=e299]:
+              - generic [ref=e300]: Source type
+              - combobox "Source type" [ref=e301]:
+                - option "Choose one" [selected]
+                - option "Coach observed"
+                - option "Golfer reported"
+                - option "Device"
+                - option "Document"
+                - option "Mixed"
+            - generic [ref=e302]:
+              - generic [ref=e303]: Observed date and time (optional)
+              - textbox "Observed date and time (optional)" [ref=e304]
+            - generic [ref=e305]:
+              - generic [ref=e306]: Bounded claim (optional)
+              - textbox "Bounded claim (optional)" [ref=e307]
+            - generic [ref=e308]:
+              - generic [ref=e309]: Interpretation
+              - textbox "Interpretation" [ref=e310]
+            - generic [ref=e311]:
+              - generic [ref=e312]: Limitation
+              - textbox "Limitation" [ref=e313]
+            - generic [ref=e314]:
+              - generic [ref=e315]: Evidence maturity
+              - combobox "Evidence maturity" [ref=e316]:
+                - option "Choose one" [selected]
+                - option "Single observation"
+                - option "Early indication"
+                - option "Repeated practice"
+                - option "On-course observation"
+                - option "Insufficient"
+            - generic [ref=e317]:
+              - generic [ref=e318]: Next evidence needed (optional)
+              - textbox "Next evidence needed (optional)" [ref=e319]
+            - generic [ref=e320]:
+              - generic [ref=e321]: Metric name (optional)
+              - textbox "Metric name (optional)" [ref=e322]
+            - generic [ref=e323]:
+              - generic [ref=e324]: Metric value (optional)
+              - spinbutton "Metric value (optional)" [ref=e325]
+            - generic [ref=e326]:
+              - generic [ref=e327]: Exact metric unit (optional)
+              - textbox "Exact metric unit (optional)" [ref=e328]
+            - generic [ref=e329]:
+              - generic [ref=e330]: Non-numeric value or context (optional)
+              - textbox "Non-numeric value or context (optional)" [ref=e331]
+            - generic [ref=e332]:
+              - generic [ref=e333]: Comparison role
+              - combobox "Comparison role" [ref=e334]:
+                - option "Choose one" [selected]
+                - option "Standalone"
+                - option "Baseline"
+                - option "Current"
+            - generic [ref=e335]:
+              - generic [ref=e336]: Comparison group label (optional)
+              - textbox "Comparison group label (optional)" [ref=e337]
+          - generic [ref=e338]:
+            - checkbox "This record is representative beyond this one observation" [ref=e339]
+            - text: This record is representative beyond this one observation
+          - button "Create evidence record" [ref=e340] [cursor=pointer]
+        - generic [ref=e341]:
+          - heading "Available evidence" [level=3] [ref=e342]
+          - list [ref=e343]:
+            - listitem [ref=e344]:
+              - generic [ref=e345]:
+                - strong [ref=e346]: Selected launch-monitor comparison context
+                - generic [ref=e347]: comparison
+              - paragraph [ref=e348]: The bounded comparison supports continuing the current priority while gathering more representative evidence.
+              - text: Coach-selected synthetic manual summary metrics
+            - listitem [ref=e349]:
+              - generic [ref=e350]:
+                - strong [ref=e351]: Baseline and current centered-contact observation Baseline and current centered-contact observation Baseline and current centered-contact observation
+                - generic [ref=e352]: comparison
+              - paragraph [ref=e353]: The bounded comparison supports continuing the current practice priority; it does not prove transfer or predict a score. The bounded comparison supports continuing the current practice priority; it does not prove transfer or predict a score. The bounded comparison supports continuing the current practice priority; it does not prove transfer or predict a score. The bounded comparison supports continuing the current practice priority; it does not prove transfer or predict a score. The bounded comparison supports continuing the current practice priority; it does not prove transfer or predict a score. The bounded comparison supports continuing the current practice priority; it does not prove transfer or predict a score. The bounded comparison supports continuing the current practice priority; it does not prove transfer or predict a score. The bounded comparison supports continuing the current practice priority; it does not prove transfer or predict a score. The bounded comparison supports continuing the current practice priority; it does not prove transfer or predict a score. The bounded comparison supports continuing the current practice priority; it does not prove transfer or predict a score. The bounded comparison supports continuing the current practice priority; it does not prove transfer or predict a score. The bounded comparison supports continuing the current practice priority; it does not prove transfer or predict a score. The bounded comparison supports continuing the current practice priority; it does not prove transfer or predict a score. The bounded comparison supports continuing the current practice priority; it does not prove transfer or predict a score. The bounded comparison supports continuing the current practice priority; it does not prove transfer or predict a score.
+              - text: Coach-reviewed synthetic practice set

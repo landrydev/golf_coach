@@ -1,0 +1,163 @@
+- generic [ref=e2]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=e4]:
+    - link "Prairie Three Phase Golf Roadmap home" [ref=e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=e6]: PT
+      - generic [ref=e7]:
+        - strong [ref=e8]: Prairie Three Phase Golf
+        - generic [ref=e9]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=e10]:
+      - link "Overview" [ref=e11] [cursor=pointer]:
+        - /url: /app
+      - link "Golfers" [ref=e12] [cursor=pointer]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=e13] [cursor=pointer]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=e14] [cursor=pointer]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=e15] [cursor=pointer]:
+        - /url: /app/media
+      - link "Packages" [ref=e16] [cursor=pointer]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=e17] [cursor=pointer]:
+        - /url: /app/billing
+      - link "Settings" [ref=e18] [cursor=pointer]:
+        - /url: /app/settings
+    - generic [ref=e19]:
+      - generic [ref=e20]: CT
+      - generic [ref=e21]:
+        - strong [ref=e22]: Coach Three phases without
+        - generic [ref=e23]: qa.three-phase@example.test
+      - button "Sign out" [ref=e25] [cursor=pointer]
+  - main [ref=e26]:
+    - generic [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - generic [ref=e30]: Coaching command centre
+          - heading "Let’s get your first roadmap ready, Coach." [level=1] [ref=e31]
+          - paragraph [ref=e32]: Start with the few coaching records that need attention. Counts describe stored Roadmap state only; they do not imply a message, booking, sale, or golfer outcome.
+        - generic [ref=e33]:
+          - link "Add a golfer" [ref=e34] [cursor=pointer]:
+            - /url: /app/golfers/new
+          - link "Find a golfer" [ref=e35] [cursor=pointer]:
+            - /url: /app/golfers
+      - region [ref=e36]:
+        - generic [ref=e37]:
+          - generic [ref=e38]: Quick actions
+          - heading "Start the next coaching task." [level=2] [ref=e39]
+        - list [ref=e40]:
+          - listitem [ref=e41]:
+            - link "New golfer Start an adult golfer record and first roadmap." [ref=e42] [cursor=pointer]:
+              - /url: /app/golfers/new
+              - strong [ref=e43]: New golfer
+              - generic [ref=e44]: Start an adult golfer record and first roadmap.
+          - listitem [ref=e45]:
+            - link "Add package Publish an external coaching offer or enquiry route." [ref=e46] [cursor=pointer]:
+              - /url: /app/packages
+              - strong [ref=e47]: Add package
+              - generic [ref=e48]: Publish an external coaching offer or enquiry route.
+          - listitem [ref=e49]:
+            - link "New lesson Plan or record a lesson for Taylor Three Phase." [ref=e50] [cursor=pointer]:
+              - /url: /app/coaching/plans/2e9936ee-72fa-483a-9465-ffd13b9002ae?tab=lessons
+              - strong [ref=e51]: New lesson
+              - generic [ref=e52]: Plan or record a lesson for Taylor Three Phase.
+          - listitem [ref=e53]:
+            - link "Add evidence Record evidence and its limits for Taylor Three Phase." [ref=e54] [cursor=pointer]:
+              - /url: /app/coaching/plans/2e9936ee-72fa-483a-9465-ffd13b9002ae?tab=evidence
+              - strong [ref=e55]: Add evidence
+              - generic [ref=e56]: Record evidence and its limits for Taylor Three Phase.
+          - listitem [ref=e57]:
+            - link "New drill Create a reusable private coaching drill." [ref=e58] [cursor=pointer]:
+              - /url: /app/coaching/drills
+              - strong [ref=e59]: New drill
+              - generic [ref=e60]: Create a reusable private coaching drill.
+          - listitem [ref=e61]:
+            - link "Upload media Add a private file, then attach it to coaching work." [ref=e62] [cursor=pointer]:
+              - /url: /app/media#upload-media
+              - strong [ref=e63]: Upload media
+              - generic [ref=e64]: Add a private file, then attach it to coaching work.
+      - region [ref=e65]:
+        - generic [ref=e66]:
+          - generic [ref=e67]:
+            - generic [ref=e68]: Persisted setup
+            - heading "Continue from the next incomplete step." [level=2] [ref=e69]
+          - generic [ref=e70]: 3 of 4 required steps
+        - list [ref=e71]:
+          - listitem [ref=e72]:
+            - generic [ref=e73]: ✓
+            - generic [ref=e74]:
+              - strong [ref=e75]: Coach identity
+              - generic [ref=e76]: Saved and ready for the golfer view.
+            - link "Review" [ref=e77] [cursor=pointer]:
+              - /url: /app/settings
+          - listitem [ref=e78]:
+            - generic [ref=e79]: +
+            - generic [ref=e80]:
+              - strong [ref=e81]: Current package
+              - generic [ref=e82]: "Optional: connect an existing booking or purchase route later."
+            - link "Add optionally" [ref=e83] [cursor=pointer]:
+              - /url: /app/packages
+          - listitem [ref=e84]:
+            - generic [ref=e85]: ✓
+            - generic [ref=e86]:
+              - strong [ref=e87]: First golfer
+              - generic [ref=e88]: A private adult-golfer record is saved.
+            - link "Review" [ref=e89] [cursor=pointer]:
+              - /url: /app/golfers/new
+          - listitem [ref=e90]:
+            - generic [ref=e91]: ✓
+            - generic [ref=e92]:
+              - strong [ref=e93]: Complete roadmap
+              - generic [ref=e94]: A three- or four-phase roadmap is ready for review.
+            - link "Review" [ref=e95] [cursor=pointer]:
+              - /url: /app/golfers?status=setup_incomplete
+          - listitem [ref=e96]:
+            - generic [ref=e97]: •
+            - generic [ref=e98]:
+              - strong [ref=e99]: Review and share
+              - generic [ref=e100]: Preview the exact golfer view before creating private access.
+            - link "Continue" [ref=e101] [cursor=pointer]:
+              - /url: /app/golfers?review=needs_review
+      - region [ref=e102]:
+        - generic [ref=e103]:
+          - generic [ref=e104]:
+            - generic [ref=e105]: Needs attention
+            - heading "Bounded coaching work, not vanity metrics." [level=2] [ref=e106]
+          - link "Open filtered golfer list" [ref=e107] [cursor=pointer]:
+            - /url: /app/golfers?sort=attention
+        - generic [ref=e108]:
+          - article [ref=e109]:
+            - generic [ref=e110]:
+              - heading "Incomplete roadmaps" [level=3] [ref=e111]
+              - generic "0 stored incomplete roadmaps" [ref=e112]: "0"
+            - paragraph [ref=e113]: No staged roadmaps are waiting for completion.
+          - article [ref=e114]:
+            - generic [ref=e115]:
+              - heading "Coach reviews" [level=3] [ref=e116]
+              - generic "1 stored coach reviews" [ref=e117]: "1"
+            - list [ref=e118]:
+              - listitem [ref=e119]:
+                - generic [ref=e120]:
+                  - strong [ref=e121]: Taylor Three Phase
+                  - generic [ref=e122]: Roadmap review
+                  - generic [ref=e123]: The roadmap is ready for coach preview and publication review. · Aug 11
+                - link "Open task" [ref=e124] [cursor=pointer]:
+                  - /url: /app/golfers/cbaa538d-6486-4e5d-83c7-85d98b584364#hub-roadmap
+          - article [ref=e125]:
+            - generic [ref=e126]:
+              - heading "Active practice" [level=3] [ref=e127]
+              - generic "0 stored active practice" [ref=e128]: "0"
+            - paragraph [ref=e129]: No active practice direction is stored.
+          - article [ref=e130]:
+            - generic [ref=e131]:
+              - heading "Latest responses & check-ins" [level=3] [ref=e132]
+              - generic "0 stored latest responses & check-ins" [ref=e133]: "0"
+            - paragraph [ref=e134]: No golfer response or practice check-in has been recorded through a private link.
+      - region [ref=e135]:
+        - generic [ref=e136]:
+          - generic [ref=e137]: Stored failure signals
+          - heading "Media and launch-data work that needs review" [level=2] [ref=e138]
+          - paragraph [ref=e139]: This list reports only failed or quarantined media and failed or mapping-required launch-data imports that Roadmap can prove exist.
+        - paragraph [ref=e140]: No failed media or launch-data import needs attention.

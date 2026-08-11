@@ -1,0 +1,98 @@
+- generic [ref=f2e2]:
+  - link "Skip to main content" [ref=f2e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=f2e4]:
+    - link "Prairie Path Golf Coaching Roadmap home" [ref=f2e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=f2e6]: PP
+      - generic [ref=f2e7]:
+        - strong [ref=f2e8]: Prairie Path Golf Coaching
+        - generic [ref=f2e9]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=f2e10]:
+      - link "Overview" [ref=f2e11] [cursor=pointer]:
+        - /url: /app
+      - link "Golfers" [ref=f2e12] [cursor=pointer]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=f2e13] [cursor=pointer]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=f2e14] [cursor=pointer]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=f2e15] [cursor=pointer]:
+        - /url: /app/media
+      - link "Packages" [ref=f2e16] [cursor=pointer]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=f2e17] [cursor=pointer]:
+        - /url: /app/billing
+      - link "Settings" [ref=f2e18] [cursor=pointer]:
+        - /url: /app/settings
+    - generic [ref=f2e19]:
+      - generic [ref=f2e20]: CF
+      - generic [ref=f2e21]:
+        - strong [ref=f2e22]: Coach Fresh empty coach
+        - generic [ref=f2e23]: qa.fresh@example.test
+      - button "Sign out" [ref=f2e25] [cursor=pointer]
+  - main [ref=f2e26]:
+    - generic [ref=f2e206]:
+      - generic [ref=f2e207]:
+        - generic [ref=f2e208]:
+          - generic [ref=f2e209]: Golfer workspace
+          - heading "Find the golfer, then open the next coaching task." [level=1] [ref=f2e484]
+          - paragraph [ref=f2e211]: Search and filters use only this coach account’s stored records. Roadmap remains a coaching workspace rather than a contact-management system.
+        - link "Add a golfer" [active] [ref=f2e485] [cursor=pointer]:
+          - /url: /app/golfers/new
+      - search [ref=f2e486]:
+        - generic [ref=f2e487]:
+          - generic [ref=f2e488]: Search golfers
+          - searchbox "Search golfers" [ref=f2e489]
+        - generic [ref=f2e490]:
+          - text: Record status
+          - combobox "Record status" [ref=f2e491]:
+            - option "All records" [selected]
+            - option "Setup incomplete"
+            - option "Reviewable drafts"
+            - option "Published"
+            - option "Paused"
+            - option "Completed"
+            - option "Archived"
+            - option "Deletion review"
+        - generic [ref=f2e492]:
+          - text: Current phase
+          - combobox "Current phase" [ref=f2e493]:
+            - option "All phase states" [selected]
+            - option "Active phase"
+            - option "Paused phase"
+            - option "Planned phase"
+            - option "Completed phase"
+            - option "No phase yet"
+        - generic [ref=f2e494]:
+          - text: Review state
+          - combobox "Review state" [ref=f2e495]:
+            - option "All review states" [selected]
+            - option "Needs coach review"
+            - option "Draft phase review"
+            - option "No draft phase review"
+        - generic [ref=f2e496]:
+          - text: Sort
+          - combobox "Sort" [ref=f2e497]:
+            - option "Needs attention first" [selected]
+            - option "Recently updated"
+            - option "Golfer name"
+            - option "Phase order"
+        - button "Apply" [ref=f2e499] [cursor=pointer]
+      - region [ref=f2e500]:
+        - generic [ref=f2e501]:
+          - generic [ref=f2e502]: Results
+          - heading "1 golfer record" [level=2] [ref=f2e503]
+        - list [ref=f2e504]:
+          - listitem [ref=f2e505]:
+            - generic [ref=f2e506]:
+              - strong [ref=f2e507]: Morgan Three Phase
+              - generic [ref=f2e508]: No development plan
+              - generic [ref=f2e509]: No sharing email stored · Updated Aug 11, 2026
+            - generic [ref=f2e510]:
+              - generic [ref=f2e511]: setup incomplete
+              - generic [ref=f2e512]: No current phase
+            - generic [ref=f2e513]:
+              - generic [ref=f2e514]: Complete the minimum goal and coach-authored roadmap.
+              - link "Continue setup" [ref=f2e515] [cursor=pointer]:
+                - /url: /app/golfers/9ddb391a-5de4-4dd1-a960-635d3dce634a/complete

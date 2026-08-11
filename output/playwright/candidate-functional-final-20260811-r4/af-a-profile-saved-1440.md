@@ -1,0 +1,162 @@
+- generic [ref=e2] [box=0,-419,1440,2833]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer] [box=16,-96,179,50]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=e4] [box=0,0,280,1000]:
+    - link "Northline Golf Coaching Roadmap home" [ref=e226] [cursor=pointer] [box=24,32,232,43]:
+      - /url: /app
+      - generic [ref=e6] [box=24,32,42,42]: NG
+      - generic [ref=e7] [box=78,32,178,43]:
+        - strong [ref=e8] [box=78,32,178,21]: Northline Golf Coaching
+        - generic [ref=e9] [box=78,59,178,16]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=e10] [box=24,131,232,443]:
+      - link "Overview" [ref=e11] [cursor=pointer] [box=24,131,232,51]:
+        - /url: /app
+      - link "Golfers" [ref=e12] [cursor=pointer] [box=24,187,232,51]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=e13] [cursor=pointer] [box=24,243,232,51]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=e14] [cursor=pointer] [box=24,299,232,51]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=e15] [cursor=pointer] [box=24,355,232,51]:
+        - /url: /app/media
+      - link "Packages" [ref=e16] [cursor=pointer] [box=24,412,232,51]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=e17] [cursor=pointer] [box=24,468,232,51]:
+        - /url: /app/billing
+      - link "Settings" [ref=e18] [cursor=pointer] [box=24,524,232,51]:
+        - /url: /app/settings
+    - generic [ref=e19] [box=24,886,232,82]:
+      - generic [ref=e20] [box=24,906,42,42]: CA
+      - generic [ref=e21] [box=78,886,178,45]:
+        - strong [ref=e22] [box=78,886,178,26]: Coach Avery North
+        - generic [ref=e23] [box=78,911,178,19]: qa.fresh@example.test
+      - button "Sign out" [ref=e25] [cursor=pointer] [box=78,948,46,16]
+  - main [ref=e26] [box=280,-419,1160,2833]:
+    - generic [ref=e27] [box=338,-379,1045,2713]:
+      - generic [ref=e29] [box=338,-379,736,211]:
+        - generic [ref=e30] [box=338,-379,736,18]: Settings
+        - heading "Your name is enough to begin." [level=1] [ref=e127] [box=338,-352,707,117]
+        - paragraph [ref=e32] [box=338,-221,736,53]: Keep branding restrained and recognizable. The golfer’s goal, your judgment, and the evidence hierarchy remain more important than decoration.
+      - generic [ref=e227] [box=338,-136,1045,871]:
+        - group "Identity your golfers recognize" [ref=e229] [box=366,-108,988,749]:
+          - generic [ref=e231] [box=366,-61,988,598]:
+            - generic [ref=e232] [box=366,-61,486,75]:
+              - text: Coach display name
+              - textbox "Coach display name" [ref=e233] [box=366,-34,486,48]: Coach Avery North
+            - generic [ref=e234] [box=868,-61,486,75]:
+              - text: Business name (optional)
+              - textbox "Business name (optional)" [ref=e235] [box=868,-34,486,48]: Northline Golf Coaching
+            - generic [ref=e236] [box=366,30,486,75]:
+              - text: Professional title (optional)
+              - textbox "Professional title (optional)" [ref=e237] [box=366,57,486,48]: Independent golf instructor
+            - generic [ref=e238] [box=868,30,486,75]:
+              - text: Contact email
+              - textbox "Contact email" [ref=e239] [box=868,57,486,48]: qa.fresh@example.test
+            - generic [ref=e240] [box=366,121,486,75]:
+              - text: Contact phone (optional)
+              - textbox "Contact phone (optional)" [ref=e241] [box=366,149,486,48]
+            - generic [ref=e242] [box=868,121,486,75]:
+              - text: Website (optional)
+              - textbox "Website (optional)" [ref=e243] [box=868,149,486,48]:
+                - /placeholder: https://coach.example.ca
+                - text: https://coach.example.ca/
+            - generic [ref=e244] [box=366,213,486,75]:
+              - text: City (optional)
+              - textbox "City (optional)" [ref=e245] [box=366,240,486,48]:
+                - /placeholder: Calgary
+                - text: Calgary
+            - generic [ref=e246] [box=868,213,486,75]:
+              - text: Province or territory (optional)
+              - textbox "Province or territory (optional)" [ref=e247] [box=868,240,486,48]:
+                - /placeholder: Alberta
+                - text: Alberta
+            - generic [ref=e248] [box=366,304,988,139]:
+              - text: Short coaching description (optional)
+              - textbox "Short coaching description (optional)" [ref=e249] [box=366,331,988,112]: Clear priorities, honest evidence, and one useful next step.
+            - generic [ref=e250] [box=366,459,486,77]:
+              - text: Accent colour
+              - textbox "Accent colour Choose a dark accent. Roadmap rejects colours that would make text hard to read." [ref=e251] [box=366,487,486,27]: "#1b4f40"
+              - generic [ref=e252] [box=366,520,486,16]: Choose a dark accent. Roadmap rejects colours that would make text hard to read.
+          - generic "Live accent colour preview" [ref=e253] [box=366,568,988,73]:
+            - generic [ref=e254] [box=380,582,45,45]: CA
+            - generic [ref=e255] [box=437,582,728,45]:
+              - generic [ref=e256] [box=437,582,728,16]: Private coaching plan
+              - strong [ref=e257] [box=437,602,728,26]: Northline Golf Coaching
+            - generic [ref=e258] [box=1178,583,162,44]: Example primary action
+        - alert [ref=e259] [box=337,-137,1,1]
+        - button "Save coach identity" [ref=e261] [cursor=pointer] [box=338,688,162,47]
+      - region [ref=e163] [box=338,751,1045,1174]:
+        - generic [ref=e164] [box=367,781,985,68]:
+          - generic [ref=e165] [box=367,781,378,68]:
+            - text: Optional branding
+            - heading "Logo, coach photo, and live preview" [level=2] [ref=e166] [box=367,810,378,38]
+          - link "Open media library" [ref=e167] [cursor=pointer] [box=1235,805,118,20]:
+            - /url: /app/media
+        - paragraph [ref=e168] [box=367,865,985,25]: Crop a private image here or reuse one already uploaded. Branding is optional and stays within Roadmap’s restrained layout.
+        - generic [ref=e169] [box=367,905,985,186]:
+          - article [ref=e170] [box=367,905,485,186]:
+            - generic [ref=e171] [box=384,922,451,17]: Current logo
+            - generic [ref=e172] [box=384,949,451,96]: NG
+            - strong [ref=e174] [box=384,1054,451,20]: Not added — Roadmap initials are used
+          - article [ref=e175] [box=868,905,485,186]:
+            - generic [ref=e176] [box=885,922,451,17]: Current coach photo
+            - generic [ref=e177] [box=885,949,96,96]: NG
+            - strong [ref=e179] [box=885,1054,451,20]: Not added — Roadmap initials are used
+        - generic [ref=e180] [box=367,1127,985,769]:
+          - group "Choose one branding slot" [ref=e181] [box=367,1148,985,72]:
+            - generic [ref=e183] [box=367,1176,985,44]:
+              - generic [ref=e184] [box=367,1176,121,44]:
+                - radio "Logo (3:1)" [checked] [ref=e185] [box=385,1191,18,18]
+                - text: Logo (3:1)
+              - generic [ref=e186] [box=504,1176,190,44]:
+                - radio "Coach photo (square)" [ref=e187] [box=522,1191,18,18]
+                - text: Coach photo (square)
+          - group "Choose the source" [ref=e188] [box=367,1236,985,72]:
+            - generic [ref=e190] [box=367,1265,985,44]:
+              - generic [ref=e191] [box=367,1265,160,44]:
+                - radio "Upload and crop" [checked] [ref=e192] [box=385,1280,18,18]
+                - text: Upload and crop
+              - generic [ref=e193] [box=543,1265,180,44]:
+                - radio "Reuse library image" [disabled] [ref=e194] [box=561,1280,18,18]
+                - text: Reuse library image
+          - generic [ref=e195] [box=367,1325,985,417]:
+            - generic [ref=e196] [box=367,1325,985,69]:
+              - text: Image file
+              - button "Image file" [ref=e197] [box=367,1350,985,44]
+            - generic [ref=e198] [box=367,1408,985,69]:
+              - text: Accessible description
+              - textbox "Accessible description" [ref=e199] [box=367,1433,985,44]:
+                - /placeholder: Northline Golf Coaching logo
+            - generic [ref=e200] [box=367,1491,576,192]: Choose an image to preview the crop
+            - generic [ref=e202] [box=367,1696,985,45]:
+              - generic [ref=e203] [box=367,1696,320,45]:
+                - text: Zoom
+                - slider "Zoom" [ref=e204] [box=369,1724,320,16]: "1"
+              - generic [ref=e205] [box=700,1696,320,45]:
+                - text: Horizontal
+                - slider "Horizontal" [ref=e206] [box=702,1724,320,16]: "0"
+              - generic [ref=e207] [box=1032,1696,320,45]:
+                - text: Vertical
+                - slider "Vertical" [ref=e208] [box=1034,1724,320,16]: "0"
+          - generic [ref=e209] [box=367,1758,985,76]:
+            - generic [ref=e210] [box=381,1771,48,48]: NG
+            - generic [ref=e211] [box=445,1773,200,45]:
+              - generic [ref=e212] [box=445,1773,200,17]: Private coaching plan
+              - strong [ref=e213] [box=445,1792,200,26]: Northline Golf Coaching
+          - button "Save selected branding" [ref=e214] [cursor=pointer] [box=367,1849,179,46]
+      - generic [ref=e215] [box=338,1941,1045,188]:
+        - heading "Packages and Roadmap billing" [level=2] [ref=e216] [box=366,1970,292,35]
+        - paragraph [ref=e217] [box=366,2020,988,19]: Your golfer-facing coaching packages and your Roadmap SaaS subscription are separate. Roadmap never processes the golfer's coaching-package payment.
+        - generic [ref=e218] [box=366,2055,988,47]:
+          - link "Manage coaching packages" [ref=e219] [cursor=pointer] [box=366,2055,214,47]:
+            - /url: /app/packages
+          - link "Review Roadmap plan and billing" [ref=e220] [cursor=pointer] [box=591,2055,255,47]:
+            - /url: /app/billing
+      - generic [ref=e221] [box=338,2146,1045,188]:
+        - heading "Privacy and account controls" [level=2] [ref=e222] [box=366,2174,275,35]
+        - paragraph [ref=e126] [box=366,2224,988,19]: Authenticated JSON exports download directly. Deletion can only be submitted for identity and retention review; nothing is removed automatically.
+        - generic [ref=e223] [box=366,2259,988,47]:
+          - link "Review or revoke active private access" [ref=e224] [cursor=pointer] [box=366,2259,288,47]:
+            - /url: /app/settings/shares
+          - link "Export data or request deletion review" [ref=e225] [cursor=pointer] [box=665,2259,290,47]:
+            - /url: /app/settings/data

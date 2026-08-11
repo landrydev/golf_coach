@@ -1,0 +1,90 @@
+- generic [ref=f2e2]:
+  - link "Skip to main content" [ref=f2e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=f2e4]:
+    - link "Prairie Path Golf Coaching Roadmap home" [ref=f2e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=f2e6]: PP
+      - generic [ref=f2e7]:
+        - strong [ref=f2e8]: Prairie Path Golf Coaching
+        - generic [ref=f2e9]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=f2e10]:
+      - link "Overview" [ref=f2e11] [cursor=pointer]:
+        - /url: /app
+      - link "Golfers" [active] [ref=f2e12] [cursor=pointer]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=f2e13] [cursor=pointer]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=f2e14] [cursor=pointer]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=f2e15] [cursor=pointer]:
+        - /url: /app/media
+      - link "Packages" [ref=f2e16] [cursor=pointer]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=f2e17] [cursor=pointer]:
+        - /url: /app/billing
+      - link "Settings" [ref=f2e18] [cursor=pointer]:
+        - /url: /app/settings
+    - generic [ref=f2e19]:
+      - generic [ref=f2e20]: CF
+      - generic [ref=f2e21]:
+        - strong [ref=f2e22]: Coach Fresh empty coach
+        - generic [ref=f2e23]: qa.fresh@example.test
+      - button "Sign out" [ref=f2e25] [cursor=pointer]
+  - main [ref=f2e26]:
+    - generic [ref=f2e206]:
+      - generic [ref=f2e207]:
+        - generic [ref=f2e208]:
+          - generic [ref=f2e209]: Golfer workspace
+          - heading "Find the golfer, then open the next coaching task." [level=1] [ref=f2e210]
+          - paragraph [ref=f2e211]: Search and filters use only this coach account’s stored records. Roadmap remains a coaching workspace rather than a contact-management system.
+        - link "Add a golfer" [ref=f2e212] [cursor=pointer]:
+          - /url: /app/golfers/new
+      - search [ref=f2e213]:
+        - generic [ref=f2e214]:
+          - generic [ref=f2e215]: Search golfers
+          - searchbox "Search golfers" [ref=f2e216]
+        - generic [ref=f2e217]:
+          - text: Record status
+          - combobox "Record status" [ref=f2e218]:
+            - option "All records" [selected]
+            - option "Setup incomplete"
+            - option "Reviewable drafts"
+            - option "Published"
+            - option "Paused"
+            - option "Completed"
+            - option "Archived"
+            - option "Deletion review"
+        - generic [ref=f2e219]:
+          - text: Current phase
+          - combobox "Current phase" [ref=f2e220]:
+            - option "All phase states" [selected]
+            - option "Active phase"
+            - option "Paused phase"
+            - option "Planned phase"
+            - option "Completed phase"
+            - option "No phase yet"
+        - generic [ref=f2e221]:
+          - text: Review state
+          - combobox "Review state" [ref=f2e222]:
+            - option "All review states" [selected]
+            - option "Needs coach review"
+            - option "Draft phase review"
+            - option "No draft phase review"
+        - generic [ref=f2e223]:
+          - text: Sort
+          - combobox "Sort" [ref=f2e224]:
+            - option "Needs attention first" [selected]
+            - option "Recently updated"
+            - option "Golfer name"
+            - option "Phase order"
+        - button "Apply" [ref=f2e226] [cursor=pointer]
+      - region [ref=f2e227]:
+        - generic [ref=f2e229]:
+          - generic [ref=f2e230]: Results
+          - heading "0 golfer records" [level=2] [ref=f2e231]
+        - generic [ref=f2e232]:
+          - heading "No golfer records yet." [level=2] [ref=f2e233]
+          - paragraph [ref=f2e234]: Start with an adult golfer, a real goal, and the smallest useful set of details.
+          - link "Create the first golfer record" [ref=f2e235] [cursor=pointer]:
+            - /url: /app/golfers/new

@@ -1,0 +1,57 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - link "Roadmap" [ref=e4] [cursor=pointer]:
+      - /url: /
+    - link "Sign in" [ref=e5] [cursor=pointer]:
+      - /url: /auth/login?return_to=%2Fapp
+  - status [ref=e6]: Interactive synthetic demo — fictional records, editable examples, no saved data
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - text: Fictional golfer · Mark Chen
+        - heading "A calm view of what matters now." [level=1] [ref=e10]
+        - paragraph [ref=e11]: This resettable example shows realistic coach-authored records across two phases. It does not prescribe instruction or promise improvement.
+      - button "Reset demo" [ref=e12] [cursor=pointer]
+    - navigation "Synthetic roadmap sections" [ref=e13]:
+      - button "Now" [ref=e14] [cursor=pointer]
+      - button "Practice" [active] [pressed] [ref=e15] [cursor=pointer]
+      - button "Media & data" [ref=e16] [cursor=pointer]
+      - button "Journey" [ref=e17] [cursor=pointer]
+    - region [ref=e50]:
+      - generic [ref=e51]:
+        - text: Editable drill example · not universal instruction
+        - heading "Three-target start-line ladder" [level=2] [ref=e52]
+        - paragraph [ref=e53]: Chosen by the fictional coach for this fictional phase. A real coach would customize or replace it.
+      - generic [ref=e54]:
+        - generic [ref=e55]:
+          - text: Purpose
+          - paragraph [ref=e56]: Notice whether the starting direction stays available as the target changes.
+        - generic [ref=e57]:
+          - text: Equipment
+          - paragraph [ref=e58]: Seven iron, nine balls, three safe range targets.
+        - generic [ref=e59]:
+          - text: Setup
+          - paragraph [ref=e60]: Use the same pre-shot reference; rotate targets every three balls.
+        - generic [ref=e61]:
+          - text: Dosage
+          - paragraph [ref=e62]: Two sets. Pause between sets and note only the clearest pattern.
+        - generic [ref=e63]:
+          - text: Success check
+          - paragraph [ref=e64]: At least one clear start-line read at each target—not a score promise.
+        - generic [ref=e65]:
+          - text: Stop / ask rule
+          - paragraph [ref=e66]: Stop if discomfort appears or the cue becomes more important than the shot.
+      - list [ref=e67]:
+        - listitem [ref=e68]: Choose a safe left, centre, and right target.
+        - listitem [ref=e69]: Hit three shots to each, preserving the same preparation.
+        - listitem [ref=e70]: Record which target made the start line easiest to read.
+      - generic [ref=e71]:
+        - strong [ref=e72]: Try the bounded golfer check-in
+        - generic [ref=e73]:
+          - button "Completed · about right" [ref=e74] [cursor=pointer]
+          - button "Not completed · request help" [ref=e75] [cursor=pointer]
+        - status [ref=e76]: No synthetic response selected.
+    - generic [ref=e47]:
+      - paragraph [ref=e48]: This demo resets locally and saves nothing. A real private roadmap is coach-authored, access-controlled, and revocable.
+      - link "Open the real coach workspace" [ref=e49] [cursor=pointer]:
+        - /url: /auth/login?return_to=%2Fapp

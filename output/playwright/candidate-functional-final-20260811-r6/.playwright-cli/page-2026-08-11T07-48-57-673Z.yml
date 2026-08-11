@@ -1,0 +1,221 @@
+- generic [ref=f2e2]:
+  - link "Skip to main content" [ref=f2e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=f2e4]:
+    - link "Prairie Path Golf Coaching Roadmap home" [ref=f2e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=f2e6]: PP
+      - generic [ref=f2e7]:
+        - strong [ref=f2e8]: Prairie Path Golf Coaching
+        - generic [ref=f2e9]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=f2e10]:
+      - link "Overview" [ref=f2e11] [cursor=pointer]:
+        - /url: /app
+      - link "Golfers" [ref=f2e12] [cursor=pointer]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=f2e13] [cursor=pointer]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=f2e14] [cursor=pointer]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=f2e15] [cursor=pointer]:
+        - /url: /app/media
+      - link "Packages" [ref=f2e16] [cursor=pointer]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=f2e17] [cursor=pointer]:
+        - /url: /app/billing
+      - link "Settings" [ref=f2e18] [cursor=pointer]:
+        - /url: /app/settings
+    - generic [ref=f2e19]:
+      - generic [ref=f2e20]: CF
+      - generic [ref=f2e21]:
+        - strong [ref=f2e22]: Coach Fresh empty coach
+        - generic [ref=f2e23]: qa.fresh@example.test
+      - button "Sign out" [ref=f2e25] [cursor=pointer]
+  - main [ref=f2e26]:
+    - generic [ref=f2e206]:
+      - generic [ref=f2e207]:
+        - generic [ref=f2e208]:
+          - generic [ref=f2e209]: Resume staged roadmap
+          - heading "Finish Morgan Three Phase's coach-authored draft." [level=1] [ref=f2e516]
+          - paragraph [ref=f2e211]: The golfer identity, plan title, and primary goal are already saved. Add only real assessment and sequencing judgment; Roadmap has not filled gaps with placeholder coaching content.
+        - link "Back to golfers" [ref=f2e517] [cursor=pointer]:
+          - /url: /app/golfers
+      - navigation "Roadmap authoring steps" [ref=f2e518]:
+        - list [ref=f2e519]:
+          - listitem [ref=f2e520]:
+            - link "Goal Saved" [ref=f2e521] [cursor=pointer]:
+              - /url: "#saved-basics-heading"
+              - generic [ref=f2e522]: Done
+              - generic [ref=f2e523]:
+                - strong [ref=f2e524]: Goal
+                - generic [ref=f2e525]: Saved
+          - listitem [ref=f2e526]:
+            - link "Assessment Current" [ref=f2e527] [cursor=pointer]:
+              - /url: "#authoring-assessment"
+              - generic [ref=f2e528]: "2"
+              - generic [ref=f2e529]:
+                - strong [ref=f2e530]: Assessment
+                - generic [ref=f2e531]: Current
+          - listitem [ref=f2e532]:
+            - link "Priority Available" [ref=f2e533] [cursor=pointer]:
+              - /url: "#authoring-priority"
+              - generic [ref=f2e534]: "3"
+              - generic [ref=f2e535]:
+                - strong [ref=f2e536]: Priority
+                - generic [ref=f2e537]: Available
+          - listitem [ref=f2e538]:
+            - link "Phases Available" [ref=f2e539] [cursor=pointer]:
+              - /url: "#authoring-phases"
+              - generic [ref=f2e540]: "4"
+              - generic [ref=f2e541]:
+                - strong [ref=f2e542]: Phases
+                - generic [ref=f2e543]: Available
+          - listitem [ref=f2e544]:
+            - link "Evidence Optional" [ref=f2e545] [cursor=pointer]:
+              - /url: "#authoring-evidence"
+              - generic [ref=f2e546]: "5"
+              - generic [ref=f2e547]:
+                - strong [ref=f2e548]: Evidence
+                - generic [ref=f2e549]: Optional
+          - listitem [ref=f2e550]:
+            - link "Package Optional" [ref=f2e551] [cursor=pointer]:
+              - /url: "#authoring-package"
+              - generic [ref=f2e552]: "6"
+              - generic [ref=f2e553]:
+                - strong [ref=f2e554]: Package
+                - generic [ref=f2e555]: Optional
+          - listitem [ref=f2e556]:
+            - link "Preview Available" [ref=f2e557] [cursor=pointer]:
+              - /url: "#authoring-preview"
+              - generic [ref=f2e558]: "7"
+              - generic [ref=f2e559]:
+                - strong [ref=f2e560]: Preview
+                - generic [ref=f2e561]: Available
+      - region [ref=f2e562]:
+        - generic [ref=f2e365]:
+          - heading "Saved basics" [level=2] [ref=f2e563]
+          - generic [ref=f2e564]: publication blocked
+        - generic [ref=f2e565]:
+          - generic [ref=f2e566]:
+            - term [ref=f2e567]: Plan
+            - definition [ref=f2e568]: Three-phase start-line roadmap
+          - generic [ref=f2e569]:
+            - term [ref=f2e570]: Primary goal
+            - definition [ref=f2e571]: Start the ball on a useful line more often
+        - paragraph [ref=f2e572]: This staged record cannot be previewed, published, or shared until the assessment, priority, and three-or-four-phase roadmap are saved atomically below.
+      - generic [ref=f2e573]:
+        - status [ref=f2e574]: Changes are local until you complete the roadmap draft. Safe browser-tab recovery is enabled.
+        - region [ref=f2e575]:
+          - heading "Start blank or apply a reusable roadmap template" [level=2] [ref=f2e576]
+          - paragraph [ref=f2e577]: A template can fill the directional phase structure. It never supplies this golfer's assessment, priority, or diagnosis; those remain your judgment.
+          - generic [ref=f2e578]:
+            - generic [ref=f2e579]:
+              - text: Coach-owned template
+              - combobox "Coach-owned template" [ref=f2e580]:
+                - option "Start with blank phases"
+                - option "Three-phase contact progression (3 phases)" [selected]
+            - note [ref=f2e681]:
+              - strong [ref=f2e682]: Three-phase contact progression
+              - paragraph [ref=f2e683]: A reusable three-step structure that preserves golfer-specific judgment.
+              - generic [ref=f2e684]: Your saved coach template — review it for this golfer before saving.
+            - button "Apply phase structure" [active] [ref=f2e581] [cursor=pointer]
+        - group "Starting assessment" [ref=f2e583]:
+          - generic [ref=f2e585]:
+            - generic [ref=f2e586]:
+              - text: Starting assessment summary
+              - textbox "Starting assessment summary" [ref=f2e587]
+            - generic [ref=f2e588]:
+              - text: Strengths to preserve
+              - textbox "Strengths to preserve" [ref=f2e589]
+            - generic [ref=f2e590]:
+              - text: Primary observed pattern
+              - textbox "Primary observed pattern State a coaching observation, not a medical diagnosis or guarantee." [ref=f2e591]
+              - generic [ref=f2e592]: State a coaching observation, not a medical diagnosis or guarantee.
+            - generic [ref=f2e593]:
+              - text: Evidence and assessment limits
+              - textbox "Evidence and assessment limits" [ref=f2e594]
+        - group "Current priority" [ref=f2e596]:
+          - generic [ref=f2e598]:
+            - generic [ref=f2e599]:
+              - text: Priority title
+              - textbox "Priority title" [ref=f2e600]
+            - generic [ref=f2e601]:
+              - text: Why this comes first
+              - textbox "Why this comes first" [ref=f2e602]
+        - group "Directional phases" [ref=f2e604]:
+          - generic [ref=f2e606]:
+            - text: Number of phases
+            - combobox "Number of phases" [ref=f2e607]:
+              - option "3 phases" [selected]
+              - option "4 phases"
+          - paragraph [ref=f2e608]: "These phases are coach-authored direction, not promised outcomes or fixed timelines. Choose three or four before writing: switching to three hides any unsaved Phase 4 fields."
+          - generic [ref=f2e609]:
+            - generic [ref=f2e610]:
+              - heading "Phase 1" [level=3] [ref=f2e611]
+              - generic "Phase 1 structure controls" [ref=f2e612]:
+                - button "Move up" [disabled] [ref=f2e613]
+                - button "Move down" [disabled] [ref=f2e614]
+                - button "Duplicate as Phase 4" [ref=f2e615] [cursor=pointer]
+            - generic [ref=f2e616]:
+              - generic [ref=f2e617]:
+                - text: Phase 1 title
+                - textbox "Phase 1 title" [ref=f2e618]: Transfer contact
+              - generic [ref=f2e619]:
+                - text: Phase 1 purpose
+                - textbox "Phase 1 purpose" [ref=f2e620]: Carry the contact pattern into changing targets.
+          - generic [ref=f2e621]:
+            - generic [ref=f2e622]:
+              - heading "Phase 2" [level=3] [ref=f2e623]
+              - generic "Phase 2 structure controls" [ref=f2e624]:
+                - button "Move up" [disabled] [ref=f2e625]
+                - button "Move down" [ref=f2e626] [cursor=pointer]
+                - button "Duplicate as Phase 4" [ref=f2e627] [cursor=pointer]
+            - generic [ref=f2e628]:
+              - generic [ref=f2e629]:
+                - text: Phase 2 title
+                - textbox "Phase 2 title" [ref=f2e630]: Setup and contact
+              - generic [ref=f2e631]:
+                - text: Phase 2 purpose
+                - textbox "Phase 2 purpose" [ref=f2e632]: Create a repeatable starting shape and centred strike.
+          - generic [ref=f2e633]:
+            - generic [ref=f2e634]:
+              - heading "Phase 3" [level=3] [ref=f2e635]
+              - generic "Phase 3 structure controls" [ref=f2e636]:
+                - button "Move up" [ref=f2e637] [cursor=pointer]
+                - button "Move down" [disabled] [ref=f2e638]
+                - button "Duplicate as Phase 4" [ref=f2e639] [cursor=pointer]
+            - generic [ref=f2e640]:
+              - generic [ref=f2e641]:
+                - text: Phase 3 title
+                - textbox "Phase 3 title" [ref=f2e642]: Target variation
+              - generic [ref=f2e643]:
+                - text: Phase 3 purpose
+                - textbox "Phase 3 purpose" [ref=f2e644]: Use the pattern with different clubs and start lines.
+          - status [ref=f2e685]: Three-phase contact progression applied. Review and reorder every phase for this golfer.
+          - generic [ref=f2e657]:
+            - generic [ref=f2e658]:
+              - text: Why Phase 1 leads the roadmap
+              - textbox "Why Phase 1 leads the roadmap" [ref=f2e659]: Start with the smallest controllable pattern.
+            - generic [ref=f2e660]:
+              - text: Observable Phase 1 progress signals — one per line
+              - textbox "Observable Phase 1 progress signals — one per line Use observable checks; do not promise a score or permanent change." [ref=f2e661]: Three of five strikes begin near the intended line
+              - generic [ref=f2e662]: Use observable checks; do not promise a score or permanent change.
+        - generic [ref=f2e663]:
+          - heading "Evidence details are optional at setup" [level=2] [ref=f2e664]
+          - paragraph [ref=f2e665]: Complete the text-first roadmap now. After it is saved, the golfer hub provides a direct Evidence destination for lessons, observations, and later review notes.
+        - group [ref=f2e667]:
+          - generic "Optional first-phase package" [ref=f2e668] [cursor=pointer]
+          - option "No package attached" [selected]
+          - option "Three-session contact phase"
+        - generic [ref=f2e669]:
+          - heading "Preview this unsaved golfer-view candidate" [level=2] [ref=f2e670]
+          - paragraph [ref=f2e671]: Refresh the candidate after edits to review the exact words and phase order a golfer will see. Completing the draft then unlocks the full shared renderer for media, activity, print, and private-delivery review; it does not publish access.
+          - button "Refresh golfer preview" [ref=f2e672] [cursor=pointer]
+          - status [ref=f2e673]: No candidate is shown yet. Draft fields stay local until you explicitly save.
+        - alert [ref=f2e674]
+        - note [ref=f2e675]:
+          - strong [ref=f2e676]: Completion creates the first reviewable draft.
+          - generic [ref=f2e677]: It still does not publish, share, message, book, or charge. You must review the exact golfer view separately before creating private access.
+        - generic [ref=f2e678]:
+          - button "Complete roadmap draft" [ref=f2e679] [cursor=pointer]
+          - button "Save and return later" [ref=f2e680] [cursor=pointer]

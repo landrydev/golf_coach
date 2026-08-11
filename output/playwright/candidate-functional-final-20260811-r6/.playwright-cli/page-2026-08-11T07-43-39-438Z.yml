@@ -1,0 +1,122 @@
+- generic [ref=f2e2]:
+  - link "Skip to main content" [ref=f2e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=f2e4]:
+    - link "Prairie Path Golf Coaching Roadmap home" [ref=f2e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=f2e6]: PP
+      - generic [ref=f2e7]:
+        - strong [ref=f2e8]: Prairie Path Golf Coaching
+        - generic [ref=f2e9]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=f2e10]:
+      - link "Overview" [ref=f2e11] [cursor=pointer]:
+        - /url: /app
+      - link "Golfers" [ref=f2e12] [cursor=pointer]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=f2e13] [cursor=pointer]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=f2e14] [cursor=pointer]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=f2e15] [cursor=pointer]:
+        - /url: /app/media
+      - link "Packages" [ref=f2e16] [cursor=pointer]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=f2e17] [cursor=pointer]:
+        - /url: /app/billing
+      - link "Settings" [ref=f2e18] [cursor=pointer]:
+        - /url: /app/settings
+    - generic [ref=f2e19]:
+      - generic [ref=f2e20]: CF
+      - generic [ref=f2e21]:
+        - strong [ref=f2e22]: Coach Fresh empty coach
+        - generic [ref=f2e23]: qa.fresh@example.test
+      - button "Sign out" [ref=f2e25] [cursor=pointer]
+  - main [ref=f2e26]:
+    - generic [ref=f2e83]:
+      - generic [ref=f2e84]:
+        - generic [ref=f2e85]:
+          - generic [ref=f2e86]: Reusable structure
+          - heading "Roadmap templates" [level=1] [ref=f2e87]
+          - paragraph [ref=f2e88]: Save a coach-authored starting structure. A template never diagnoses a golfer or updates an existing plan automatically.
+        - button "Create template" [ref=f2e89] [cursor=pointer]
+      - generic [ref=f2e90]:
+        - generic [ref=f2e91]:
+          - generic [ref=f2e92]: Search templates
+          - searchbox "Search templates" [ref=f2e93]
+        - generic [ref=f2e94]:
+          - checkbox "Favourites only" [ref=f2e95]
+          - text: Favourites only
+        - generic [ref=f2e96]:
+          - checkbox "Show archived" [ref=f2e97]
+          - text: Show archived
+      - status [ref=f2e147]: Phase 2 moved up.
+      - generic [ref=f2e98]:
+        - generic [ref=f2e99]:
+          - heading "0 templates" [level=2] [ref=f2e100]
+          - list
+        - generic [ref=f2e101]:
+          - generic [ref=f2e103]:
+            - generic [ref=f2e104]: New template
+            - heading "Create a reusable structure" [level=2] [ref=f2e105]
+          - generic [ref=f2e106]:
+            - generic [ref=f2e107]:
+              - generic [ref=f2e108]: Template title
+              - textbox "Template title" [ref=f2e109]: Three-phase contact progression
+            - generic [ref=f2e110]:
+              - generic [ref=f2e111]: Description
+              - textbox "Description" [ref=f2e112]: A reusable three-step structure that preserves golfer-specific judgment.
+            - generic [ref=f2e113]:
+              - generic [ref=f2e114]: Goal prompt (optional)
+              - textbox "Goal prompt (optional)" [ref=f2e115]
+            - generic [ref=f2e116]:
+              - generic [ref=f2e117]: Assessment prompt (optional)
+              - textbox "Assessment prompt (optional)" [ref=f2e118]
+            - generic [ref=f2e119]:
+              - generic [ref=f2e120]: Priority prompt (optional)
+              - textbox "Priority prompt (optional)" [ref=f2e121]
+            - group "Phases" [ref=f2e122]:
+              - generic [ref=f2e124]:
+                - generic [ref=f2e125]:
+                  - generic [ref=f2e126]:
+                    - heading "Phase 1" [level=3] [ref=f2e127]
+                    - generic "Phase 1 structure controls" [ref=f2e128]:
+                      - button "Move up" [disabled] [ref=f2e129]
+                      - button "Move down" [ref=f2e130] [cursor=pointer]
+                      - button "Duplicate" [ref=f2e131] [cursor=pointer]
+                      - button "Remove" [ref=f2e148] [cursor=pointer]
+                  - generic [ref=f2e132]:
+                    - generic [ref=f2e133]:
+                      - generic [ref=f2e134]: Title
+                      - textbox "Title" [ref=f2e135]: Transfer contact
+                    - generic [ref=f2e136]:
+                      - generic [ref=f2e137]: Purpose
+                      - textbox "Purpose" [ref=f2e138]: Carry the contact pattern into changing targets.
+                    - generic [ref=f2e139]:
+                      - generic [ref=f2e140]: Rationale (optional)
+                      - textbox "Rationale (optional)" [ref=f2e141]: Start with the smallest controllable pattern.
+                    - generic [ref=f2e142]:
+                      - generic [ref=f2e143]: Progress signals — one per line
+                      - textbox "Progress signals — one per line" [ref=f2e144]: Three of five strikes begin near the intended line
+                - generic [ref=f2e149]:
+                  - generic [ref=f2e150]:
+                    - heading "Phase 2" [level=3] [ref=f2e151]
+                    - generic "Phase 2 structure controls" [ref=f2e152]:
+                      - button "Move up" [active] [ref=f2e153] [cursor=pointer]
+                      - button "Move down" [disabled] [ref=f2e154]
+                      - button "Duplicate" [ref=f2e155] [cursor=pointer]
+                      - button "Remove" [ref=f2e156] [cursor=pointer]
+                  - generic [ref=f2e157]:
+                    - generic [ref=f2e158]:
+                      - generic [ref=f2e159]: Title
+                      - textbox "Title" [ref=f2e160]: Setup and contact
+                    - generic [ref=f2e161]:
+                      - generic [ref=f2e162]: Purpose
+                      - textbox "Purpose" [ref=f2e163]: Create a repeatable starting shape and centred strike.
+                    - generic [ref=f2e164]:
+                      - generic [ref=f2e165]: Rationale (optional)
+                      - textbox "Rationale (optional)" [ref=f2e166]: Start with the smallest controllable pattern.
+                    - generic [ref=f2e167]:
+                      - generic [ref=f2e168]: Progress signals — one per line
+                      - textbox "Progress signals — one per line" [ref=f2e169]: Three of five strikes begin near the intended line
+              - button "Add phase" [ref=f2e145] [cursor=pointer]
+            - button "Create template" [ref=f2e146] [cursor=pointer]

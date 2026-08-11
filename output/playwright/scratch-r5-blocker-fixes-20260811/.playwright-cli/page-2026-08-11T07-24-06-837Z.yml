@@ -1,0 +1,146 @@
+- generic [ref=e2]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=e4]:
+    - link "Coach Fresh empty coach Roadmap home" [ref=e5] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=e6]: CF
+      - generic [ref=e7]:
+        - strong [ref=e8]: Coach Fresh empty coach
+        - generic [ref=e9]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=e10]:
+      - link "Overview" [ref=e11] [cursor=pointer]:
+        - /url: /app
+      - link "Golfers" [ref=e12] [cursor=pointer]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=e13] [cursor=pointer]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=e14] [cursor=pointer]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=e15] [cursor=pointer]:
+        - /url: /app/media
+      - link "Packages" [ref=e16] [cursor=pointer]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=e17] [cursor=pointer]:
+        - /url: /app/billing
+      - link "Settings" [ref=e18] [cursor=pointer]:
+        - /url: /app/settings
+    - generic [ref=e19]:
+      - generic [ref=e20]: CF
+      - generic [ref=e21]:
+        - strong [ref=e22]: Coach Fresh empty coach
+        - generic [ref=e23]: qa.fresh@example.test
+      - button "Sign out" [ref=e25] [cursor=pointer]
+  - main [ref=e26]:
+    - generic [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - generic [ref=e30]: Coaching command centre
+          - heading "Let’s get your first roadmap ready, Coach." [level=1] [ref=e31]
+          - paragraph [ref=e32]: Start with the few coaching records that need attention. Counts describe stored Roadmap state only; they do not imply a message, booking, sale, or golfer outcome.
+        - generic [ref=e33]:
+          - link "Add a golfer" [ref=e34] [cursor=pointer]:
+            - /url: /app/golfers/new
+          - link "Find a golfer" [ref=e35] [cursor=pointer]:
+            - /url: /app/golfers
+      - region [ref=e36]:
+        - generic [ref=e37]:
+          - generic [ref=e38]: Quick actions
+          - heading "Start the next coaching task." [level=2] [ref=e39]
+        - list [ref=e40]:
+          - listitem [ref=e41]:
+            - link "New golfer Start an adult golfer record and first roadmap." [ref=e42] [cursor=pointer]:
+              - /url: /app/golfers/new
+              - strong [ref=e43]: New golfer
+              - generic [ref=e44]: Start an adult golfer record and first roadmap.
+          - listitem [ref=e45]:
+            - link "Add package Publish an external coaching offer or enquiry route." [ref=e46] [cursor=pointer]:
+              - /url: /app/packages
+              - strong [ref=e47]: Add package
+              - generic [ref=e48]: Publish an external coaching offer or enquiry route.
+          - listitem [ref=e49]:
+            - link "New drill Create a reusable private coaching drill." [ref=e50] [cursor=pointer]:
+              - /url: /app/coaching/drills
+              - strong [ref=e51]: New drill
+              - generic [ref=e52]: Create a reusable private coaching drill.
+          - listitem [ref=e53]:
+            - link "Upload media Add a private file, then attach it to coaching work." [ref=e54] [cursor=pointer]:
+              - /url: /app/media#upload-media
+              - strong [ref=e55]: Upload media
+              - generic [ref=e56]: Add a private file, then attach it to coaching work.
+      - region [ref=e57]:
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - generic [ref=e60]: Persisted setup
+            - heading "Continue from the next incomplete step." [level=2] [ref=e61]
+          - generic [ref=e62]: 0 of 4 required steps
+        - list [ref=e63]:
+          - listitem [ref=e64]:
+            - generic [ref=e65]: •
+            - generic [ref=e66]:
+              - strong [ref=e67]: Coach identity
+              - generic [ref=e68]: Add the name and contact route golfers should recognize.
+            - link "Continue" [ref=e69] [cursor=pointer]:
+              - /url: /app/settings
+          - listitem [ref=e70]:
+            - generic [ref=e71]: +
+            - generic [ref=e72]:
+              - strong [ref=e73]: Current package
+              - generic [ref=e74]: "Optional: connect an existing booking or purchase route later."
+            - link "Add optionally" [ref=e75] [cursor=pointer]:
+              - /url: /app/packages
+          - listitem [ref=e76]:
+            - generic [ref=e77]: •
+            - generic [ref=e78]:
+              - strong [ref=e79]: First golfer
+              - generic [ref=e80]: Save the golfer and goal first; complete coaching judgment next.
+            - link "Open" [ref=e81] [cursor=pointer]:
+              - /url: /app/golfers/new
+          - listitem [ref=e82]:
+            - generic [ref=e83]: •
+            - generic [ref=e84]:
+              - strong [ref=e85]: Complete roadmap
+              - generic [ref=e86]: Add assessment, priority, and directional phases.
+            - link "Open" [ref=e87] [cursor=pointer]:
+              - /url: /app/golfers/new
+          - listitem [ref=e88]:
+            - generic [ref=e89]: •
+            - generic [ref=e90]:
+              - strong [ref=e91]: Review and share
+              - generic [ref=e92]: Preview the exact golfer view before creating private access.
+            - link "Open" [ref=e93] [cursor=pointer]:
+              - /url: /app/golfers?status=setup_incomplete
+      - region [ref=e94]:
+        - generic [ref=e95]:
+          - generic [ref=e96]:
+            - generic [ref=e97]: Needs attention
+            - heading "Bounded coaching work, not vanity metrics." [level=2] [ref=e98]
+          - link "Open filtered golfer list" [ref=e99] [cursor=pointer]:
+            - /url: /app/golfers?sort=attention
+        - generic [ref=e100]:
+          - article [ref=e101]:
+            - generic [ref=e102]:
+              - heading "Incomplete roadmaps" [level=3] [ref=e103]
+              - generic "0 stored incomplete roadmaps" [ref=e104]: "0"
+            - paragraph [ref=e105]: No staged roadmaps are waiting for completion.
+          - article [ref=e106]:
+            - generic [ref=e107]:
+              - heading "Coach reviews" [level=3] [ref=e108]
+              - generic "0 stored coach reviews" [ref=e109]: "0"
+            - paragraph [ref=e110]: No roadmap or phase-review drafts need a decision.
+          - article [ref=e111]:
+            - generic [ref=e112]:
+              - heading "Active practice" [level=3] [ref=e113]
+              - generic "0 stored active practice" [ref=e114]: "0"
+            - paragraph [ref=e115]: No active practice direction is stored.
+          - article [ref=e116]:
+            - generic [ref=e117]:
+              - heading "Latest responses & check-ins" [level=3] [ref=e118]
+              - generic "0 stored latest responses & check-ins" [ref=e119]: "0"
+            - paragraph [ref=e120]: No golfer response or practice check-in has been recorded through a private link.
+      - region [ref=e121]:
+        - generic [ref=e122]:
+          - generic [ref=e123]: Stored failure signals
+          - heading "Media and launch-data work that needs review" [level=2] [ref=e124]
+          - paragraph [ref=e125]: This list reports only failed or quarantined media and failed or mapping-required launch-data imports that Roadmap can prove exist.
+        - paragraph [ref=e126]: No failed media or launch-data import needs attention.

@@ -1,0 +1,279 @@
+{
+  "schemaVersion": 2,
+  "evidenceClass": "EXACT-FINAL-CANDIDATE LOCAL SYNTHETIC BROWSER QA",
+  "candidateId": "scratch-r9-media-fix",
+  "createdAt": "2026-08-11T09:43:01.400Z",
+  "sourceIdentity": {
+    "inventoryPath": "output/playwright/scratch-r9-media-fix/source-identity.json",
+    "schemaVersion": null,
+    "aggregateSha256": null,
+    "fileCount": null,
+    "totalBytes": null,
+    "exactCommitOrArchive": null,
+    "releaseId": null,
+    "status": "RECORD BEFORE CLAIMING EXACT-CANDIDATE EVIDENCE"
+  },
+  "server": {
+    "command": "npm run qa:functional:server",
+    "origin": "http://127.0.0.1:4175",
+    "scenarioCatalogue": "http://127.0.0.1:4175/__qa/scenarios"
+  },
+  "playwright": {
+    "command": "npm run qa:playwright -- -CandidateId <candidate> -Session <session> <command>",
+    "mode": "CLI-first; no Playwright test specs",
+    "artifactDirectory": "output/playwright/scratch-r9-media-fix"
+  },
+  "verification": {
+    "command": "npm run verify",
+    "status": "not_recorded",
+    "tests": null,
+    "passed": null,
+    "failed": null,
+    "skipped": null,
+    "todo": null,
+    "durationMs": null
+  },
+  "requiredViewports": [
+    {
+      "width": 320,
+      "height": 844
+    },
+    {
+      "width": 390,
+      "height": 844
+    },
+    {
+      "width": 768,
+      "height": 1024
+    },
+    {
+      "width": 1440,
+      "height": 1000
+    }
+  ],
+  "requiredSurfaces": [
+    "landing",
+    "onboarding",
+    "dashboard",
+    "authoring",
+    "golfer-hub",
+    "media",
+    "launch-data-import",
+    "drill-library-and-assignment",
+    "share-centre",
+    "golfer-roadmap"
+  ],
+  "requiredStates": [
+    "short",
+    "long",
+    "empty",
+    "loading",
+    "partial",
+    "error",
+    "recovery",
+    "expired",
+    "revoked",
+    "republished"
+  ],
+  "scenarios": [
+    {
+      "id": "fresh",
+      "label": "Fresh empty coach",
+      "appEntry": "http://127.0.0.1:4175/__qa/fresh/app",
+      "golferEntry": null,
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "standard",
+      "label": "Standard four-phase roadmap",
+      "appEntry": "http://127.0.0.1:4175/__qa/standard/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/standard/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "three-phase",
+      "label": "Three phases without a package",
+      "appEntry": "http://127.0.0.1:4175/__qa/three-phase/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/three-phase/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "mixed-30",
+      "label": "Thirty mixed-state golfers",
+      "appEntry": "http://127.0.0.1:4175/__qa/mixed-30/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/mixed-30/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "long-content",
+      "label": "Long-content roadmap",
+      "appEntry": "http://127.0.0.1:4175/__qa/long-content/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/long-content/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "expired",
+      "label": "Expired private access",
+      "appEntry": "http://127.0.0.1:4175/__qa/expired/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/expired/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "revoked",
+      "label": "Revoked private access",
+      "appEntry": "http://127.0.0.1:4175/__qa/revoked/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/revoked/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "republished",
+      "label": "Republished roadmap",
+      "appEntry": "http://127.0.0.1:4175/__qa/republished/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/republished/golfer",
+      "oldGolferEntry": "http://127.0.0.1:4175/__qa/republished/old-golfer",
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    }
+  ],
+  "acceptanceScenarios": [
+    {
+      "id": "A",
+      "label": "First self-serve roadmap",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [],
+      "notes": []
+    },
+    {
+      "id": "B",
+      "label": "Swing-video evidence",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [],
+      "notes": []
+    },
+    {
+      "id": "C",
+      "label": "Practice-drill reuse",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [],
+      "notes": []
+    },
+    {
+      "id": "D",
+      "label": "Launch-monitor import and comparison",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [],
+      "notes": []
+    },
+    {
+      "id": "E",
+      "label": "Living journey and phase transition",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [],
+      "notes": []
+    },
+    {
+      "id": "F",
+      "label": "Return and management",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [],
+      "notes": []
+    },
+    {
+      "id": "G",
+      "label": "Golfer mobile and print experience",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [],
+      "notes": []
+    },
+    {
+      "id": "H",
+      "label": "SaaS billing in test mode",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [],
+      "notes": []
+    }
+  ],
+  "browserReview": {
+    "unexplainedConsoleErrors": null,
+    "failedNetworkRequests": null,
+    "keyboardReview": "not_recorded",
+    "touchEquivalentReview": "not_recorded",
+    "reducedMotionReview": "not_recorded",
+    "reflowAndOverflowReview": "not_recorded",
+    "visualReviewer": null
+  },
+  "completionEligibility": {
+    "eligible": false,
+    "reason": "Template only. Record exact source identity, verification, acceptance Scenarios A-H, every required fixture state, and reviewed artifacts before changing this value."
+  }
+}

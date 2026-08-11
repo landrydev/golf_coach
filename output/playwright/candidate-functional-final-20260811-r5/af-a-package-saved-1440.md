@@ -1,0 +1,105 @@
+- generic [ref=e2] [box=0,-1085,1440,2150]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer] [box=16,-96,179,50]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=e4] [box=0,0,280,1000]:
+    - link "Northline Golf Coaching Roadmap home" [ref=e226] [cursor=pointer] [box=24,32,232,43]:
+      - /url: /app
+      - generic [ref=e6] [box=24,32,42,42]: NG
+      - generic [ref=e7] [box=78,32,178,43]:
+        - strong [ref=e8] [box=78,32,178,21]: Northline Golf Coaching
+        - generic [ref=e9] [box=78,59,178,16]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=e10] [box=24,131,232,443]:
+      - link "Overview" [ref=e11] [cursor=pointer] [box=24,131,232,51]:
+        - /url: /app
+      - link "Golfers" [ref=e12] [cursor=pointer] [box=24,187,232,51]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=e13] [cursor=pointer] [box=24,243,232,51]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=e14] [cursor=pointer] [box=24,299,232,51]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=e15] [cursor=pointer] [box=24,355,232,51]:
+        - /url: /app/media
+      - link "Packages" [ref=e16] [cursor=pointer] [box=24,412,232,51]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=e17] [cursor=pointer] [box=24,468,232,51]:
+        - /url: /app/billing
+      - link "Settings" [ref=e18] [cursor=pointer] [box=24,524,232,51]:
+        - /url: /app/settings
+    - generic [ref=e19] [box=24,886,232,82]:
+      - generic [ref=e20] [box=24,906,42,42]: CA
+      - generic [ref=e21] [box=78,886,178,45]:
+        - strong [ref=e22] [box=78,886,178,26]: Coach Avery North
+        - generic [ref=e23] [box=78,911,178,19]: qa.fresh@example.test
+      - button "Sign out" [ref=e25] [cursor=pointer] [box=78,948,46,16]
+  - main [ref=e26] [box=280,-1085,1160,2150]:
+    - generic [ref=e27] [box=338,-1045,1045,2030]:
+      - generic [ref=e29] [box=338,-1045,736,211]:
+        - generic [ref=e30] [box=338,-1045,736,18]: Coaching packages
+        - heading "Connect the phase to a package you already offer." [level=1] [ref=e262] [box=338,-1018,707,117]
+        - paragraph [ref=e32] [box=338,-887,736,53]: Roadmap explains the recommendation and then sends the golfer to your existing booking, purchase, or contact route. It does not process coach-package payments.
+      - note [ref=e263] [box=338,-802,1045,98]:
+        - strong [ref=e264] [box=358,-787,1008,26]: Package facts can affect private golfer plans.
+        - generic [ref=e265] [box=358,-758,1008,38]: Editing or archiving a linked package creates a new withdrawn plan revision, clears publication approval, and revokes active links until you review and publish again. Roadmap never treats an external click as a booking, purchase, or sale.
+      - generic [ref=e298] [box=338,-688,1045,231]:
+        - heading "Current packages" [level=2] [ref=e300] [box=366,-660,166,35]
+        - list [ref=e301] [box=366,-609,988,124]:
+          - listitem [ref=e302] [box=366,-609,988,124]:
+            - generic [ref=e303] [box=366,-593,916,63]:
+              - strong [ref=e304] [box=366,-593,916,26]: Foundation rebuild
+              - generic [ref=e305] [box=366,-568,916,19]: A structured three-phase coaching block for rebuilding contact and confidence.
+              - generic [ref=e306] [box=366,-549,916,19]: CAD 720.00 · Four sessions used within ten weeks. Rescheduling requires 24 hours notice.
+            - generic [ref=e307] [box=1298,-593,57,28]: active
+            - generic [ref=e308] [box=366,-522,988,21]:
+              - group [ref=e309] [box=366,-522,988,21]:
+                - generic "Edit or archive this package" [ref=e310] [box=366,-522,988,21]
+                - option "Active" [selected] [box=0,0,0,0]
+                - option "Draft" [box=0,0,0,0]
+                - option "Booking" [selected] [box=0,0,0,0]
+                - option "Purchase" [box=0,0,0,0]
+                - option "Contact" [box=0,0,0,0]
+                - option "Other" [box=0,0,0,0]
+              - alert [ref=e311] [box=365,-502,1,1]
+      - generic [ref=e266] [box=338,-441,1045,1426]:
+        - group "Add a package you already sell" [ref=e268] [box=366,-413,988,1240]:
+          - generic [ref=e270] [box=366,-366,988,1194]:
+            - generic [ref=e271] [box=366,-366,988,75]:
+              - text: Package name
+              - textbox "Package name" [disabled] [ref=e272] [box=366,-339,988,48]
+            - generic [ref=e273] [box=366,-275,988,139]:
+              - text: Why it fits
+              - textbox "Why it fits" [disabled] [ref=e274] [box=366,-248,988,112]
+            - generic [ref=e275] [box=366,-120,486,98]:
+              - text: Price in CAD (optional)
+              - spinbutton "Price in CAD (optional) This is the instructor’s coaching-package price, not the Roadmap subscription." [disabled] [ref=e276] [box=366,-92,486,48]
+              - generic [ref=e277] [box=366,-38,486,16]: This is the instructor’s coaching-package price, not the Roadmap subscription.
+            - generic [ref=e278] [box=868,-120,486,98]:
+              - text: Current details when no price is shown
+              - textbox "Current details when no price is shown Provide either an exact price or an honest current-details message." [disabled] [ref=e279] [box=868,-92,486,48]:
+                - /placeholder: Confirm current price with me
+              - generic [ref=e280] [box=868,-38,486,16]: Provide either an exact price or an honest current-details message.
+            - generic [ref=e281] [box=366,-6,988,162]:
+              - text: Material inclusions — one per line
+              - textbox "Material inclusions — one per line List only what this package currently includes. Do not imply booking or payment has occurred." [disabled] [ref=e282] [box=366,21,988,112]:
+                - /placeholder: "Four individual lessons\nWritten practice direction\nEnd-of-phase review"
+              - generic [ref=e283] [box=366,140,988,16]: List only what this package currently includes. Do not imply booking or payment has occurred.
+            - generic [ref=e284] [box=366,172,486,75]:
+              - text: Cadence (optional)
+              - textbox "Cadence (optional)" [disabled] [ref=e285] [box=366,199,486,48]:
+                - /placeholder: Four lessons over six to eight weeks
+            - generic [ref=e286] [box=366,263,988,139]:
+              - text: Practice expectation (optional)
+              - textbox "Practice expectation (optional)" [disabled] [ref=e287] [box=366,291,988,112]
+            - generic [ref=e288] [box=366,419,988,139]:
+              - text: Evaluation approach (optional)
+              - textbox "Evaluation approach (optional)" [disabled] [ref=e289] [box=366,446,988,112]
+            - generic [ref=e290] [box=366,574,988,139]:
+              - text: Terms
+              - textbox "Terms" [disabled] [ref=e291] [box=366,601,988,112]:
+                - /placeholder: Sessions, expected window, expiry, rescheduling, and renewal terms.
+            - generic [ref=e292] [box=366,729,988,98]:
+              - text: Existing HTTPS booking, purchase, or contact link
+              - textbox "Existing HTTPS booking, purchase, or contact link Roadmap makes the handoff clear; it does not claim the external action completed." [disabled] [ref=e293] [box=366,757,988,48]
+              - generic [ref=e294] [box=366,811,988,16]: Roadmap makes the handoff clear; it does not claim the external action completed.
+        - alert [ref=e295] [box=337,-442,1,1]
+        - status [ref=e312] [box=338,875,1045,44]: Package saved. It can now be connected to a coaching phase.
+        - button "Save package" [disabled] [ref=e297] [box=338,938,123,47]

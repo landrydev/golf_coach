@@ -1,0 +1,339 @@
+{
+  "schemaVersion": 2,
+  "evidenceClass": "EXACT-FINAL-CANDIDATE LOCAL SYNTHETIC BROWSER QA",
+  "candidateId": "candidate-functional-final-20260810-r3",
+  "candidateStatus": {
+    "status": "invalidated",
+    "eligible": false,
+    "diagnosticEvidenceOnly": true,
+    "reason": "Real-browser QA found a confirmed post-201 lesson form-reset crash and a separate post-201 package-save uncertainty. Acceptance stopped immediately; partial artifacts are diagnostic only.",
+    "blockerIds": [
+      "BROWSER-E-LESSON-POST201-RESET",
+      "BROWSER-A-PACKAGE-POST201-UNCERTAINTY"
+    ],
+    "blockers": [
+      {
+        "id": "BROWSER-E-LESSON-POST201-RESET",
+        "status": "confirmed",
+        "summary": "After POST /api/plans/{planId}/coaching/lessons returned 201 and the workspace refresh returned 200, the UI announced success but threw TypeError: Cannot read properties of null (reading 'reset'); the populated form did not reset and duplicate submission remained possible.",
+        "evidencePaths": [
+          "output/playwright/candidate-functional-final-20260810-r3/scenario-eg-report.md",
+          "output/playwright/candidate-functional-final-20260810-r3/eg-e-defect-lesson-reset.png",
+          "output/playwright/candidate-functional-final-20260810-r3/.playwright-cli/traces/trace-1786428128943.trace",
+          "output/playwright/candidate-functional-final-20260810-r3/.playwright-cli/traces/trace-1786428128943.network"
+        ]
+      },
+      {
+        "id": "BROWSER-A-PACKAGE-POST201-UNCERTAINTY",
+        "status": "requires_investigation",
+        "summary": "After POST /api/packages returned 201 and /app/packages.rsc returned 200, the UI disabled the form and reported that it could not confirm whether the package was saved, presenting a retry-exact-attempt recovery state despite the successful responses.",
+        "evidencePaths": [
+          "output/playwright/candidate-functional-final-20260810-r3/scenario-af-report.md",
+          "output/playwright/candidate-functional-final-20260810-r3/af-a-package-saved-1440.md",
+          "output/playwright/candidate-functional-final-20260810-r3/af-a-package-saved-1440.png",
+          "output/playwright/candidate-functional-final-20260810-r3/.playwright-cli/traces/trace-1786428078920.trace",
+          "output/playwright/candidate-functional-final-20260810-r3/.playwright-cli/traces/trace-1786428078920.network"
+        ]
+      }
+    ]
+  },
+  "createdAt": "2026-08-11T05:59:46.710Z",
+  "sourceIdentity": {
+    "inventoryPath": "output/playwright/candidate-functional-final-20260810-r3/source-identity.json",
+    "schemaVersion": 2,
+    "aggregateSha256": "bff17f3c1efb86c80cb1bb755672ddfcfcd4cbf7a435d42c6e13cec54d93cbde",
+    "fileCount": 393,
+    "totalBytes": 10598258,
+    "exactCommitOrArchive": "source-identity-v2:bff17f3c1efb86c80cb1bb755672ddfcfcd4cbf7a435d42c6e13cec54d93cbde",
+    "releaseId": "candidate-functional-final-20260810-r3",
+    "status": "BOUND TO RECORDED SOURCE IDENTITY"
+  },
+  "server": {
+    "command": "npm run qa:functional:server",
+    "origin": "http://127.0.0.1:4175",
+    "scenarioCatalogue": "http://127.0.0.1:4175/__qa/scenarios"
+  },
+  "playwright": {
+    "command": "npm run qa:playwright -- -CandidateId <candidate> -Session <session> <command>",
+    "mode": "CLI-first; no Playwright test specs",
+    "artifactDirectory": "output/playwright/candidate-functional-final-20260810-r3"
+  },
+  "verification": {
+    "command": "npm run verify",
+    "status": "passed",
+    "tests": 486,
+    "passed": 486,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "durationMs": 42971.4824,
+    "wallDurationMs": 56100,
+    "logPath": "output/verify-functional-final-20260810-r3.log"
+  },
+  "requiredViewports": [
+    {
+      "width": 320,
+      "height": 844
+    },
+    {
+      "width": 390,
+      "height": 844
+    },
+    {
+      "width": 768,
+      "height": 1024
+    },
+    {
+      "width": 1440,
+      "height": 1000
+    }
+  ],
+  "requiredSurfaces": [
+    "landing",
+    "onboarding",
+    "dashboard",
+    "authoring",
+    "golfer-hub",
+    "media",
+    "launch-data-import",
+    "drill-library-and-assignment",
+    "share-centre",
+    "golfer-roadmap"
+  ],
+  "requiredStates": [
+    "short",
+    "long",
+    "empty",
+    "loading",
+    "partial",
+    "error",
+    "recovery",
+    "expired",
+    "revoked",
+    "republished"
+  ],
+  "scenarios": [
+    {
+      "id": "fresh",
+      "label": "Fresh empty coach",
+      "appEntry": "http://127.0.0.1:4175/__qa/fresh/app",
+      "golferEntry": null,
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "standard",
+      "label": "Standard four-phase roadmap",
+      "appEntry": "http://127.0.0.1:4175/__qa/standard/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/standard/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "three-phase",
+      "label": "Three phases without a package",
+      "appEntry": "http://127.0.0.1:4175/__qa/three-phase/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/three-phase/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "mixed-30",
+      "label": "Thirty mixed-state golfers",
+      "appEntry": "http://127.0.0.1:4175/__qa/mixed-30/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/mixed-30/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "long-content",
+      "label": "Long-content roadmap",
+      "appEntry": "http://127.0.0.1:4175/__qa/long-content/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/long-content/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "expired",
+      "label": "Expired private access",
+      "appEntry": "http://127.0.0.1:4175/__qa/expired/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/expired/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "revoked",
+      "label": "Revoked private access",
+      "appEntry": "http://127.0.0.1:4175/__qa/revoked/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/revoked/golfer",
+      "oldGolferEntry": null,
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    },
+    {
+      "id": "republished",
+      "label": "Republished roadmap",
+      "appEntry": "http://127.0.0.1:4175/__qa/republished/app",
+      "golferEntry": "http://127.0.0.1:4175/__qa/republished/golfer",
+      "oldGolferEntry": "http://127.0.0.1:4175/__qa/republished/old-golfer",
+      "functionalResult": "not_recorded",
+      "visualResult": "not_recorded",
+      "artifactPaths": [],
+      "notes": []
+    }
+  ],
+  "acceptanceScenarios": [
+    {
+      "id": "A",
+      "label": "First self-serve roadmap",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "invalidated_defect",
+      "browserVisualResult": "partial_invalidated",
+      "manualReviewResult": "partial_invalidated",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260810-r3/scenario-af-report.md",
+        "output/playwright/candidate-functional-final-20260810-r3/af-a-package-saved-1440.md",
+        "output/playwright/candidate-functional-final-20260810-r3/af-a-package-saved-1440.png"
+      ],
+      "blockerIds": [
+        "BROWSER-A-PACKAGE-POST201-UNCERTAINTY"
+      ],
+      "notes": [
+        "Partial diagnostic run only. Package POST returned 201 and refresh returned 200, but the client entered an uncertain retry state. Remaining Scenario A steps and all Scenario F work were stopped."
+      ]
+    },
+    {
+      "id": "B",
+      "label": "Swing-video evidence",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [],
+      "notes": []
+    },
+    {
+      "id": "C",
+      "label": "Practice-drill reuse",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [],
+      "notes": []
+    },
+    {
+      "id": "D",
+      "label": "Launch-monitor import and comparison",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [],
+      "notes": []
+    },
+    {
+      "id": "E",
+      "label": "Living journey and phase transition",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "failed",
+      "browserVisualResult": "partial_invalidated",
+      "manualReviewResult": "defect_confirmed",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [
+        "output/playwright/candidate-functional-final-20260810-r3/scenario-eg-report.md",
+        "output/playwright/candidate-functional-final-20260810-r3/eg-e-defect-lesson-reset.png",
+        "output/playwright/candidate-functional-final-20260810-r3/.playwright-cli/traces/trace-1786428128943.trace",
+        "output/playwright/candidate-functional-final-20260810-r3/.playwright-cli/traces/trace-1786428128943.network"
+      ],
+      "blockerIds": [
+        "BROWSER-E-LESSON-POST201-RESET"
+      ],
+      "notes": [
+        "Lesson creation persisted with 201 and refreshed with 200, then the client threw while resetting the form. Scenario E stopped at the first mutation and Scenario G was not started."
+      ]
+    },
+    {
+      "id": "F",
+      "label": "Return and management",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [],
+      "notes": []
+    },
+    {
+      "id": "G",
+      "label": "Golfer mobile and print experience",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [],
+      "notes": []
+    },
+    {
+      "id": "H",
+      "label": "SaaS billing in test mode",
+      "automatedResult": "not_recorded",
+      "browserFunctionalResult": "not_recorded",
+      "browserVisualResult": "not_recorded",
+      "manualReviewResult": "not_recorded",
+      "externalDependencyResult": "not_recorded",
+      "evidencePaths": [],
+      "blockerIds": [],
+      "notes": []
+    }
+  ],
+  "browserReview": {
+    "unexplainedConsoleErrors": null,
+    "failedNetworkRequests": null,
+    "keyboardReview": "not_recorded",
+    "touchEquivalentReview": "not_recorded",
+    "reducedMotionReview": "not_recorded",
+    "reflowAndOverflowReview": "not_recorded",
+    "visualReviewer": null
+  },
+  "completionEligibility": {
+    "eligible": false,
+    "invalidated": true,
+    "blockerIds": [
+      "BROWSER-E-LESSON-POST201-RESET",
+      "BROWSER-A-PACKAGE-POST201-UNCERTAINTY"
+    ],
+    "reason": "Candidate r3 is ineligible: real-browser QA confirmed a post-201 lesson reset crash and observed a separate post-201 package-save uncertainty. Acceptance A-H is incomplete, and all partial artifacts are diagnostic only."
+  }
+}

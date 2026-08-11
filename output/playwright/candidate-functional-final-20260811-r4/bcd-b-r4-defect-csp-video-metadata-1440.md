@@ -1,0 +1,126 @@
+- generic [ref=f1e2] [box=0,-489,1440,2239]:
+  - link "Skip to main content" [ref=f1e3] [cursor=pointer] [box=16,-96,179,50]:
+    - /url: "#main-content"
+  - complementary "Coach workspace account" [ref=f1e4] [box=0,0,280,1000]:
+    - link "Foothills Golf Studio Roadmap home" [ref=f1e5] [cursor=pointer] [box=24,32,232,43]:
+      - /url: /app
+      - generic [ref=f1e6] [box=24,32,42,42]: FG
+      - generic [ref=f1e7] [box=78,32,178,43]:
+        - strong [ref=f1e8] [box=78,32,178,21]: Foothills Golf Studio
+        - generic [ref=f1e9] [box=78,59,178,16]: Roadmap coach workspace
+    - navigation "Coach workspace" [ref=f1e10] [box=24,131,232,444]:
+      - link "Overview" [ref=f1e11] [cursor=pointer] [box=24,131,232,51]:
+        - /url: /app
+      - link "Golfers" [ref=f1e12] [cursor=pointer] [box=24,187,232,51]:
+        - /url: /app/golfers
+      - link "Drill library" [ref=f1e13] [cursor=pointer] [box=24,243,232,51]:
+        - /url: /app/coaching/drills
+      - link "Roadmap templates" [ref=f1e14] [cursor=pointer] [box=24,299,232,51]:
+        - /url: /app/coaching/roadmaps
+      - link "Media" [ref=f1e15] [cursor=pointer] [box=24,355,232,51]:
+        - /url: /app/media
+      - link "Packages" [ref=f1e16] [cursor=pointer] [box=24,412,232,51]:
+        - /url: /app/packages
+      - link "Plan & billing" [ref=f1e17] [cursor=pointer] [box=24,468,232,51]:
+        - /url: /app/billing
+      - link "Settings" [ref=f1e18] [cursor=pointer] [box=24,524,232,51]:
+        - /url: /app/settings
+    - generic [ref=f1e19] [box=24,886,232,82]:
+      - generic [ref=f1e20] [box=24,906,42,42]: CR
+      - generic [ref=f1e21] [box=78,886,178,45]:
+        - strong [ref=f1e22] [box=78,886,178,26]: Coach Rowan
+        - generic [ref=f1e23] [box=78,911,178,19]: visual.coach@example.test
+      - button "Sign out" [ref=f1e25] [cursor=pointer] [box=78,948,46,17]
+  - main [ref=f1e26] [box=280,-489,1160,2239]:
+    - generic [ref=f1e27] [box=338,-449,1045,2119]:
+      - generic [ref=f1e28] [box=338,-449,1045,196]:
+        - generic [ref=f1e29] [box=338,-433,752,172]:
+          - text: Private coaching media
+          - heading "Media library" [level=1] [ref=f1e30] [box=338,-402,752,72]
+          - paragraph [ref=f1e31] [box=338,-314,752,53]: Upload once, then reuse a swing clip, image, or source CSV in coaching content. Roadmap never analyzes the swing or claims a live device integration.
+        - link "Upload media" [ref=f1e32] [cursor=pointer] [box=1255,-308,128,46]:
+          - /url: "#upload-media"
+      - generic [ref=f1e33] [box=338,-213,1045,1076]:
+        - generic [ref=f1e34] [box=370,-181,979,90]:
+          - generic [ref=f1e35] [box=370,-181,283,90]:
+            - text: New upload
+            - heading "Add a private file" [level=2] [ref=f1e36] [box=370,-151,283,60]
+          - generic [ref=f1e37] [box=1188,-110,162,19]: Up to 48 MB · video up to 3:00
+        - generic [ref=f1e38] [box=370,-75,979,905]:
+          - generic [ref=f1e39] [box=370,-75,979,130]:
+            - generic [ref=f1e40] [box=387,-58,946,20]: Image, swing video, or source CSV
+            - button "Image, swing video, or source CSV The original stays private and is not published by uploading it." [ref=f1e41] [box=387,-32,946,46]
+            - generic [ref=f1e42] [box=387,21,946,17]: The original stays private and is not published by uploading it.
+          - generic [ref=f1e43] [box=370,71,979,162]:
+            - generic [ref=f1e44] [box=370,71,482,72]:
+              - generic [ref=f1e45] [box=370,71,482,20]: Accessible description
+              - textbox "Accessible description" [ref=f1e46] [box=370,97,482,46]:
+                - /placeholder: Down-the-line swing at the range
+                - text: Synthetic baseline landscape swing video
+            - generic [ref=f1e47] [box=868,71,482,72]:
+              - generic [ref=f1e48] [box=868,71,482,20]: View or orientation label
+              - textbox "View or orientation label" [ref=f1e49] [box=868,97,482,46]:
+                - /placeholder: Down the line
+                - text: Down the line baseline
+            - generic [ref=f1e50] [box=370,159,482,74]:
+              - generic [ref=f1e51] [box=370,159,482,20]: Captured date
+              - textbox "Captured date" [ref=f1e52] [box=370,185,482,48]: 2026-08-08
+            - generic [ref=f1e53] [box=868,159,482,74]:
+              - generic [ref=f1e54] [box=868,159,482,22]: Frame orientation
+              - combobox "Frame orientation" [ref=f1e55] [box=868,188,482,45]:
+                - option "Detect later / unknown" [box=0,0,0,0]
+                - option "Landscape" [selected] [box=0,0,0,0]
+                - option "Portrait" [box=0,0,0,0]
+                - option "Square" [box=0,0,0,0]
+          - generic [ref=f1e56] [box=370,249,979,72]:
+            - generic [ref=f1e57] [box=370,249,979,20]: Caption
+            - textbox "Caption" [ref=f1e58] [box=370,276,979,46]:
+              - /placeholder: Baseline 7-iron swing
+              - text: B baseline — synthetic 7-iron swing
+          - generic [ref=f1e59] [box=370,337,979,113]:
+            - generic [ref=f1e60] [box=370,337,979,20]: Coach context
+            - textbox "Coach context" [ref=f1e61] [box=370,364,979,86]:
+              - /placeholder: What should the golfer notice, and why is this clip included?
+              - text: Baseline reference for synthetic QA; notice only the recorded view and timing.
+          - group [ref=f1e62] [box=370,466,979,302]:
+            - generic "Optional poster and transcript" [ref=f1e63] [cursor=pointer] [box=370,479,979,20]
+            - generic [ref=f1e76] [box=370,514,979,93]:
+              - generic [ref=f1e77] [box=370,514,979,20]: Video poster / thumbnail
+              - combobox "Video poster / thumbnail Upload a still image first, then select it here as this video's private poster. The poster follows the video into published coaching content." [ref=f1e78] [box=370,541,979,43]:
+                - option "Use the video's first available frame" [box=0,0,0,0]
+                - option "Synthetic poster for private swing clips" [selected] [box=0,0,0,0]
+              - generic [ref=f1e79] [box=370,590,979,17]: Upload a still image first, then select it here as this video's private poster. The poster follows the video into published coaching content.
+            - generic [ref=f1e80] [box=370,622,979,133]:
+              - generic [ref=f1e81] [box=370,622,979,20]: Spoken-content transcript
+              - textbox "Spoken-content transcript" [ref=f1e82] [box=370,648,979,106]
+          - button "Upload privately" [ref=f1e65] [cursor=pointer] [box=370,784,146,46]
+      - alert [ref=f1e83] [box=338,881,1045,51]: The video metadata could not be read. Choose a valid source file.
+      - region [ref=f1e66] [box=338,972,1045,698]:
+        - generic [ref=f1e67] [box=338,972,1045,90]:
+          - generic [ref=f1e68] [box=338,972,326,90]:
+            - text: Reusable assets
+            - heading "Your private library" [level=2] [ref=f1e69] [box=338,1001,326,60]
+          - generic [ref=f1e70] [box=1312,1042,70,19]: 1 stored item
+        - article [ref=f1e84] [box=338,1077,512,592]:
+          - img "Synthetic poster frame for B video evidence" [ref=f1e85] [box=338,1078,511,287]
+          - generic [ref=f1e86] [box=338,1366,511,303]:
+            - generic [ref=f1e87] [box=357,1384,474,62]:
+              - generic [ref=f1e88] [box=357,1384,350,62]:
+                - text: Ready
+                - heading "Synthetic poster for private swing clips" [level=3] [ref=f1e89] [box=357,1413,350,33]
+              - generic [ref=f1e90] [box=773,1384,58,28]: image
+            - paragraph [ref=f1e91] [box=357,1459,474,21]: Synthetic poster frame for B video evidence
+            - generic [ref=f1e92] [box=357,1492,474,65]:
+              - generic [ref=f1e93] [box=357,1505,158,39]:
+                - term [ref=f1e94] [box=357,1505,150,16]: Captured
+                - definition [ref=f1e95] [box=357,1525,150,19]: Aug 10, 2026
+              - generic [ref=f1e96] [box=515,1505,158,39]:
+                - term [ref=f1e97] [box=515,1505,150,16]: View
+                - definition [ref=f1e98] [box=515,1525,150,19]: Poster landscape
+              - generic [ref=f1e99] [box=673,1505,158,39]:
+                - term [ref=f1e100] [box=673,1505,150,16]: File
+                - definition [ref=f1e101] [box=673,1525,150,19]: 16 KB
+            - paragraph [ref=f1e102] [box=357,1570,474,21]: Synthetic QA poster only; no diagnosis or outcome claim.
+            - generic [ref=f1e103] [box=357,1606,474,44]:
+              - button "Replace" [ref=f1e104] [cursor=pointer] [box=357,1606,76,44]
+              - button "Remove" [ref=f1e105] [cursor=pointer] [box=449,1606,78,44]
