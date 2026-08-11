@@ -25,12 +25,20 @@ Thumbs.db
 *.sqlite
 *.sqlite3
 *.db
+**/data/store.json
+**/data/store.json.*
+**/data/backups/
+roadmap-beta-export-*.json
 
 # Environment files and credentials; documented examples remain trackable
 **/.env
 **/.env.*
 !**/.env.example
 *.pem
+
+# Private recovery artifacts — never commit these to the public repository
+*.bundle
+*working-copy.zip
 
 # Debug and local process logs
 *.log
