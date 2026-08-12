@@ -1,13 +1,14 @@
 # Roadmap Beta 2 candidate status
 
 **Branch:** `product/beta-2-experience-reset`  
+**Applied product commit:** `75636d91ce9fd7e21534f1a63cbb371fc7dc6760`  
 **Purpose:** local product evaluation of the low-administration coach experience and premium golfer roadmap.
 
 The Beta 2 implementation is applied to the real production SaaS source. It preserves the existing tenant, D1/R2, publishing, media, measurement, recovery, and security architecture while changing the visible product hierarchy.
 
 Current release gates:
 
-- clean application verification: running;
+- clean application verification: running against the completed experience-contract patch;
 - Beta 2 browser and responsive review: pending;
 - Windows local package: pending;
 - Aaron product acceptance: pending.
