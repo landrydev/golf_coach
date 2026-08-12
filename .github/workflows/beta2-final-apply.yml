@@ -1,0 +1,56 @@
+name: Apply final Beta 2 contract patch
+
+on:
+  push:
+    branches:
+      - product/beta-2-experience-reset
+    paths:
+      - '.beta2-final/READY'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Beta 2 branch
+        uses: actions/checkout@v4
+        with:
+          ref: product/beta-2-experience-reset
+          fetch-depth: 0
+
+      - name: Verify and apply final contract patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          verify_part() {
+            local name="$1" expected_bytes="$2" expected_sha="$3"
+            local file=".beta2-final/$name"
+            [[ -f "$file" ]] || { echo "Missing $name"; exit 1; }
+            local actual_bytes actual_sha
+            actual_bytes="$(wc -c < "$file" | tr -d ' ')"
+            actual_sha="$(sha256sum "$file" | cut -d' ' -f1)"
+            echo "$name bytes=$actual_bytes sha256=$actual_sha"
+            [[ "$actual_bytes" == "$expected_bytes" ]] || { echo "$name byte length mismatch"; exit 1; }
+            [[ "$actual_sha" == "$expected_sha" ]] || { echo "$name sha256 mismatch"; exit 1; }
+          }
+
+          verify_part part-00 7000 60f96ef95a814bdae7bcae5b455503cdca701f03eee62d9f323f70593daeac87
+          verify_part part-01 7000 1d4981158c9c3a2f6f1f7f5825dc92db341b23ab6f97494812c26cee407ad439
+          verify_part part-02 7000 0e2d5482c97d5dcca453a6a7f6fa1681352533368a556c7d2f5ea96b86c1e1be
+          verify_part part-03 5204 8216a1bf6ba03af8069aa48bf398587cced41cf4dcf03609a0ec9c4298fe91fb
+
+          cat .beta2-final/part-00 .beta2-final/part-01 .beta2-final/part-02 .beta2-final/part-03 > /tmp/beta2-fixes.tar.gz.b64
+          base64 --decode /tmp/beta2-fixes.tar.gz.b64 > /tmp/beta2-fixes.tar.gz
+          archive_sha="$(sha256sum /tmp/beta2-fixes.tar.gz | cut -d' ' -f1)"
+          echo "archive sha256=$archive_sha"
+          [[ "$archive_sha" == "84806a9a803db596a7891046acf3895ccf7a674881ea030440d6b22d8d0bd9c3" ]] || { echo "Archive checksum mismatch"; exit 1; }
+
+          tar -xzf /tmp/beta2-fixes.tar.gz -C .
+          rm -rf .beta2-final .beta2-payload
+          git config user.name "Roadmap Beta 2 Builder"
+          git config user.email "64818593+landrydev@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: complete Beta 2 experience contracts"
+          git push origin HEAD:product/beta-2-experience-reset

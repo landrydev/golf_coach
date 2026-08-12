@@ -89,6 +89,14 @@ test("first-party instructor mutation surfaces use the shared error summary with
       associations: 1,
     },
     {
+      path: "../app/app/golfers/[golferId]/QuickLessonUpdate.tsx",
+      summaryId: "quick-lesson-update-error-summary",
+      describedBy: /aria-describedby=\{ERROR_SUMMARY_ID\}/g,
+      associations: 1,
+      successStatus: true,
+      summaryOnlyRef: false,
+    },
+    {
       path: "../app/app/golfers/[golferId]/PublishControls.tsx",
       summaryId: "publish-controls-error-summary",
       describedBy: /aria-describedby=\{ERROR_SUMMARY_ID\}/g,
@@ -106,6 +114,13 @@ test("first-party instructor mutation surfaces use the shared error summary with
       summaryId: "living-plan-forms-error-summary",
       describedBy: /aria-describedby=\{ERROR_SUMMARY_ID\}/g,
       associations: 4,
+      successStatus: true,
+    },
+    {
+      path: "../app/app/golfers/new/QuickRoadmapForm.tsx",
+      summaryId: "quick-roadmap-form-error-summary",
+      describedBy: /aria-describedby=\{ERROR_SUMMARY_ID\}/g,
+      associations: 1,
       successStatus: true,
     },
     {
@@ -148,6 +163,14 @@ test("first-party instructor mutation surfaces use the shared error summary with
 
   for (const surface of [
     {
+      path: "../app/app/golfers/[golferId]/QuickLessonUpdate.tsx",
+      summaryId: "quick-lesson-update-error-summary",
+      describedBy: /aria-describedby=\{ERROR_SUMMARY_ID\}/g,
+      associations: 1,
+      successStatus: true,
+      summaryOnlyRef: false,
+    },
+    {
       path: "../app/app/golfers/[golferId]/PublishControls.tsx",
       summaryActions: 1,
       focusRef:
@@ -167,12 +190,16 @@ test("first-party instructor mutation surfaces use the shared error summary with
     },
   ]) {
     const source = await readFile(new URL(surface.path, import.meta.url), "utf8");
-    assert.match(source, /const summaryOnlyRef = useRef<HTMLFormElement>\(null\);/);
-    assert.match(
-      source,
-      surface.focusRef ??
-        /formRef=\{errorFocus === "form" \? formRef : summaryOnlyRef\}/,
-    );
+    if (surface.summaryOnlyRef !== false) {
+      assert.match(source, /const summaryOnlyRef = useRef<HTMLFormElement>\(null\);/);
+      assert.match(
+        source,
+        surface.focusRef ??
+          /formRef=\{errorFocus === "form" \? formRef : summaryOnlyRef\}/,
+      );
+    } else {
+      assert.match(source, /formRef=\{formRef\}/);
+    }
     assert.equal(
       source.match(/setErrorFocus\("summary"\)/g)?.length,
       surface.summaryActions,
@@ -280,12 +307,12 @@ test(
 
     const golferPath = `/app/golfers/${workspace.golfer.id}`;
     for (const page of [
-      { path: "/app", title: "Coach overview | Roadmap", summaries: [] },
-      { path: "/app/golfers", title: "Golfers | Roadmap", summaries: [] },
+      { path: "/app", title: "Home | Roadmap", summaries: [] },
+      { path: "/app/golfers", title: "Players | Roadmap", summaries: [] },
       {
         path: "/app/golfers/new",
-        title: "Add a golfer | Roadmap",
-        summaries: [["new-golfer-form-error-summary", 1]],
+        title: "Create a roadmap | Roadmap",
+        summaries: [["quick-roadmap-form-error-summary", 1]],
       },
       {
         path: "/app/settings",
@@ -308,9 +335,9 @@ test(
       },
       {
         path: golferPath,
-        title: "Golfer plan | Roadmap",
+        title: "Player journey | Roadmap",
         summaries: [
-          ["living-plan-forms-error-summary", 3],
+          ["quick-lesson-update-error-summary", 1],
           ["publish-controls-error-summary", 1],
         ],
       },

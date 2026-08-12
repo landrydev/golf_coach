@@ -41,7 +41,7 @@ test("golfer roadmap exposes print\/PDF control and removes screen-only actions 
   assert.match(media, /Loading selected private media\.\.\./);
   assert.doesNotMatch(media, /Loading selected private mediaâ/);
   assert.match(styles, /@page/);
-  assert.match(view, /<DrillGuidance item=\{item\} \/>/);
+  assert.match(view, /<DrillGuidance item=\{activePractice\} \/>/);
   assert.match(view, /styles\.screenOnlyDisclosure/);
   assert.match(view, /styles\.printOnlyContent/);
   assert.match(view, /<b>Transcript<\/b>/);

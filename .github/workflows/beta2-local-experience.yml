@@ -1,0 +1,80 @@
+name: Beta 2 local experience
+
+on:
+  pull_request:
+    paths:
+      - '10_production_saas/**'
+      - 'BETA2_*'
+      - '.github/workflows/beta2-local-experience.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: beta2-local-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out Beta 2
+        uses: actions/checkout@v4
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.18.0'
+          cache: npm
+          cache-dependency-path: 10_production_saas/package-lock.json
+      - name: Parse Windows launchers
+        shell: pwsh
+        run: |
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path './BETA2_START.ps1'),
+            [ref]$null,
+            [ref]$errors
+          ) | Out-Null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path './BETA2_SERVER.ps1'),
+            [ref]$null,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) { $errors | Out-String | Write-Error }
+      - name: Install locked dependencies
+        working-directory: 10_production_saas
+        run: npm ci --ignore-scripts
+      - name: Run complete verification
+        working-directory: 10_production_saas
+        run: npm run verify
+      - name: Install Chromium
+        working-directory: 10_production_saas
+        run: npx playwright install --with-deps chromium
+      - name: Browser-review Beta 2
+        working-directory: 10_production_saas
+        run: npm run qa:beta2:browser
+      - name: Assemble Windows package
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p package/Roadmap-Beta2
+          rsync -a ./ package/Roadmap-Beta2/ \
+            --exclude '.git/' \
+            --exclude 'package/' \
+            --exclude '**/node_modules/' \
+            --exclude '**/dist/' \
+            --exclude '**/.next/' \
+            --exclude '**/.wrangler/' \
+            --exclude '**/.work/' \
+            --exclude '**/output/'
+          (cd package && zip -qr Roadmap-Beta2-local.zip Roadmap-Beta2)
+      - name: Upload Beta 2 and browser evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: roadmap-beta2-local-${{ github.sha }}
+          path: |
+            package/Roadmap-Beta2-local.zip
+            10_production_saas/output/beta2-browser/
+          retention-days: 30

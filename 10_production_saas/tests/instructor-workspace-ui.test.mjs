@@ -10,42 +10,69 @@ import {
 
 const coach = { email: "coach.a@example.test", name: "Coach Avery" };
 
-test("instructor workspace source keeps the task, hub, and guided-authoring contracts visible", async () => {
-  const [workspace, commandCentre, directory, hub, steps, styles] = await Promise.all([
+test("instructor workspace source keeps the Beta 2 low-administration contracts visible", async () => {
+  const [home, commandCentre, directory, player, roadmap, lessonUpdate, layout, styles] = await Promise.all([
     readFile(new URL("../app/app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../lib/command-centre.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/app/golfers/page.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/app/golfers/[golferId]/GolferHubNav.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/app/golfers/AuthoringStepNav.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/app/workspace.module.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/app/golfers/[golferId]/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/app/golfers/new/QuickRoadmapForm.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/app/golfers/[golferId]/QuickLessonUpdate.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/app/layout.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/app/beta2.module.css", import.meta.url), "utf8"),
   ]);
 
-  for (const label of ["Persisted setup", "Incomplete roadmaps", "Coach reviews", "Active practice", "Latest responses & check-ins"]) {
-    assert.match(workspace, new RegExp(label));
+  for (const label of ["Continue where you left off", "Players needing attention", "Recent progress"]) {
+    assert.match(home, new RegExp(label));
   }
-  for (const label of ["New golfer", "Add package", "New lesson", "New drill", "Upload media", "Add evidence"]) {
-    assert.match(commandCentre, new RegExp(label));
-  }
+  assert.match(home, /Create a roadmap/);
+  assert.match(home, /Open players/);
+
+  // The rich command-centre model remains tenant-scoped even though Beta 2 curates
+  // it into a much smaller visible attention list.
   assert.match(commandCentre, /eq\(practiceCheckIns\.accountId, accountId\)/);
   assert.match(commandCentre, /eq\(launchMonitorImports\.accountId, accountId\)/);
   assert.match(commandCentre, /inArray\(launchMonitorImports\.status, \["failed", "mapping_required"\]\)/);
   assert.match(commandCentre, /\.slice\(0, COMMAND_CENTRE_ITEM_LIMIT\)/);
   assert.match(commandCentre, /coachingWorkspaceHref\(planId, \{ tab: "lessons" \}\)/);
   assert.match(commandCentre, /coachingWorkspaceHref\(planId, \{ tab: "evidence" \}\)/);
-  assert.match(workspace, /Media and launch-data work that needs review/);
-  for (const control of ["name=\"q\"", "name=\"status\"", "name=\"phase\"", "name=\"review\"", "name=\"sort\""]) {
+
+  for (const control of ["name=\"q\"", "name=\"status\"", "name=\"sort\""]) {
     assert.match(directory, new RegExp(control));
   }
-  for (const destination of ["Overview", "Roadmap", "Lessons", "Practice", "Media", "Data / Evidence", "Reviews", "Share"]) {
-    assert.match(hub, new RegExp(destination.replace(" / ", " \/ ")));
+  assert.match(directory, /name="phase"/);
+  assert.match(directory, /name="review"/);
+  assert.match(directory, /Every player, one clear journey/);
+
+  for (const destination of ["Roadmap", "Today", "Progress", "Share"]) {
+    assert.match(player, new RegExp(`>${destination}<`));
   }
-  for (const step of ["Goal", "Assessment", "Priority", "Phases", "Evidence", "Package", "Preview"]) {
-    assert.match(steps, new RegExp(step));
+  assert.match(player, /<QuickLessonUpdate/);
+  assert.match(player, /<StagedCompletionDraftResolution/);
+  assert.match(player, /Advanced coaching workspace/);
+  assert.match(player, /\?tab=evidence/);
+  assert.match(player, /\?tab=reviews/);
+
+  for (const step of ["The outcome", "Your read", "The path", "The first commitment"]) {
+    assert.match(roadmap, new RegExp(step));
   }
-  assert.match(styles, /\.hubNav\s*\{/);
-  assert.match(styles, /\.quickActionGrid\s*\{/);
-  assert.match(styles, /overflow-x:\s*auto/);
-  assert.match(styles, /@media \(max-width: 580px\)/);
+  assert.match(roadmap, /Build the foundation/);
+  assert.match(roadmap, /Make it reliable/);
+  assert.match(roadmap, /Transfer it to play/);
+  assert.match(roadmap, /No package recommendation yet/);
+
+  for (const prompt of ["What changed today", "What should the player practise next", "What should they pay attention to"]) {
+    assert.match(lessonUpdate, new RegExp(prompt));
+  }
+
+  for (const label of ["Home", "Players", "Library", "Settings"]) {
+    assert.match(layout, new RegExp(`>${label}<`));
+  }
+  assert.doesNotMatch(layout, />Plan &amp; billing<|>Media<|>Packages</);
+  assert.match(styles, /\.playerNav\s*\{/);
+  assert.match(styles, /\.conversationStep\s*\{/);
+  assert.match(styles, /\.quickUpdate\s*\{/);
+  assert.match(styles, /@media \(max-width: 760px\)/);
 });
 
 test(
@@ -224,28 +251,12 @@ test(
     });
     assert.equal(overview.status, 200);
     const overviewHtml = await overview.text();
-    for (const label of ["New golfer", "Add package", "New lesson", "Add evidence", "New drill", "Upload media"]) {
-      assert.match(overviewHtml, new RegExp(label));
-    }
-    assert.match(overviewHtml, /Latest responses &amp; check-ins/);
-    assert.match(overviewHtml, /launch-data import/);
-    assert.match(overviewHtml, /2 of 4 rows are currently rejected; mapping or correction is required/);
-    assert.match(overviewHtml, /Import failed: csv parser error/);
-    assert.match(overviewHtml, /Open coaching workspace/);
-    assert.match(overviewHtml, /Practice completed · help requested/);
-    assert.match(overviewHtml, /Synthetic tempo practice · hard · confidence 4 of 5/);
-    assert.match(
-      overviewHtml,
-      /\/app\/coaching\/plans\/ux_plan_030\?tab=practice&amp;practiceId=ux_practice_030&amp;checkInId=ux_check_in_030/,
-    );
-    assert.match(
-      overviewHtml,
-      /\/app\/coaching\/plans\/ux_plan_030\?tab=launch&amp;importId=ux_launch_import_030/,
-    );
-    assert.match(
-      overviewHtml,
-      /\/app\/coaching\/plans\/ux_plan_030\?tab=launch&amp;importId=ux_launch_import_failed_030/,
-    );
+    assert.match(overviewHtml, /Welcome back/);
+    assert.match(overviewHtml, /Continue where you left off/);
+    assert.match(overviewHtml, /Players needing attention/);
+    assert.match(overviewHtml, /Recent progress/);
+    assert.match(overviewHtml, /Open player|Continue setup|Create a roadmap/);
+    assert.match(overviewHtml, /Practice completed|help requested|Synthetic tempo practice/);
 
     const first = await worker.dispatch("/app/golfers?sort=name", {
       headers: identityHeaders(coach.email, coach.name),
@@ -277,7 +288,7 @@ test(
     assert.match(searchHtml, /Review draft/);
     assert.match(
       searchHtml,
-      /href="\/app\/golfers\/ux_golfer_030"[^>]*>Review draft<\/a>/,
+      /href="\/app\/golfers\/ux_golfer_030"[^>]*>Review draft(?:\s*→)?<\/a>/,
     );
     assert.doesNotMatch(searchHtml, /No development plan/);
     assert.doesNotMatch(searchHtml, /Continue setup/);
@@ -288,7 +299,7 @@ test(
       headers: identityHeaders(coach.email, coach.name),
     });
     assert.equal(filtered.status, 200);
-    assert.match(await filtered.text(), /29 golfer records/);
+    assert.match(await filtered.text(), /29 players/);
 
     const phaseFiltered = await worker.dispatch("/app/golfers?phase=active", {
       headers: identityHeaders(coach.email, coach.name),
@@ -302,6 +313,6 @@ test(
       headers: identityHeaders(coach.email, coach.name),
     });
     assert.equal(reviewFiltered.status, 200);
-    assert.match(await reviewFiltered.text(), /30 golfer records/);
+    assert.match(await reviewFiltered.text(), /30 players/);
   },
 );
