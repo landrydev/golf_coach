@@ -1,0 +1,864 @@
+# Security and Privacy Plan
+
+**Document status:** Implementation control plan under `AUTH-005`; not a security assessment, privacy opinion, legal-compliance claim, or production-readiness claim
+**Applies to:** [Production SaaS Architecture](ARCHITECTURE.md)
+**Last updated:** 2026-08-09
+
+## Purpose and authority
+
+`AUTH-005` authorizes security engineering, privacy implementation, and formal testing for the bounded production V1. This plan defines the controls the implementation and its operating process must support. A control described here is a requirement until direct evidence proves it is present in the exact release.
+
+`[SUPPORTED BY BUSINESS PLAN V2]` The instructor remains the author of coaching judgments. The product is private by default, collects only what the approved experience needs, preserves golfer agency, does not sell golfer data, and does not expose one instructor's records to another.
+
+`[REAL-WORLD VALIDATION REQUIRED]` Qualified Canadian privacy/legal review, actual user comprehension, technical verification, and operational exercises are still required. No wording in this document determines a legal role, lawful basis, statutory retention period, breach-notification deadline, or jurisdictional obligation.
+
+## Current exact private-candidate security observation
+
+The current owner-only candidate is Sites version 16 at exact source/runtime
+release `91f37ebd542774779f6db7e000832c2f6714e528`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_0a4d7dc3d8108191aa4a1b3e14051a96`,
+deployment `appgdep_6a7826b2f4c481919cc85665dffa2391`, provider deployment
+`site---6a76957326fc819196ebf3a0c95f1ec3`, and environment revision `18`.
+The deployment succeeded at `2026-08-09T07:05:36.176024Z`. Its exact 51-file
+provider package is
+`sha256:752f05fd957f8f4b043b5955d9cdbdbf2176b0f1f3414827c9c3e8d0f44f6e2c`
+(7,290,880 bytes) and retains
+`observability.enabled=false`, `observability.logs.enabled=false`, and
+`observability.logs.invocation_logs=false`. Access remains owner-only,
+`APPLICATION_WRITE_MODE=enabled`, `INSTRUCTOR_ACCESS_MODE=owner_private`, and
+`BILLING_CHECKOUT_ENABLED=false`; the exact `RELEASE_ID` and four retained secrets
+are applied. Four fresh signed-out HTTPS probes to `/`, `/app`, `/r`, and
+`/api/health` each returned outer-policy `401` with `no-store` and `no-referrer`.
+The custom access policy remains revision 1 with one owner, no groups, and no
+external visitors. `OWNER-SEC-001` remains historically complete; no bypass
+credential was generated, rotated, read, displayed, persisted, or used for v16.
+These observations prove bounded package/configuration, deployment, and anonymous
+containment only; they are not authenticated application, deep-health, write-mode,
+CSP, public-release, compliance, owner-acceptance, or paid-operation evidence.
+
+Exact-v16 automated hardening distinguishes a true top-level document navigation
+from API, RSC, route-handler, asset, and other programmatic requests. Generic
+private/no-store HTML is returned only for true top-level `401`, `403`, `503`, and
+`500` failures; non-document clients keep the generic JSON contract. CSP nonce,
+security-header, canonical-origin, product-access, and redirect ordering are
+preserved. Client failures expose a request reference only when the server supplied
+a valid UUIDv4. The keyed-attempt v2 record uses fixed 24-hour created/expires
+timestamps, retires legacy v1 state, rejects future-clock state, requires exact-owner
+compare/remove, checks expiry on mount and submit in all five keyed creation/review
+flows, and never automatically replays a mutation.
+
+Deep readiness now validates the exact migration-`0010` `abuse_rate_limits` table,
+primary key, required index, and both share-close scopes rather than accepting a
+shallow database probe. Scheduler health samples at most 13 due accounts, marks a
+lower-bound backlog when capacity is exceeded, remains degraded until the backlog
+drains, and fails closed if assessment itself errors. The exact local recovery
+exercise restored all 31/31 application tables plus the synthetic private-object
+inventory, then booted the exact built Worker against restored D1/R2 state and
+authenticated profile, package, and workspace reads. Operations health correctly
+reported the normalized interrupted scheduler as failed. This is local-only boot
+evidence, not a hosted restore, RPO, or RTO claim. The bounded local capacity run
+completed 54 requests with zero failures.
+
+The hosted provider did not enforce either attempted invocation-log control. A
+value-safe pre-remediation version-13 audit found one hosted invocation record:
+the query surface returned redaction markers for cookie and dispatch SIWC identity
+fields, while IP and request-signature fields were nonempty. Collection and storage
+disposition behind the markers is unknown. Exact version 14 then packaged
+`observability.enabled=true`, `logs.enabled=true`, and
+`invocation_logs=false`; although deployment succeeded at
+`2026-08-09T05:19:27.316512Z`, three fetch invocation records appeared after
+success between `05:20:01.195Z` and `05:20:02.531Z` (two `200`, one handled
+`403`) with the same redaction classification. Exact version 15 disabled both
+observability and logs as well as invocation logs, yet three post-success fetch
+invocation records still appeared at `2026-08-09T05:32:32.228Z`,
+`05:32:33.881Z`, and `05:32:34.431Z` (two `200`, one handled `403`) under one new
+script-version identifier. Its query result carried redaction markers for
+cookie/SIWC identity fields while network-IP/request-signature fields remained
+nonempty; collection and storage disposition behind the markers is unknown.
+Connector/tool processing was transient; no raw header, identity, cookie, IP,
+signature, or log field value was surfaced in the transcript or written to the
+repository.
+
+No v16 provider-log query was run. The packaged logging controls are unchanged from
+v15, and another query would add provider processing without resolving the known
+enforcement or retained-data-disposition gap. The v15 failure therefore remains the
+current provider-control evidence for `LOG-PRIV-001`; it is not silently treated as
+a v16 pass.
+
+This is a confirmed hosted-provider enforcement/configuration limitation and a
+**High constraint before any real-user or public operation**. It is not evidence
+that the application logger emitted those fields: the persistence occurs in the
+provider-generated invocation envelope. Because the deployment remains owner-only
+and no customer data was present, no customer-data incident is claimed; network
+and request-signature metadata nevertheless persisted at the provider. The
+application-owned D1 audit ledger remains required and is not replaced by these
+provider logs. Cloudflare's
+[Workers Logs documentation](https://developers.cloudflare.com/workers/observability/logs/workers-logs/)
+says `invocation_logs=false` disables invocation logs and documents a maximum
+Workers Logs retention of seven days. The Sites connector exposes no control for
+hosted log configuration, retention, or deletion. Provider support must enforce
+the declared control, or the application must migrate to a host that does, before
+real-user/public operation. Hosted logging and alerting are degraded until then;
+Checkout remains disabled.
+
+Exact version 16 has two detached exact-commit clean worktrees. Each passed build,
+strict types, lint, artifact integrity, and 346/346 tests. Both builds contained 51
+files; strict comparison reported three expected framework-generated raw
+differences and zero normalized differences. The exact local archive verifier
+passed for SHA-256
+`9119a848bb8b4c7fff1d810280cf845ec44366449adac3176fd35d8c24438fe6`
+(3,052,294 bytes), all 11 migrations, and the packaged scheduler declaration. A
+separate release-integrity scan covered 304 files with zero secret findings, and
+the production dependency audit reported zero vulnerabilities. Version 15 and
+version 13 remain immutable predecessor evidence.
+
+The release working-tree/archive match is not deterministic byte-rebuild evidence.
+An isolated immutable-v9 export installed cleanly and passed the complete 229-test
+verification, but its rebuilt `dist` did not byte-match the submitted archive after
+Windows CRLF checkout conversion changed migrations/metadata and content-hashed
+bundles. Line endings are consistent with, but not proven to be the only cause.
+`SUPPLY-EVID-001` therefore remained open for version 9; the LF rule added after
+runtime v9 still needed exercise on a later exact candidate.
+
+The later-source control was first exercised at then-undeployed precursor commit
+`66f5203a913f01c8da20555feebdbb99152c052c`; its historical result is retained in
+the [precursor evidence](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md).
+Exact version 16 repeated the two-clean-build verification at its own immutable
+commit and bound the verified archive to the recorded provider package and
+deployment. This closes `SUPPLY-EVID-001` for exact-v16 normalized
+reproducibility, not byte-identical output, and does not retroactively change the
+failed version-9 byte comparison.
+
+The exact-v16 artifact regression preserves the version-8 through version-15 closure of `SEC-003` for
+the build-generated prerender credential boundary and supersedes version 7. It does
+not close `SEC-001`; that incident is tracked independently. Aaron authorized
+`OWNER-SEC-001` on 2026-08-08, and one value-safe Sites rotation completed at
+`2026-08-08T18:32:31.831Z`. The connector contract immediately invalidates the prior
+token on rotation. The replacement was not displayed, persisted, copied, or used,
+and the access policy remained `custom`, revision 1, with one owner and no groups or
+external visitors. The original value was not retained or empirically replayed.
+
+`SEC-001` is **REMEDIATED — RETEST PENDING**, not closed. `OWNER-SEC-001` is
+historically complete; no later deployment or renewed instruction caused another
+rotation. Historical post-rotation and exact-v11 through exact-v16 post-deploy
+signed-out containment probes passed, but no supported signed-in owner browser was
+available. Normal owner authentication without a bypass header remains required.
+The hosted log audit is now meaningful enough to identify the separate
+provider-enforcement limitation above; it does not reproduce the bypass bearer or
+prove the normal signed-in journey. See the
+[value-free rotation evidence](release-evidence/ROADMAP-SITES-V9-2026-08-08-sec001-rotation.md).
+
+Version 16 retains the version-11 remediation of the known `SEC-002`
+source/package condition. For every
+non-loopback application response, the Worker creates a fresh 32-hex nonce,
+inserts a server-owned CSP before vinext rendering, and the framework applies the
+matching nonce to every executable RSC/hydration script. `script-src` and
+`script-src-elem` contain only `'self'` plus that nonce; script
+`'unsafe-inline'` and `'unsafe-eval'` are absent; `script-src-attr 'none'`
+remains. The trusted boundary removes caller CSP/report-only headers, and
+nonce-bearing public HTML is `no-store`. Automated adversarial tests verify nonce
+shape, per-response uniqueness, script matching, caller-CSP replacement, and the
+script directives. A supported signed-in hosted response was not available for
+inspection, so `SEC-002` is **REMEDIATED — HOSTED RETEST PENDING** rather than closed.
+Nonce and credential values must never be recorded as evidence.
+
+Historical version-9 exact-commit local synthetic Chrome captures are
+source-equivalent to version 13 only for unchanged renderer/layout UI and CSS and
+cover landing, workspace, and golfer views at 320, 390, and 1440 CSS px. They do not
+cover version-13 outcome-unknown retry/reload interaction. During preparation, the 320 px golfer close
+action was found compressed into an unusable narrow column; the responsive header
+was repaired and a source regression plus a fresh nine-capture retest passed with no
+root/body horizontal overflow. The predecessor visual harness also bypassed the
+production share-capability exchange by using the raw synthetic capability as a
+cookie. The v9 harness now POSTs the capability to `/r/session`, uses only the
+returned scoped session cookie, removes only `Secure` for loopback HTTP, and has a
+regression forbidding the old pattern. These two findings are closed locally only;
+they do not establish hosted golfer-session behavior, manual accessibility, real
+device, supported-browser, keyboard, screen-reader, forced-colour, or browser-zoom
+evidence. They are not relabelled exact-v16 CSP, header, authentication, response-
+recovery, hosted, or manual evidence.
+
+The exact-v16 archive verifier proves that the package declares exactly
+`*/5 * * * *`; the Worker exports `scheduled()` and passes local
+scheduler-heartbeat tests. A predecessor-v8 provider-log query spanning
+`2026-08-08T16:37:26.325Z` through `2026-08-08T17:16:40.472Z` returned 24 events,
+all `fetch` and zero `scheduled`, across multiple expected five-minute boundaries.
+The exact-v10 30-minute query completed 14m38s after final deployment began and
+after the 21:20, 21:25, and 21:30 expected boundaries, but returned zero events.
+That historical result strengthens suspicion while remaining inconclusive and
+supplies no hosted heartbeat. Historical post-v11 aggregates returned only
+`fetch`/`info`/`ok` events and `scheduled=0`; the later 60-minute broad sample
+contained HTTP `200`, `200`, and handled `403`, while its `errors_only` companion
+returned the handled `403`. The post-v12 ten-minute `errors_only` aggregate
+returned zero records; its broad companion returned six `fetch`/`info`/`ok`
+records (`200`, `200`, and handled `403` twice) and `scheduled=0`. Exact-v14 and
+exact-v15 privacy retests each returned three post-success `fetch` records and no
+observed scheduled event. No v16 provider-log query was run because the packaged
+controls were unchanged and another query could not close `LOG-PRIV-001`. Because
+provider-log completeness, scheduled-event visibility, and deployed trigger
+metadata are unavailable here, `OPS-CRON-001` records a suspected hosted scheduler
+gap rather than a confirmed platform or application defect. Billing remains
+disabled while it is open.
+
+Version 16 retains the version-12 closure of the known golfer-response lost-ack duplicate-write gap at
+the application boundary. `/r/response` requires a bounded `Idempotency-Key` and
+scopes deterministic HMAC response and audit receipts to the account plus resolved
+golfer session. The first valid write returns `201`; an exact replay returns the
+same response with `200`; changed input under the same key returns `409`. The
+response and one audit event are committed atomically, including under same- and
+mixed-payload concurrency. A 10-second client timeout reports an outcome-unknown
+state without claiming failure and retains the pending key in per-tab
+`sessionStorage` across reloads until a definitive result or tab close. The raw key
+is never server-persisted or logged. External-handoff clicks use a fresh key for
+each click and are intentionally not cross-click deduplicated.
+
+Exact version 16 commits, packages, and privately deploys the remediations tracked
+as `OPS-CONTAIN-001`, `CLIENT-RECOVERY-002`, and `RESP-RECOVERY-002`. This proves
+their exact source/package/deployed-code and revision-18 configuration boundary;
+it does not close the hosted/manual retests required by those findings.
+
+The version-16 application-write boundary accepts only exact
+`APPLICATION_WRITE_MODE=enabled` as write-enabled. Exact `frozen`, missing, and
+malformed/padded/case-variant values fail closed. After canonical-origin and
+product-access evaluation, and before framework dispatch, the edge blocks every
+non-`OPTIONS` mutation and conservatively blocks `GET`/`HEAD` for `/app` and
+non-health `/api` routes because those reads may provision, reconcile, rate-limit,
+or audit. It returns a generic private/no-store `503` without disclosing whether
+the normalized state is `frozen` or `invalid`. Exact health endpoints and
+non-application public/golfer `GET`/`HEAD` reads remain outside the classifier.
+Scheduled work uses the same parser and exits before D1 or outbound-provider work
+unless the value is exact `enabled`. Owner-only operations readiness exposes only
+the normalized state and degrades; public health exposes no write-control detail.
+
+The version-16 general interactive browser-mutation boundary starts no automatic
+replay; deliberately non-blocking external-handoff telemetry remains best-effort.
+A single 10-second deadline covers the fetch and complete response-body read, with
+an 8 MiB maximum accepted body. Timeout, transport failure, `408`, `425`, `429`,
+any `5xx`, an oversized response, or an unreadable/structurally invalid successful
+JSON acknowledgement is outcome unknown. A malformed non-2xx body remains a
+definitive failure with safe fallback copy. Controls with a stable idempotency
+attempt retain it and say to retry the same action; controls without a proven
+replay contract say to reload and inspect current state before trying again. This
+copy does not claim that an ambiguous action failed. Successful mutation responses
+must match route-specific receipt contracts before the browser treats them as
+definitive.
+
+Authoring recovery is account-, action-, and revision-scoped in per-tab storage,
+expires after 24 hours, accepts at most 64 KiB, and binds canonical content to a
+SHA-256 integrity value. It never restores or replays automatically: the user must
+explicitly restore a matching draft, and successful authoritative writes clear it
+only through compare-and-swap ownership so a later draft cannot be erased by an
+older acknowledgement. Corrupt, oversized, expired, cross-account/action/revision,
+or storage-unavailable state fails closed.
+
+Profile writes require the exact page version, compare that version even for a
+no-op, preserve every canonical field, and return a receipt bound to the write's
+own input and commit timestamp rather than a mutable post-commit reread. Share
+lifecycle responses, including explicit same-revision reissue and lost-
+acknowledgement replacement, similarly bind the exact intent, source
+identity/history, operation, revision, lifecycle timestamps, and expiry. The
+minimized owned-link list/revoke surface remains available to an authenticated
+owner without current core-product entitlement.
+
+Version 16 also binds golfer recovery to a non-reversible 64-hex HMAC context
+derived from the exact account, share, and session. Response and close routes
+require that context alongside the path-scoped `HttpOnly` cookie and compare it
+without an early-exit string comparison. A stale tab's mismatch returns
+`409 share_session_changed`, creates neither a golfer response nor its
+`golfer.response_recorded` audit, and does not expire the active replacement
+cookie. One current-format, context-bound explicit response attempt may be
+restored in the same tab; contextless legacy, malformed, invalid-context, or
+storage-unavailable state blocks new responses rather than silently discarding
+ambiguity. State belonging to a different current session is removed as retired
+session state.
+
+Only a successful share exchange atomically creates the new session and retires
+the prior one. Invalid, throttled, timed-out, or otherwise retryable exchange
+preserves the prior cookie/session, and a tokenless `/r` view does not issue an
+automatic session delete. Retryable exchange retains the fragment capability;
+definitive success or rejection invokes best-effort fragment scrubbing before any
+unmount-sensitive UI work. After definitive server success, a local storage,
+history, or scripted-navigation failure does not relabel the exchange/close as
+failed; the UI retains a normal-link fallback. Independent privacy-safe network
+and session rate-limit scopes protect `DELETE /r/session`; migration
+`0010_steep_hemingway` upgrades the D1 scope constraint without discarding prior
+counters.
+
+`[OWNER INPUT REQUIRED]` Exact consent-policy-registry entries and the independent
+privacy-operator authority/configuration remain unresolved and absent from the
+private environment. Those boundaries fail closed; application deep readiness is
+therefore intentionally degraded. Real-user operation still requires the exact
+owner decisions, qualified review, deployed policy/behavior conformance, and
+authenticated/manual evidence described below.
+
+## Security and privacy objectives
+
+1. Authenticate Sites-staging instructors through dispatch-owned SIWC and direct-host instructors through the verified OIDC/session boundary; authorize every tenant operation server-side.
+2. Prevent one instructor from reading or changing another instructor's account, golfer, roadmap, media, subscription, or audit data.
+3. Keep golfer experiences private unless an instructor intentionally creates a scoped, revocable capability.
+4. Preserve confidentiality and integrity of coach-authored content and optional media.
+5. Keep SaaS payment-card handling outside the application through Stripe-hosted surfaces.
+6. Collect, log, retain, export, correct, revoke, and delete only according to documented and published policy.
+7. Fail safely: preserve legitimate drafts where possible, reveal no private content in errors, and never imply an unobserved share, payment, or sale.
+8. Make security-relevant changes attributable through minimal first-party audit events without copying sensitive content into logs.
+
+## Actors and trust boundaries
+
+| Actor/system | Trust granted | Trust not granted |
+|---|---|---|
+| Anonymous visitor | Read published public acquisition and synthetic sample content | No instructor, golfer, roadmap, billing, or private media access |
+| SIWC-authenticated instructor | Identity claim from the Sites dispatch boundary | Tenant entitlement or ownership is not inferred from client input; SIWC does not by itself prove a paid account |
+| OIDC-authenticated instructor | Stable issuer-plus-subject identity from a live revocable direct-host session | Email, display name, browser headers, and authentication alone do not prove tenant entitlement or ownership |
+| Golfer capability holder | Read the one published roadmap/version and approved private assets granted by the active capability | No authoring, instructor workspace, other golfer, billing, raw audit, or bucket access |
+| Sites/Worker runtime | Execute trusted server code and receive configured bindings/secrets | Browser-originated identity headers, tenant IDs, prices, or authorization decisions are never trusted |
+| D1 | Authoritative structured application state | It is not a file store and does not make application authorization decisions |
+| R2 | Private object bytes | Object key knowledge alone never authorizes a download |
+| Stripe | Hosted SaaS billing and signed billing events | It does not process the instructor's coaching-package transaction and a browser redirect is not payment proof |
+| Existing coach action destination | External booking, purchase, or contact flow selected by the instructor | The SaaS does not know whether that external action completed unless separately and truthfully recorded |
+| Sites logs | Runtime/platform diagnostics | Not an audit ledger, product analytics store, or place for content, tokens, secrets, or payment details |
+
+## Data classification
+
+| Class | Examples | Default handling |
+|---|---|---|
+| Public | Marketing copy, public FAQ, explicitly synthetic sample roadmap | May be cached and indexed as approved; no real golfer content |
+| Internal operational | Release ID, request ID, service status, non-sensitive configuration names, short-lived HMAC abuse counters | Restricted to authorized operators; no secrets or user content |
+| Account confidential | Instructor name/email, subscription identifiers/state, support and account history | Tenant- and role-restricted; minimized in logs and exports |
+| Golfer confidential | Adult golfer display identifier, goal/context, assessment, barriers, phases, lessons, practice, evidence interpretations, phase review | Private by default; instructor-owned and capability-scoped for the intended golfer |
+| Restricted media | Coach/golfer images, swing clips, documents, or other uploaded evidence | Private R2 only; explicit approved purpose/consent, strong validation, no public object URL |
+| Security secret | Raw share verifier, share-token pepper, abuse-limit pepper, Stripe secret/webhook secret, hosted deployment credentials | Never committed or logged; runtime-secret storage; raw share verifier is not persisted |
+
+The product must not collect junior-golfer data in V1. It must not infer sensitive characteristics, medical conclusions, or coaching diagnoses. Optional media and measurements may be absent without reducing access to the core text experience.
+
+## Data minimization and purpose boundaries
+
+| Data | Permitted V1 purpose | Prohibited default use |
+|---|---|---|
+| Instructor identity | Authenticate, identify coach, operate account, support and billing | Public directory, unrelated marketing enrichment, or cross-account profiling |
+| Package facts and external link | Explain the coach's recommendation and hand off intentionally | Native coach-package transaction, unverified sales attribution, or link crawling |
+| Golfer identifier and goal | Personalize the private roadmap and orient coach judgment | Public profile, lead resale, broad demographics, or unrelated CRM history |
+| Assessment and roadmap content | Present coach-owned plan and current player journey | Automated diagnosis, model training, performance prediction, or autonomous recommendation |
+| Media/evidence | Support a specific coach-authored claim where approved | Raw archive, automatic analysis, advertising, or public sharing |
+| Share/audit records | Authorize access, support revocation, investigate actions | Behavioral advertising or content reconstruction in logs |
+| Stripe identifiers/state | Operate the instructor's SaaS subscription | Store card data or combine with golfer package transactions |
+
+`[OWNER INPUT REQUIRED]` Exact consent language, privacy roles, collection notices, media rules, retention periods, deletion exceptions, data-subject processes, billing/tax/refund terms, and incident-notification obligations remain unresolved. The implementation must expose configuration and lifecycle hooks without inventing these policy decisions.
+
+## Authentication and session controls
+
+### Instructor authentication
+
+- Keep deployed Sites staging behind dispatch-owned SIWC; do not treat its trusted
+  headers as portable to a direct public Worker.
+- On the direct successor, use authorization code plus PKCE S256, state, nonce,
+  exact issuer/audience checks, RS256 signature verification, and allowed public
+  HTTPS provider endpoints with redirects rejected.
+- Resolve the stable `(issuer, subject)` pair to an app-generated immutable
+  instructor ID on the server. Never silently link an identity by email.
+- Keep OIDC transactions one-time and expiring, and keep only HMAC-fingerprinted,
+  revocable, expiring, identity-version-fenced server sessions in D1.
+- Treat email and full name as bounded display/contact attributes, not authorization
+  claims; reject malformed or header-unsafe values before persistence.
+- Strip every browser-supplied Sites/application-private identity header before the
+  direct Worker injects identity from a live session.
+- Reject protected API routes and server actions when identity is absent; hiding a
+  button in the browser is not authorization.
+- Mark identity-dependent rendered routes dynamic so content cannot be shared
+  through a static cache, and permit same-origin relative return paths only.
+- Reauthenticate or require a fresh server-side identity check for billing portal
+  creation, account deletion, share rotation, and other high-impact actions.
+
+`[REAL-WORLD VALIDATION REQUIRED]` The direct boundary is implemented and locally
+tested, but no exact OIDC provider, client, callback registration, secret, hosted
+session, account-link/recovery ceremony, cross-device journey, or support path is
+approved or evidenced. Sites SIWC remains staging history rather than the public
+identity plan. The live public-auth claim remains unresolved.
+
+### Instructor product-access policy
+
+One Worker-boundary policy covers HTML, Vinext RSC navigation, and API requests
+before the instructor application runs. `owner_private` compares only an
+HMAC-SHA-256 digest of the trimmed, lowercased SIWC email against an explicit
+digest allowlist. Its pepper is independent from the share-token and abuse
+peppers. Plaintext allowlist emails are neither configured nor logged.
+
+`subscription_required` permits core product routes only when the account's
+latest Stripe subscription projection has a status in the explicitly configured
+allowlist. No status is selected in code as a commercial default. Billing,
+profile, export, privacy-request controls, and the minimized private-link access
+control at `/app/settings/shares` and `/api/account/shares` remain reachable so
+an instructor can subscribe, manage billing, exercise account/data rights, or
+remove capability access they still own. The share-control exception reveals no
+golfer, recipient, plan-content, raw-token, or session identifier and cannot read
+or mutate core product data; all other tenant-scoped plan/share APIs remain
+subscription-gated. Entitlement loss does not automatically revoke a capability
+or its sessions. Only the instructor's explicit confirmed revocation (or another
+documented capability/consent lifecycle transition) does so. Public health,
+signed Stripe webhook, and golfer capability endpoints keep their separate
+boundaries. Missing or invalid policy configuration fails closed. Denials are
+non-cacheable, bounded `403`, `402`, or configuration-failure responses without
+identity, status-list, digest, or secret detail.
+
+### Instructor authorization
+
+- All tenant repositories require the authenticated `instructor_id` as a server-created context value.
+- Select/update/delete statements include that owner scope or traverse an owner-scoped relationship.
+- Resource IDs are opaque and do not substitute for an ownership check.
+- Cross-tenant joins, unfiltered administrative listings, and client-chosen ownership fields are prohibited.
+- Account and billing state gates affected writes server-side; the exact grace/pause/cancel consequences follow approved policy.
+- Operator access, if later required, must be separately authenticated, least-privileged, time-bounded where possible, and audited. There is no implicit support back door.
+
+### Policy-versioned consent-record plumbing
+
+The implementation exposes an authenticated, account-derived `/api/consents`
+boundary for current-state reads and immutable `grant` or `withdraw`
+transitions. It does not ship consent wording, choose a legal basis, enable an
+optional processing purpose, or establish Canadian legal compliance.
+
+- The existing D1 vocabulary is explicit: purposes are `terms`,
+  `privacy_notice`, `golfer_record`, `roadmap_sharing`, `media_use`,
+  `service_email`, and `optional_analytics`; persisted statuses are `granted`,
+  `declined`, `withdrawn`, and `expired`. The public mutation surface currently
+  creates only `granted` and `withdrawn` history rows.
+- `CONSENT_POLICY_REGISTRY_JSON` is strict owner-supplied configuration. Each
+  configured purpose has exact `version`, `purposeDescription`, and allowed
+  `subjectTypes`. Any wording change requires a new version. Code supplies no
+  substantive defaults.
+- Missing, malformed, unlisted, subject-inapplicable, or stale registry state
+  makes the effective-grant helper return false and blocks a new grant. An
+  empty valid registry still grants nothing. Removing configuration never
+  erases history and never prevents withdrawal of the current recorded grant.
+  Both the version and exact configured description must match the immutable
+  grant, so changing wording without changing the version also fails closed.
+- Account identity and ownership are derived from the trusted SIWC boundary.
+  Account IDs are not accepted from JSON. A golfer subject is resolved through
+  the authenticated account in both the read and the atomic write guard; a
+  cross-tenant or absent golfer receives the same bounded not-found result.
+- Every transition requires a stable idempotency key, exact JSON keys, the
+  expected current record ID, and the relevant policy version. D1 serializes an
+  account-row compare-and-swap guard with the append-only consent and audit
+  inserts, so a stale or concurrent loser cannot leave partial state.
+- Replacement and withdrawal append records; they do not update or relabel a
+  prior grant. The tenant data export already includes the complete consent
+  record history.
+- The production V1 has two policy-neutral technical mappings. A current
+  account-scoped `golfer_record` grant is required for golfer creation,
+  ordinary instructor list/detail/page/API reads, golfer and plan-content
+  changes, and profile/package changes that would revise linked golfer plans.
+  A current golfer-scoped `roadmap_sharing` grant, together with the account
+  grant, is required to publish, exchange a share token, resolve every live
+  share session, and record a golfer response. These names do not choose or
+  establish their legal meaning.
+- Sensitive writes use a D1-side current-grant guard in the same transaction.
+  Version, exact description, internally consistent timestamps, status, and
+  expiry are checked against the D1 clock. Sharing withdrawal atomically
+  revokes affected links and live sessions; account golfer-record withdrawal
+  does so across the tenant. Subsequent capability reads return only the
+  neutral unavailable state.
+- Self-serve controls render only the configured/stored owner text and version.
+  Account golfer-record grant/withdrawal is available before collection and in
+  data settings; golfer roadmap-sharing grant/withdrawal is available on the
+  plan and golfer-settings surfaces. Missing configuration is shown honestly
+  and cannot create a grant, while a still-current persisted grant remains
+  withdrawable after configuration removal.
+- Narrow post-withdrawal exceptions are intentional: authenticated tenant
+  export, data/privacy requests, operator fulfillment, consent-state controls,
+  share/session cleanup, and one-way golfer archival remain available. They do
+  not restore ordinary instructor disclosure or content mutation.
+- Audit stores the action, opaque transition target, authenticated actor,
+  trusted request-correlation ID, and only a SHA-256 input fingerprint. Policy
+  text, evidence references, raw idempotency keys, emails, and golfer IDs are
+  not copied into audit metadata.
+
+`[OWNER INPUT REQUIRED]` The exact registry entries, notices, roles, evidence
+requirements, collection moments, retention/expiry rules, and legal meaning of
+the two implemented technical mappings require Aaron's recorded decision and
+qualified review. Other downstream purposes remain unmapped and disabled.
+`[REAL-WORLD VALIDATION REQUIRED]` Before real-user operation, each approved
+purpose mapping must be reviewed against every actual collection, use, and
+disclosure path, and the deployed text, withdrawal behavior, data export,
+operator workflow, and user comprehension must be verified. Media, marketing,
+research, and optional analytics remain disabled/unimplemented; a consent
+record by itself does not activate them.
+
+### Golfer capability controls
+
+- Generate at least 256 bits of entropy with a cryptographically secure generator.
+- Store only an HMAC-SHA-256 fingerprint under a dedicated runtime pepper; never store or log the raw verifier.
+- Carry the raw verifier in a fragment and exchange it through a same-origin POST body for a scoped `Secure`, `HttpOnly`, `SameSite=Lax` session cookie.
+- Record link-open access, create the browser session, and increment the capability counter in that same atomic POST transaction. Token-free `GET /r/plan` is read-only, so cross-site navigation or prefetch cannot create audit/counter state.
+- When replacing a browser session, first validate the new capability and commit
+  new-session creation plus prior-session retirement atomically. A rejected or
+  retryable exchange must not revoke or clear the prior cookie/session.
+- Clear the fragment before further navigation and set `Referrer-Policy: no-referrer` on capability bootstrap and golfer pages.
+- Return no personal detail before validation; use equivalent neutral invalid, expired, revoked, and not-found states.
+- Rate-limit capability exchanges by a privacy-safe combination of share ID and network signals; do not expose whether a share ID exists.
+- Scope each capability to one instructor, one golfer roadmap/publication, read-only actions, and its approved lifetime.
+- Support explicit revoke and rotate. Revocation atomically marks the capability and every still-open child session revoked and records the instructor action in the audit ledger.
+- Permit an authenticated owner, including one without current core-product
+  entitlement, to list only their live capability metadata and explicitly revoke
+  one owned capability. List results contain only opaque link identity, published
+  revision, lifecycle/access timestamps and counts, expiry, and active-session
+  count. Ownership is re-proved in the mutation; another tenant's identifier is
+  indistinguishable from a missing record.
+- A published revision whose latest capability is revoked or effectively expired
+  may be reissued without republishing content only after an explicit
+  same-revision confirmation and a newly selected bounded expiry. The transaction
+  compares the exact published revision, plan `lastSharedAt`, source capability
+  identity/status/version, current consent, absence of a newer source, and absence
+  of a live capability. It then retires any residual live capabilities and
+  sessions, updates `lastSharedAt`, creates exactly one HMAC-only capability, and
+  writes one minimized `share.reissue_same_revision` audit event. A concurrent
+  reissue, revocation, edit, consent change, or publication change loses with a
+  conflict and creates no partial capability or audit state.
+- Publication, inaccessible-link replacement, and same-revision reissue return
+  the database receipt's exact operation, source identity/history where
+  applicable, revision, lifecycle timestamps, expiry intent, and access facts
+  with the one-time fragment URL. The client requires a bare canonical expected
+  origin, a byte-canonical URL, equal fresh-link creation/update timestamps, and
+  the exact requested day interval before revealing the bearer. Browser history
+  must use those authoritative values and must not synthesize lifecycle timestamps
+  from its own clock. After a locally initiated revoke whose acknowledgement lacks
+  an updated history receipt, reload before offering same-revision reissue.
+- Require a bounded, safe-character idempotency key for each golfer response. Scope its deterministic HMAC receipts to the resolved account and share session; replay the same payload without a second response or audit event, and reject changed payload. Never persist the raw key server-side or log it. The browser uses a bounded request timeout and retains one pending ambiguous key only in per-tab session storage until a definitive result or tab closure, allowing a same-tab reload to retry truthfully without creating durable cross-tab state.
+- Bind every response and explicit close to an opaque HMAC context for the exact
+  account/share/session as well as the `HttpOnly` cookie. Reject a context mismatch
+  before response/audit mutation or cookie expiry. Fail closed when older
+  contextless, malformed, or unavailable browser recovery state cannot be matched
+  safely; do not silently discard it and issue a new attempt.
+- Keep capability pages free of third-party scripts, pixels, fonts, embeds, and asset origins that could receive URL or behavior data.
+- Prevent indexing and caching of private pages with appropriate response headers.
+- Never put raw capabilities in Sites logs, first-party events, error reports, support tickets, or screenshots.
+
+A capability is a bearer secret. It cannot prevent an authorized recipient from copying what they can see or forwarding the link before revocation. User-facing copy and policy must explain this limitation honestly.
+
+## Application and API controls
+
+### Version-13 write containment and client recovery
+
+Exact version 13 implements one edge-owned containment decision before
+framework routing. Its classifier is method and path aware rather than a simple
+mutation-method list: authenticated instructor page/RSC reads and non-health API
+reads remain write-capable because they can provision identity, reconcile billing,
+consume durable abuse counters, or write audits. All non-`GET`/`HEAD` requests
+except `OPTIONS` are treated as write-capable. Exact `/api/health` and
+`/api/operations/health` are the only API read exceptions. Canonical-origin and
+product-access denials run first so the generic write-unavailable response cannot
+be used to bypass or distinguish those boundaries.
+
+Only the exact lower-case value `enabled` enables writes. `frozen`, absent,
+whitespace-padded, case-variant, empty, and unknown values all disable them;
+operations health distinguishes intentional `frozen` from configuration
+`invalid`, but public responses do not. The generic `503` is private/no-store and
+contains no mode, environment, tenant, identity, or provider detail. Scheduled
+execution performs the same exact parse and does no database or outbound-provider
+work when disabled.
+
+The general browser mutation helper is an acknowledgement boundary, not a retry
+engine. It aborts/cancels at a 10-second end-to-end deadline, accepts at most an
+8 MiB body, and reconstructs a response only after the full body is available.
+It treats transport/timeout, `408`, `425`, `429`, `5xx`, body overflow, and an
+unreadable or structurally invalid successful JSON acknowledgement as unknown
+outcomes and never replays automatically. A malformed non-2xx JSON body is a
+definitive failure with bounded fallback copy. UI recovery copy must reflect the
+underlying server contract: reuse a stable idempotency attempt where one exists,
+or require reload/current-state inspection where replay safety is unproven.
+
+### Input, output, and state changes
+
+- Validate request shape, type, length, allowed values, and state transition on the server.
+- Normalize URLs and allow only approved `https` destinations for external coach actions; reject credentials, script schemes, internal-network targets, and ambiguous parser forms.
+- Store coach-authored text as data and render it with framework escaping. Do not render raw HTML, scripts, unsafe Markdown, or untrusted SVG.
+- Apply explicit maximums to text, arrays, request bodies, and files based on tested product needs; do not use arbitrary “unlimited” storage behavior.
+- Use D1 prepared statements or ORM parameter binding; never concatenate user input into SQL.
+- Use anti-CSRF protection for cookie-authenticated mutations through same-origin checks, appropriate SameSite cookies, and a server-validated token where the exact route model requires it.
+- Permit only necessary HTTP methods and content types; return privacy-safe errors with request IDs.
+- Make golfer-response, publication, revocation, deletion, and billing-event handling idempotent.
+- Use optimistic concurrency or version checks on coach edits so a stale tab cannot silently overwrite a newer roadmap.
+
+### Browser protections
+
+The exact deployed response must be verified for:
+
+- a restrictive Content Security Policy compatible with the built app;
+- frame protection through CSP `frame-ancestors`;
+- `Referrer-Policy: no-referrer` on private flows;
+- MIME sniffing protection;
+- restrictive permissions policy;
+- transport-only secure cookies with narrow paths and lifetimes;
+- no sensitive caching on instructor/golfer responses; and
+- consistent origin/host validation for generated absolute URLs and redirects.
+
+Exact v13 implements these application response controls in the Worker, including
+the per-response script nonce described above, `frame-ancestors 'none'`,
+`Referrer-Policy: no-referrer`, MIME-sniffing protection, a restrictive permissions
+policy, and route-aware `no-store`. Automated production-bundle tests exercise the
+policy construction and framework nonce propagation. These are exact source and
+package claims, not a claim about the Sites outer gate or a complete hosted-browser
+result. A supported signed-in browser must still inspect the final deployed
+application response and exercise normal hydration/navigation before `SEC-002`
+closes.
+
+### Abuse resistance
+
+- Rate-limit sign-in initiation where platform controls allow, capability exchange, publication/share rotation, file upload, Stripe session creation, and support/data-request endpoints.
+- Bound account, golfer, roadmap, phase, evidence, and storage usage using a plainly disclosed reasonable-use approach only after product/policy approval.
+- Detect repeated cross-tenant misses, capability failures, webhook signature failures, and unusual destructive actions without recording content.
+- Fail closed on authorization and capability validation. Degrade optional media before making the text roadmap unavailable.
+
+The application implements the following fixed-window security controls. These
+thresholds contain automation and expensive repeated work; they are not product
+entitlements, package quotas, sales policy, or a substitute for edge controls.
+
+| Protected operation and privacy-safe subject | Maximum | Fixed window |
+|---|---:|---:|
+| Golfer capability exchange, per trusted network digest | 30 | 1 minute |
+| Golfer capability exchange, per capability digest | 12 | 5 minutes |
+| Golfer session close, per trusted network digest | 60 | 1 minute |
+| Golfer session close, per session digest | 20 | 10 minutes |
+| Golfer response, per trusted network digest | 60 | 1 minute |
+| Golfer response, per capability digest | 20 | 10 minutes |
+| Plan publish/link rotation, per instructor account digest | 12 | 1 hour |
+| Link revocation, per instructor account digest | 30 | 1 hour |
+| Stripe Checkout creation, per instructor account digest | 5 | 15 minutes |
+| Stripe Portal creation, per instructor account digest | 10 | 15 minutes |
+| Stripe billing reconciliation, per instructor account digest | 6 | 15 minutes |
+| Immediate data export, per instructor account digest | 3 | 1 hour |
+| Privacy/data request submission, per instructor account digest | 10 | 1 hour |
+| Data-request operator API, per trusted network digest | 60 | 5 minutes |
+| Data-request operator API, per authorized operator digest | 30 | 5 minutes |
+
+D1 increments each counter with one atomic `INSERT ... ON CONFLICT DO UPDATE ...
+RETURNING` statement. The key is an HMAC-SHA-256 digest under the separate
+`ABUSE_LIMIT_PEPPER`; raw network addresses, capability verifiers, account IDs,
+emails, and request content are never written to the counter table. Scope and
+window boundary are included in the HMAC input to prevent cross-purpose and
+cross-window correlation. Rows expire at the fixed-window boundary and are
+deleted opportunistically by subsequent
+limited requests. Rejected requests return `429`, a bounded neutral JSON error,
+`Cache-Control: private, no-store`, and a `Retry-After` value calculated from
+the actual window boundary. Production fails closed if the trusted client
+network header or pepper is unavailable.
+
+`[REAL-WORLD VALIDATION REQUIRED]` The application-level concurrency behavior is
+tested against local D1. Sites/Cloudflare edge-level volumetric protection,
+deployed header trust, operational alert thresholds, and observed false-positive
+rates still require exact-environment evidence.
+
+## File and media controls
+
+Authenticated upload, private delivery, replacement, withdrawal, and removal routes
+and UI are implemented. They fail closed unless R2, a valid bounded media policy,
+and any required consent are active. Real-user activation remains configuration-
+limited until the owner approves the policy and the controls are exercised. The
+media lifecycle must:
+
+1. create an instructor-owned pending asset record before upload;
+2. enforce allowed media categories, byte limits, and content-type/magic-byte agreement;
+3. generate an opaque server key rather than using the original filename;
+4. quarantine the object and prevent golfer delivery until required checks succeed;
+5. reject active content and unsafe formats; never directly serve user-authored HTML or SVG;
+6. strip or deliberately handle metadata that may expose location, device, or identity;
+7. record consent/purpose/status without placing the consent text in logs;
+8. use authorized Worker reads for coach preview and golfer delivery;
+9. provide equivalent text context, captions/transcript, or descriptions required by the content; and
+10. delete bytes and metadata through a retryable, auditable lifecycle job.
+
+`[REAL-WORLD VALIDATION REQUIRED]` The exact malware/safety checking method, accepted formats, size limits, metadata policy, accessibility alternatives, and media-retention consequences have not been approved or exercised.
+
+## Stripe billing controls
+
+- Keep Stripe in test mode outside production and make environment mode explicit.
+- Store production secrets only in hosted secret management with restricted operator access.
+- Create Checkout and Portal sessions server-side for the authenticated instructor and configured approved price.
+- Validate the Stripe webhook signature against the unmodified request body before any acknowledgement or state change.
+- Enforce an allowlist of handled event types and persist event ID, processing state, attempt count, and minimal result.
+- Acknowledge only after durable receipt; make processing safe to retry and reconcile against Stripe.
+- Permit an authenticated instructor to reconcile only locally owned, existing Checkout/subscription references through provider `GET` requests. The browser supplies no provider identifiers, and the operation cannot create a Checkout Session, customer, subscription, charge, refund, cancellation, or Portal Session.
+- Persist reconciliation targets with tenant-scoped foreign keys, an expiring lease, bounded safe error history, retry count, and terminal state. Couple the current lease, latest provider-read generation, subscription projection, Checkout completion, customer ownership, and success audit in one D1 batch.
+- Serialize Checkout creation and reconciliation with a durable account-scoped operation lease. A stale operation owner must fail its terminal D1 guard rather than create or commit from an obsolete account view.
+- Run a bounded five-minute recovery sweep for existing provider-backed
+  Checkout work, failed reconciliation leases, and stale open-subscription
+  projections. Apply backoff, stop after eight consecutive automatic failures,
+  reset that budget on success, and emit only opaque dead-letter
+  counts/identifiers for operational response.
+- When a newer signed webhook commits the exact provider object and current
+  projection generation, resolve its matching failed or in-flight reconciliation
+  target in the same D1 batch so a stale worker cannot orphan or overwrite it.
+- Never grant entitlement from a success redirect, browser-supplied status, amount, email, or customer ID.
+- Protect against one Stripe customer or subscription being attached to two instructor accounts.
+- Audit entitlement changes without storing invoice detail, card data, webhook bodies, or secrets in the audit record.
+- Separate the instructor's SaaS price/cadence from the coach-authored golfer package price and external link in UI, data, and code.
+
+`[PRICING HYPOTHESIS — REQUIRES VALIDATION]` The planning price, trial, pause price, and commercial/account behavior remain unapproved or unvalidated unless an exact later decision says otherwise. Stripe configuration must not silently convert those hypotheses into policy.
+
+## Audit events and operational logs
+
+### First-party audit ledger
+
+The application writes append-oriented D1 audit events for security- and privacy-relevant actions. Each event contains only:
+
+- event version and timestamp;
+- request/correlation ID;
+- actor class (`instructor`, `golfer_capability`, `system`, or explicitly authorized operator) and opaque actor ID where applicable;
+- action and target type/opaque ID;
+- outcome and safe reason code;
+- source channel/environment; and
+- minimal before/after state labels when necessary.
+
+Required event families include authentication mapping, account lifecycle, coach/package changes, golfer/roadmap create/update, publish/unpublish, capability create/exchange/revoke/rotate, media lifecycle, export/correction/deletion request, subscription-event processing, entitlement change, and authorized operator access.
+
+### Privacy-operator boundary
+
+The [data-request operator workflow](DATA_REQUEST_OPERATOR_WORKFLOW.md) requires
+dispatch-owned SIWC plus an independent HMAC-SHA-256 email-digest allowlist.
+Owner-private product access and subscription entitlement never grant this role.
+Configuration uncertainty returns `503`; a known non-member returns `403`.
+Queue/detail output omits emails, contact hashes, request text, provider IDs,
+object keys, and record content. Status compare-and-swap and its audit receipt
+commit in one D1 batch. Queue traversal is newest-first strict keyset
+pagination; null-tenant and future-dated active rows are excluded with safe
+counts rather than identifiers. Existing identity-verification-required,
+verified, in-progress, and terminal history is read-only. The only mutation is
+the non-attesting `submitted` -> `identity_verification_required` marker; it
+does not write `identity_verified_at`. Verification, processing, denial,
+cancellation, fulfillment, and deletion have no mutation transition. Network
+and authorized-operator controls run before queue audit, inventory, or PATCH
+work, and their D1 subjects are separately scoped/windowed HMAC digests.
+
+Audit events never contain raw identity headers, raw capabilities, full email addresses unless separately justified and protected, coach/golfer narrative, media URLs, package-payment details, Stripe webhook payloads, or secrets. Audit writes for high-impact mutations must be coupled transactionally where D1 permits or reconciled through a durable outbox pattern.
+
+### Sites operational logs
+
+Application log messages use event names, status codes, duration buckets, and
+opaque IDs. They do not emit request bodies, query strings, URL fragments,
+cookies, authorization headers, raw webhook payloads, personal content, or
+secrets. The application-owned D1 audit remains the authoritative first-party
+accountability record.
+
+Hosted Sites invocation logs currently cannot be treated as a privacy-safe
+diagnostic or alert source. Versions 14 and 15 each packaged an explicit
+`invocation_logs=false`; version 15 additionally configured all packaged
+observability/log settings off. Sites nevertheless returned post-deployment fetch
+invocation records. The v13 through v15 value-safe query results returned
+redaction markers for cookie and SIWC identity fields, while IP and
+request-signature metadata persisted; collection and storage disposition behind
+the markers is unknown. This is provider-envelope behavior, not an
+application-log emission. Connector/tool processing was transient; no raw field
+value was surfaced in the transcript or written to the repository.
+
+Version 16 retains the same three packaged `false` settings. No v16 provider-log
+query was run because the controls are unchanged and additional provider processing
+could not establish enforcement or retained-data disposition. `LOG-PRIV-001`
+therefore remains High/open before real-user or public operation.
+
+Cloudflare documents both the disabling control and a maximum seven-day retention
+for Workers Logs in its
+[Workers Logs documentation](https://developers.cloudflare.com/workers/observability/logs/workers-logs/),
+but the Sites connector exposes no log-configuration, retention, or deletion
+control. Logging/alerting is degraded. Do not place real-user traffic on this
+deployment until provider support demonstrates enforcement, or migration to a
+host that honors the control is completed and verified.
+
+## Privacy lifecycle
+
+### Collection and notice
+
+- Show the approved collection purpose at or before entry of identity, golfer context, assessment, and media.
+- Distinguish required, optional, and deferred fields.
+- Keep product operation, research, marketing, media, and outward sharing choices separate.
+- Do not use a coach's ability to enter data as proof that the golfer authorized every use.
+
+### Access and correction
+
+- The instructor can review and correct account, coach, package, golfer, and roadmap content within the authorized scope.
+- The golfer experience provides an approved correction/contact route without exposing additional data.
+- Identity/account corrections that affect SIWC or Stripe are reconciled rather than silently overwritten.
+- Material published corrections create a new publication version and audit event.
+
+### Export
+
+- Export is generated server-side after a fresh authorization check.
+- It contains only the requester's approved scope and excludes raw capability secrets, internal security fields, unrelated audit data, and other tenants.
+- Generated export objects are private, short-lived, and deleted according to the approved export policy.
+
+### Revocation and deletion
+
+- Revoking a share stops new access and invalidates scoped sessions as soon as practical.
+- Account/golfer deletion is a durable, retryable workflow across D1, R2, capabilities, exports, and caches; it is not a single optimistic UI state.
+- Records subject to a permitted retention exception are isolated and no longer available in ordinary product flows.
+- Stripe may retain independent billing records under its own applicable obligations; product copy must describe the actual separation after qualified review.
+- Backup expiry and deletion limitations must be stated accurately once the backup design is approved.
+
+### Retention
+
+No retention duration is selected in this document. D1 records, R2 objects, audit events, operational logs, exports, cancelled accounts, paused accounts, and backups each require an explicit purpose, duration, deletion mechanism, exception rule, and evidence owner.
+
+## Threat and control register
+
+| Threat | Primary preventive controls | Detection/recovery evidence required |
+|---|---|---|
+| Cross-tenant object access | Server-derived instructor context, owner-scoped repositories, opaque IDs, authorization on every read/write | Automated negative matrix across all resources plus audit review |
+| Forged identity header | Trust only the Sites dispatch boundary; strip/replace browser values; protected server routes | Hosted spoofing tests and dispatch-contract evidence |
+| Capability guessing or leakage | 256-bit verifier, hashed-at-rest, fragment/body exchange, neutral errors, rate limits, no third parties/referrers | Token-not-logged test, brute-force controls, revoke/rotate/session invalidation test |
+| Stale-tab golfer action applied to a replacement session | Cookie plus account/share/session HMAC context, context-bound per-tab recovery, mismatch before response/audit/close mutation | Cross-tab replacement tests proving `409`, zero response/audit cardinality change, and no active-cookie expiry |
+| Stored XSS from coach content | Framework escaping, no raw HTML/SVG, CSP, URL allowlist | Payload test corpus and rendered response/header inspection |
+| CSRF or unintended mutation | Same-origin validation, SameSite/secure cookies, route-appropriate CSRF token, explicit confirmation | Cross-origin mutation tests for all state-changing endpoints |
+| SQL injection or mass assignment | Schema validation, prepared/bound D1 queries, explicit writable fields | Injection and overposting tests |
+| Stripe webhook forgery/replay | Raw-body signature verification, event allowlist, unique event IDs, idempotent state machine | Invalid signature, duplicate, out-of-order, retry, and reconciliation tests |
+| Unsafe file upload | Private quarantine, type/size/signature validation, opaque key, no active content, authorized serving | Malformed/polyglot/oversize tests and deletion retry evidence |
+| Secret or personal-data leakage | Hosted secrets, log minimization/redaction, no raw token storage, repository scanning | Secret scan, log sample review, error-path review, rotation runbook |
+| Accidental destructive action | Confirmation, state preconditions, version checks, idempotent workflow, audit | Restore/rollback and deletion-cancellation tests where policy permits |
+| Lost or delayed browser mutation acknowledgement | End-to-end deadline, no automatic replay, stable idempotency/CAS where available, truthful retry-same-attempt or reload-first copy | Timeout, stalled-body, oversized-body, retryable-status, and source-inventory tests plus hosted interruption/reload exercise |
+| Unsafe write continuation during an integrity incident | Exact fail-closed write mode, path-aware edge classification, scheduler no-work branch, private operational readiness | Frozen/invalid route matrix, zero-side-effect scheduled tests, and exact hosted containment/re-enable exercise |
+| Provider or dependency outage | Bounded timeouts, safe errors, retry/idempotency, text-first fallback, operational runbooks | Failure injection or controlled outage exercises |
+| Dependency compromise | Lockfile, review/update cadence, build integrity, least-privilege secrets | Dependency scan/review evidence and emergency update rehearsal |
+| Privacy overcollection | Field-purpose inventory, optional fields, adult-only scope, no third-party analytics by default | Data-map review, UI/content review, export/delete sampling |
+
+## Verification required
+
+The exact release requires proportionate evidence for:
+
+- unit and integration tests of validation, state transitions, hashing, idempotency, and authorization helpers;
+- end-to-end instructor, golfer capability, subscription, correction, revocation, and deletion journeys;
+- systematic cross-tenant tests for every tenant-owned resource and action;
+- capability entropy, non-persistence, redaction, expiry/revocation, and session-scope tests;
+- SIWC spoofing, missing-identity, sign-out, recovery, and public-hosted behavior;
+- Stripe signature, replay, ordering, failure, and reconciliation behavior in test mode plus a controlled authorized live transaction;
+- upload, media failure, private-object, and deletion handling if media is enabled;
+- response header, cache, redirect, external-link, and browser security review;
+- dependency, configuration, secret, and repository scans;
+- normalized release-build comparison with `npm run verify:reproducible-builds`
+  across two independently created detached clean worktrees, retaining raw
+  differences and accepting only strictly validated generated-value variance;
+- D1/R2 backup and restore exercises;
+- keyboard, screen-reader, zoom/reflow, reduced-motion, no-media, error, and privacy-safe unauthorized-state checks; and
+- qualified privacy/legal review of actual product behavior and published copy.
+
+Findings need severity, affected release, owner, mitigation, retest evidence, and disposition. The absence of a finding in one test is not proof of broad security or compliance.
+
+## Incident and disclosure principles
+
+1. Protect people and contain access first; preserve necessary evidence without copying private content casually.
+2. Record detection time, scope, affected systems/data classes, containment, decisions, communications owner, and recovery evidence.
+3. Rotate affected secrets/capabilities and revoke sessions using the appropriate runbook.
+4. Determine notification and reporting duties through the approved legal/privacy process; do not improvise legal conclusions in the incident channel.
+5. Restore cautiously, verify tenant isolation and data integrity, and monitor recurrence.
+6. Complete a blameless review with corrective actions, owners, dates, and verification.
+
+## Unresolved dependencies, not gates
+
+| Dependency | Why it remains unresolved | What closes the evidence gap |
+|---|---|---|
+| Public OIDC provider and identity continuity | The relying-party and revocable-session boundary is implemented locally, but no provider tenant/client/callback, legacy SIWC link ceremony, hosted journey, or support contract is approved or evidenced | Approved provider/configuration and explicit continuity decision, then hosted discovery/JWKS/token/sign-in/linking/recovery/sign-out/revocation/spoof/cross-device/tenant tests plus a documented support path |
+| Consent-policy registry | Technical enforcement exists, but exact owner-approved entries are absent and grants fail closed | Owner decision, qualified review, exact versioned text/configuration, deployed path mapping, withdrawal/export verification, and comprehension evidence |
+| Privacy-operator authority | The least-privilege boundary exists, but the named role and independent access configuration are absent, so the API fails closed | Named accountable operator, approved method/policy/evidence, exact secret/digest configuration without values in evidence, authenticated hosted verification, and audited workflow exercise |
+| Legal/privacy copy and policy | No qualified review or exact owner-approved lifecycle terms are recorded | Versioned approved policy/copy mapped to actual code and operator workflows |
+| Stripe production configuration | No production secret, approved Price, final billing terms, or live transaction evidence is recorded | Authorized configuration, signed webhook evidence, reconciliation, and controlled transaction/refund/failure checks |
+| Public domain | Final origin affects cookies, redirects, CSP, CORS, referrers, and public disclosures | Authorized domain plus final-origin security and privacy verification |
+| Backup and restore | A strategy without a successful restore does not prove recoverability | Versioned backup inventory and a timed, integrity-checked D1/R2 restore exercise |
+| Hosted scheduler | The exact-v16 archive verifier proves the five-minute cron declaration and local invocation/write-mode tests pass. Deep readiness validates the exact migration-`0010` abuse-rate-limit shape, index, primary key, and two share-close scopes; scheduler health samples at most 13 due accounts, reports a lower-bound backlog, degrades until drained, and fails closed on assessment errors. Historical v8-v15 provider observations produced no conclusive scheduled invocation, and no v16 provider-log query was run. No exact-v16 trigger metadata, authenticated heartbeat observation, frozen zero-side-effect hosted exercise, or alert result exists. | Establish Sites cron support and deployed trigger state or move to a supported scheduler; then observe at least three exact-release intervals through authenticated health/provider evidence, prove frozen zero-side-effect behavior, and exercise a privacy-safe failure alert |
+| Sites logging | Confirmed provider limitation: exact v14 ignored packaged `invocation_logs=false`, and exact v15 continued to return invocation records after all packaged observability/logging settings were configured off. Value-safe v13-v15 queries returned redaction markers for cookie/SIWC identity fields but nonempty IP/request-signature metadata; collection/storage disposition behind the markers is unknown. Exact v16 retains all three packaged switches as `false`; no v16 provider-log query was run because unchanged controls and extra processing could not close the finding. Connector/tool processing was transient; no raw field value was surfaced in the transcript or written to the repository. Sites exposes no connector control for configuration, retention, or deletion; logging/alerting is degraded. This is High before real-user/public operation, although no customer incident is claimed for the owner-only, no-customer-data candidate. | Provider support must demonstrate that hosted invocation logging is disabled, establish retained-data disposition, and prove invocation records are unavailable, or migrate to a host that honors the control; then repeat privacy-safe leak, access, retention/deletion, export, and alert exercises before real-user/public operation |
+| Live acceptance | No exact production release has completed controlled real journeys and owner review | Release evidence packet and Aaron's dated acceptance record |
+
+These items constrain affected real-world claims and operations. They do not revoke `AUTH-005` or prevent continued safe implementation and testing.

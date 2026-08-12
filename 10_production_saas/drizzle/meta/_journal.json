@@ -1,0 +1,125 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1786151570338,
+      "tag": "0000_nappy_inertia",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1786154927285,
+      "tag": "0001_sour_pete_wisdom",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1786159091884,
+      "tag": "0002_nifty_lord_tyger",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1786163742826,
+      "tag": "0003_condemned_brood",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1786166233248,
+      "tag": "0004_grey_ikaris",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1786168363312,
+      "tag": "0005_cultured_marrow",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1786178730627,
+      "tag": "0006_nervous_dragon_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1786184063095,
+      "tag": "0007_fearless_valeria_richards",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1786202288398,
+      "tag": "0008_reflective_mystique",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1786202489412,
+      "tag": "0009_cultured_namora",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1786248060200,
+      "tag": "0010_steep_hemingway",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1786263456951,
+      "tag": "0011_stormy_shard",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1786410924064,
+      "tag": "0012_giant_rockslide",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1786411008651,
+      "tag": "0013_mature_alex_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1786420556859,
+      "tag": "0014_easy_electro",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1786421342708,
+      "tag": "0015_freezing_puma",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1786421452444,
+      "tag": "0016_handy_green_goblin",
+      "breakpoints": true
+    }
+  ]
+}

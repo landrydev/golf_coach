@@ -1,0 +1,491 @@
+.page {
+  min-height: 100vh;
+  background: #f4f1e8;
+  color: #18382f;
+}
+
+.publicHeader {
+  min-height: 4.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #d9d3c5;
+  background: #fffdf6;
+  padding: 0 clamp(1rem, 4vw, 4rem);
+}
+
+.publicHeader a:first-child {
+  color: #17392f;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.5rem;
+  text-decoration: none;
+}
+
+.publicHeader a:last-child {
+  color: #285247;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.demoBanner {
+  background: #f2c766;
+  color: #3f3210;
+  padding: 0.65rem 1rem;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.shell {
+  width: min(100% - 2rem, 78rem);
+  margin: 0 auto;
+  padding: clamp(2rem, 6vw, 5rem) 0;
+}
+
+.hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.hero > div {
+  max-width: 52rem;
+}
+
+.hero span,
+.sectionHeading > span,
+.nowGrid span,
+.mediaCompare span,
+.review span {
+  color: #9a6809;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hero h1,
+.sectionHeading h2,
+.nowGrid h3,
+.mediaCompare h3,
+.timeline h3,
+.review h3 {
+  color: #17392f;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+}
+
+.hero h1 {
+  margin: 0.45rem 0 0;
+  font-size: clamp(2.4rem, 7vw, 5.2rem);
+  line-height: 0.96;
+  letter-spacing: -0.05em;
+}
+
+.hero p,
+.sectionHeading p,
+.nowGrid p,
+.drillGrid p,
+.mediaCompare p,
+.timeline p,
+.review p,
+.footer p {
+  color: #52675e;
+  line-height: 1.6;
+}
+
+.hero button,
+.nowGrid button,
+.demoCheckIn button,
+.toggle button,
+.footer a {
+  min-height: 2.8rem;
+  border: 1px solid #17392f;
+  border-radius: 999px;
+  background: #17392f;
+  color: #fff;
+  padding: 0.65rem 1rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.tabs {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  margin-top: 2.5rem;
+  border-block: 1px solid #d7d2c6;
+  background: rgba(244, 241, 232, 0.96);
+  padding: 0.55rem 0;
+}
+
+.tabs button {
+  min-height: 2.75rem;
+  flex: 0 0 auto;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: #3d5a50;
+  padding: 0.55rem 0.9rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.tabs button[aria-pressed="true"] {
+  border-color: #17392f;
+  background: #fff;
+  color: #17392f;
+}
+
+.hero button:focus-visible,
+.tabs button:focus-visible,
+.nowGrid button:focus-visible,
+.demoCheckIn button:focus-visible,
+.toggle button:focus-visible,
+.filter select:focus-visible,
+.footer a:focus-visible,
+.publicHeader a:focus-visible {
+  outline: 3px solid #b37812;
+  outline-offset: 3px;
+}
+
+.panel {
+  margin-top: 2rem;
+  border: 1px solid #d9d3c6;
+  background: #fffdf8;
+  padding: clamp(1.2rem, 4vw, 2.5rem);
+}
+
+.sectionHeading {
+  max-width: 56rem;
+}
+
+.sectionHeading h2 {
+  margin: 0.4rem 0 0;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  line-height: 1.08;
+}
+
+.nowGrid,
+.drillGrid,
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.nowGrid article,
+.drillGrid > div,
+.metrics article {
+  border: 1px solid #d8d5cb;
+  background: #f7f5ef;
+  padding: 1rem;
+}
+
+.nowGrid h3,
+.mediaCompare h3,
+.review h3 {
+  margin: 0.45rem 0 0;
+  font-size: 1.35rem;
+}
+
+.nowGrid button {
+  background: transparent;
+  color: #17392f;
+}
+
+.phases,
+.steps,
+.timeline {
+  margin: 2rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.phases li {
+  display: grid;
+  grid-template-columns: 3rem 1fr;
+  gap: 0.8rem;
+  border-top: 1px solid #d9d5cb;
+  padding: 1rem 0;
+}
+
+.phases b {
+  width: 2.4rem;
+  height: 2.4rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid #91a59b;
+  border-radius: 50%;
+}
+
+.phases li[data-state="active"] b {
+  background: #17392f;
+  color: #fff;
+}
+
+.phases small,
+.phases strong {
+  display: block;
+}
+
+.phases small {
+  color: #64766e;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.phases strong {
+  margin-top: 0.3rem;
+}
+
+.drillGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.drillGrid p {
+  margin: 0.4rem 0 0;
+}
+
+.steps {
+  counter-reset: demo-step;
+}
+
+.steps li {
+  counter-increment: demo-step;
+  display: grid;
+  grid-template-columns: 2rem 1fr;
+  gap: 0.7rem;
+  padding: 0.6rem 0;
+}
+
+.steps li::before {
+  content: counter(demo-step);
+  width: 1.6rem;
+  height: 1.6rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #dfe9e4;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.demoCheckIn {
+  margin-top: 1.5rem;
+  border-left: 3px solid #b47a13;
+  background: #fff6df;
+  padding: 1rem;
+}
+
+.demoCheckIn > div,
+.toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.75rem;
+}
+
+.demoCheckIn button,
+.toggle button {
+  background: #fff;
+  color: #17392f;
+}
+
+.demoCheckIn button[aria-pressed="true"],
+.toggle button[aria-pressed="true"] {
+  background: #17392f;
+  color: #fff;
+}
+
+.demoCheckIn p {
+  margin-bottom: 0;
+  color: #5f4c1f;
+}
+
+.mediaCompare {
+  display: grid;
+  grid-template-columns: minmax(16rem, 1.15fr) minmax(14rem, 0.85fr);
+  gap: 1.5rem;
+  align-items: center;
+  margin-top: 2rem;
+}
+
+.mediaFrame {
+  overflow: hidden;
+  border-radius: 0.6rem;
+  background: #17392f;
+}
+
+.mediaFrame img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.metrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.metrics span,
+.metrics strong,
+.metrics small {
+  display: block;
+}
+
+.metrics span {
+  color: #63756d;
+  font-size: 0.67rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.metrics strong {
+  margin-top: 0.4rem;
+  color: #17392f;
+  font-size: 1.25rem;
+}
+
+.metrics small {
+  margin-top: 0.35rem;
+  color: #63756d;
+}
+
+.limit {
+  border-left: 3px solid #a77720;
+  background: #fff6df;
+  padding: 0.75rem 0.9rem;
+  color: #5d4b21;
+}
+
+.filter {
+  width: min(100%, 20rem);
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 1.5rem;
+  color: #3b584e;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.filter select {
+  min-height: 2.75rem;
+  border: 1px solid #abb8b2;
+  border-radius: 0.4rem;
+  background: #fff;
+  padding: 0.6rem;
+  font: inherit;
+}
+
+.timeline li {
+  display: grid;
+  grid-template-columns: 5rem 1fr;
+  gap: 1rem;
+  border-top: 1px solid #d8d5cb;
+  padding: 1rem 0;
+}
+
+.timeline time,
+.timeline small {
+  color: #61736b;
+  font-size: 0.67rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.timeline h3 {
+  margin: 0.25rem 0 0;
+  font-size: 1.2rem;
+}
+
+.timeline p {
+  margin: 0.35rem 0 0;
+}
+
+.review {
+  margin-top: 1.2rem;
+  border: 1px solid #bfd0c7;
+  background: #eaf2ed;
+  padding: 1.2rem;
+}
+
+.review small {
+  color: #586f65;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-top: 2rem;
+  border-top: 1px solid #d5d0c4;
+  padding-top: 1.5rem;
+}
+
+.footer p {
+  max-width: 48rem;
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 760px) {
+  .hero,
+  .footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .nowGrid,
+  .drillGrid,
+  .mediaCompare,
+  .metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .hero button,
+  .footer a {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 390px) {
+  .shell {
+    width: min(100% - 1.2rem, 78rem);
+  }
+
+  .panel {
+    padding: 1rem;
+  }
+
+  .demoCheckIn button,
+  .toggle button {
+    width: 100%;
+  }
+
+  .timeline li {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page * {
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,436 @@
+# Software supply-chain, SBOM, and license inventory
+
+**Status:** Reproducible inventory procedure plus exact Sites-version-16 lockfile,
+package, integrity-scan, production-audit, two-clean-build normalized-
+reproducibility, and provider/deployment observations; not a legal opinion,
+vulnerability certification, exact deployed-archive SBOM, retroactive v9 rebuild,
+or byte-for-byte identity claim
+**Observed:** 2026-08-09 with Node `24.18.0`, npm `12.0.1`
+**Authority:** `package-lock.json` is the exact dependency graph; `package.json`
+declares direct intent
+**Related:** [Architecture](ARCHITECTURE.md), [Operations](OPERATIONS.md), and
+[findings ledger](FINDINGS_RETEST_LEDGER.md)
+
+## Current inventory observation
+
+**Implemented exact-v16 evidence:** the committed lockfile is lockfile version 3 and has
+SHA-256 `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d` at
+version-16 source commit `91f37ebd542774779f6db7e000832c2f6714e528`. Its 712
+`node_modules/*` locations normalize to 676 unique `name@version` components.
+The built-in npm generator produced a CycloneDX 1.5 document with 676 components
+and an SPDX 2.3 document with 677 packages, including the application package.
+The lock digest is unchanged from versions 8 through 16. The retained full-lock artifacts under
+`docs/release-evidence` therefore inventory the same exact locked graph, but keep
+their version-8 names and provenance; no version-9-, version-10-, version-11-,
+version-12-, version-13-, version-14-, version-15-, or version-16-named SBOM
+regeneration is claimed:
+
+| Retained artifact | Bytes | SHA-256 |
+|---|---:|---|
+| `ROADMAP-SITES-V8-2026-08-08-sbom.cdx.json` | 680,652 | `ba870097b023f2069fb9d25611f6cb314e2b99399aeeaad848503bca3d213d6d` |
+| `ROADMAP-SITES-V8-2026-08-08-sbom.spdx.json` | 827,711 | `19cbf7be9b650049f2a00227e9a716d8b57b881588f642d8addd53a98566bf36` |
+| `ROADMAP-SITES-V8-2026-08-08-sbom-manifest.json` | 1,758 | `97a17d0583574c317361c0dcc016e32f36dfb4e87ba2c2bbc0ce55b685935d0e` |
+
+Those counts describe the complete locked graph, including development and
+platform-optional packages. They do not prove which components Sites placed in
+the deployed archive. Exact-release evidence must retain both the full-lock SBOM
+and a shipped-artifact inventory.
+
+### Exact Sites version 16 package, scan, and normalized-reproducibility observation
+
+| Field | Recorded result |
+|---|---|
+| Source/runtime release ID | `91f37ebd542774779f6db7e000832c2f6714e528` |
+| Local package | `outputs/roadmap-sites-v16-91f37eb.tar.gz`; gzip SHA-256 `9119a848bb8b4c7fff1d810280cf845ec44366449adac3176fd35d8c24438fe6`; 3,052,294 bytes; 63 tar entries/51 files; eleven migrations |
+| Sites package | Content hash `sha256:752f05fd957f8f4b043b5955d9cdbdbf2176b0f1f3414827c9c3e8d0f44f6e2c`; 51 files; 7,290,880 bytes |
+| Saved/deployed version | `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_0a4d7dc3d8108191aa4a1b3e14051a96`; deployment `appgdep_6a7826b2f4c481919cc85665dffa2391`; environment revision `18`; final status `succeeded`, provider `updated_at` `2026-08-09T07:05:36.176024Z`; owner-only URL unchanged |
+| Source release-integrity scan | The exact-v16 run covered 304 source/evidence text files with zero secret findings, preserved historical Business Plan V1, and confirmed lockfile SHA-256 `1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d` |
+| Exact archive audit | 63 safe entries/51 files, eleven migrations, and 25 source-mapped controls matched the checked clean build |
+| Verification runs | The primary release worktree plus two detached exact-commit worktrees each passed 346/346 tests |
+| Two-clean-build comparison | Each detached worktree installed 501 locked packages and reported the same five blocked install scripts. Both inventories had 51 files; exactly three allowlisted raw generated-value differences, three validated build-ID occurrences per build, and zero normalized differences remained |
+| Migration upgrade | `0010_steep_hemingway` extends the rate-limit scope constraint for `share_close_network` and `share_close_session`; upgrade tests passed |
+| Production dependency audit | A fresh exact-v16 `npm audit --omit=dev` reported zero vulnerabilities on 2026-08-09 |
+
+The exact version-16 comparison records normalized reproducibility, not
+byte-for-byte identity. The local gzip and provider content hashes describe
+different representations. The archive and saved-version records bind the checked
+candidate to the successful revision-18 private deployment, but do not prove
+provider-side byte identity, hosted scheduler behavior, authenticated application
+writes, or an exact shipped-artifact SBOM.
+
+Version 16 carries forward version 13's application-wide fail-closed write containment, bounded draft and
+session recovery, stricter response/CAS/revision boundaries, native billing
+recovery, and account share revoke, same-revision reissue, and lost-ack replacement
+receipts without changing the locked dependency graph. It adds generic private
+HTML for top-level document failures while preserving JSON for API/RSC/assets,
+safe UUIDv4 request references, version-2 keyed attempts with 24-hour expiry and
+exact-owner/submit-time checks, exact migration-`0010` readiness validation,
+bounded 13-account scheduler-backlog health, and exact-Worker recovery boot.
+Migration `0010` and its
+upgrade tests are local D1 evidence, not hosted migration or rollback evidence.
+Four signed-out probes to `/`, `/app`, `/r`, and `/api/health` returned `401`
+with `no-store`/`no-referrer`; no
+signed-in browser, hosted write/freeze exercise, public user, charge, message, or
+real-user operation is claimed. `OWNER-SEC-001` remains historically completed;
+no bypass credential was generated, read, rotated, displayed, persisted, or used for
+this release. See the
+[exact version-16 release record](release-evidence/ROADMAP-SITES-V16-2026-08-09.md).
+`LOG-PRIV-001` remains High/open: Sites returned three post-success fetch events
+for version 15 even though that exact package configured all observability/log-
+persistence settings off. Network-IP
+and request-signature fields remained nonempty and were not query-surface
+redaction markers; the query surface returned redaction markers for cookie/SIWC
+identity fields. Raw field values processed transiently by the connector/tool
+were not surfaced in the transcript or written to the repository.
+Collection/storage masking and retained-data disposition remain unknown. Version
+14 also failed with `invocation_logs=false`. No version-16 log query was run
+because the version-15 result already proved the unchanged switches ineffective
+and another query would add processing without closure.
+Rolling back to version 15 would remove version-16 security/recovery hardening and
+is class `B` behaviorally unless an exact compatibility exercise establishes a
+narrower safe path; no predecessor resolves provider enforcement. Closure
+requires actual provider enforcement plus retained-data
+disposition, or a verified migration to a host that enforces the control. This
+hosted failure does not change the package/SBOM identity result.
+The exact-version-16 release-integrity run scanned 304 source/evidence text
+files with zero secret findings, preserved historical Business Plan V1, and
+confirmed the same lockfile digest.
+
+### Historical exact Sites versions 15, 14, and 13 package observations
+
+Version 15, version 14, and version 13 retain their immutable package, archive,
+deployment, and normalized-build evidence in their exact release records. Their
+locked dependency graph matches version 16. Version 15 is the immediate
+predecessor but lacks the version-16 failure, request-reference, attempt-
+lifecycle, readiness, scheduler-health, and recovery-boot hardening. Versions 14
+and 13 also differ in packaged observability configuration. The exact-v13 local
+record remains historical predecessor evidence and is not relabelled as version
+16.
+
+### Historical exact Sites version 12 package, scan, and normalized-reproducibility observation
+
+| Field | Recorded result |
+|---|---|
+| Source/runtime release ID | `7b77e6507c1b1c1acb091ab046808cf8b5cc0a5c` |
+| Local package | `outputs/roadmap-sites-v12-7b77e65.tar.gz`; gzip SHA-256 `994f725ba6c5952c45885a4d72d38804f1b10b8440273dc26ac8bd1c38d2bd75`; 2,967,333 bytes; 61 tar entries/49 files; ten migrations |
+| Sites package | Content hash `sha256:0805c04e9dcd5e8bac77f58aec2362dece1754f6eec63ec73d9c2e249bb01700`; 49 files; 6,748,160 bytes |
+| Saved/deployed version | `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_8868e09fcb28819181cfbebdf82ce73f`; deployment `appgdep_6a77c5c85974819185ce1c8caf13007c`; environment revision `14`; final status `succeeded`, provider `updated_at` `2026-08-09T00:12:04.939300+00:00`; owner-only URL unchanged |
+| Source release-integrity scan | 261 source/evidence text files inspected; zero secret findings; historical Business Plan V1 preserved; lockfile SHA-256 unchanged. Generated output and dependencies were intentionally excluded |
+| Post-evidence reconciliation | A separate 2026-08-09 integrity run inspected the resulting 262-file source/evidence set with zero secret findings, preserved historical Business Plan V1, and confirmed the same lockfile SHA-256. This verifies the current evidence tree and does not change the frozen 261-file runtime result |
+| Exact archive audit | 61 safe entries/49 files, ten migrations, and 23 source-mapped controls matched the checked clean build; exactly two expected generated credential files and zero unexpected copies or paths were found; the scheduler manifest was present |
+| Two-clean-build comparison | Two detached exact-commit worktrees each installed 501 locked packages, reported the same five blocked install scripts, and passed 242/242 tests. Both inventories had 49 files; exactly three allowlisted raw generated-value differences and zero normalized differences remained; each build ID occupied exactly three validated locations |
+| Database generation | `npm run db:generate` reported `No schema changes, nothing to migrate` |
+| Production dependency audit | `npm audit --omit=dev` reported zero vulnerabilities on 2026-08-09 |
+
+The Sites packaging shell helper was unavailable in the Windows environment. Its
+exact archive contract was reproduced in PowerShell, and the archive verifier
+proved the resulting local build/archive relationship. That result does not claim
+that the unavailable shell helper itself ran. The provider content hash describes
+the provider's stored representation and is not the local gzip digest.
+
+The exact version-12 comparator retained the strict framework-generated-value
+boundaries: identical 49-file inventories, exactly three controlled raw
+difference paths, exactly three validated build-ID locations per build, and zero
+differences after allowlisted normalization. It recorded no generated value. This
+is normalized reproducibility, not byte-for-byte identity. The archive verifier
+and Sites package record bind the checked candidate to the saved version and
+successful revision-14 deployment; they do not prove provider-side byte identity,
+hosted scheduler operation, or create an exact shipped-artifact SBOM.
+
+Version 12 adds session-scoped golfer-response idempotency without changing the
+locked dependency graph or schema. A required syntactically bounded key is reduced
+to account-and-resolved-session-scoped HMAC receipts; the server atomically records
+one response/audit pair per logical key and does not persist or log the raw key.
+Automated coverage includes first-write/replay/conflict behavior and a mixed
+four-way race. The ten-second client timeout retains ambiguous attempts in
+per-tab `sessionStorage` until a definitive result or tab close. These controls
+are source/build evidence, not hosted-browser or real-network retry evidence.
+
+Four signed-out probes to `/`, `/app`, `/r`, and `/api/health` confirmed only the
+owner-policy `401`/`no-store`/`no-referrer`/`text/html` boundary. A post-v12
+ten-minute `errors_only` aggregate returned zero events. A broad aggregate captured
+at `2026-08-09T00:13:27.8566565Z` returned six `fetch`/`info`/`ok` events: two
+sequences of `GET /` `200`, `GET /.rsc` `200`, and handled `GET /app.rsc` `403`,
+with `scheduled=0`. No raw event or content was emitted or retained. The log sample
+is not package-identity evidence and is inconclusive about log completeness,
+scheduled-event visibility, errors, retention, redaction, and trigger metadata.
+A supported signed-in browser was unavailable, so no hosted journey, CSP execution,
+or manual accessibility result is claimed. See the
+[exact version-12 release record](release-evidence/ROADMAP-SITES-V12-2026-08-09.md).
+
+### Historical exact Sites version 11 package, scan, and normalized-reproducibility observation
+
+| Field | Recorded result |
+|---|---|
+| Source/runtime release ID | `44670a64498779cf747914b4465380916a939301` |
+| Local package | `outputs/roadmap-sites-v11-44670a6.tar.gz`; gzip SHA-256 `d88be6513bc58afd057d4a3fb3a6d64b744f7a5c359731ec9fc693a788e1fa0e`; 2,966,073 bytes; 61 tar entries/49 files; ten migrations |
+| Sites package | Content hash `sha256:d717035871790252548e7fff4e1192e590b73b7cabfe3f4c011d65ffe4493daa`; 49 files; 6,737,920 bytes |
+| Saved/deployed version | `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_4c49cdec72bc8191aeece01f5689e51a`; deployment `appgdep_6a77b01714b881918245bb5248349e0d`; environment revision `13`; final status `succeeded`, provider `updated_at` `2026-08-08T22:40:07.742084+00:00`; owner-only URL unchanged |
+| Source release-integrity scan | 259 source/evidence text files inspected; zero findings; historical Business Plan V1 preserved; lockfile SHA-256 unchanged. Generated output and dependencies were intentionally excluded |
+| Exact archive audit | 61 safe entries/49 files and ten migrations matched the checked clean build; the scheduler-manifest invariant was true. This confirms packaged configuration, not hosted scheduler provisioning or execution |
+| Two-clean-build comparison | Two detached exact-commit worktrees each installed 501 locked packages, reported the same five blocked install scripts, and passed 237/237 tests. Both inventories had 49 files; raw differences were confined to three strictly validated generated-value files and zero differences remained after allowlisted normalization |
+| Production dependency audit | `npm audit --omit=dev` reported zero vulnerabilities on 2026-08-08 |
+
+The exact version-11 comparator retained the strict framework-generated-value
+boundaries: 49-file inventories, three controlled raw difference paths, and zero
+differences after allowlisted normalization. It recorded no generated value. This
+is normalized reproducibility, not byte-for-byte identity. The archive verifier
+and Sites package record bind the checked candidate to the saved version and
+successful revision-13 deployment; they do not prove provider-side byte identity,
+hosted scheduler operation, or create an exact shipped-artifact SBOM.
+
+Two exact-commit local synthetic exercises were also run in a disposable detached
+worktree at version-11 source/runtime release
+`44670a64498779cf747914b4465380916a939301` using the lock-aligned installed
+dependency graph. Recovery passed all 10 migrations and 31 application tables for
+2 tenants and 3 private objects; the 34,380-byte D1 snapshot had SHA-256
+`34d14d9992bdae8b24d4504680f71ed00f5af2171152583fc40909ca89fd7a54`,
+all 3 negative integrity checks passed, child-process secret isolation held, and
+the 103,656 ms local duration is not an RTO. Capacity completed 54 requests at
+maximum concurrency 4 with 44 `200`, 10 `201`, 0 failures, and local p50/p95/max
+latency of 48.46/107.60/107.83 ms. These observations do not establish a hosted
+restore, provider backup, RPO/RTO, rollback, hosted capacity, business threshold,
+SLO/SLA, or supply-chain certification. See the
+[canonical exact-version-11 local exercise record](release-evidence/ROADMAP-SITES-V11-2026-08-08-LOCAL-EXERCISES.md).
+
+An initial provider-log aggregate was captured at
+`2026-08-08T22:58:53.646Z`, 19 minutes 23 seconds after deployment success and
+after the `22:45`, `22:50`, and `22:55` expected five-minute boundaries. Its
+30-minute broad window returned exactly three events: `fetch=3`, `outcome ok=3`,
+`level info=3`, and `scheduled=0`; the companion `errors_only` query returned one
+`fetch`/`info`/`ok` event with zero error fields. Neither query emitted raw events.
+This aggregate is not package-identity evidence. It strengthens the `OPS-CRON-001`
+suspicion but cannot prove scheduler absence or error-free operation because
+provider-log completeness, scheduled-event visibility, and trigger metadata were
+unavailable.
+
+A later value-safe audit found an empty newer 30-minute broad query and empty
+`errors_only` companion around `2026-08-08T23:20:16.850Z`. Its 60-minute
+aggregate at `2026-08-08T23:23:52.288Z` returned exactly three
+`fetch`/`info`/`ok` events with HTTP statuses `200`, `200`, and handled `403`,
+and `scheduled=0`; the `errors_only` companion returned the handled
+`fetch`/`info`/`ok` `403`. No raw events or content were emitted or retained.
+These samples are likewise not package-identity evidence and remain inconclusive
+because provider-log completeness, scheduled-event visibility, and trigger
+metadata were unavailable.
+
+Version 11 binds framework scripts to per-response CSP nonces and removes
+`script-src 'unsafe-inline'`. Four signed-out probes from
+`2026-08-08T22:40:40.8612310Z` through `2026-08-08T22:40:42.0058063Z` confirmed
+only the owner-policy `401`/`no-store`/`no-referrer` boundary. A signed-in hosted
+browser was unavailable, so hosted nonce-bearing HTML and framework-script
+execution remain uninspected.
+Version 11 remains historical supply-chain and exact local-exercise evidence; it
+is not relabelled as v12. Selecting it from v12 would remove golfer-response
+idempotency and ambiguous-outcome recovery. Version 10 is also retained below;
+selecting it from v11 would additionally reintroduce script
+`'unsafe-inline'`. Neither is an approved routine rollback target.
+
+### Historical exact Sites version 10 package, scan, and normalized-reproducibility observation
+
+| Field | Recorded result |
+|---|---|
+| Source/runtime release ID | `ae35ef25ed46563f6b8f09f5c22dc12581eff8b1` |
+| Local package | Gzip SHA-256 `5d67423e253009714bebe85bba118ded922c9f6b30b926f2af7bd0e3d05cd953`; 2,965,930 bytes; 61 tar entries/49 files |
+| Sites package | Content hash `sha256:0534d35af6fcdd8a0f104c5bb21fab5edd0641ec952bd32ae7a3f9c024c62033`; 49 files; 6,737,920 bytes |
+| Saved/deployed version | `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_1007b9b4ea8c8191968d55991abf374c`; deployment `appgdep_6a779cabaec4819191b0cf1e815ce2e5`; environment revision `12`; final status `succeeded`, provider `updated_at` `2026-08-08T21:17:13.525116+00:00` |
+| Source release-integrity scan | 258 source/evidence text files inspected; zero pattern findings; historical Business Plan V1 preserved; lockfile SHA-256 unchanged. Generated output and dependencies were intentionally excluded |
+| Exact archive audit | 61 safe entries/49 files; ten migrations and 23 source-mapped files matched the checked clean build; generated credential material was confined to two expected files with zero unexpected copies or paths |
+| Two-clean-build comparison | Two detached exact-commit worktrees each installed 501 locked packages, reported the same five blocked install scripts, and passed 234/234 tests. Both inventories had 49 files; raw differences were confined to three strictly validated generated-value files and zero differences remained after allowlisted normalization |
+| Production dependency audit | `npm audit --omit=dev` reported zero vulnerabilities on 2026-08-08 |
+
+The exact version-10 comparator required the framework UUID in exactly three
+anchored getter/ISR slots and required the two single-property 64-hex prerender
+manifests to match within each build. It recorded no generated value. This is
+normalized reproducibility, not byte-for-byte identity. The archive verifier and
+Sites package record bind the checked historical candidate to the saved version and
+successful revision-12 deployment; they do not prove provider-side byte identity or create an
+exact shipped-artifact SBOM. See the
+[exact version-10 release record](release-evidence/ROADMAP-SITES-V10-2026-08-08.md).
+
+### Historical exact Sites version 9 package and scan observation
+
+| Field | Recorded result |
+|---|---|
+| Source/runtime release ID | `6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d` |
+| Local package | Gzip SHA-256 `8b3d0b13f03f0b13cd10602d24af09bf17c34afdcb4cf73518b2b0d857d59e22`; 2,965,984 bytes; 61 tar entries/49 files |
+| Sites package | Content hash `sha256:0b3986dc73b1d06539dc85900dfd959549d92bcceb812c231a418766d29411fb`; 49 files; 6,737,920 bytes |
+| Saved/deployed version | `appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_58bb67e8e23c8191a584540a09e363c5`; deployment `appgdep_6a7768f92c588191934eda8abea6d6b4`; environment revision `11`; final status `succeeded`, provider `updated_at` `2026-08-08T17:36:53.329945+00:00` |
+| Source release-integrity scan | 252 source text files inspected; zero pattern findings; historical Business Plan V1 preserved. Generated output and dependencies were intentionally excluded |
+| Submitted-archive audit | 61 safe entries/49 files; ten migrations and 23 source-mapped files matched the release working-tree build; generated credential material was confined to two expected files with zero unexpected copies. This is not an isolated deterministic-rebuild result |
+| Production dependency audit | `npm audit --omit=dev` reported zero vulnerabilities |
+
+The differing tar-entry and Sites-file counts are provider/package-format
+observations, not a dependency-to-runtime reconciliation. The zero audit and secret
+findings apply only to the tools, inputs, and advisory data used at verification
+time; they do not certify package provenance, absence of malicious behavior, legal
+compliance, provider configuration, or runtime safety. An exact shipped-artifact
+SBOM and qualified license-obligation review remain open. Sites versions 6 through
+11 are retained as historical predecessor evidence in the release record.
+
+### Historical exact v9 isolated clean-install and rebuild observation
+
+An isolated export of immutable runtime commit
+`6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d` used Node.js `v24.18.0` and npm
+`12.0.1`. `npm ci --no-audit` installed 501 packages; npm reported five blocked
+package install scripts. The subsequent full verification still passed lint, strict
+types, production build, artifact-integrity checks, and 229/229 tests. This is clean
+behavioral reproducibility evidence for the exact commit.
+
+The isolated rebuilt `dist` did **not** byte-match the submitted v9 archive. The
+Windows isolated checkout used CRLF text bytes while the release working tree used
+LF for the same Git content; the comparison reported migration/metadata differences
+and different content-hashed client/server bundle names. The result is consistent
+with line-ending-driven variance, but it does not prove line endings are the only
+source of non-determinism. Repository `.gitattributes` now pins text checkouts to LF,
+but that control was added after runtime commit v9 and is not a v9 control. The
+deployed-v9 failure remains historical and was not retroactively reproduced. See
+the [exact v9 clean-install record](release-evidence/ROADMAP-SITES-V9-2026-08-08-clean-install.md).
+
+### Historical precursor normalized-reproducibility observation
+
+At `2026-08-08T19:05:33.6134361Z`, two distinct detached clean worktrees at exact
+successor source commit `66f5203a913f01c8da20555feebdbb99152c052c` were
+verified on Windows with Node.js `v24.18.0` and npm `12.0.1`. In each worktree,
+`npm ci --no-audit` installed 501 locked packages and left five install scripts
+blocked. Each `npm run verify` passed lint, strict types, production build, the
+release-artifact verifier, and 234/234 tests with zero failures, skips, or todos.
+The lockfile SHA-256 remained
+`1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d`.
+The LF checkout policy had SHA-256
+`e4cb73429d1d8b59f472654c7ed41afb39872ef5c96f05032833bc62f1662bd6`
+and pins `* text=auto eol=lf` with binary exceptions. A successor-commit
+`npm audit --omit=dev` also passed on 2026-08-08 with zero reported
+vulnerabilities.
+
+The strict comparator found identical 49-file inventories. The only raw
+differences were `server/index.js`, `server/ssr/vinext-server.json`, and
+`server/vinext-server.json`. For each build, it required one generated UUID in
+exactly three anchored build-ID getter/ISR cache-key slots. It also required each
+manifest to have the exact single-property 64-hex `prerenderSecret` shape and the
+two manifest values to match within that build. No generated values were recorded.
+After normalizing only those validated generated values, zero differences remained.
+Five focused tests cover the comparator's fail-open boundaries.
+
+At the time, this closed `SUPPLY-EVID-001` prospectively for normalized
+reproducibility of the precursor control. It did not establish byte-for-byte
+identity, retroactively reproduce deployed Sites version 9 commit
+`6b48fae48e8c9ddb87b1d7a8fd13a2ebe395ca0d`, or show that commit `66f5203` was
+deployed or reconciled to a provider package. Exact versions 10, 11, and 12 later
+repeated the two-clean-build comparison at their own immutable commits and
+separately bound their checked archives to provider packages and deployments; that
+evidence retains the same normalized-not-byte-identical limitation. See the
+[successor normalized-reproducibility record](release-evidence/ROADMAP-SUPPLY-REPRO-2026-08-08.md).
+
+### Direct production dependencies
+
+| Component | Exact version | Registry-declared license |
+|---|---:|---|
+| `drizzle-orm` | `0.45.2` | Apache-2.0 |
+| `next` | `16.3.0` | MIT |
+| `react` | `19.2.8` | MIT |
+| `react-dom` | `19.2.8` | MIT |
+
+### Direct development dependencies
+
+| Component | Exact version | Registry-declared license |
+|---|---:|---|
+| `@cloudflare/vite-plugin` | `1.51.1` | MIT |
+| `@cloudflare/workers-types` | `5.20260808.1` | MIT OR Apache-2.0 |
+| `@tailwindcss/postcss` | `4.2.1` | MIT |
+| `@types/node` | `22.19.19` | MIT |
+| `@types/react` | `19.2.14` | MIT |
+| `@types/react-dom` | `19.2.3` | MIT |
+| `@vitejs/plugin-react` | `6.0.2` | MIT |
+| `@vitejs/plugin-rsc` | `0.5.26` | MIT |
+| `drizzle-kit` | `0.31.10` | MIT |
+| `eslint` | `9.39.4` | MIT |
+| `eslint-config-next` | `16.3.0` | MIT |
+| `miniflare` | `5.20260801.1-alpha` | MIT |
+| `react-server-dom-webpack` | `19.2.8` | MIT |
+| `tailwindcss` | `4.2.1` | MIT |
+| `typescript` | `5.9.3` | Apache-2.0 |
+| `vinext` | `0.0.45` | MIT |
+| `vite` | `8.2.1` | MIT |
+| `wrangler` | `4.120.0` | MIT OR Apache-2.0 |
+
+### Full-lock license-expression summary
+
+This is a count of unique CycloneDX components, not a distribution-obligation
+conclusion.
+
+| Registry-declared SPDX expression | Components |
+|---|---:|
+| MIT | 521 |
+| Apache-2.0 | 56 |
+| MPL-2.0 | 28 |
+| LGPL-3.0-or-later | 20 |
+| ISC | 17 |
+| BSD-2-Clause | 11 |
+| Apache-2.0 AND LGPL-3.0-or-later | 6 |
+| BSD-3-Clause | 5 |
+| MIT OR Apache-2.0 | 4 |
+| Apache-2.0 AND LGPL-3.0-or-later AND MIT | 2 |
+| CC0-1.0 | 2 |
+| 0BSD | 1 |
+| BlueOak-1.0.0 | 1 |
+| CC-BY-4.0 | 1 |
+| Python-2.0 | 1 |
+
+No generated CycloneDX component lacked a registry-declared license expression.
+The generated SPDX document nevertheless reports `NOASSERTION` as the concluded
+license for every package, correctly reflecting that metadata collection is not a
+legal conclusion.
+
+## Release generation and verification
+
+Run from `10_production_saas` against a clean checkout of the exact release commit.
+Replace `<release-id>` with an immutable candidate identifier and retain the files
+with release evidence.
+
+```powershell
+npm ci
+npm run generate:supply-chain-evidence -- --release-id <release-id> --source-commit <full-commit-sha>
+npm ls --all
+npm audit --omit=dev
+Get-FileHash -Algorithm SHA256 package-lock.json
+Get-FileHash -Algorithm SHA256 docs/release-evidence/<release-id>-sbom.cdx.json
+Get-FileHash -Algorithm SHA256 docs/release-evidence/<release-id>-sbom.spdx.json
+```
+
+If the shell transcodes redirected native output, use a byte-preserving release
+runner. Parse both outputs as JSON before relying on them. Verification must also:
+
+1. confirm the SBOM root name/version and exact package-lock digest;
+2. reconcile every locked `name@version` to at least one CycloneDX component;
+3. inventory modules/assets actually present in the packaged Sites archive and
+   explain any difference from the full lock graph;
+4. review direct, transitive, optional, native, WASM, and bundled components;
+5. retain license/notice texts required for the shipped set;
+6. run vulnerability and secret/configuration checks separately; and
+7. record tool versions, time, operator, result, exceptions, and evidence hashes.
+
+`npm audit` covers reported vulnerabilities in its data source; it does not verify
+licenses, malicious-package absence, provenance, runtime compatibility, or the
+deployed artifact. A clean SBOM diff does not replace build and behavior regression
+testing.
+
+## Open review and decision items
+
+**External review required:** the locked graph includes weak-copyleft and attribution
+licenses, including LGPL, MPL, and CC-BY expressions, largely through build/image
+tooling and platform-specific packages. No qualified reviewer has determined which
+components are distributed in the Sites artifact or what notices, source offers,
+linking conditions, or other obligations apply. This must be resolved before a
+public commercial release; this document does not make that legal decision.
+
+**Recommendation:** assign the dependency owner named in
+[Operations](OPERATIONS.md#operational-responsibilities) to review advisories and
+lock/SBOM diffs on every release and at a defined cadence. Any new license
+expression, missing metadata, integrity change without an intentional lock update,
+critical advisory, abandoned framework dependency, or irreconcilable archive/SBOM
+difference opens a finding in [the retest ledger](FINDINGS_RETEST_LEDGER.md).
+
+**Owner/external decision still open:** provider budgets, legal/privacy review,
+public access, billing configuration, retention policy, and Aaron's exact-release
+acceptance are not approved by generating an SBOM.

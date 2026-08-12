@@ -1,0 +1,35 @@
+{
+  "evidenceType": "package-lock-only-sbom",
+  "generatedAt": "2026-08-08T13:50:47.649Z",
+  "limitations": [
+    "Includes the complete locked graph, including development and optional dependencies.",
+    "Does not prove which dependencies are present in the deployed Sites archive.",
+    "Registry license metadata is not a legal conclusion or obligation review.",
+    "SBOM generation does not replace vulnerability, provenance, or malicious-package review."
+  ],
+  "npmVersion": "12.0.1",
+  "nodeVersion": "v24.18.0",
+  "packageLock": {
+    "lockfileVersion": 3,
+    "sha256": "a29e63ce73d1de9f40d54ebc615982686af6c53084c107f84e35d1316ba425d1",
+    "uniqueNameVersionComponents": 676
+  },
+  "releaseId": "ROADMAP-SITES-V7-2026-08-08",
+  "sourceCommit": "7ed01ec822fdb5c2bfbe6db7e3c99bcba126ac17",
+  "artifacts": {
+    "cyclonedx": {
+      "componentCount": 676,
+      "format": "CycloneDX 1.5",
+      "path": "docs/release-evidence/ROADMAP-SITES-V7-2026-08-08-sbom.cdx.json",
+      "sha256": "a14d705a3426ff8dfe90187e032eeffa94b8599387ee7756c13bed8188a1744c",
+      "sizeBytes": 680652
+    },
+    "spdx": {
+      "format": "SPDX-2.3",
+      "packageCount": 677,
+      "path": "docs/release-evidence/ROADMAP-SITES-V7-2026-08-08-sbom.spdx.json",
+      "sha256": "1b2eb584b929dce25c33fe08dcbca2d1448bb0eb1c7436f5e86971f2c03b431d",
+      "sizeBytes": 827711
+    }
+  }
+}

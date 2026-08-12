@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title description">
+  <title id="title">Synthetic current swing illustration</title>
+  <desc id="description">An abstract down-the-line golf practice frame with alignment marks. It is not a real golfer or diagnosis.</desc>
+  <rect width="960" height="540" fill="#17392f"/>
+  <path d="M0 410L960 350V540H0Z" fill="#3a6654"/>
+  <path d="M120 438L840 392" stroke="#f0d178" stroke-width="8" stroke-dasharray="20 16" opacity=".8"/>
+  <circle cx="500" cy="148" r="38" fill="#f4eee0"/>
+  <path d="M492 190Q454 258 474 355M474 355L410 440M474 355L546 430" fill="none" stroke="#f4eee0" stroke-width="28" stroke-linecap="round"/>
+  <path d="M470 232L370 276M470 232L576 254" fill="none" stroke="#f4eee0" stroke-width="24" stroke-linecap="round"/>
+  <path d="M576 254L716 90" stroke="#f0c35c" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="638" cy="392" r="8" fill="#fff"/>
+  <path d="M500 94V445M315 392H715" stroke="#a9c2b7" stroke-width="3" stroke-dasharray="12 12" opacity=".65"/>
+  <rect x="32" y="30" width="244" height="52" rx="26" fill="#fff8e8"/>
+  <text x="154" y="64" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#17392f">SYNTHETIC · CURRENT</text>
+</svg>
