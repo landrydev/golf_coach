@@ -14,9 +14,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, nocache: true },
 };
 
-export default async function ProductLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export default async function ProductLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const identity = await requirePageIdentity("/app");
   const account = await getOrCreateAccountForIdentity(identity);
   const [profile, branding] = await Promise.all([
@@ -34,83 +32,50 @@ export default async function ProductLayout({
   const accent = safeCoachAccent(profile?.accentColor);
 
   return (
-    <div
-      className={styles.productShell}
-      style={{ "--workspace-accent": accent } as CSSProperties}
-    >
-      <a className={styles.skipLink} href="#main-content">
-        Skip to main content
-      </a>
-      <aside aria-label="Coach workspace account" className={styles.sidebar}>
+    <div className={styles.productShell} style={{ "--workspace-accent": accent } as CSSProperties}>
+      <a className={styles.skipLink} href="#main-content">Skip to main content</a>
+      <aside aria-label="Coach workspace" className={styles.sidebar}>
         <Link className={styles.wordmark} href="/app" aria-label={`${businessName} Roadmap home`}>
-          <PrivateWorkspaceBrandImage
-            fallback={businessInitials}
-            src={privateMediaUrl(activeLogoId)}
-            variant="logo"
-          />
+          <PrivateWorkspaceBrandImage fallback={businessInitials} src={privateMediaUrl(activeLogoId)} variant="logo" />
           <span className={styles.brandCopy}>
             <strong>{businessName}</strong>
-            <small>Roadmap coach workspace</small>
+            <small>Roadmap</small>
           </span>
         </Link>
-        <nav className={styles.primaryNav} aria-label="Coach workspace">
-          <Link href="/app">Overview</Link>
-          <Link href="/app/golfers">Golfers</Link>
-          <Link href="/app/coaching/drills">Drill library</Link>
-          <Link href="/app/coaching/roadmaps">Roadmap templates</Link>
-          <Link href="/app/media">Media</Link>
-          <Link href="/app/packages">Packages</Link>
-          <Link href="/app/billing">Plan &amp; billing</Link>
-          <Link href="/app/settings">Settings</Link>
+        <nav className={styles.primaryNav} aria-label="Primary coach navigation">
+          <Link href="/app"><span aria-hidden="true">⌂</span>Home</Link>
+          <Link href="/app/golfers"><span aria-hidden="true">◎</span>Players</Link>
+          <Link href="/app/coaching/drills"><span aria-hidden="true">◇</span>Library</Link>
+          <Link href="/app/settings"><span aria-hidden="true">○</span>Settings</Link>
         </nav>
+        <div className={styles.sidebarNote}>
+          <span>Make the coaching clear.</span>
+          <p>Create the roadmap. Capture the lesson. Let Roadmap handle the structure.</p>
+        </div>
         <div className={styles.accountBlock}>
-          <PrivateWorkspaceBrandImage
-            fallback={coachInitials}
-            src={privateMediaUrl(activeProfilePhotoId)}
-            variant="profile"
-          />
-          <div>
-            <strong>{coachName}</strong>
-            <span>{identity.email}</span>
-          </div>
-          <form action="/auth/logout" method="post">
-            <button type="submit">Sign out</button>
-          </form>
+          <PrivateWorkspaceBrandImage fallback={coachInitials} src={privateMediaUrl(activeProfilePhotoId)} variant="profile" />
+          <div><strong>{coachName}</strong><span>{identity.email}</span></div>
+          <form action="/auth/logout" method="post"><button type="submit">Sign out</button></form>
         </div>
       </aside>
       <div className={styles.mobileBar}>
-        <Link className={styles.mobileBrand} href="/app" aria-label={`${businessName} Roadmap home`}>
-          <PrivateWorkspaceBrandImage
-            fallback={businessInitials}
-            src={privateMediaUrl(activeLogoId)}
-            variant="logo"
-          />
+        <Link className={styles.mobileBrand} href="/app">
+          <PrivateWorkspaceBrandImage fallback={businessInitials} src={privateMediaUrl(activeLogoId)} variant="logo" />
           <span>{businessName}</span>
         </Link>
         <div className={styles.mobileAccount}>
-          <PrivateWorkspaceBrandImage
-            fallback={coachInitials}
-            src={privateMediaUrl(activeProfilePhotoId)}
-            variant="profile"
-          />
-          <form action="/auth/logout" method="post">
-            <button type="submit">Sign out</button>
-          </form>
+          <PrivateWorkspaceBrandImage fallback={coachInitials} src={privateMediaUrl(activeProfilePhotoId)} variant="profile" />
+          <form action="/auth/logout" method="post"><button type="submit">Sign out</button></form>
         </div>
       </div>
       <main className={styles.main} id="main-content">
-        {identity.source === "development" ? (
-          <div className={styles.devBanner} role="status">
-            Local development identity — production requires secure sign-in.
-          </div>
-        ) : null}
+        {identity.source === "development" ? <div className={styles.devBanner} role="status">Local product studio — synthetic data only.</div> : null}
         {children}
       </main>
-      <nav className={styles.mobileNav} aria-label="Mobile coach workspace">
-        <Link href="/app">Overview</Link>
-        <Link href="/app/golfers">Golfers</Link>
-        <Link href="/app/coaching/drills">Drills</Link>
-        <Link href="/app/media">Media</Link>
+      <nav className={styles.mobileNav} aria-label="Mobile coach navigation">
+        <Link href="/app">Home</Link>
+        <Link href="/app/golfers">Players</Link>
+        <Link href="/app/coaching/drills">Library</Link>
         <Link href="/app/settings">Settings</Link>
       </nav>
     </div>
@@ -118,25 +83,15 @@ export default async function ProductLayout({
 }
 
 function initials(value: string): string {
-  return value
-    .split(/\s+/)
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase() || "R";
+  return value.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "R";
 }
 
 function activeBrandingAssetId(
   branding: Awaited<ReturnType<typeof getProfileBrandingState>>,
   role: "logo" | "profile_photo",
 ): string | null {
-  const selectedId = role === "logo"
-    ? branding.logoMediaAssetId
-    : branding.profilePhotoMediaAssetId;
+  const selectedId = role === "logo" ? branding.logoMediaAssetId : branding.profilePhotoMediaAssetId;
   return selectedId && branding.attachments.some(
-    (attachment) =>
-      attachment.role === role && attachment.mediaAssetId === selectedId,
-  )
-    ? selectedId
-    : null;
+    (attachment) => attachment.role === role && attachment.mediaAssetId === selectedId,
+  ) ? selectedId : null;
 }
