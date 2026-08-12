@@ -1,16 +1,14 @@
 # Beta 2 UI contract migration
 
-Beta 2 changes visible hierarchy, navigation, authoring language, and the golfer publication.
-Runtime, security, tenancy, persistence, media, measurement, sharing, billing, recovery,
-privacy, concurrency, and lifecycle tests remain active.
+Beta 2 intentionally changes visible hierarchy, navigation, authoring language, and the golfer publication.
+Runtime, security, tenancy, persistence, media, measurement, sharing, billing, recovery, privacy,
+concurrency, and lifecycle tests remain active.
 
-Only failed Beta 1 presentation assertions or presentation-only tests were retired.
-Every migration was blocked when its assertion or test title referred to a protected
-runtime or safety concern. Replacement coverage is provided by:
+Only failed Beta 1 presentation assertions or presentation-only tests were retired. The migration
+script was blocked whenever a contract referred to a protected runtime or safety concern.
 
-- `tests/beta2-experience.test.mjs`;
-- the complete production verification suite;
-- `scripts/beta2-browser-smoke.mjs` rendered acceptance.
+Replacement coverage: `tests/beta2-experience.test.mjs`, the full production suite, and
+`scripts/beta2-browser-smoke.mjs` rendered acceptance.
 
-Migrated visible contracts: **0**
+Visible contracts migrated in this pass: **0**
 
