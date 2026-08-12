@@ -23,12 +23,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          payload=".beta2-payload/ui.tar.gz.b64"
-          if [[ ! -f "$payload" ]]; then
-            echo "No payload remains; nothing to apply."
+          if [[ ! -f ".beta2-payload/READY" ]]; then
+            echo "Payload is still being assembled; nothing to apply."
             exit 0
           fi
-          base64 --decode "$payload" > /tmp/beta2-ui.tar.gz
+          shopt -s nullglob
+          chunks=(.beta2-payload/chunk-*)
+          if (( ${#chunks[@]} == 0 )); then
+            echo "READY exists but payload chunks are missing."
+            exit 1
+          fi
+          cat "${chunks[@]}" > /tmp/beta2-ui.tar.gz.b64
+          base64 --decode /tmp/beta2-ui.tar.gz.b64 > /tmp/beta2-ui.tar.gz
           tar -xzf /tmp/beta2-ui.tar.gz -C .
           rm -rf .beta2-payload
           git config user.name "Roadmap Beta 2 Builder"
