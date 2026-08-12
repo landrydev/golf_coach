@@ -1,0 +1,42 @@
+name: Recovered Sol Ultra verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - rescue/sol-ultra-functional-build
+    paths-ignore:
+      - '**/*.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: recovered-sol-ultra-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Clean-clone application verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out the recovered application
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.18.0'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install the locked dependency graph without lifecycle scripts
+        run: npm ci --ignore-scripts
+
+      - name: Run lint, typecheck, production build, artifact checks, and tests
+        run: npm run verify
+
+      - name: Audit production dependencies
+        run: npm run audit:production
