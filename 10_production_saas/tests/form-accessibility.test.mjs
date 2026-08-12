@@ -94,6 +94,7 @@ test("first-party instructor mutation surfaces use the shared error summary with
       describedBy: /aria-describedby=\{ERROR_SUMMARY_ID\}/g,
       associations: 1,
       successStatus: true,
+      summaryOnlyRef: false,
     },
     {
       path: "../app/app/golfers/[golferId]/PublishControls.tsx",
@@ -167,6 +168,7 @@ test("first-party instructor mutation surfaces use the shared error summary with
       describedBy: /aria-describedby=\{ERROR_SUMMARY_ID\}/g,
       associations: 1,
       successStatus: true,
+      summaryOnlyRef: false,
     },
     {
       path: "../app/app/golfers/[golferId]/PublishControls.tsx",
@@ -188,12 +190,16 @@ test("first-party instructor mutation surfaces use the shared error summary with
     },
   ]) {
     const source = await readFile(new URL(surface.path, import.meta.url), "utf8");
-    assert.match(source, /const summaryOnlyRef = useRef<HTMLFormElement>\(null\);/);
-    assert.match(
-      source,
-      surface.focusRef ??
-        /formRef=\{errorFocus === "form" \? formRef : summaryOnlyRef\}/,
-    );
+    if (surface.summaryOnlyRef !== false) {
+      assert.match(source, /const summaryOnlyRef = useRef<HTMLFormElement>\(null\);/);
+      assert.match(
+        source,
+        surface.focusRef ??
+          /formRef=\{errorFocus === "form" \? formRef : summaryOnlyRef\}/,
+      );
+    } else {
+      assert.match(source, /formRef=\{formRef\}/);
+    }
     assert.equal(
       source.match(/setErrorFocus\("summary"\)/g)?.length,
       surface.summaryActions,

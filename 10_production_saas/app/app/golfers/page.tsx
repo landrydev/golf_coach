@@ -91,7 +91,7 @@ function PlayerCard({ player }: { player: GolferDirectoryItem }) {
         <span className={styles.pill}>{recordStatus(player)}</span>
       </div>
       <div className={styles.playerFocus}><span>What matters now</span><strong>{focus}</strong></div>
-      <div className={styles.playerCardFooter}><small>{action.explanation}</small><Link className={styles.textButton} href={action.href}>{action.label} →</Link></div>
+      <div className={styles.playerCardFooter}><small>{action.explanation}</small><Link className={styles.textButton} href={action.href}>{action.label}</Link></div>
     </article>
   );
 }

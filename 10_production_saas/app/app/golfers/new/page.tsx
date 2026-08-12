@@ -38,11 +38,16 @@ export default async function NewPlayerPage() {
           <ConsentPurposeControl heading="Player record processing" state={golferRecordConsent} subjectType="account" />
         </div>
       ) : (
-        <QuickRoadmapForm
-          key={`quick-roadmap:${account.id}`}
-          packages={packagePage.items}
-          recoveryScope={account.id}
-        />
+        <>
+          <QuickRoadmapForm
+            key={`quick-roadmap:${account.id}`}
+            packages={packagePage.items}
+            recoveryScope={account.id}
+          />
+          <p className={styles.boundedNotice}>
+            Package selection is bounded to the first 100 active packages. Manage the full package library in Settings.
+          </p>
+        </>
       )}
 
       {golferRecordConsent.effectiveGranted ? (
