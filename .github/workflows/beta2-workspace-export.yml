@@ -1,0 +1,33 @@
+name: Beta 2 workspace export
+
+on:
+  push:
+    branches:
+      - product/beta-2-experience-reset
+    paths:
+      - '10_production_saas/**'
+      - '.github/workflows/beta2-workspace-export.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Beta 2
+        uses: actions/checkout@v4
+      - name: Upload exact workspace
+        uses: actions/upload-artifact@v4
+        with:
+          name: beta2-workspace-${{ github.sha }}
+          path: |
+            .
+            !.git/**
+            !**/node_modules/**
+            !**/.next/**
+            !**/dist/**
+            !**/.wrangler/**
+            !**/output/**
+          include-hidden-files: true
+          retention-days: 3
