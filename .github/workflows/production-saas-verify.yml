@@ -1,0 +1,53 @@
+name: Production SaaS verification
+
+on:
+  pull_request:
+    paths:
+      - '10_production_saas/**'
+      - '.github/workflows/production-saas-verify.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - '10_production_saas/**'
+      - '.github/workflows/production-saas-verify.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-saas-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Clean-clone production application verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: 10_production_saas
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.18.0'
+          cache: npm
+          cache-dependency-path: 10_production_saas/package-lock.json
+
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts
+
+      - name: Run lint, typecheck, production build, artifact checks, and tests
+        run: npm run verify
+
+      - name: Scan release source and repository contracts
+        run: npm run verify:release-integrity
+
+      - name: Audit production dependencies
+        run: npm run audit:production
