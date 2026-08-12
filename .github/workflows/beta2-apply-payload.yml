@@ -27,18 +27,43 @@ jobs:
             echo "Payload is still being assembled; nothing to apply."
             exit 0
           fi
-          shopt -s nullglob
-          chunks=(.beta2-payload/chunk-*)
-          if (( ${#chunks[@]} == 0 )); then
-            echo "READY exists but payload chunks are missing."
-            exit 1
-          fi
-          cat "${chunks[@]}" > /tmp/beta2-ui.tar.gz.b64
+
+          declare -A expected_bytes=(
+            [chunk-00]=16000
+            [chunk-01]=16000
+            [chunk-02]=16000
+            [chunk-03]=16000
+            [chunk-04]=8512
+          )
+          declare -A expected_sha=(
+            [chunk-00]=6c92037a89cbda93241420114552129d75acf17a1146190b56d656ada7f31797
+            [chunk-01]=57b2df3b9adc4b0c2cd93818fc80c1765c9b49f8f17cd5dc2308525352926b6e
+            [chunk-02]=1d272977ddf6659551ebc5b376fb8265460a691fe49e812d0acb475db19e8ba2
+            [chunk-03]=85fbb3793348d392e1e6853f0ec661e10f9791753366041d984e99f4ed4d9936
+            [chunk-04]=9d517da697f4b11dfc023ceb7b8e8b4d70025c42c18fa26c347a2a00edce92a8
+          )
+
+          for name in chunk-00 chunk-01 chunk-02 chunk-03 chunk-04; do
+            file=".beta2-payload/$name"
+            if [[ ! -f "$file" ]]; then
+              echo "Missing $name"
+              exit 1
+            fi
+            actual_bytes="$(wc -c < "$file" | tr -d ' ')"
+            actual_sha="$(sha256sum "$file" | cut -d' ' -f1)"
+            echo "$name bytes=$actual_bytes sha256=$actual_sha"
+            [[ "$actual_bytes" == "${expected_bytes[$name]}" ]] || { echo "$name byte length mismatch"; exit 1; }
+            [[ "$actual_sha" == "${expected_sha[$name]}" ]] || { echo "$name sha256 mismatch"; exit 1; }
+          done
+
+          cat .beta2-payload/chunk-00 .beta2-payload/chunk-01 .beta2-payload/chunk-02 .beta2-payload/chunk-03 .beta2-payload/chunk-04 > /tmp/beta2-ui.tar.gz.b64
           base64 --decode /tmp/beta2-ui.tar.gz.b64 > /tmp/beta2-ui.tar.gz
+          echo "archive sha256=$(sha256sum /tmp/beta2-ui.tar.gz | cut -d' ' -f1)"
+          [[ "$(sha256sum /tmp/beta2-ui.tar.gz | cut -d' ' -f1)" == "203e8659ed8c31704c33b9cdb84650c022cd2d241edba4e0144b50f1ccedbaf2" ]] || { echo "Archive checksum mismatch"; exit 1; }
           tar -xzf /tmp/beta2-ui.tar.gz -C .
           rm -rf .beta2-payload
           git config user.name "Roadmap Beta 2 Builder"
           git config user.email "64818593+landrydev@users.noreply.github.com"
           git add -A
-          git commit -m "feat: implement the Beta 2 experience reset [skip ci]"
+          git commit -m "feat: complete the Beta 2 experience reset"
           git push origin HEAD:product/beta-2-experience-reset
