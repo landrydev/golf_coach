@@ -1,0 +1,66 @@
+name: Beta 2 diagnostic report
+
+on:
+  push:
+    branches:
+      - product/beta-2-experience-reset
+    paths:
+      - '.github/workflows/beta2-diagnostic-report.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: 10_production_saas
+    steps:
+      - name: Check out Beta 2 branch
+        uses: actions/checkout@v4
+        with:
+          ref: product/beta-2-experience-reset
+          fetch-depth: 0
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.18.0'
+          cache: npm
+          cache-dependency-path: 10_production_saas/package-lock.json
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Capture exact checks
+        shell: bash
+        run: |
+          set +e
+          npm run lint > ../beta2-lint.log 2>&1; lint=$?
+          npm run typecheck > ../beta2-typecheck.log 2>&1; typecheck=$?
+          npm run build > ../beta2-build.log 2>&1; build=$?
+          npm test > ../beta2-test.log 2>&1; test=$?
+          {
+            echo '# Beta 2 diagnostic report'
+            echo
+            echo "- lint: $lint"
+            echo "- typecheck: $typecheck"
+            echo "- build: $build"
+            echo "- test: $test"
+            echo
+            for log in beta2-lint beta2-typecheck beta2-build beta2-test; do
+              echo "## $log"
+              echo '```text'
+              tail -n 500 "../$log.log"
+              echo '```'
+              echo
+            done
+          } > ../BETA2_DIAGNOSTIC_REPORT.md
+      - name: Commit report
+        shell: bash
+        working-directory: .
+        run: |
+          git config user.name 'Roadmap Beta 2 Builder'
+          git config user.email '64818593+landrydev@users.noreply.github.com'
+          git add BETA2_DIAGNOSTIC_REPORT.md
+          git commit -m 'ci: record Beta 2 diagnostic report [skip ci]'
+          git push origin HEAD:product/beta-2-experience-reset
