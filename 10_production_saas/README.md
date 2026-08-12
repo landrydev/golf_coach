@@ -1,0 +1,395 @@
+# Roadmap production SaaS
+
+Roadmap is a Canada-wide, self-serve SaaS for individual golf instructors. It
+turns coach-authored assessment judgment into a private, coach-branded golfer
+roadmap and living development journey. The SaaS subscription is separate from
+the instructor's external lesson-package booking or payment service.
+
+This directory is the production application authorized by `AUTH-005`. Product,
+security, privacy, and operational decisions are documented in [`docs/`](docs/).
+
+## Current private release
+
+Sites version 16 is deployed owner-only at
+<https://roadmap-golf-coaching.aar-landry.chatgpt.site> from release commit
+`91f37ebd542774779f6db7e000832c2f6714e528`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_0a4d7dc3d8108191aa4a1b3e14051a96`,
+deployment `appgdep_6a7826b2f4c481919cc85665dffa2391`, and environment revision 18.
+The deployment succeeded with provider `updated_at`
+`2026-08-09T07:05:36.176024Z`.
+The custom Sites policy has one owner, zero groups, and zero external visitors;
+Stripe Checkout remains disabled. This is a provider production deployment used
+only as private staging/evidence, not a public launch, final paid host, or accepted
+real-user release. Under `TECH-006`, current official Sites constraints supersede
+Sites as the final paid live-V1 host. Direct Cloudflare Workers/D1/R2 is the
+least-change successor candidate to verify; it is not provisioned, deployed,
+public, data-migrated, or accepted. Exact evidence and unresolved
+operating dependencies are recorded in
+[`docs/RELEASE_EVIDENCE.md`](docs/RELEASE_EVIDENCE.md), the
+[exact version-16 release record](docs/release-evidence/ROADMAP-SITES-V16-2026-08-09.md),
+and the historical [version-15 release record](docs/release-evidence/ROADMAP-SITES-V15-2026-08-09.md).
+
+The version-16 release archive has gzip SHA-256
+`9119a848bb8b4c7fff1d810280cf845ec44366449adac3176fd35d8c24438fe6`,
+is 3,052,294 bytes, and contains 63 entries/51 files and all eleven migrations. Its saved provider
+package has content hash
+`sha256:752f05fd957f8f4b043b5955d9cdbdbf2176b0f1f3414827c9c3e8d0f44f6e2c`
+across 51 files and 7,290,880 bytes. Four fresh signed-out probes to `/`,
+`/app`, `/r`, and `/api/health` remained contained at the owner-only policy
+with `401`, `no-store`, and `no-referrer`.
+
+Version 16 carries forward the scoped golfer-response idempotency introduced in
+version 12 plus version 13's bounded account/plan/action-scoped authoring-draft
+recovery, stronger request-ownership and compare-and-swap response boundaries,
+native billing recovery, and account-level share revoke, same-revision reissue,
+and lost-ack replacement receipts. It additionally hardens generic document
+failures while preserving JSON for API/RSC/assets, accepts only safe UUIDv4
+request references, bounds keyed client attempts to 24 hours with exact-owner
+cleanup, validates the exact migration-`0010` readiness contract, reports a
+bounded 13-account scheduler backlog, and boots the exact Worker during local
+recovery verification. The primary source tree and two detached exact-commit
+worktrees each passed 346/346 tests; authenticated hosted recovery, browser,
+scheduler, and write behavior remain unexercised.
+
+The unchanged packaged observability controls remain insufficient for public or
+real-user operation. Version 15 configured observability, custom-log collection,
+and automatic invocation-log persistence off, but its hosted retest nevertheless
+returned exactly three post-success provider `fetch` events.
+Version 14 had already returned exactly three invocation events despite configuring
+automatic invocation logs off while keeping custom-log collection configured on.
+For both retests, the query surface returned redaction markers
+for cookie/SIWC identity fields while network-IP and request-signature fields were
+nonempty and were not markers. Raw field values processed transiently by the
+connector/tool were not surfaced in the transcript or written to the repository;
+collection/storage masking and retained-data disposition remain unknown. The
+provider-setting mismatch is confirmed. No version-16 log query was run because
+the version-15 result already proved the packaged switches ineffective and another
+query would add processing without satisfying closure. Closure requires actual provider
+enforcement plus disposition of retained metadata, or a verified migration to a
+host that enforces the control, so privacy closure, public operation, and
+controlled real users are not claimed.
+
+### Historical versions 15, 14, and 13
+
+Version 15 is the immutable immediate predecessor at commit
+`8a359398099ab9b970df1d28eb3473dcbcd6207f`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_085298ff9b9c819193d48e0df7a71631`,
+deployment `appgdep_6a7810bf6fc08191b2cb9bfb081e58c2`, and environment
+revision 17. Its [exact release record](docs/release-evidence/ROADMAP-SITES-V15-2026-08-09.md)
+retains the failed provider-log retest evidence.
+
+Version 14 remains immutable failed-retest evidence at commit
+`5db791d0d4a7317a2913d2e65d855cb0bb31baec`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_349b3a9e27e8819189d4de12ac1a89ac`,
+deployment `appgdep_6a780dd0dfb081918e825de46a7a7a17`, and environment
+revision 16. See its [exact release record](docs/release-evidence/ROADMAP-SITES-V14-2026-08-09.md).
+
+Version 13 remains immutable predecessor evidence at commit
+`f3482845a42730e87f4ff1190550511f19ea6ad5`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_a050ad7d2e408191a7138c91f93f588c`,
+deployment `appgdep_6a7801d93d6481918bc66a4df14bbe14`, and environment
+revision 15. Its [exact release record](docs/release-evidence/ROADMAP-SITES-V13-2026-08-09.md)
+and local exercise record remain historical and are not relabelled as
+version-16 hosted evidence.
+
+### Historical version 12 predecessor
+
+Version 12 remains immutable predecessor evidence at commit
+`7b77e6507c1b1c1acb091ab046808cf8b5cc0a5c`, saved version
+`appgprj_6a76957326fc819196ebf3a0c95f1ec3~appgver_8868e09fcb28819181cfbebdf82ce73f`,
+deployment `appgdep_6a77c5c85974819185ce1c8caf13007c`, and environment
+revision 14. Its 2,967,333-byte, 49-file/ten-migration local archive has gzip
+SHA-256 `994f725ba6c5952c45885a4d72d38804f1b10b8440273dc26ac8bd1c38d2bd75`;
+the 49-file provider package has content hash
+`sha256:0805c04e9dcd5e8bac77f58aec2362dece1754f6eec63ec73d9c2e249bb01700`.
+Its four signed-out probes returned `401` with `no-store`/`no-referrer`.
+
+Version 12 introduced resolved-session-scoped golfer-response idempotency:
+`201` for first acceptance, `200` for exact replay, `409` for changed-input key
+reuse, and one atomic response/audit pair under concurrency. Its bounded same-tab
+outcome-unknown recovery and raw-key non-persistence/non-logging evidence remain
+historical and are not relabelled as version 16.
+
+### Current write-containment and recovery controls
+
+Version 16 carries forward version 13's requirement that
+`APPLICATION_WRITE_MODE` be exactly `enabled` before
+application-owned writes can run. Exact `frozen`, a missing value, or any malformed,
+padded, or case-variant value fails closed. After canonical-origin and product-access
+checks, and before framework routing, the Worker returns a generic, private,
+non-cacheable `503` for every non-`OPTIONS` mutation and for `GET`/`HEAD` requests
+under `/app` or non-health `/api` routes, because some nominal reads can provision,
+reconcile, rate-limit, or audit. Exact `/api/health` and
+`/api/operations/health`, plus non-application public and golfer `GET`/`HEAD`
+reads, remain outside that write-capable classifier. The scheduled handler uses
+the same fail-closed parser and exits before D1 or provider work when writes are
+not enabled. Owner-only operational health reports the normalized
+`enabled`/`frozen`/`invalid` state and degrades when writes are disabled; public
+health discloses none of it.
+
+Interactive browser mutation controls in version 16 use bounded recovery
+helpers (the deliberately non-blocking external-handoff telemetry remains
+best-effort). The general helper's
+10-second deadline covers both receiving the response and consuming the complete
+response body; an accepted body may be at most 8 MiB. It never automatically
+replays a request. Timeout, transport failure, `408`, `425`, `429`, any `5xx`,
+an oversized response, or an unreadable/structurally invalid successful JSON
+acknowledgement becomes an explicit outcome-unknown result. A malformed non-2xx
+body remains a definitive failure with safe fallback copy. A control with a stable
+idempotency attempt tells the user to retry that same attempt; a control that
+cannot prove replay safety tells the user to reload and inspect current state
+before trying again.
+
+Only a syntactically valid UUIDv4 response `X-Request-ID` is exposed as a support
+reference across timeout, transport, retryable HTTP, body, API, and malformed-
+success failures. Each keyed browser flow stores a version-2 attempt with an
+exact creation/expiry lifecycle capped at 24 hours, retires legacy version-1
+state, rechecks expiry when mounting and submitting, and compare-removes only
+the attempt owned by the completing operation. Top-level HTML document failures
+render generic private/no-store HTML; API, RSC, asset, and other non-document
+requests retain generic JSON responses.
+
+Golfer recovery carried into version 16 is bound to an opaque HMAC context for the exact
+account, share, and browser session, supplied alongside the `HttpOnly` cookie for
+response and close requests. A stale tab cannot apply its pending choice to a
+replacement session: a context mismatch returns `409`, creates no response or
+`golfer.response_recorded` audit, and does not expire the active replacement
+cookie. Per-tab
+recovery stores one context-bound unresolved explicit choice. Contextless legacy,
+malformed, invalid-context, or unavailable-storage state blocks response controls
+instead of silently discarding ambiguity. Only a successful replacement exchange
+retires the prior session and clears recovery state; invalid, throttled, timed-out,
+or otherwise retryable exchanges preserve the prior cookie/session. Opening `/r`
+without a token no longer performs an automatic session delete. After a
+definitive exchange or close succeeds server-side, blocked local storage, history,
+or scripted navigation does not relabel that result as failure; the UI leaves a
+normal-link fallback.
+
+The exact version-16 source passed isolated local synthetic recovery and bounded-
+capacity exercises. Recovery applied all eleven migrations, covered 31/31
+application tables, restored three private R2-compatible objects/199 bytes, booted
+the exact built Worker, completed authenticated synthetic profile/package/workspace
+reads, returned expected operations-health degradation for an interrupted
+scheduler item, and passed three corruption checks. Its 34,956-byte snapshot has
+SHA-256 `123631eb46858ef7f5962b00ec4a7e0da736d2afe048f6b2598b16c0f3ba1e0a`;
+105,940 ms is local wall-clock time, not an RTO. The capacity exercise completed
+54 requests at maximum concurrency four with zero failures and local
+p50/p95/maximum of 41.5/93.18/93.58 ms. See the
+[exact-v16 record](docs/release-evidence/ROADMAP-SITES-V16-2026-08-09.md).
+These are local synthetic results, not hosted recovery, RPO/RTO, performance,
+capacity, scheduler, or operator evidence.
+
+The historical exact-version-9 local synthetic browser evidence records nine Chrome 151 captures of
+the landing page, instructor workspace, and golfer plan at 320, 390, and 1440 CSS
+pixels, with no root/body horizontal overflow. See the
+[`ROADMAP-SITES-V9-2026-08-08` responsive evidence](docs/release-evidence/ROADMAP-SITES-V9-2026-08-08-responsive-evidence.json).
+The version-9 captures remain a renderer/layout source-equivalent baseline for the
+rendered UI and CSS at version 13. They are not evidence of
+version-16 CSP, headers, authentication, outcome-unknown retry/reload interaction,
+hosted runtime, or security behavior, and they are not relabelled as exact-version-16 hosted or manual
+evidence. Version 16 carries forward the per-response script nonces introduced in version
+11, but no supported signed-in hosted browser was available to retest that deployed
+behavior. `SEC-002` is therefore **REMEDIATED — HOSTED RETEST PENDING**,
+not closed.
+Those captures use the local production Worker bundle, local compatible D1, and
+synthetic adults-only fixtures. They are not hosted journey evidence, manual
+accessibility review, assistive-technology evidence, or owner acceptance.
+
+## Runtime and migration boundary
+
+- current staging: Vinext/React on owner-private OpenAI Sites/Cloudflare Workers
+- successor candidate: the same Worker-compatible bundle deployed directly to
+  Cloudflare Workers after explicit resource configuration and verification
+- Cloudflare D1 for tenant-owned structured records
+- private Cloudflare R2 binding for policy-gated media and approved export objects
+- current staging identity: dispatch-owned Sign in with ChatGPT
+- required successor identity: provider-neutral, verified OIDC with revocable
+  server-side sessions; the local protocol boundary is implemented, while the exact
+  provider/policy remains unselected and unconfigured
+- 17 committed D1 migrations, `0000` through `0016_handy_green_goblin`
+- 256-bit, HMAC-fingerprinted, revision-scoped golfer capability links
+- Stripe-hosted Checkout and Customer Portal for the Roadmap SaaS subscription,
+  with signed-webhook projection, authenticated read-only account refresh, and
+  a packaged, locally exercised scheduled-recovery handler for existing provider-backed work
+
+No application password, card number, raw Stripe webhook payload, or raw share
+token is stored in D1. Authenticated media upload, private delivery, replacement,
+and removal are implemented, but uploads fail closed unless R2, a valid bounded
+media policy, and any required consent are active. Exact real-user format,
+scanning, retention, and consent decisions remain owner/validation dependencies.
+
+## Local setup
+
+Requirements: Node.js 22.13 or later.
+
+```powershell
+Copy-Item .env.example .env.local
+npm ci
+npm run dev
+```
+
+Development uses the synthetic identity in `.env.local`. Production ignores
+that fallback and requires the dispatch-injected SIWC identity headers.
+
+The local Cloudflare plugin provides project-local D1/R2 state under
+`.wrangler/`. Never use customer data in local development or tests.
+
+## Required configuration
+
+Public, non-secret variables:
+
+- `APP_URL`: exact HTTPS origin, without a path or trailing slash
+- `RELEASE_ID`: immutable release label used by health and release evidence
+- `APPLICATION_WRITE_MODE`: exact `enabled` for normal
+  application-owned writes or exact `frozen` for incident/recovery containment;
+  missing, padded, case-variant, or otherwise malformed values fail closed as
+  `invalid`
+- `INSTRUCTOR_ACCESS_MODE`: exactly `owner_private` or `subscription_required`
+- `OWNER_PRIVATE_EMAIL_DIGESTS`: comma-separated HMAC-SHA-256 digests of
+  trimmed, lowercased owner SIWC emails; never plaintext emails
+- `SUBSCRIPTION_ACCESS_STATUSES`: explicit comma-separated Stripe statuses that
+  may use core product routes in `subscription_required` mode
+- `STRIPE_CHECKOUT_PRICE_ID`: the sole Price for new Checkout Sessions
+- `STRIPE_RECOGNIZED_PRICE_IDS`: current and historical Prices whose provider
+  events may update the local projection
+- `SUBSCRIPTION_ENTITLEMENT_PRICE_IDS`: explicit recognized-Price subset that
+  may grant core product access
+- `SUBSCRIPTION_MAX_PROJECTION_AGE_SECONDS`: required maximum provider
+  projection age in subscription mode, from 900 through 31536000 seconds; the
+  application selects no default and schedules refresh before that boundary
+- `STRIPE_CHECKOUT_SESSION_LIFETIME_SECONDS`: explicit Checkout lifetime from
+  1860 through 86400 seconds; the application selects no default
+- `BILLING_CHECKOUT_ENABLED`: fail-closed `true` only after exact price/policy approval
+- `DATA_REQUEST_OPERATOR_EMAIL_DIGESTS`: nonempty comma-separated, unique
+  HMAC-SHA-256 digests of trimmed, lowercased operator SIWC emails; never
+  plaintext emails
+- `CONSENT_POLICY_REGISTRY_JSON`: strict owner-supplied mapping of approved
+  purpose versions, exact descriptions, and permitted account/golfer subject
+  types. Missing, invalid, stale, or unlisted configuration grants nothing;
+  configuration records choices but does not enable optional processing. The
+  V1 fails closed unless `golfer_record` is configured for `account` subjects
+  and `roadmap_sharing` is configured for `golfer` subjects; real processing
+  still requires a matching current grant, and exact wording changes require a
+  new version
+- `MEDIA_UPLOAD_POLICY_JSON`: strict bounded media-policy version, MIME allowlist,
+  byte/duration limits, and account/golfer consent requirements. Missing or invalid
+  configuration keeps upload unavailable while preserving text-first operation.
+  `maxBytes` must be an integer from 1,024 through 50,000,000. The route-owned
+  upload protocol enforces the configured file length while streaming into R2;
+  the exact live value within that implementation bound remains an owner decision
+
+Hosted secrets:
+
+- `SHARE_TOKEN_PEPPER`: random, independent secret of at least 32 characters
+  used for share-token HMACs
+- `ABUSE_LIMIT_PEPPER`: separate random secret used for non-reversible abuse-counter subject HMACs
+- `OWNER_PRIVATE_ACCESS_PEPPER`: third independent random secret, at least 32
+  characters, used only for the owner-private email allowlist
+- `DATA_REQUEST_OPERATOR_ACCESS_PEPPER`: separate random secret of at least 32
+  characters, used only for the privacy-operator email allowlist
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+
+Sites staging bindings declared in `.openai/hosting.json`:
+
+- `DB`: D1 database
+- `MEDIA`: private R2 bucket
+
+The Sites manifest is not a direct-Cloudflare deployment approval. A successor
+profile must be generated from a fresh exact build with explicit non-secret Worker,
+D1, R2, and canonical HTTPS-origin values. Generated configuration and all secrets
+remain uncommitted. Release readiness must fail closed until public-host auth is
+configured and the exact hosted controls are exercised.
+
+Checkout stays unavailable when Stripe configuration is absent. Production
+share-token hashing fails closed when its pepper is absent. Public `/api/health`
+is an intentionally shallow liveness probe: it reports only `live` plus the
+immutable release identifier and does not touch D1 or R2. The owner-only
+`/api/operations/health` endpoint performs the deeper D1, R2, origin,
+share-token-pepper, abuse-limit-pepper, explicit Checkout-policy, selected
+instructor-access-policy, required consent-policy coverage, privacy-operator
+access configuration, scheduler readiness, and application-write-control state.
+Missing or invalid
+consent or operator configuration degrades readiness. The response exposes
+only safe boolean statuses, never policy text or versions, an access mode,
+allowlist, digest, pepper, or email.
+
+The Worker applies this policy to instructor HTML, Vinext `.rsc` navigation,
+and APIs. `owner_private` covers every `/app` route and every non-public API.
+In `subscription_required`, billing, settings/profile, export, privacy-data
+request, and consent current-state/withdrawal controls remain reachable; other instructor surfaces require a fresh
+provider-authoritative subscription status and Price to be explicitly allowed.
+That projection can be applied from a signed webhook or an explicit, read-only
+refresh of the authenticated account's existing Stripe references. A packaged five-minute
+scheduled handler retries failed or abandoned provider-backed reconciliation with
+bounded backoff and no Stripe object creation. It records a privacy-safe D1 heartbeat
+for owner-operator health checks and safely performs no provider work when Stripe
+credentials or the complete billing policy are absent. The handler is locally exercised;
+hosted Sites trigger provisioning/invocation remains unproven and must not be relied on
+for paid operation. The direct successor must prove trigger provisioning, at least
+three successful heartbeats, privacy-safe logging, and alert delivery on its exact
+deployment. Health, Stripe's signed webhook, and
+golfer capability endpoints remain separate.
+
+## Verification
+
+```powershell
+npm run verify
+npm run audit:production
+```
+
+`verify` runs ESLint, strict TypeScript, a clean production build, rendered
+route tests, security-header checks, schema/migration parity, tenancy
+constraints, validation helpers, and capability-link controls. A release also
+requires the production-like journey, accessibility, billing test-mode,
+backup/restore, alert, and live smoke evidence described in
+[`docs/OPERATIONS.md`](docs/OPERATIONS.md).
+
+Run `npm run verify` against the exact source commit and record its emitted test
+count with the release; this README intentionally does not freeze a count that
+can become stale as coverage grows. Exact-release automated, hosted, and
+still-missing manual/operational evidence is recorded in
+[`docs/RELEASE_EVIDENCE.md`](docs/RELEASE_EVIDENCE.md).
+
+## Database migrations
+
+Schema source lives in `db/schema.ts`; committed forward migrations live in
+`drizzle/`. Generate a new migration with `npm run db:generate`, inspect it,
+test it against the previous schema and representative synthetic edge cases,
+and never rewrite an already-applied migration.
+
+Application rollback and data recovery are separate. Follow the release,
+migration, rollback, backup, restore, incident, and Stripe reconciliation
+procedures in [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
+Version 16 keeps the same migration journal as version 15 but adds security and
+recovery behavior. A version-16-to-15 downgrade would remove generic document-
+failure handling, safe request-reference propagation, attempt expiry/ownership
+checks, exact readiness validation, bounded scheduler-backlog health, and exact-
+Worker recovery boot evidence; treat it as class `B` unless an exact compatibility
+exercise establishes a narrower safe path.
+Version 13 adds migration `0010_steep_hemingway`, which extends the D1 rate-limit
+scope constraint for `share_close_network` and `share_close_session`; upgrade
+tests validate the forward migration. Version 13 also adds application-wide write
+containment, bounded draft/session recovery, stricter CAS/revision boundaries, and
+share lifecycle controls, so a version-13-to-12 rollback must not be assumed safe
+without an exact compatibility exercise. Version 12's golfer-response lost-ack recovery is a security/behavior change. A
+version-12-to-11 rollback would remove server-side same-key deduplication and can
+expose a version-12 client to the legacy response payload while an outcome remains
+unknown. It is class `B`; ordinary rollback is forbidden even though the migration
+journal did not change. The version-11-to-10 CSP regression remains a separate
+historical class-`B` boundary.
+
+## Production boundaries
+
+- adults only in V1
+- one independent instructor per account; no teams or facilities
+- no AI diagnosis, coaching, roadmap generation, or outcome prediction
+- no native coach-package booking, purchase, payment, or sale attribution
+- no marketplace, CRM, messaging, or video-analysis integration
+- every material plan edit withdraws publication and revokes active access
+- public sample data is synthetic; tests and local fixtures must stay synthetic
+
+Pricing, tax/refund/failure consequences, retention periods, qualified legal
+review, live Stripe credentials, public domain, restore evidence, operational
+owners, and Aaron's exact-release acceptance remain truthful external release
+dependencies where the repository says they are unresolved.

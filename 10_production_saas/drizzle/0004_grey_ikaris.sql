@@ -1,0 +1,1 @@
+ALTER TABLE `subscriptions` ADD `projection_revision` integer DEFAULT 1 NOT NULL;

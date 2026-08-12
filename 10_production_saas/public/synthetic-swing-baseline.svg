@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title description">
+  <title id="title">Synthetic baseline swing illustration</title>
+  <desc id="description">An abstract down-the-line golf practice frame with alignment marks. It is not a real golfer or diagnosis.</desc>
+  <rect width="960" height="540" fill="#14352c"/>
+  <path d="M0 410L960 350V540H0Z" fill="#315a49"/>
+  <path d="M120 438L840 392" stroke="#f0d178" stroke-width="8" stroke-dasharray="20 16" opacity=".8"/>
+  <circle cx="492" cy="150" r="38" fill="#f4eee0"/>
+  <path d="M480 190Q430 260 463 355M463 355L395 440M463 355L535 430" fill="none" stroke="#f4eee0" stroke-width="28" stroke-linecap="round"/>
+  <path d="M457 235L340 300M457 235L565 274" fill="none" stroke="#f4eee0" stroke-width="24" stroke-linecap="round"/>
+  <path d="M565 274L735 116" stroke="#d9ad48" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="638" cy="392" r="8" fill="#fff"/>
+  <path d="M492 96V445M315 392H715" stroke="#91b1a2" stroke-width="3" stroke-dasharray="12 12" opacity=".65"/>
+  <rect x="32" y="30" width="256" height="52" rx="26" fill="#fff8e8"/>
+  <text x="160" y="64" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#17392f">SYNTHETIC · BASELINE</text>
+</svg>

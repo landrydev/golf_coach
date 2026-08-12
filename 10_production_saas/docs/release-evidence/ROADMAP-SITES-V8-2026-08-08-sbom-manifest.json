@@ -1,0 +1,43 @@
+{
+  "evidenceType": "package-lock-only-sbom",
+  "generatedAt": "2026-08-08T16:40:37.406Z",
+  "limitations": [
+    "Includes the complete locked graph, including development and optional dependencies.",
+    "Does not prove which dependencies are present in the deployed Sites archive.",
+    "Registry license metadata is not a legal conclusion or obligation review.",
+    "SBOM generation does not replace vulnerability, provenance, or malicious-package review."
+  ],
+  "npmVersion": "12.0.1",
+  "nodeVersion": "v24.18.0",
+  "packageJson": {
+    "sha256": "7273599649e554be624bbc30ff2c09dc4b8b2330a46415b663bcb55ed782580d",
+    "sourceCommitMatched": true,
+    "sourceCommitSha256": "7273599649e554be624bbc30ff2c09dc4b8b2330a46415b663bcb55ed782580d"
+  },
+  "packageLock": {
+    "lockfileVersion": 3,
+    "sha256": "1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d",
+    "sourceCommitMatched": true,
+    "sourceCommitSha256": "1b70e9ba538e5b990ef89578472d23887ed8a2cdff293a43615867fb2f43d69d",
+    "uniqueNameVersionComponents": 676
+  },
+  "releaseId": "ROADMAP-SITES-V8-2026-08-08",
+  "sourceCommit": "cf117fef8ea42272d0b7e2358fe4197c024f86a7",
+  "sourceHeadMatched": true,
+  "artifacts": {
+    "cyclonedx": {
+      "componentCount": 676,
+      "format": "CycloneDX 1.5",
+      "path": "docs/release-evidence/ROADMAP-SITES-V8-2026-08-08-sbom.cdx.json",
+      "sha256": "ba870097b023f2069fb9d25611f6cb314e2b99399aeeaad848503bca3d213d6d",
+      "sizeBytes": 680652
+    },
+    "spdx": {
+      "format": "SPDX-2.3",
+      "packageCount": 677,
+      "path": "docs/release-evidence/ROADMAP-SITES-V8-2026-08-08-sbom.spdx.json",
+      "sha256": "19cbf7be9b650049f2a00227e9a716d8b57b881588f642d8addd53a98566bf36",
+      "sizeBytes": 827711
+    }
+  }
+}

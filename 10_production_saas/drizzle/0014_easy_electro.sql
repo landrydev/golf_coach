@@ -1,0 +1,35 @@
+CREATE TABLE `lesson_revision_snapshots` (
+	`id` text PRIMARY KEY NOT NULL,
+	`account_id` text NOT NULL,
+	`plan_id` text NOT NULL,
+	`lesson_id` text NOT NULL,
+	`source_plan_revision` integer NOT NULL,
+	`replacement_plan_revision` integer NOT NULL,
+	`phase_id` text,
+	`sequence` integer NOT NULL,
+	`title` text NOT NULL,
+	`status` text NOT NULL,
+	`purpose` text NOT NULL,
+	`coach_observation` text,
+	`golfer_learning` text,
+	`takeaway` text,
+	`next_check` text,
+	`phase_connection` text,
+	`scheduled_at` integer,
+	`occurred_at` integer,
+	`coach_approved_at` integer,
+	`completed_at` integer,
+	`canceled_at` integer,
+	`archived_at` integer,
+	`evidence_item_ids` text DEFAULT '[]' NOT NULL,
+	`launch_session_ids` text DEFAULT '[]' NOT NULL,
+	`created_at` integer DEFAULT (cast((julianday('now') - 2440587.5) * 86400000 as integer)) NOT NULL,
+	FOREIGN KEY (`account_id`,`plan_id`,`lesson_id`) REFERENCES `lessons`(`account_id`,`plan_id`,`id`) ON UPDATE no action ON DELETE cascade,
+	CONSTRAINT "lesson_revision_snapshots_revision_check" CHECK("lesson_revision_snapshots"."source_plan_revision" >= 1 and "lesson_revision_snapshots"."replacement_plan_revision" = "lesson_revision_snapshots"."source_plan_revision" + 1),
+	CONSTRAINT "lesson_revision_snapshots_status_check" CHECK("lesson_revision_snapshots"."status" in ('planned', 'scheduled', 'completed', 'canceled', 'archived')),
+	CONSTRAINT "lesson_revision_snapshots_evidence_json_check" CHECK(json_valid("lesson_revision_snapshots"."evidence_item_ids")),
+	CONSTRAINT "lesson_revision_snapshots_launch_json_check" CHECK(json_valid("lesson_revision_snapshots"."launch_session_ids"))
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `lesson_revision_snapshots_revision_unique` ON `lesson_revision_snapshots` (`account_id`,`plan_id`,`lesson_id`,`source_plan_revision`);--> statement-breakpoint
+CREATE INDEX `lesson_revision_snapshots_lesson_revision_idx` ON `lesson_revision_snapshots` (`account_id`,`plan_id`,`lesson_id`,`replacement_plan_revision`);
