@@ -8,6 +8,7 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $AppDir = Join-Path $RepoRoot "10_production_saas"
 $HomePage = Join-Path $RepoRoot "BETA1_HOME.html"
+$ServerScript = Join-Path $RepoRoot "BETA1_SERVER.ps1"
 $Port = 4175
 $Origin = "http://127.0.0.1:$Port"
 
@@ -31,9 +32,12 @@ if (-not (Test-Path $AppDir)) {
 if (-not (Test-Path $HomePage)) {
   throw "BETA1_HOME.html is missing."
 }
+if (-not (Test-Path $ServerScript)) {
+  throw "BETA1_SERVER.ps1 is missing."
+}
 
 Write-Host ""
-Write-Host "Roadmap Beta 1 — local full-feature experience" -ForegroundColor Cyan
+Write-Host "Roadmap Beta 1 - local full-feature experience" -ForegroundColor Cyan
 Write-Host "Repository: $RepoRoot"
 Write-Host "Application: $AppDir"
 Write-Host ""
@@ -44,10 +48,11 @@ if (Test-BetaReady) {
   return
 }
 
-$nodeText = (& node --version 2>$null).Trim()
-if (-not $nodeText) {
+$nodeCommand = Get-Command node -ErrorAction SilentlyContinue
+if (-not $nodeCommand) {
   throw "Node.js was not found. Install Node.js 22.13 or newer, then run this launcher again."
 }
+$nodeText = (& node --version).Trim()
 $nodeVersionText = $nodeText.TrimStart("v").Split("-")[0]
 $nodeVersion = [version]$nodeVersionText
 if ($nodeVersion -lt [version]"22.13.0") {
@@ -67,6 +72,12 @@ try {
     Write-Host "Existing node_modules detected. Use -Reinstall to replace it from package-lock.json."
   }
 
+  Write-Host "Building the application..." -ForegroundColor Yellow
+  & npm run build
+  if ($LASTEXITCODE -ne 0) {
+    throw "npm run build failed with exit code $LASTEXITCODE."
+  }
+
   if ($Verify) {
     Write-Host "Running the complete verification suite before launch..." -ForegroundColor Yellow
     & npm run verify
@@ -78,20 +89,13 @@ try {
   Pop-Location
 }
 
-$escapedAppDir = $AppDir.Replace("'", "''")
-$serverCommand = @"
-`$Host.UI.RawUI.WindowTitle = 'Roadmap Beta 1 server'
-Set-Location -LiteralPath '$escapedAppDir'
-`$env:VISUAL_REVIEW_PORT = '$Port'
-npm run qa:functional:server
-"@
-
 Write-Host "Starting the local Beta 1 server in a separate PowerShell window..." -ForegroundColor Yellow
 $serverArguments = @(
   "-NoProfile",
   "-ExecutionPolicy", "Bypass",
   "-NoExit",
-  "-Command", $serverCommand
+  "-File", $ServerScript,
+  "-Port", [string]$Port
 )
 $serverProcess = Start-Process -FilePath "powershell.exe" -ArgumentList $serverArguments -PassThru
 
@@ -108,7 +112,7 @@ for ($attempt = 1; $attempt -le 180; $attempt++) {
 }
 
 if (-not $ready) {
-  throw "The Beta 1 server did not become ready. Review the separate 'Roadmap Beta 1 server' window for the exact error."
+  throw "The Beta 1 server did not become ready. Review the separate Roadmap Beta 1 server window for the exact error."
 }
 
 Write-Host ""
@@ -118,6 +122,6 @@ Write-Host "Full coach workspace: $Origin/__qa/standard/app"
 Write-Host "Full golfer experience: $Origin/__qa/standard/golfer"
 Write-Host ""
 Write-Host "The server uses synthetic local data and resets when the server window is closed." -ForegroundColor DarkGray
-Write-Host "Close the separate 'Roadmap Beta 1 server' window when you are finished." -ForegroundColor DarkGray
+Write-Host "Close the separate Roadmap Beta 1 server window when you are finished." -ForegroundColor DarkGray
 
 Open-BetaPages
