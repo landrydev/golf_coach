@@ -20,6 +20,7 @@
     "qa:functional:describe": "node scripts/functional-qa-server.mjs --describe",
     "qa:functional:server": "npm run build && node scripts/functional-qa-server.mjs",
     "qa:playwright": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/playwright-cli.ps1",
+    "qa:beta2:browser": "node scripts/beta2-browser-smoke.mjs",
     "generate:supply-chain-evidence": "node scripts/generate-supply-chain-evidence.mjs",
     "render:direct-cloudflare-config": "npm run build && node scripts/render-direct-cloudflare-config.mjs",
     "verify:release-archive": "node scripts/verify-release-archive.mjs",
