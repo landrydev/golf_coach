@@ -74,7 +74,7 @@ if (failures.length > 0) {
 
 async function reviewStandardDesktop() {
   const viewport = VIEWPORTS.at(-1);
-  const context = await browser.newContext({ viewport });
+  const context = await browser.newContext({ viewport: playwrightViewport(viewport) });
   const page = await context.newPage();
   attachDiagnostics(page, "desktop-standard");
   await visit(page, "desktop-standard-entry", `${runtime.origin}/__qa/standard/app`, viewport);
@@ -110,7 +110,7 @@ async function reviewStandardDesktop() {
 
 async function reviewPrimaryResponsiveSurfaces() {
   for (const viewport of VIEWPORTS) {
-    const coachContext = await browser.newContext({ viewport });
+    const coachContext = await browser.newContext({ viewport: playwrightViewport(viewport) });
     const coachPage = await coachContext.newPage();
     attachDiagnostics(coachPage, `${viewport.name}-coach`);
     await visit(
@@ -133,7 +133,7 @@ async function reviewPrimaryResponsiveSurfaces() {
     );
     await coachContext.close();
 
-    const golferContext = await browser.newContext({ viewport });
+    const golferContext = await browser.newContext({ viewport: playwrightViewport(viewport) });
     const golferPage = await golferContext.newPage();
     attachDiagnostics(golferPage, `${viewport.name}-golfer`);
     await visit(
@@ -162,7 +162,7 @@ async function reviewScenarioStates() {
   ];
 
   for (const [name, entry] of entries) {
-    const context = await browser.newContext({ viewport });
+    const context = await browser.newContext({ viewport: playwrightViewport(viewport) });
     const page = await context.newPage();
     attachDiagnostics(page, name);
     await visit(page, name, `${runtime.origin}${entry}`, viewport);
@@ -172,7 +172,7 @@ async function reviewScenarioStates() {
 
 async function reviewPublicDemo() {
   const viewport = VIEWPORTS.at(-1);
-  const context = await browser.newContext({ viewport });
+  const context = await browser.newContext({ viewport: playwrightViewport(viewport) });
   const page = await context.newPage();
   attachDiagnostics(page, "public-demo");
   await visit(page, "public-demo", `${runtime.origin}/demo`, viewport);
@@ -242,6 +242,10 @@ async function firstGolferHref(page) {
     .locator('a[href^="/app/golfers/"]')
     .evaluateAll((links) => links.map((link) => link.getAttribute("href")).filter(Boolean));
   return hrefs.find((href) => /^\/app\/golfers\/[^/?#]+$/.test(href)) ?? null;
+}
+
+function playwrightViewport(viewport) {
+  return { width: viewport.width, height: viewport.height };
 }
 
 function safeName(value) {
