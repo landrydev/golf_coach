@@ -1,6 +1,7 @@
 name: Beta 2 diagnostics
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - product/beta-2-experience-reset
