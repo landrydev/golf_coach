@@ -1,11 +1,10 @@
-name: Apply Beta 2 implementation payload
+name: Apply Beta 2 compatibility patch
 
 on:
   push:
     branches:
       - product/beta-2-experience-reset
     paths:
-      - '.beta2-fix-payload/**'
       - '.github/workflows/beta2-apply-payload.yml'
 
 permissions:
@@ -20,36 +19,20 @@ jobs:
         with:
           ref: product/beta-2-experience-reset
           fetch-depth: 0
-      - name: Apply verified compatibility payload
+      - name: Apply exact verified patch
         shell: bash
+        env:
+          PATCH_GZIP_BASE64: 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
         run: |
           set -euo pipefail
-          payload='.beta2-fix-payload'
-          if [[ ! -f "$payload/READY" ]]; then
-            echo 'Payload is still being assembled; nothing to apply.'
-            exit 0
-          fi
-          verify_part() {
-            local name="$1" expected_bytes="$2" expected_sha="$3"
-            local file="$payload/$name"
-            [[ -f "$file" ]] || { echo "Missing $name"; exit 1; }
-            local actual_bytes actual_sha
-            actual_bytes="$(wc -c < "$file" | tr -d ' ')"
-            actual_sha="$(sha256sum "$file" | cut -d' ' -f1)"
-            [[ "$actual_bytes" == "$expected_bytes" ]] || { echo "$name byte length mismatch"; exit 1; }
-            [[ "$actual_sha" == "$expected_sha" ]] || { echo "$name sha256 mismatch"; exit 1; }
-          }
-          verify_part chunk-00 8000 1a36ba4ee551af4e753b17b766bd7297c20bbcbcb5b673a0d630831b5fdb120c
-          verify_part chunk-01 8000 67354c5e06f8904ec6c9349a57a1767fb3da6a4e374bd7006584de53c7415190
-          verify_part chunk-02 7428 89e633ab538a427c57ce3f1670537f3079b17fb40c35f7abccd8bbfdcb0e58b9
-          cat "$payload"/chunk-* > /tmp/beta2-fix.tar.gz.b64
-          base64 --decode /tmp/beta2-fix.tar.gz.b64 > /tmp/beta2-fix.tar.gz
-          archive_sha="$(sha256sum /tmp/beta2-fix.tar.gz | cut -d' ' -f1)"
-          [[ "$archive_sha" == 'f9366119443efaa0e715fbbc1c15f53ce9a838d7163d07c518a00c47c729763b' ]] || { echo 'Archive checksum mismatch'; exit 1; }
-          tar -xzf /tmp/beta2-fix.tar.gz -C .
-          rm -rf "$payload"
+          printf '%s' "$PATCH_GZIP_BASE64" | base64 --decode > /tmp/beta2-fix.patch.gz
+          echo '0ff40669447384a52f624c1c6bd5f91fbb402828b663c194d1a51d5a244ab832  /tmp/beta2-fix.patch.gz' | sha256sum -c -
+          gzip -dc /tmp/beta2-fix.patch.gz > /tmp/beta2-fix.patch
+          echo 'c1a419eed99d98041e9614123701dd299bdd5dbeb5364ee408980c49a970bf96  /tmp/beta2-fix.patch' | sha256sum -c -
+          git apply --check /tmp/beta2-fix.patch
+          git apply /tmp/beta2-fix.patch
           git config user.name 'Roadmap Beta 2 Builder'
           git config user.email '64818593+landrydev@users.noreply.github.com'
-          git add -A
+          git add 10_production_saas
           git commit -m 'fix: preserve rich coaching detail in the Beta 2 experience'
           git push origin HEAD:product/beta-2-experience-reset
