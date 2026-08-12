@@ -19,6 +19,7 @@ jobs:
         with:
           ref: product/beta-2-experience-reset
           fetch-depth: 0
+
       - name: Apply exact implementation payload
         shell: bash
         run: |
@@ -28,38 +29,41 @@ jobs:
             exit 0
           fi
 
-          declare -A expected_bytes=(
-            [chunk-00]=16000
-            [chunk-01]=16000
-            [chunk-02]=16000
-            [chunk-03]=16000
-            [chunk-04]=8512
-          )
-          declare -A expected_sha=(
-            [chunk-00]=6c92037a89cbda93241420114552129d75acf17a1146190b56d656ada7f31797
-            [chunk-01]=57b2df3b9adc4b0c2cd93818fc80c1765c9b49f8f17cd5dc2308525352926b6e
-            [chunk-02]=1d272977ddf6659551ebc5b376fb8265460a691fe49e812d0acb475db19e8ba2
-            [chunk-03]=85fbb3793348d392e1e6853f0ec661e10f9791753366041d984e99f4ed4d9936
-            [chunk-04]=9d517da697f4b11dfc023ceb7b8e8b4d70025c42c18fa26c347a2a00edce92a8
-          )
-
-          for name in chunk-00 chunk-01 chunk-02 chunk-03 chunk-04; do
-            file=".beta2-payload/$name"
-            if [[ ! -f "$file" ]]; then
-              echo "Missing $name"
-              exit 1
-            fi
+          verify_part() {
+            local name="$1" expected_bytes="$2" expected_sha="$3"
+            local file=".beta2-payload/$name"
+            [[ -f "$file" ]] || { echo "Missing $name"; exit 1; }
+            local actual_bytes actual_sha
             actual_bytes="$(wc -c < "$file" | tr -d ' ')"
             actual_sha="$(sha256sum "$file" | cut -d' ' -f1)"
             echo "$name bytes=$actual_bytes sha256=$actual_sha"
-            [[ "$actual_bytes" == "${expected_bytes[$name]}" ]] || { echo "$name byte length mismatch"; exit 1; }
-            [[ "$actual_sha" == "${expected_sha[$name]}" ]] || { echo "$name sha256 mismatch"; exit 1; }
-          done
+            [[ "$actual_bytes" == "$expected_bytes" ]] || { echo "$name byte length mismatch"; exit 1; }
+            [[ "$actual_sha" == "$expected_sha" ]] || { echo "$name sha256 mismatch"; exit 1; }
+          }
 
-          cat .beta2-payload/chunk-00 .beta2-payload/chunk-01 .beta2-payload/chunk-02 .beta2-payload/chunk-03 .beta2-payload/chunk-04 > /tmp/beta2-ui.tar.gz.b64
+          verify_part chunk-00 10000 1ce37b5b121cb7c34894542c4d3a796b52c0f0d69cbf812e35ad310ee79915ae
+          verify_part chunk-00-tail 6000 baba9c178588231bcac45a234af0ebf95748b18f747c8a8e8e28ca2bb8f9079e
+          verify_part chunk-01 16000 57b2df3b9adc4b0c2cd93818fc80c1765c9b49f8f17cd5dc2308525352926b6e
+          verify_part chunk-02-a 8000 ec64906e22d7585dea7a3f48554f88e4a37e095d970ab95050d682db2131fcec
+          verify_part chunk-02-b 8000 a4a2bbf20a5686071f3fb60b46b9a2c686e4f52fe9a86a94b3d0e8549ff5cc83
+          verify_part chunk-03 16000 85fbb3793348d392e1e6853f0ec661e10f9791753366041d984e99f4ed4d9936
+          verify_part chunk-04 8512 9d517da697f4b11dfc023ceb7b8e8b4d70025c42c18fa26c347a2a00edce92a8
+
+          cat \
+            .beta2-payload/chunk-00 \
+            .beta2-payload/chunk-00-tail \
+            .beta2-payload/chunk-01 \
+            .beta2-payload/chunk-02-a \
+            .beta2-payload/chunk-02-b \
+            .beta2-payload/chunk-03 \
+            .beta2-payload/chunk-04 \
+            > /tmp/beta2-ui.tar.gz.b64
+
           base64 --decode /tmp/beta2-ui.tar.gz.b64 > /tmp/beta2-ui.tar.gz
-          echo "archive sha256=$(sha256sum /tmp/beta2-ui.tar.gz | cut -d' ' -f1)"
-          [[ "$(sha256sum /tmp/beta2-ui.tar.gz | cut -d' ' -f1)" == "203e8659ed8c31704c33b9cdb84650c022cd2d241edba4e0144b50f1ccedbaf2" ]] || { echo "Archive checksum mismatch"; exit 1; }
+          archive_sha="$(sha256sum /tmp/beta2-ui.tar.gz | cut -d' ' -f1)"
+          echo "archive sha256=$archive_sha"
+          [[ "$archive_sha" == "203e8659ed8c31704c33b9cdb84650c022cd2d241edba4e0144b50f1ccedbaf2" ]] || { echo "Archive checksum mismatch"; exit 1; }
+
           tar -xzf /tmp/beta2-ui.tar.gz -C .
           rm -rf .beta2-payload
           git config user.name "Roadmap Beta 2 Builder"
