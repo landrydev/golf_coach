@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Roadmap Beta 1 — Local Experience Guide</title>
+  <style>
+    :root { color-scheme: light; --ink:#17211d; --muted:#5f6c66; --paper:#f5f1e8; --card:#fffdf7; --line:#d8d0c2; --accent:#2f6b55; --accent-dark:#214d3d; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--ink); background:linear-gradient(180deg,#ebe4d7 0,#f8f5ee 38rem); }
+    main { width:min(1120px,calc(100% - 32px)); margin:0 auto; padding:48px 0 80px; }
+    .hero { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr); gap:24px; align-items:stretch; }
+    .panel,.card { background:rgba(255,253,247,.95); border:1px solid var(--line); border-radius:22px; box-shadow:0 18px 50px rgba(54,44,31,.08); }
+    .panel { padding:36px; }
+    .eyebrow { text-transform:uppercase; letter-spacing:.13em; font-size:.75rem; font-weight:750; color:var(--accent); }
+    h1 { font-family:Georgia,"Times New Roman",serif; font-size:clamp(2.5rem,6vw,5rem); line-height:.96; margin:.55rem 0 1rem; font-weight:500; }
+    h2 { font-family:Georgia,"Times New Roman",serif; font-size:2rem; font-weight:500; margin:0 0 .65rem; }
+    h3 { margin:.15rem 0 .45rem; font-size:1.05rem; }
+    p { line-height:1.65; color:var(--muted); }
+    .primary { display:inline-flex; align-items:center; justify-content:center; padding:14px 20px; border-radius:999px; background:var(--accent); color:white; text-decoration:none; font-weight:750; margin:8px 8px 0 0; }
+    .primary:hover { background:var(--accent-dark); }
+    .secondary { display:inline-flex; padding:13px 19px; border:1px solid var(--line); border-radius:999px; color:var(--ink); text-decoration:none; font-weight:700; margin:8px 8px 0 0; background:white; }
+    .status { padding:30px; display:flex; flex-direction:column; justify-content:space-between; }
+    .status strong { display:block; font-size:1.4rem; margin-bottom:.5rem; }
+    .status code { display:block; padding:12px; background:#f0ece3; border-radius:12px; overflow-wrap:anywhere; }
+    section { margin-top:30px; }
+    .grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+    .card { padding:22px; }
+    .card p { margin:.35rem 0 1rem; min-height:4.8em; }
+    .card a { color:var(--accent-dark); font-weight:750; }
+    .wide { grid-column:span 2; }
+    ol,ul { color:var(--muted); line-height:1.65; padding-left:1.25rem; }
+    .feature-list { columns:2; column-gap:32px; }
+    .callout { border-left:4px solid var(--accent); padding:2px 0 2px 18px; }
+    footer { margin-top:32px; color:var(--muted); font-size:.9rem; }
+    @media (max-width:850px) { .hero,.grid { grid-template-columns:1fr; } .wide { grid-column:auto; } .feature-list { columns:1; } .panel { padding:26px; } }
+  </style>
+</head>
+<body>
+<main>
+  <div class="hero">
+    <div class="panel">
+      <div class="eyebrow">Roadmap · Beta 1</div>
+      <h1>Experience the whole SaaS locally.</h1>
+      <p>This build runs the real recovered application against synthetic local D1 and R2-compatible data. No Cloudflare account, OIDC provider, Stripe account, domain, or real golfer information is required.</p>
+      <a class="primary" href="http://127.0.0.1:4175/__qa/standard/app" target="_blank">Open the full coach workspace</a>
+      <a class="secondary" href="http://127.0.0.1:4175/__qa/standard/golfer" target="_blank">Open the golfer experience</a>
+    </div>
+    <div class="panel status">
+      <div>
+        <div class="eyebrow">Local server</div>
+        <strong>127.0.0.1:4175</strong>
+        <p>The launcher starts a separate server window. Keep that window open while exploring.</p>
+      </div>
+      <code>Close the “Roadmap Beta 1 server” window to reset all synthetic data.</code>
+    </div>
+  </div>
+
+  <section>
+    <h2>Choose a starting state</h2>
+    <div class="grid">
+      <article class="card wide">
+        <h3>Standard full-feature account</h3>
+        <p>One published four-phase roadmap plus drill, practice, lesson, evidence, launch-monitor comparison, review, package, and rich coaching context.</p>
+        <a href="http://127.0.0.1:4175/__qa/standard/app" target="_blank">Open coach workspace →</a><br><br>
+        <a href="http://127.0.0.1:4175/__qa/standard/golfer" target="_blank">Open matching golfer view →</a>
+      </article>
+      <article class="card">
+        <h3>Fresh coach</h3>
+        <p>Start with no saved profile, package, golfer, or roadmap and experience the empty-state onboarding path.</p>
+        <a href="http://127.0.0.1:4175/__qa/fresh/app" target="_blank">Open fresh account →</a>
+      </article>
+      <article class="card">
+        <h3>Thirty golfers</h3>
+        <p>Review the command centre with incomplete, draft, published, paused, completed, archived, and review-needed records.</p>
+        <a href="http://127.0.0.1:4175/__qa/mixed-30/app" target="_blank">Open mixed portfolio →</a>
+      </article>
+      <article class="card">
+        <h3>Long-content stress test</h3>
+        <p>Explore long but valid names, narrative fields, lessons, practice, evidence, launch data, and review content.</p>
+        <a href="http://127.0.0.1:4175/__qa/long-content/app" target="_blank">Open long-content coach view →</a><br><br>
+        <a href="http://127.0.0.1:4175/__qa/long-content/golfer" target="_blank">Open long-content golfer view →</a>
+      </article>
+      <article class="card">
+        <h3>Three phases, no package</h3>
+        <p>Confirm that a useful roadmap and golfer experience do not depend on a connected lesson package.</p>
+        <a href="http://127.0.0.1:4175/__qa/three-phase/app" target="_blank">Open coach view →</a><br><br>
+        <a href="http://127.0.0.1:4175/__qa/three-phase/golfer" target="_blank">Open golfer view →</a>
+      </article>
+      <article class="card">
+        <h3>Private-link states</h3>
+        <p>See expired, revoked, current republished, and superseded-link experiences.</p>
+        <a href="http://127.0.0.1:4175/__qa/expired/golfer" target="_blank">Expired →</a> ·
+        <a href="http://127.0.0.1:4175/__qa/revoked/golfer" target="_blank">Revoked →</a><br><br>
+        <a href="http://127.0.0.1:4175/__qa/republished/golfer" target="_blank">Current →</a> ·
+        <a href="http://127.0.0.1:4175/__qa/republished/old-golfer" target="_blank">Old link →</a>
+      </article>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Full feature tour</h2>
+    <p class="callout"><strong>Open the standard coach workspace first.</strong> That establishes the synthetic coach session. Then use the application navigation rather than returning here for every screen.</p>
+    <ul class="feature-list">
+      <li>Overview and task-oriented command centre</li>
+      <li>Golfer directory, search, filters, and record states</li>
+      <li>Guided three- or four-phase roadmap authoring</li>
+      <li>Exact coach preview and private publication</li>
+      <li>Replacement, reissue, expiry, and revocation</li>
+      <li>Coach branding, logo, profile photo, and accent</li>
+      <li>Packages and external coaching action links</li>
+      <li>Drill library, duplication, editing, and assignment</li>
+      <li>Practice lifecycle and golfer check-ins</li>
+      <li>Planned, scheduled, completed, and cancelled lessons</li>
+      <li>Evidence records and evidence-backed phase reviews</li>
+      <li>Living timeline and milestone-style progress context</li>
+      <li>Private media library and contextual attachments</li>
+      <li>Baseline/current swing-media comparison workflow</li>
+      <li>Manual launch-monitor metrics and CSV review/import</li>
+      <li>Selected metric comparisons and accessible summaries</li>
+      <li>Golfer mobile roadmap and bounded responses</li>
+      <li>Share centre, QR, copy, print, and download preparation</li>
+      <li>Billing and account states in safe local test configuration</li>
+      <li>Failure, empty, recovery, long-content, and access states</li>
+    </ul>
+  </section>
+
+  <section class="panel">
+    <h2>Manual files for testing</h2>
+    <p>Use the included synthetic CSV during the launch-monitor import flow. For media upload, select a normal JPG, PNG, WebP, MP4, MOV, or WebM from your computer; the local fixture policy permits private test uploads up to 50 MB.</p>
+    <a class="secondary" href="10_production_saas/beta1/assets/launch-monitor-sample.csv" download>Download synthetic launch-monitor CSV</a>
+  </section>
+
+  <section class="panel">
+    <h2>How this Beta behaves</h2>
+    <ol>
+      <li>Everything is synthetic and stays on your computer.</li>
+      <li>Each named scenario has a separate synthetic instructor account.</li>
+      <li>You can edit, publish, upload, import, replace, revoke, and respond during the session.</li>
+      <li>Closing the server resets the local in-memory scenario data, giving you a clean replay next time.</li>
+      <li>This is for product experience and functional review—not public launch, payment, or real customer data.</li>
+    </ol>
+    <a class="secondary" href="http://127.0.0.1:4175/__qa/reset" target="_blank">Clear the current scenario cookie</a>
+  </section>
+
+  <footer>Roadmap Beta 1 local experience · frozen from the recovered Sol Ultra production application.</footer>
+</main>
+</body>
+</html>
