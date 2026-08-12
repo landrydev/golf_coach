@@ -1,0 +1,7 @@
+session_label,shot_number,club,ball_speed_mph,club_speed_mph,carry_yards,total_yards,launch_angle_deg,spin_rate_rpm,attack_angle_deg,club_path_deg,face_to_path_deg,smash_factor
+Synthetic Baseline,1,7 Iron,111.8,83.9,156.4,163.2,18.1,6280,-3.4,1.1,-0.9,1.33
+Synthetic Baseline,2,7 Iron,112.5,84.2,158.1,164.7,18.5,6150,-3.1,1.4,-0.6,1.34
+Synthetic Baseline,3,7 Iron,110.9,83.6,154.8,161.5,17.9,6410,-3.8,0.8,-1.2,1.33
+Synthetic Current,1,7 Iron,114.2,84.7,161.9,168.6,18.7,6040,-3.0,0.7,-0.3,1.35
+Synthetic Current,2,7 Iron,115.0,85.1,163.4,170.1,19.0,5960,-2.8,0.5,-0.2,1.35
+Synthetic Current,3,7 Iron,113.7,84.5,160.8,167.5,18.6,6100,-3.2,0.9,-0.4,1.35
