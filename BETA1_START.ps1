@@ -13,10 +13,7 @@ $Origin = "http://127.0.0.1:$Port"
 
 function Test-BetaReady {
   try {
-    $response = Invoke-WebRequest \
-      -Uri "$Origin/__qa/status" \
-      -UseBasicParsing \
-      -TimeoutSec 2
+    $response = Invoke-WebRequest -Uri "$Origin/__qa/status" -UseBasicParsing -TimeoutSec 2
     return $response.StatusCode -eq 200
   } catch {
     return $false
@@ -90,15 +87,13 @@ npm run qa:functional:server
 "@
 
 Write-Host "Starting the local Beta 1 server in a separate PowerShell window..." -ForegroundColor Yellow
-$serverProcess = Start-Process \
-  -FilePath "powershell.exe" \
-  -ArgumentList @(
-    "-NoProfile",
-    "-ExecutionPolicy", "Bypass",
-    "-NoExit",
-    "-Command", $serverCommand
-  ) \
-  -PassThru
+$serverArguments = @(
+  "-NoProfile",
+  "-ExecutionPolicy", "Bypass",
+  "-NoExit",
+  "-Command", $serverCommand
+)
+$serverProcess = Start-Process -FilePath "powershell.exe" -ArgumentList $serverArguments -PassThru
 
 $ready = $false
 for ($attempt = 1; $attempt -le 180; $attempt++) {
