@@ -14,7 +14,7 @@ type PlanViewProps = { model: PlanViewModel; sessionContext?: string; preview?: 
 export function PlanView({ model, sessionContext, preview = false, embedded = false }: PlanViewProps) {
   const currentPhase = model.phases.find((phase) => phase.status === "active") ?? model.phases.find((phase) => phase.status === "paused") ?? [...model.phases].reverse().find((phase) => phase.status === "complete") ?? model.phases[0];
   const activePractice = model.plan.status === "completed" ? undefined : model.practiceItems.find((item) => item.status === "active") ?? model.practiceItems.find((item) => item.status !== "completed");
-  const latestLesson = [...model.lessons].sort((a, b) => (b.happenedAt ?? 0) - (a.happenedAt ?? 0))[0];
+  const latestLesson = model.lessons.at(-1);
   const featuredMedia = (model.mediaItems ?? []).slice(-3).reverse();
   const featuredEvidence = model.evidenceItems.slice(-3).reverse();
   const accent = safeCoachAccent(model.coach.accentColor);
@@ -36,7 +36,7 @@ export function PlanView({ model, sessionContext, preview = false, embedded = fa
       <header className={styles.header}>
         <a className={styles.brand} href="#now" aria-label="Return to the opening">
           {coachLogoUrl ? <PrivateBrandMark src={coachLogoUrl} fallback={initials(model.coach.displayName)} /> : <span aria-hidden="true">{initials(model.coach.displayName)}</span>}
-          <span><strong>{model.coach.businessName || model.coach.displayName}</strong><small>Private player roadmap</small></span>
+          <span><strong>{model.coach.businessName || model.coach.displayName}</strong><small>Coach-authored private development plan</small></span>
         </a>
         <div className={styles.headerTools}>
           <PrintRoadmapButton />
@@ -52,6 +52,7 @@ export function PlanView({ model, sessionContext, preview = false, embedded = fa
         <section className={styles.hero} id="now">
           <div className={styles.heroCopy}>
             <span className={styles.kicker}>{model.golfer.displayName}</span>
+            <p className={styles.planTitle}>{model.plan.title}</p>
             <h1>Your roadmap to <em>{model.goal.statement}</em></h1>
             {model.goal.why ? <p className={styles.heroWhy}>{model.goal.why}</p> : null}
             <a className={styles.heroAction} href="#roadmap">See your plan <span aria-hidden="true">↓</span></a>
@@ -135,7 +136,7 @@ export function PlanView({ model, sessionContext, preview = false, embedded = fa
                 const posterSrc = item.posterMediaAssetId ? mediaUrl(item.posterMediaAssetId) : null;
                 return <figure key={item.attachmentId}>
                   {src && ["image", "video"].includes(item.mediaKind) ? <PrivatePlanMedia src={src} mediaKind={item.mediaKind} mimeType={item.mimeType} altText={item.altText ?? null} transcript={item.transcript ?? null} posterSrc={posterSrc} /> : <div className={styles.mediaUnavailable}><strong>Selected private media</strong><span>The text-first roadmap remains available.</span></div>}
-                  <figcaption><span>{item.targetLabel}</span><strong>{item.caption || item.coachContext || "Coach-selected progress moment"}</strong></figcaption>
+                  <figcaption><span>{item.targetLabel}</span><strong>{item.caption || "Coach-selected progress moment"}</strong>{item.coachContext ? <p>{item.coachContext}</p> : null}</figcaption>
                   {item.transcript ? <details className={styles.screenOnlyDisclosure}><summary>Transcript</summary><p><b>Transcript</b> {item.transcript}</p></details> : null}
                   {item.transcript ? <p className={styles.printOnlyContent}><b>Transcript</b> {item.transcript}</p> : null}
                 </figure>;
@@ -145,19 +146,33 @@ export function PlanView({ model, sessionContext, preview = false, embedded = fa
 
           {(model.launchComparisons ?? []).length ? <div className={styles.comparisonGrid} id="data">{model.launchComparisons!.slice(-2).reverse().map((comparison) => <article key={comparison.id}><span>Coach-selected measurement context</span><h3>{comparison.title}</h3><p>{comparison.coachInterpretation}</p>{comparison.metrics.slice(0, 3).map((metric) => <MetricComparison metric={metric} key={`${comparison.id}:${metric.displayName}`} />)}<small>{comparison.limitations}</small></article>)}</div> : null}
 
+          <p className={styles.boundedNotice}>This bounded view shows up to 8 items, prioritizing current-phase practice before the newest retained history.</p>
+          <p className={styles.boundedNotice}>This bounded view shows up to 20 published items, prioritizing current-phase evidence before the most recently observed retained history.</p>
+
           {featuredEvidence.length ? <div className={styles.evidenceGrid} id="evidence">{featuredEvidence.map((item) => <article id={`evidence-${item.id}`} key={item.id}><span>{item.comparisonRole ? humanize(item.comparisonRole) : humanize(item.maturity)}</span><h3>{item.title}</h3><p>{item.summary}</p>{item.metricValue != null ? <strong>{item.metricName}: {formatMetricValue(item.metricValue)} {item.metricUnit}</strong> : item.valueText ? <strong>{item.valueText}</strong> : null}<small>{item.sourceLabel}{item.isRepresentative ? " · representative" : ""}</small></article>)}</div> : null}
 
-          {model.lessons.length ? <details className={styles.progressArchive} id="lessons"><summary>Lesson chapters and exact selected sources</summary>{model.lessons.slice().reverse().map((lesson) => <article key={lesson.id}><span>{lesson.happenedAt ? formatDate(lesson.happenedAt) : humanize(lesson.status || "lesson")}</span><h3>{lesson.title}</h3><p>{lesson.summary}</p>{lesson.selectedEvidence.length ? <div><b>Selected evidence from this lesson</b><ul>{lesson.selectedEvidence.map((item) => <li id={`evidence-${item.id}`} key={item.id}>{item.title}: {item.summary}</li>)}</ul></div> : null}{lesson.selectedMeasurements.length ? <div><b>Selected measurement sessions from this lesson</b><ul>{lesson.selectedMeasurements.map((session) => <li id={`launch-session-${session.id}`} key={session.id}>{session.label}: {session.coachInterpretation}</li>)}</ul></div> : null}</article>)}</details> : null}
+          {model.lessons.length ? <details className={styles.progressArchive} id="lessons"><summary>Lesson chapters and exact selected sources</summary><p className={styles.boundedNotice}>This bounded view shows up to 12 chapters, prioritizing the current phase before the newest retained history.</p>{model.lessons.slice().reverse().map((lesson) => <article key={lesson.id}><span>{lesson.happenedAt ? formatDate(lesson.happenedAt) : humanize(lesson.status || "lesson")}</span><h3>{lesson.title}</h3><p>{lesson.summary}</p>{lesson.selectedEvidence.length ? <div><b>Selected evidence from this lesson</b><ul>{lesson.selectedEvidence.map((item) => <li id={`evidence-${item.id}`} key={item.id}>{item.title}: {item.summary}</li>)}</ul></div> : null}{lesson.selectedMeasurements.length ? <div><b>Selected measurement sessions from this lesson</b><ul>{lesson.selectedMeasurements.map((session) => <li id={`launch-session-${session.id}`} key={session.id}>{session.label}: {session.coachInterpretation}</li>)}</ul></div> : null}</article>)}</details> : null}
         </section>
 
         <section className={styles.reviewSection} id="review">
           <div className={styles.chapterLabel}><span>06</span><strong>The next coaching decision</strong></div>
           <div className={styles.editorialCopy}>
-            {model.phaseReview ? <article className={styles.reviewCard}><span>{model.phaseReview.reliabilityLabel}</span><h2>{model.phaseReview.summary}</h2><p>{model.phaseReview.coachConclusion}</p>{model.phaseReview.remainingOpportunity ? <blockquote><span>What remains</span>{model.phaseReview.remainingOpportunity}</blockquote> : null}<details className={styles.quietDisclosure}><summary>Exact selected source records</summary><ul>{model.phaseReview.sources.map((source) => <li key={source.id}><b>{source.label}</b>{source.summary ? ` — ${source.summary}` : ""}</li>)}</ul></details></article> : <Empty title="This phase is still being built." body="A phase review appears when the coach has enough evidence to make the next decision honestly." />}
+            {model.phaseReview ? <article className={styles.reviewCard}><span>{model.phaseReview.reliabilityLabel}</span><h2>{model.phaseReview.summary}</h2><p><b>Original phase purpose:</b> {model.phaseReview.originalPurpose}</p><p>{model.phaseReview.coachConclusion}</p>{model.phaseReview.remainingOpportunity ? <blockquote><span>What remains</span>{model.phaseReview.remainingOpportunity}</blockquote> : null}<details className={styles.quietDisclosure}><summary>Exact selected source records</summary><ul>{model.phaseReview.sources.map((source) => <li key={source.id}><b>{source.label}</b>{source.summary ? ` — ${source.summary}` : ""}</li>)}</ul></details></article> : <Empty title="This phase is still being built." body="A phase review appears when the coach has enough evidence to make the next decision honestly." />}
 
             {model.coachingPackage ? <article className={styles.packageCard}><span>Your coaching plan</span><h2>{model.coachingPackage.title}</h2><p>{model.coachingPackage.description}</p>{model.coachingPackage.inclusions.length ? <ul>{model.coachingPackage.inclusions.map((item) => <li key={item}>{item}</li>)}</ul> : null}<strong>{packageDisplayPrice(model.coachingPackage)}</strong>{!model.access && !preview ? <a href={model.coachingPackage.externalActionUrl} rel="external noopener noreferrer" target="_blank">Open the coach’s next-step page</a> : null}<small>Booking or payment happens on the coach’s external service and is not complete until that service confirms it.</small></article> : <div className={styles.choiceCard}><strong>No package is attached.</strong><p>The roadmap remains useful without a purchase recommendation.</p></div>}
 
             {model.access || preview ? <GolferChoices coachName={model.coach.displayName} coachEmail={model.coach.contactEmail} externalActionUrl={model.coachingPackage?.externalActionUrl} sessionContext={sessionContext} preview={preview} /> : coachMailtoUri ? <div className={styles.choiceLinks}><a href={coachMailtoUri}>Ask {model.coach.displayName}</a><span>Review later</span><span>Practise independently</span></div> : null}
+          </div>
+        </section>
+
+        <section className={styles.coachNoteSection} id="coach-note">
+          <div className={styles.chapterLabel}><span>07</span><strong>A note from your coach</strong></div>
+          <div className={styles.coachNote}>
+            <p>{coachClosingNote(model)}</p>
+            <div>
+              {coachProfilePhotoUrl ? <PrivateBrandMark className={styles.coachPortrait} fallback={initials(model.coach.displayName)} src={coachProfilePhotoUrl} /> : <span aria-hidden="true" className={styles.coachPortrait}>{initials(model.coach.displayName)}</span>}
+              <span><strong>{model.coach.displayName}</strong><small>{model.coach.businessName || "Your coach"}</small></span>
+            </div>
           </div>
         </section>
 
@@ -186,6 +201,15 @@ function MetricComparison({ metric }: { metric: NonNullable<PlanViewModel["launc
   const baselineWidth = Math.max(3, (Math.abs(metric.baselineValue) / scale) * 100);
   const currentWidth = Math.max(3, (Math.abs(metric.currentValue) / scale) * 100);
   return <figure className={styles.metricComparison}><figcaption><strong>{metric.displayName}</strong><span>{metric.delta > 0 ? "+" : ""}{formatMetricValue(metric.delta)} {metric.unit}</span></figcaption><div><span>Then</span><i style={{ width: `${baselineWidth}%` }} /><b>{formatMetricValue(metric.baselineValue)}</b></div><div><span>Now</span><i style={{ width: `${currentWidth}%` }} /><b>{formatMetricValue(metric.currentValue)}</b></div></figure>;
+}
+
+function coachClosingNote(model: PlanViewModel): string {
+  if (model.phaseReview?.coachConclusion) return model.phaseReview.coachConclusion;
+  if (model.priority?.rationale) return `We are beginning with ${model.priority.title.toLowerCase()} because ${model.priority.rationale.charAt(0).toLowerCase()}${model.priority.rationale.slice(1)}`;
+  const currentPhase = model.phases.find((phase) => phase.status === "active") ?? model.phases[0];
+  return currentPhase
+    ? `The plan is to keep ${currentPhase.title.toLowerCase()} simple, observable, and connected to the way you want to play.`
+    : "We will keep this roadmap focused on the next useful coaching decision and adjust it as better evidence develops.";
 }
 
 function initials(value: string): string { return value.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(); }

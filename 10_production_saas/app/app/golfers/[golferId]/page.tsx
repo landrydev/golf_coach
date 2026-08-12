@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ConsentPurposeControl } from "@/components/consent/ConsentPurposeControl";
+import { StagedCompletionDraftResolution } from "@/components/forms/StagedCompletionDraftResolution";
 import { PlanView } from "@/components/plan/PlanView";
 import { listConsentCurrentState } from "@/lib/consent-repository";
 import { requirePageIdentity } from "@/lib/identity";
@@ -32,7 +33,7 @@ export default async function PlayerJourneyPage({ params }: { params: Promise<{ 
   const accountConsentStates = await listConsentCurrentState(account.id, { type: "account", golferId: null });
   const golferRecordConsent = accountConsentStates.find((state) => state.purpose === "golfer_record");
   if (!golferRecordConsent?.effectiveGranted) {
-    return <div className={styles.page}><div className={styles.empty}><h1>Player records are unavailable.</h1><p>Restore the player-record authorization before opening this journey.</p><Link className={styles.primaryButton} href="/app/settings/data">Open data controls</Link></div></div>;
+    return <div className={styles.page}><div className={styles.empty}><h1>Golfer records are unavailable.</h1><p>Restore the player-record authorization before opening this journey.</p><Link className={styles.primaryButton} href="/app/settings/data">Open data controls</Link></div></div>;
   }
 
   const model = await getCoachPlanForGolfer(account.id, golferId);
@@ -54,13 +55,28 @@ export default async function PlayerJourneyPage({ params }: { params: Promise<{ 
   const blockers = publicationBlockers(model);
   const currentPhase = model.phases.find((phase) => phase.status === "active") ?? model.phases.find((phase) => phase.status === "paused") ?? model.phases[0];
   const activePractice = model.practiceItems.find((item) => item.status === "active");
-  const latestLesson = [...model.lessons].sort((a, b) => (b.happenedAt ?? 0) - (a.happenedAt ?? 0))[0];
+  const latestLesson = model.lessons.at(-1);
+  const latestMediaAttachment = model.mediaItems?.at(-1);
+  const practiceWorkspaceHref = coachingWorkspaceHref(model.plan.id, {
+    tab: "practice",
+    focus: activePractice ? { kind: "practice", practiceId: activePractice.id } : null,
+  });
+  const lessonWorkspaceHref = coachingWorkspaceHref(model.plan.id, {
+    tab: "lessons",
+    focus: latestLesson ? { kind: "lesson", lessonId: latestLesson.id } : null,
+  });
+  const mediaWorkspaceHref = coachingWorkspaceHref(model.plan.id, {
+    tab: "media",
+    focus: latestMediaAttachment
+      ? { kind: "media", attachmentId: latestMediaAttachment.attachmentId }
+      : null,
+  });
   const coachingBase = `/app/coaching/plans/${encodeURIComponent(model.plan.id)}`;
 
   return (
     <div className={styles.page}>
       <header className={styles.playerHero}>
-        <div><span className={styles.eyebrow}>Player journey</span><h1>{model.golfer.displayName}</h1><p>{model.goal.statement}</p></div>
+        <div><span className={styles.eyebrow}>Player journey</span><h1>{model.golfer.displayName}</h1><strong className={styles.planTitle}>{model.plan.title}</strong><p>{model.goal.statement}</p></div>
         <div className={styles.headerActions}>
           {editable ? <Link className={styles.primaryButton} href={`/app/golfers/${encodeURIComponent(golferId)}/edit`}>Edit roadmap</Link> : null}
           <Link className={styles.secondaryButton} href="/app/golfers">All players</Link>
@@ -85,6 +101,33 @@ export default async function PlayerJourneyPage({ params }: { params: Promise<{ 
           {editable ? <a className={styles.textButton} href="#today">Record today’s lesson</a> : null}
         </article>
       </section>
+
+      <StagedCompletionDraftResolution
+        recoveryScope={account.id}
+        planId={model.plan.id}
+        planRevision={model.plan.revision}
+        noticeClassName={styles.notice}
+        actionsClassName={styles.headerActions}
+        buttonClassName={styles.secondaryButton}
+      />
+
+      {!editable ? (
+        <div className={styles.notice} role="note">
+          <strong>
+            {golferArchived
+              ? "This golfer record is archived."
+              : `This plan is ${model.plan.status}.`}
+          </strong>
+          <span>
+            Its retained coach preview is read-only.
+            {golferArchived
+              ? " New updates and private access are unavailable in this state."
+              : model.plan.status === "completed"
+                ? " You may still publish this exact final revision for the golfer."
+                : " Archived plans cannot create new private access."}
+          </span>
+        </div>
+      ) : null}
 
       <section className={styles.section} aria-labelledby="preview-heading">
         <div className={styles.sectionHeader}>
@@ -112,16 +155,17 @@ export default async function PlayerJourneyPage({ params }: { params: Promise<{ 
       <section className={styles.section} id="progress" aria-labelledby="progress-heading">
         <div className={styles.sectionHeader}><div><span className={styles.eyebrow}>Progress</span><h2 id="progress-heading">Curate the evidence, not the administration.</h2><p>The private player view selects the strongest lessons, practice, media, measurements, milestones, and review language.</p></div></div>
         <div className={styles.secondaryGrid}>
-          <article className={styles.secondaryCard}><span className={styles.eyebrow}>Lesson chapters</span><h3>{model.lessons.length || "None yet"}</h3><p>{latestLesson?.title || "The sixty-second update creates the first chapter."}</p>{editable ? <Link href={coachingWorkspaceHref(model.plan.id, { tab: "lessons" })}>Open lesson history</Link> : null}</article>
-          <article className={styles.secondaryCard}><span className={styles.eyebrow}>Selected evidence</span><h3>{model.evidenceItems.length + (model.mediaItems?.length ?? 0)} items</h3><p>Media and measurements remain optional context inside the player story.</p>{editable ? <Link href={coachingWorkspaceHref(model.plan.id, { tab: "evidence" })}>Add advanced evidence</Link> : null}</article>
-          <article className={styles.secondaryCard}><span className={styles.eyebrow}>Phase reflection</span><h3>{model.phaseReview ? "Review retained" : "Not due yet"}</h3><p>{model.phaseReview?.coachConclusion || "Reflect when the phase has enough evidence to support a real decision."}</p>{editable ? <Link href={coachingWorkspaceHref(model.plan.id, { tab: "reviews" })}>Open phase review</Link> : null}</article>
+          <article className={styles.secondaryCard}><span className={styles.eyebrow}>Lesson chapters</span><h3>{model.lessons.length || "None yet"}</h3><p>{latestLesson?.title || "The sixty-second update creates the first chapter."}</p>{editable ? <Link href={lessonWorkspaceHref}>Open lesson history</Link> : null}</article>
+          <article className={styles.secondaryCard}><span className={styles.eyebrow}>Selected evidence</span><h3>{model.evidenceItems.length + (model.mediaItems?.length ?? 0)} items</h3><p>Media and measurements remain optional context inside the player story.</p>{editable ? <Link href={`/app/coaching/plans/${encodeURIComponent(model.plan.id)}?tab=evidence`}>Add advanced evidence</Link> : null}</article>
+          <article className={styles.secondaryCard}><span className={styles.eyebrow}>Phase reflection</span><h3>{model.phaseReview ? "Review retained" : "Not due yet"}</h3><p>{model.phaseReview?.coachConclusion || "Reflect when the phase has enough evidence to support a real decision."}</p>{editable ? <Link href={`${coachingBase}?tab=reviews`}>Open phase review</Link> : null}</article>
         </div>
         <details className={styles.advanced}>
           <summary>Advanced coaching workspace</summary>
           <div className={styles.secondaryGrid}>
-            <article className={styles.secondaryCard}><h3>Practice and drills</h3><p>Manage multiple assignments, reusable drills, check-ins, and lifecycle history.</p><Link href={coachingWorkspaceHref(model.plan.id, { tab: "practice" })}>Open practice tools</Link></article>
-            <article className={styles.secondaryCard}><h3>Media and launch data</h3><p>Upload private media, map CSV data, compare selected metrics, and attach context.</p><Link href={`${coachingBase}?tab=media`}>Open media tools</Link><Link href={`${coachingBase}?tab=launch`}>Open launch data</Link></article>
+            <article className={styles.secondaryCard}><h3>Practice and drills</h3><p>Manage multiple assignments, reusable drills, check-ins, and lifecycle history.</p><Link href={practiceWorkspaceHref}>Open practice tools</Link></article>
+            <article className={styles.secondaryCard}><h3>Media and launch data</h3><p>Upload private media, map CSV data, compare selected metrics, and attach context.</p><Link href={mediaWorkspaceHref}>Open media tools</Link><Link href={`${coachingBase}?tab=launch`}>Open launch data</Link></article>
             <article className={styles.secondaryCard}><h3>Timeline and milestones</h3><p>Review the complete generated coaching history and publish selected milestones.</p><Link href={`${coachingBase}?tab=timeline`}>Open timeline</Link></article>
+            <article className={styles.secondaryCard}><h3>Roadmap history and corrections</h3><p>Correct or withdraw existing golfer-view content without turning ordinary lesson follow-up into administration.</p><Link href={`${coachingBase}?tab=timeline`}>Review published content</Link></article>
           </div>
         </details>
       </section>
@@ -152,7 +196,7 @@ export default async function PlayerJourneyPage({ params }: { params: Promise<{ 
 
 function ArchivedIncompleteRoadmap({ staged }: { staged: StagedGolferWorkspaceView }) {
   const playerName = staged.golfer.preferredName || staged.golfer.displayName;
-  return <div className={styles.page}><div className={styles.empty}><span className={styles.eyebrow}>Archived player</span><h1>{playerName}</h1><p>{staged.goal?.desiredOutcome || "This incomplete roadmap is retained as a read-only snapshot."}</p><Link className={styles.secondaryButton} href="/app/golfers">Back to players</Link></div></div>;
+  return <div className={styles.page}><div className={styles.empty}><span className={styles.eyebrow}>Archived player</span><h1>{playerName}</h1><p>{staged.goal?.desiredOutcome || "This golfer record is archived. This incomplete roadmap is retained as a read-only snapshot."}</p><Link className={styles.secondaryButton} href="/app/golfers">Back to players</Link></div></div>;
 }
 
 function responseLabel(responseType: GolferResponseType): string {

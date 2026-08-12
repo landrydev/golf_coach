@@ -131,7 +131,7 @@ test(
         assert.match(
           directoryHtml,
           new RegExp(
-            `href="/app/golfers/${escapeRegExp(fixture.workspace.golfer.id)}"[^>]*>Review live plan</a>`,
+            `href="/app/golfers/${escapeRegExp(fixture.workspace.golfer.id)}"[^>]*>Review live plan(?:\s*→)?</a>`,
           ),
         );
         assert.doesNotMatch(directoryHtml, /No development plan/);

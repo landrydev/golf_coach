@@ -150,3 +150,7 @@
   .conversationStep { grid-template-columns: 1fr; }
   .formFooter { align-items: stretch; flex-direction: column; }
 }
+
+.planTitle { display: block; margin-top: .45rem; color: var(--muted); font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.1rem,2vw,1.45rem); font-weight: 500; }
+.notice { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0; border: 1px solid var(--line); border-radius: 1rem; padding: 1rem 1.15rem; background: var(--paper); color: var(--muted); }
+.notice strong { color: var(--forest); }

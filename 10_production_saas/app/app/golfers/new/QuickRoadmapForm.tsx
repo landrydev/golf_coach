@@ -2,12 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
+import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
 import {
   clientMutationErrorMessage,
   requestClientMutation,
   requireClientMutationJson,
 } from "@/lib/client-mutation-recovery";
 import styles from "../../beta2.module.css";
+
+const ERROR_SUMMARY_ID = "quick-roadmap-form-error-summary";
 
 type PackageOption = { id: string; name: string; fitDescription: string };
 type Created = { golfer: { id: string }; plan: { id: string; revision: number } };
@@ -30,18 +33,26 @@ const DEFAULT_PHASES = [
   },
 ] as const;
 
-export function QuickRoadmapForm({ packages }: { packages: PackageOption[] }) {
+export function QuickRoadmapForm({
+  packages,
+  recoveryScope,
+}: {
+  packages: PackageOption[];
+  recoveryScope: string;
+}) {
   const router = useRouter();
-  const attemptKey = useRef(`roadmap-${crypto.randomUUID()}`);
+  const formRef = useRef<HTMLFormElement>(null);
+  const attemptKey = useRef(`roadmap-${recoveryScope}-${crypto.randomUUID()}`);
   const [state, setState] = useState<"idle" | "saving" | "error">("idle");
   const [message, setMessage] = useState("");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (state === "saving") return;
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     setState("saving");
     setMessage("");
-    const form = new FormData(event.currentTarget);
     const player = text(form, "displayName");
     const goal = text(form, "goal");
     const pattern = text(form, "pattern");
@@ -105,7 +116,6 @@ export function QuickRoadmapForm({ packages }: { packages: PackageOption[] }) {
         "The roadmap could not be created.",
       );
       router.push(`/app/golfers/${encodeURIComponent(result.golfer.id)}`);
-      router.refresh();
     } catch (error) {
       setState("error");
       setMessage(clientMutationErrorMessage(error, "the roadmap was created", "reload_before_retry", "The roadmap could not be created. Check the player list before trying again."));
@@ -113,7 +123,7 @@ export function QuickRoadmapForm({ packages }: { packages: PackageOption[] }) {
   }
 
   return (
-    <form className={styles.roadmapForm} onSubmit={submit}>
+    <form ref={formRef} className={styles.roadmapForm} method="post" aria-describedby={ERROR_SUMMARY_ID} onSubmit={submit}>
       <div className={styles.formIntro}>
         <strong>A roadmap is a conversation, not a report.</strong>
         <p>Four short sections create the player record, the three-phase story, and the exact private experience.</p>
@@ -174,7 +184,13 @@ export function QuickRoadmapForm({ packages }: { packages: PackageOption[] }) {
       </section>
 
       <div className={styles.formFooter}>
-        <p className={state === "error" ? styles.formError : undefined} role={state === "error" ? "alert" : "status"}>{message || "You will land on the complete player workspace and exact private preview."}</p>
+        <FormErrorSummary
+          id={ERROR_SUMMARY_ID}
+          message={state === "error" ? message : ""}
+          formRef={formRef}
+          className={styles.formError}
+        />
+        <p role="status">{state === "error" ? "" : message || "You will land on the complete player workspace and exact private preview."}</p>
         <button className={styles.primaryButton} type="submit" disabled={state === "saving"}>{state === "saving" ? "Creating the roadmap…" : "Create roadmap"}</button>
       </div>
     </form>

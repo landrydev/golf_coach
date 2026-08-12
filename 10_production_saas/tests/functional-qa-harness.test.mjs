@@ -191,8 +191,8 @@ test(
     });
     assert.equal(freshWorkspace.status, 200);
     const freshWorkspaceHtml = await freshWorkspace.text();
-    assert.match(freshWorkspaceHtml, /Coach overview \| Roadmap/);
-    assert.match(freshWorkspaceHtml, /Let(?:’|&rsquo;|&#x27;|')s get your first roadmap ready/);
+    assert.match(freshWorkspaceHtml, /Home \| Roadmap/);
+    assert.match(freshWorkspaceHtml, /Create the next player roadmap|Create a roadmap|Welcome back/);
     assert.doesNotMatch(freshWorkspaceHtml, /Golfer records are unavailable/);
     const freshMedia = await fetch(`${runtime.origin}/app/media`, {
       headers: { cookie: freshCookie },

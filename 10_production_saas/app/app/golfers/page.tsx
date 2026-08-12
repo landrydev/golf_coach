@@ -71,8 +71,8 @@ export default async function PlayersPage({ searchParams }: { searchParams: Prom
         <nav className={styles.sectionHeader} aria-label="Player pages">
           <span>{`Page ${query.page + 1}`}</span>
           <div className={styles.headerActions}>
-            {page.hasPrevious ? <Link className={styles.secondaryButton} rel="prev" href={golferDirectoryHref(query, { page: query.page - 1 })}>Previous</Link> : null}
-            {page.hasMore ? <Link className={styles.secondaryButton} rel="next" href={golferDirectoryHref(query, { page: query.page + 1 })}>Next</Link> : null}
+            {page.hasPrevious ? <Link className={styles.secondaryButton} rel="prev" href={golferDirectoryHref(query, { page: query.page - 1 })}>Previous records</Link> : null}
+            {page.hasMore ? <Link className={styles.secondaryButton} rel="next" href={golferDirectoryHref(query, { page: query.page + 1 })}>Next records</Link> : null}
           </div>
         </nav>
       ) : null}

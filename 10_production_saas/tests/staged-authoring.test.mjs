@@ -125,7 +125,7 @@ test(
     assert.equal(golfersPage.status, 200);
     const golfersHtml = await golfersPage.text();
     assert.match(golfersHtml, new RegExp(`${firstResult.golfer.id}/complete`));
-    assert.match(golfersHtml, /setup incomplete/);
+    assert.match(golfersHtml, /roadmap needed|Create the first roadmap/);
 
     const tenantPage = await worker.dispatch(resumePath, {
       headers: identityHeaders(coachB.email, coachB.name),
@@ -413,7 +413,7 @@ test(
     assert.equal(planlessPage.status, 200);
     const planlessHtml = await planlessPage.text();
     assert.match(planlessHtml, /Planless Directory Control/);
-    assert.match(planlessHtml, /No development plan/);
+    assert.match(planlessHtml, /No roadmap yet/);
     assert.match(
       planlessHtml,
       /href="\/app\/golfers\/planless_directory_control\/recover"[^>]*>Review record recovery options<\/a>/,

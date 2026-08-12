@@ -590,7 +590,6 @@ test("keyed creation UIs pass account scope, lock restored fields, and expose re
   );
 
   for (const [filename, keyPattern] of [
-    ["app/app/golfers/new/page.tsx", /key=\{`(?:staged|full)-golfer:\$\{account\.id\}`\}/],
     ["app/app/packages/page.tsx", /key=\{`package-create:\$\{account\.id\}`\}/],
     ["app/app/settings/data/page.tsx", /key=\{`data-requests:\$\{account\.id\}`\}/],
   ]) {
@@ -598,12 +597,15 @@ test("keyed creation UIs pass account scope, lock restored fields, and expose re
     assert.match(source, /recoveryScope=\{account\.id\}/);
     assert.match(source, keyPattern);
   }
-  const golferParent = await readFile(
-    path.join(projectRoot, "app/app/golfers/new/page.tsx"),
-    "utf8",
-  );
-  assert.match(golferParent, /key=\{`staged-golfer:\$\{account\.id\}`\}/);
-  assert.match(golferParent, /key=\{`full-golfer:\$\{account\.id\}`\}/);
+  const [golferParent, quickRoadmap] = await Promise.all([
+    readFile(path.join(projectRoot, "app/app/golfers/new/page.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "app/app/golfers/new/QuickRoadmapForm.tsx"), "utf8"),
+  ]);
+  assert.match(golferParent, /recoveryScope=\{account\.id\}/);
+  assert.match(golferParent, /key=\{`quick-roadmap:\$\{account\.id\}`\}/);
+  assert.match(quickRoadmap, /recoveryScope: string/);
+  assert.match(quickRoadmap, /roadmap-\$\{recoveryScope\}-\$\{crypto\.randomUUID\(\)\}/);
+  assert.match(quickRoadmap, /"Idempotency-Key": attemptKey\.current/);
 });
 
 function memoryStorage(options = {}) {

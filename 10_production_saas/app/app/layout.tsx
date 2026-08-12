@@ -66,7 +66,7 @@ export default async function ProductLayout({ children }: Readonly<{ children: R
         </div>
       </div>
       <main className={styles.main} id="main-content">
-        {identity.source === "development" ? <div className={styles.devBanner} role="status">Local product studio — synthetic data only.</div> : null}
+        {identity.source === "development" ? <div className={styles.devBanner} role="status">Local development identity — production requires secure sign-in. Synthetic data only.</div> : null}
         {children}
       </main>
       <nav className={styles.mobileNav} aria-label="Mobile coach navigation">
