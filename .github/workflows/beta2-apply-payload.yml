@@ -1,0 +1,38 @@
+name: Apply Beta 2 implementation payload
+
+on:
+  push:
+    branches:
+      - product/beta-2-experience-reset
+    paths:
+      - '.beta2-payload/**'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Beta 2 branch
+        uses: actions/checkout@v4
+        with:
+          ref: product/beta-2-experience-reset
+          fetch-depth: 0
+      - name: Apply exact implementation payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          payload=".beta2-payload/ui.tar.gz.b64"
+          if [[ ! -f "$payload" ]]; then
+            echo "No payload remains; nothing to apply."
+            exit 0
+          fi
+          base64 --decode "$payload" > /tmp/beta2-ui.tar.gz
+          tar -xzf /tmp/beta2-ui.tar.gz -C .
+          rm -rf .beta2-payload
+          git config user.name "Roadmap Beta 2 Builder"
+          git config user.email "64818593+landrydev@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: implement the Beta 2 experience reset [skip ci]"
+          git push origin HEAD:product/beta-2-experience-reset
