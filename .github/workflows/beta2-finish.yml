@@ -1,0 +1,112 @@
+name: Complete Beta 2
+
+on:
+  push:
+    branches:
+      - product/beta-2-experience-reset
+    paths:
+      - '.github/workflows/beta2-finish.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  finish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - name: Check out Beta 2
+        uses: actions/checkout@v4
+        with:
+          ref: product/beta-2-experience-reset
+          fetch-depth: 0
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.18.0'
+          cache: npm
+          cache-dependency-path: 10_production_saas/package-lock.json
+      - name: Install locked dependencies
+        working-directory: 10_production_saas
+        run: npm ci --ignore-scripts
+      - name: Migrate obsolete Beta 1 presentation contracts
+        shell: bash
+        run: |
+          set +e
+          python .github/scripts/migrate-beta2-ui-tests.py
+          result=$?
+          if (( result != 0 )); then
+            git config user.name 'Roadmap Beta 2 Builder'
+            git config user.email '64818593+landrydev@users.noreply.github.com'
+            git add BETA2_FINISH_FAILURE.md 10_production_saas/tests 10_production_saas/docs/BETA2_TEST_MIGRATION.md || true
+            git commit -m 'ci: record remaining Beta 2 test blockers [skip ci]' || true
+            git push origin HEAD:product/beta-2-experience-reset || true
+            exit "$result"
+          fi
+      - name: Run complete production verification
+        working-directory: 10_production_saas
+        run: npm run verify
+      - name: Parse Windows launchers
+        shell: pwsh
+        run: |
+          $errors = @()
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path './BETA2_START.ps1'),
+            [ref]$null,
+            [ref]$errors
+          ) | Out-Null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path './BETA2_SERVER.ps1'),
+            [ref]$null,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) { $errors | Out-String | Write-Error }
+      - name: Install Chromium
+        working-directory: 10_production_saas
+        run: npx playwright install --with-deps chromium
+      - name: Run rendered Beta 2 acceptance
+        working-directory: 10_production_saas
+        run: npm run qa:beta2:browser
+      - name: Remove temporary recovery workflows and commit exact candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f \
+            .github/workflows/beta2-apply-payload.yml \
+            .github/workflows/beta2-diagnostics.yml \
+            .github/workflows/beta2-diagnostic-report.yml \
+            .github/workflows/beta2-workspace-export.yml \
+            .github/workflows/beta2-finish.yml \
+            .github/scripts/migrate-beta2-ui-tests.py \
+            BETA2_DIAGNOSTIC_REPORT.md \
+            BETA2_FINISH_FAILURE.md \
+            beta2-test-*.log
+          rm -rf .beta2-payload
+          git config user.name 'Roadmap Beta 2 Builder'
+          git config user.email '64818593+landrydev@users.noreply.github.com'
+          git add -A
+          git commit -m 'feat: complete the Beta 2 premium low-admin experience [skip ci]'
+          git push origin HEAD:product/beta-2-experience-reset
+      - name: Assemble Windows Beta 2 package
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p package/Roadmap-Beta2
+          rsync -a ./ package/Roadmap-Beta2/ \
+            --exclude '.git/' \
+            --exclude 'package/' \
+            --exclude '**/node_modules/' \
+            --exclude '**/dist/' \
+            --exclude '**/.next/' \
+            --exclude '**/.wrangler/' \
+            --exclude '**/.work/' \
+            --exclude '**/output/'
+          (cd package && zip -qr Roadmap-Beta2-local.zip Roadmap-Beta2)
+      - name: Upload Beta 2 package and evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: roadmap-beta2-local-${{ github.sha }}
+          path: |
+            package/Roadmap-Beta2-local.zip
+            10_production_saas/output/beta2-browser/
+          retention-days: 30
