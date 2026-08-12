@@ -23,7 +23,7 @@ import styles from "../../beta2.module.css";
 import { PublishControls } from "./PublishControls";
 import { QuickLessonUpdate } from "./QuickLessonUpdate";
 
-export const metadata: Metadata = { title: "Player journey | Roadmap" };
+export const metadata: Metadata = { title: "Golfer plan | Roadmap" };
 export const dynamic = "force-dynamic";
 
 export default async function PlayerJourneyPage({ params }: { params: Promise<{ golferId: string }> }) {
@@ -162,6 +162,11 @@ export default async function PlayerJourneyPage({ params }: { params: Promise<{ 
         <details className={styles.advanced}>
           <summary>Advanced coaching workspace</summary>
           <div className={styles.secondaryGrid}>
+            <article className={styles.secondaryCard}><span>Lessons</span><small>{model.lessons.length}</small></article>
+            <article className={styles.secondaryCard}><span>Practice</span><small>{activePractice ? 1 : 0}</small><p>{activePractice?.title || "None active"}</p></article>
+            <article className={styles.secondaryCard}><span>Data / Evidence</span><small>{model.evidenceItems.length}</small></article>
+          </div>
+          <div className={styles.secondaryGrid}>
             <article className={styles.secondaryCard}><h3>Practice and drills</h3><p>Manage multiple assignments, reusable drills, check-ins, and lifecycle history.</p><Link href={practiceWorkspaceHref}>Open practice tools</Link></article>
             <article className={styles.secondaryCard}><h3>Media and launch data</h3><p>Upload private media, map CSV data, compare selected metrics, and attach context.</p><Link href={mediaWorkspaceHref}>Open media tools</Link><Link href={`${coachingBase}?tab=launch`}>Open launch data</Link></article>
             <article className={styles.secondaryCard}><h3>Timeline and milestones</h3><p>Review the complete generated coaching history and publish selected milestones.</p><Link href={`${coachingBase}?tab=timeline`}>Open timeline</Link></article>
@@ -196,7 +201,7 @@ export default async function PlayerJourneyPage({ params }: { params: Promise<{ 
 
 function ArchivedIncompleteRoadmap({ staged }: { staged: StagedGolferWorkspaceView }) {
   const playerName = staged.golfer.preferredName || staged.golfer.displayName;
-  return <div className={styles.page}><div className={styles.empty}><span className={styles.eyebrow}>Archived player</span><h1>{playerName}</h1><p>{staged.goal?.desiredOutcome || "This golfer record is archived. This incomplete roadmap is retained as a read-only snapshot."}</p><Link className={styles.secondaryButton} href="/app/golfers">Back to players</Link></div></div>;
+  return <div className={styles.page}><div className={styles.empty}><span className={styles.eyebrow}>Archived player · {playerName}</span><h1>{staged.plan.title}</h1><p>This archived roadmap is retained as a read-only snapshot.</p>{staged.goal?.desiredOutcome ? <p>{staged.goal.desiredOutcome}</p> : null}<Link className={styles.secondaryButton} href="/app/golfers">Back to players</Link></div></div>;
 }
 
 function responseLabel(responseType: GolferResponseType): string {
