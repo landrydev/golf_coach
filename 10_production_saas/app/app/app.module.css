@@ -1,8 +1,10 @@
 .productShell {
-  --workspace-accent: #1f5a48;
+  --workspace-accent: #1f6655;
   min-height: 100vh;
-  background: #f5f3ec;
-  color: #19362e;
+  background:
+    radial-gradient(circle at 78% -10%, color-mix(in srgb, var(--workspace-accent) 9%, transparent), transparent 34rem),
+    #f5f1e8;
+  color: #17372f;
 }
 
 .skipLink {
@@ -10,65 +12,38 @@
   left: 1rem;
   top: -6rem;
   z-index: 100;
-  border-radius: 0.5rem;
-  background: #19362e;
+  border-radius: 999px;
+  background: #17372f;
   color: #fff;
-  padding: 0.75rem 1rem;
+  padding: .75rem 1rem;
 }
-
-.skipLink:focus {
-  top: 1rem;
-}
+.skipLink:focus { top: 1rem; }
 
 .sidebar {
   position: fixed;
   inset: 0 auto 0 0;
-  width: 17.5rem;
+  width: 15.25rem;
   display: flex;
   flex-direction: column;
-  padding: 2rem 1.5rem;
-  background: var(--workspace-accent);
-  color: #f7f4e9;
+  padding: 1.45rem 1.15rem;
+  border-right: 1px solid rgba(23,55,47,.09);
+  background: rgba(247,244,236,.93);
+  backdrop-filter: blur(18px);
 }
 
 .wordmark {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: .7rem;
   color: inherit;
   text-decoration: none;
 }
-
-.brandCopy {
-  min-width: 0;
-}
-
+.brandCopy { min-width: 0; }
 .brandCopy strong,
-.brandCopy small {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.brandCopy strong {
-  color: #fff;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 1.12rem;
-  font-weight: 500;
-  line-height: 1.15;
-}
-
-.brandCopy small {
-  margin-top: 0.4rem;
-  color: rgba(255, 255, 255, 0.76);
-  font-family: Arial, sans-serif;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
+.brandCopy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.brandCopy strong { font-family: Georgia, "Times New Roman", serif; font-size: 1.08rem; font-weight: 500; }
+.brandCopy small { margin-top: .2rem; color: #728079; font-size: .58rem; font-weight: 850; letter-spacing: .14em; text-transform: uppercase; }
 
 .brandLogo,
 .accountPhoto {
@@ -76,224 +51,136 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(23,55,47,.12);
   background: #fff;
   color: var(--workspace-accent);
-  font-family: Arial, sans-serif;
-  font-size: 0.7rem;
-  font-weight: 800;
+  font-size: .68rem;
+  font-weight: 850;
   object-fit: contain;
 }
+.brandLogo { width: 2.5rem; height: 2.5rem; border-radius: .65rem; }
+.accountPhoto { grid-row: 1 / span 2; width: 2.45rem; height: 2.45rem; border-radius: 50%; object-fit: cover; }
 
-.brandLogo {
-  width: 2.65rem;
-  height: 2.65rem;
-  border-radius: 0.5rem;
-}
-
-.accountPhoto {
-  grid-row: 1 / span 2;
-  width: 2.65rem;
-  height: 2.65rem;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.primaryNav {
-  display: grid;
-  gap: 0.35rem;
-  margin-top: 3.5rem;
-}
-
+.primaryNav { display: grid; gap: .25rem; margin-top: 3rem; }
 .primaryNav a {
-  border-radius: 0.55rem;
-  color: #dce7df;
-  padding: 0.78rem 0.85rem;
+  display: grid;
+  grid-template-columns: 1.45rem 1fr;
+  align-items: center;
+  gap: .65rem;
+  border-radius: .75rem;
+  color: #596a63;
+  padding: .72rem .75rem;
+  font-size: .78rem;
+  font-weight: 780;
   text-decoration: none;
 }
-
+.primaryNav a span { color: var(--workspace-accent); font-size: 1rem; text-align: center; }
 .primaryNav a:hover,
-.primaryNav a:focus-visible {
-  background: #26483e;
-  background: color-mix(in srgb, var(--workspace-accent) 82%, white);
+.primaryNav a:focus-visible { background: rgba(255,255,255,.78); color: #17372f; }
+.primaryNav a:focus-visible { outline: 2px solid var(--workspace-accent); outline-offset: 2px; }
+
+.sidebarNote {
+  margin-top: 2.4rem;
+  padding: 1rem;
+  border-radius: .85rem;
+  background: #17372f;
   color: #fff;
 }
-
-.primaryNav a:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 2px;
-  box-shadow: 0 0 0 5px #9b6a0b;
-}
+.sidebarNote span { display: block; font-family: Georgia, "Times New Roman", serif; font-size: 1rem; }
+.sidebarNote p { margin: .45rem 0 0; color: rgba(255,255,255,.62); font-size: .7rem; line-height: 1.55; }
 
 .accountBlock {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 0.75rem;
+  gap: .65rem;
   margin-top: auto;
   align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(23,55,47,.09);
 }
-
-.accountBlock div {
-  min-width: 0;
-}
-
+.accountBlock div { min-width: 0; }
 .accountBlock div strong,
-.accountBlock div span {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.accountBlock div span {
-  color: #b8cbbf;
-  font-size: 0.75rem;
-}
-
-.accountBlock form {
-  grid-column: 2;
-  margin: 0;
-}
-
-.accountBlock button {
+.accountBlock div span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.accountBlock div strong { font-size: .78rem; }
+.accountBlock div span { color: #728079; font-size: .65rem; }
+.accountBlock form { grid-column: 2; margin: 0; }
+.accountBlock button,
+.mobileAccount button {
   appearance: none;
   border: 0;
   padding: 0;
   background: transparent;
-  color: #dce7df;
+  color: #60716a;
   cursor: pointer;
-  font-size: 0.78rem;
+  font-size: .68rem;
   text-decoration: underline;
-  text-underline-offset: 0.2rem;
+  text-underline-offset: .2rem;
 }
-
 .accountBlock button:focus-visible,
-.mobileAccount button:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 3px;
-}
+.mobileAccount button:focus-visible { outline: 2px solid var(--workspace-accent); outline-offset: 3px; }
 
 .main {
   min-height: 100vh;
-  margin-left: 17.5rem;
-  padding: 2.5rem clamp(1.5rem, 4vw, 4.5rem) 5rem;
+  margin-left: 15.25rem;
+  padding: 2.25rem clamp(1.2rem, 4vw, 4.5rem) 5rem;
 }
-
 .devBanner {
-  margin: -0.75rem 0 1.5rem;
-  border: 1px solid #b58c41;
-  border-radius: 0.45rem;
-  background: #fff6dc;
-  color: #614611;
-  padding: 0.65rem 0.8rem;
-  font-size: 0.78rem;
+  max-width: 1220px;
+  margin: -.45rem auto 1.25rem;
+  border: 1px solid rgba(31,102,85,.18);
+  border-radius: 999px;
+  background: rgba(255,255,255,.64);
+  color: #52635c;
+  padding: .55rem .8rem;
+  font-size: .68rem;
 }
-
 .mobileBar,
-.mobileNav {
-  display: none;
-}
-
-.mobileAccount {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-}
+.mobileNav { display: none; }
+.mobileAccount { display: flex; align-items: center; gap: .65rem; }
 
 @media (max-width: 800px) {
-  .sidebar {
-    display: none;
-  }
-
+  .sidebar { display: none; }
   .mobileBar {
     position: sticky;
     top: 0;
-    z-index: 20;
+    z-index: 30;
     display: flex;
     justify-content: space-between;
     align-items: center;
     min-height: 3.75rem;
-    padding: 0 1.1rem;
-    background: var(--workspace-accent);
-    color: #fff;
+    padding: 0 .9rem;
+    border-bottom: 1px solid rgba(23,55,47,.08);
+    background: rgba(247,244,236,.94);
+    color: #17372f;
+    backdrop-filter: blur(18px);
   }
-
-  .mobileBrand {
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-    color: inherit;
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 1rem;
-    text-decoration: none;
-  }
-
-  .mobileBrand > span:last-child {
-    max-width: min(42vw, 16rem);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
+  .mobileBrand { min-width: 0; display: flex; align-items: center; gap: .6rem; color: inherit; font-family: Georgia, serif; text-decoration: none; }
+  .mobileBrand > span:last-child { max-width: 45vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .mobileBar .brandLogo,
-  .mobileBar .accountPhoto {
-    width: 2.25rem;
-    height: 2.25rem;
-  }
-
-  .mobileAccount form {
-    margin: 0;
-  }
-
-  .mobileAccount button {
-    appearance: none;
-    border: 0;
-    padding: 0;
-    background: transparent;
-    color: #fff;
-    cursor: pointer;
-    font-family: Arial, sans-serif;
-    font-size: 0.74rem;
-    font-weight: 700;
-    text-decoration: underline;
-    text-underline-offset: 0.2rem;
-  }
-
-  .main {
-    margin-left: 0;
-    padding: 1.4rem 1rem 6.5rem;
-  }
-
+  .mobileBar .accountPhoto { width: 2.15rem; height: 2.15rem; }
+  .mobileAccount form { margin: 0; }
+  .main { margin-left: 0; padding: 1.35rem 1rem 6rem; }
+  .devBanner { margin-top: 0; }
   .mobileNav {
     position: fixed;
-    inset: auto 0 0;
-    z-index: 30;
+    inset: auto .65rem .65rem;
+    z-index: 40;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    border-top: 1px solid #d7d2c5;
-    background: rgba(255, 255, 255, 0.96);
-    backdrop-filter: blur(0.8rem);
+    grid-template-columns: repeat(4, 1fr);
+    overflow: hidden;
+    border: 1px solid rgba(23,55,47,.12);
+    border-radius: 1rem;
+    background: rgba(23,55,47,.95);
+    box-shadow: 0 18px 45px rgba(23,55,47,.2);
+    backdrop-filter: blur(18px);
   }
-
-  .mobileNav a {
-    min-height: 3.75rem;
-    display: grid;
-    place-items: center;
-    color: var(--workspace-accent);
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-decoration: none;
-  }
+  .mobileNav a { padding: .75rem .25rem; color: rgba(255,255,255,.72); font-size: .64rem; font-weight: 800; text-align: center; text-decoration: none; }
+  .mobileNav a:hover,
+  .mobileNav a:focus-visible { background: rgba(255,255,255,.1); color: #fff; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-  }
+@media (forced-colors: active) {
+  .primaryNav a:focus-visible,
+  .accountBlock button:focus-visible,
+  .mobileAccount button:focus-visible { outline: 2px solid CanvasText; }
 }

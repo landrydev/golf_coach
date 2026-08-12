@@ -37,10 +37,7 @@ export default async function ProductLayout({ children }: Readonly<{ children: R
       <aside aria-label="Coach workspace" className={styles.sidebar}>
         <Link className={styles.wordmark} href="/app" aria-label={`${businessName} Roadmap home`}>
           <PrivateWorkspaceBrandImage fallback={businessInitials} src={privateMediaUrl(activeLogoId)} variant="logo" />
-          <span className={styles.brandCopy}>
-            <strong>{businessName}</strong>
-            <small>Roadmap</small>
-          </span>
+          <span className={styles.brandCopy}><strong>{businessName}</strong><small>Roadmap</small></span>
         </Link>
         <nav className={styles.primaryNav} aria-label="Primary coach navigation">
           <Link href="/app"><span aria-hidden="true">⌂</span>Home</Link>
@@ -73,10 +70,7 @@ export default async function ProductLayout({ children }: Readonly<{ children: R
         {children}
       </main>
       <nav className={styles.mobileNav} aria-label="Mobile coach navigation">
-        <Link href="/app">Home</Link>
-        <Link href="/app/golfers">Players</Link>
-        <Link href="/app/coaching/drills">Library</Link>
-        <Link href="/app/settings">Settings</Link>
+        <Link href="/app">Home</Link><Link href="/app/golfers">Players</Link><Link href="/app/coaching/drills">Library</Link><Link href="/app/settings">Settings</Link>
       </nav>
     </div>
   );
@@ -91,7 +85,5 @@ function activeBrandingAssetId(
   role: "logo" | "profile_photo",
 ): string | null {
   const selectedId = role === "logo" ? branding.logoMediaAssetId : branding.profilePhotoMediaAssetId;
-  return selectedId && branding.attachments.some(
-    (attachment) => attachment.role === role && attachment.mediaAssetId === selectedId,
-  ) ? selectedId : null;
+  return selectedId && branding.attachments.some((attachment) => attachment.role === role && attachment.mediaAssetId === selectedId) ? selectedId : null;
 }

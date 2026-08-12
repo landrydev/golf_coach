@@ -5,228 +5,119 @@ import { getCommandCentre, type CommandCentreTask } from "@/lib/command-centre";
 import { golferRecordProcessingConsentCurrent } from "@/lib/consent-enforcement";
 import { requirePageIdentity } from "@/lib/identity";
 import { getOrCreateAccountForIdentity } from "@/lib/repository";
-import styles from "./workspace.module.css";
+import styles from "./beta2.module.css";
 
-export const metadata: Metadata = {
-  title: "Coach overview | Roadmap",
-};
-
+export const metadata: Metadata = { title: "Home | Roadmap" };
 export const dynamic = "force-dynamic";
 
 export default async function WorkspaceOverview() {
   const identity = await requirePageIdentity("/app");
   const firstName = identity.displayName.split(/\s+/)[0] || "Coach";
   const account = await getOrCreateAccountForIdentity(identity);
-  if (!(await golferRecordProcessingConsentCurrent(account.id))) {
-    return <GolferRecordAccessBlocked />;
-  }
-  const commandCentre = await getCommandCentre(account.id);
+  if (!(await golferRecordProcessingConsentCurrent(account.id))) return <GolferRecordAccessBlocked />;
+  const centre = await getCommandCentre(account.id);
+  const resume = primaryResumeTask(centre);
+  const attention = uniqueTasks([
+    ...centre.incompleteDrafts.items,
+    ...centre.reviews.items,
+    ...centre.activePractice.items,
+    ...centre.recentResponses.items,
+  ]).slice(0, 6);
+  const progress = centre.recentResponses.items.slice(0, 3);
 
   return (
     <div className={styles.page}>
-      <header className={styles.pageHeader}>
+      <header className={styles.header}>
         <div>
-          <span className={styles.eyebrow}>Coaching command centre</span>
-          <h1>{commandCentre.setup.complete ? `Welcome back, ${firstName}.` : `Let’s get your first roadmap ready, ${firstName}.`}</h1>
-          <p>
-            Start with the few coaching records that need attention. Counts describe stored
-            Roadmap state only; they do not imply a message, booking, sale, or golfer outcome.
-          </p>
+          <span className={styles.eyebrow}>Your coaching desk</span>
+          <h1>Welcome back, {firstName}.</h1>
+          <p>Roadmap keeps the plan clear and the follow-up light. Start with the one player who deserves your attention now.</p>
         </div>
-        <div className={styles.actions}>
-          <Link className={styles.primaryButton} href="/app/golfers/new">
-            Add a golfer
-          </Link>
-          <Link className={styles.secondaryButton} href="/app/golfers">
-            Find a golfer
-          </Link>
+        <div className={styles.headerActions}>
+          <Link className={styles.primaryButton} href="/app/golfers/new">Create a roadmap</Link>
+          <Link className={styles.secondaryButton} href="/app/golfers">Open players</Link>
         </div>
       </header>
 
-      <section className={styles.quickActions} aria-labelledby="quick-actions-heading">
+      <section className={styles.resumeCard} aria-labelledby="continue-heading">
         <div>
-          <span className={styles.eyebrow}>Quick actions</span>
-          <h2 id="quick-actions-heading">Start the next coaching task.</h2>
+          <span className={styles.eyebrow}>Continue where you left off</span>
+          <h2 id="continue-heading">{resume.title}</h2>
+          <p>{resume.detail}</p>
+          <Link className={styles.primaryButton} href={resume.href}>{resume.action}</Link>
         </div>
-        <ul className={styles.quickActionGrid}>
-          {commandCentre.quickActions.map((action) => (
-            <li key={action.id}>
-              <Link className={styles.quickAction} href={action.href}>
-                <strong>{action.label}</strong>
-                <small>{action.detail}</small>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <div className={styles.resumeAside}>
+          <span>Roadmap principle</span>
+          <strong>One clear priority beats a complete database.</strong>
+          <small>Capture only what changes the player’s understanding or next action.</small>
+        </div>
       </section>
 
-      <section className={styles.setupPanel} aria-labelledby="setup-heading">
-        <div className={styles.panelHeader}>
-          <div>
-            <span className={styles.eyebrow}>Persisted setup</span>
-            <h2 id="setup-heading">
-              {commandCentre.setup.complete
-                ? "Your first-value path is complete."
-                : "Continue from the next incomplete step."}
-            </h2>
-          </div>
-          <span className={styles.status}>
-            {commandCentre.setup.steps.filter(
-              (step) => step.id !== "package" && step.state === "complete",
-            ).length} of 4
-            required steps
-          </span>
-        </div>
-        <ol className={styles.setupSteps}>
-          {commandCentre.setup.steps.map((step) => (
-            <li data-state={step.state} key={step.id}>
-              <span aria-hidden="true">
-                {step.state === "complete" ? "✓" : step.state === "optional" ? "+" : "•"}
-              </span>
-              <div>
-                <strong>{step.label}</strong>
-                <small>{step.detail}</small>
-              </div>
-              <Link href={step.href}>
-                {step.state === "complete"
-                  ? "Review"
-                  : step.state === "optional"
-                    ? "Add optionally"
-                    : step.state === "current"
-                      ? "Continue"
-                      : "Open"}
-              </Link>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <section aria-labelledby="attention-heading">
+      <section className={styles.section} aria-labelledby="attention-heading">
         <div className={styles.sectionHeader}>
-          <div>
-            <span className={styles.eyebrow}>Needs attention</span>
-            <h2 id="attention-heading">Bounded coaching work, not vanity metrics.</h2>
+          <div><span className={styles.eyebrow}>Players needing attention</span><h2 id="attention-heading">Keep the journey moving.</h2><p>These are coaching moments, not system alerts.</p></div>
+          <Link className={styles.textButton} href="/app/golfers?sort=attention">See every player</Link>
+        </div>
+        {attention.length ? (
+          <div className={styles.attentionGrid}>
+            {attention.map((item) => <AttentionCard key={item.id} item={item} />)}
           </div>
-          <Link className={styles.textLink} href="/app/golfers?sort=attention">
-            Open filtered golfer list
-          </Link>
-        </div>
-        <div className={styles.taskGrid}>
-          <TaskCard
-            title="Incomplete roadmaps"
-            count={commandCentre.incompleteDrafts.count}
-            empty="No staged roadmaps are waiting for completion."
-            items={commandCentre.incompleteDrafts.items}
-            viewAllHref="/app/golfers?status=setup_incomplete&sort=recent"
-          />
-          <TaskCard
-            title="Coach reviews"
-            count={commandCentre.reviews.count}
-            empty="No roadmap or phase-review drafts need a decision."
-            items={commandCentre.reviews.items}
-            viewAllHref="/app/golfers?review=needs_review"
-          />
-          <TaskCard
-            title="Active practice"
-            count={commandCentre.activePractice.count}
-            empty="No active practice direction is stored."
-            items={commandCentre.activePractice.items}
-            viewAllHref="/app/golfers?phase=active&sort=recent"
-          />
-          <TaskCard
-            title="Latest responses & check-ins"
-            count={commandCentre.recentResponses.count}
-            empty="No golfer response or practice check-in has been recorded through a private link."
-            items={commandCentre.recentResponses.items}
-            viewAllHref="/app/golfers?status=published&sort=recent"
-          />
-        </div>
+        ) : (
+          <div className={styles.empty}><h2>Nothing urgent.</h2><p>Your active players have no unfinished roadmap, review, practice, or response waiting right now.</p><Link className={styles.secondaryButton} href="/app/golfers">Browse players</Link></div>
+        )}
       </section>
 
-      <section className={styles.signalPanel} aria-labelledby="failure-signals-heading">
-        <div>
-          <span className={styles.eyebrow}>Stored failure signals</span>
-          <h2 id="failure-signals-heading">Media and launch-data work that needs review</h2>
-          <p className={styles.muted}>
-            This list reports only failed or quarantined media and failed or mapping-required
-            launch-data imports that Roadmap can prove exist.
-          </p>
+      <section className={styles.section} aria-labelledby="progress-heading">
+        <div className={styles.sectionHeader}>
+          <div><span className={styles.eyebrow}>Recent progress</span><h2 id="progress-heading">Small signals worth noticing.</h2></div>
         </div>
-        {commandCentre.failureSignals.items.length ? (
-          <ul className={styles.compactList}>
-            {commandCentre.failureSignals.items.map((item) => (
-              <li key={item.id}>
-                <div>
-                  <strong>{item.label}</strong>
-                  <small>{item.detail}</small>
-                </div>
-                <Link href={item.href}>
-                  {item.kind === "launch_import" ? "Open coaching workspace" : "Open media library"}
-                </Link>
-              </li>
+        {progress.length ? (
+          <div className={styles.recentStrip}>
+            {progress.map((item) => (
+              <article key={item.id}>
+                <time>{item.occurredAt ? formatDate(item.occurredAt) : "Recently"}</time>
+                <strong>{item.golferName}</strong>
+                <p>{item.title}. {item.detail}</p>
+                <Link href={item.href}>Open player</Link>
+              </article>
             ))}
-          </ul>
+          </div>
         ) : (
-          <p className={styles.emptyInline}>
-            No failed media or launch-data import needs attention.
-          </p>
+          <div className={styles.empty}><h2>Progress will appear here.</h2><p>Player responses and practice check-ins become a calm recent-progress feed.</p></div>
         )}
       </section>
     </div>
   );
 }
 
-function TaskCard({
-  title,
-  count,
-  empty,
-  items,
-  viewAllHref,
-}: {
-  title: string;
-  count: number;
-  empty: string;
-  items: CommandCentreTask[];
-  viewAllHref: string;
-}) {
+function AttentionCard({ item }: { item: CommandCentreTask }) {
   return (
-    <article className={styles.taskCard}>
-      <div className={styles.taskCardHeader}>
-        <h3>{title}</h3>
-        <span aria-label={`${count} stored ${title.toLocaleLowerCase("en-CA")}`}>{count}</span>
-      </div>
-      {items.length ? (
-        <ul className={styles.taskList}>
-          {items.map((item) => (
-            <li key={item.id}>
-              <div>
-                <strong>{item.golferName}</strong>
-                <span>{item.title}</span>
-                <small>
-                  {item.detail}
-                  {item.occurredAt ? ` · ${formatDate(item.occurredAt)}` : ""}
-                </small>
-              </div>
-              <Link href={item.href}>Open task</Link>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className={styles.emptyInline}>{empty}</p>
-      )}
-      {count > items.length ? (
-        <Link className={styles.textLink} href={viewAllHref}>
-          View all {count}
-        </Link>
-      ) : null}
-    </article>
+    <Link className={styles.attentionCard} href={item.href}>
+      <span className={styles.avatar} aria-hidden="true">{initials(item.golferName)}</span>
+      <div><strong>{item.golferName}</strong><span>{item.title}</span><small>{item.detail}</small></div>
+      <span className={styles.arrow} aria-hidden="true">→</span>
+    </Link>
   );
 }
 
-function formatDate(value: number): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(value));
+function primaryResumeTask(centre: Awaited<ReturnType<typeof getCommandCentre>>) {
+  if (!centre.setup.complete) {
+    const step = centre.setup.steps.find((candidate) => candidate.state === "current") ?? centre.setup.steps.find((candidate) => candidate.state === "upcoming");
+    if (step) return { title: step.label, detail: step.detail, href: step.href, action: "Continue setup" };
+  }
+  const task = centre.incompleteDrafts.items[0] ?? centre.reviews.items[0] ?? centre.recentResponses.items[0] ?? centre.activePractice.items[0];
+  if (task) return { title: task.golferName, detail: `${task.title}. ${task.detail}`, href: task.href, action: "Open player" };
+  return { title: "Create the next player roadmap", detail: "Turn the next assessment into a personal three-phase story in one focused pass.", href: "/app/golfers/new", action: "Create a roadmap" };
 }
+
+function uniqueTasks(items: CommandCentreTask[]): CommandCentreTask[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (seen.has(item.golferId)) return false;
+    seen.add(item.golferId);
+    return true;
+  });
+}
+
+function initials(value: string): string { return value.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(); }
+function formatDate(value: number): string { return new Intl.DateTimeFormat("en-CA", { month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(value)); }

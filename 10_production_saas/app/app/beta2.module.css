@@ -128,6 +128,10 @@
 .formError { color: #983737 !important; }
 .checkboxRow { display: flex !important; grid-column: 1 / -1; align-items: flex-start; gap: .6rem; padding: .75rem; border-radius: .75rem; background: rgba(24,55,47,.04); color: var(--ink) !important; }
 .checkboxRow input { width: auto; margin-top: .15rem; }
+.notice { padding: 1rem; border: 1px solid var(--line); border-radius: .9rem; background: rgba(255,255,255,.68); color: var(--muted); }
+.notice strong { color: var(--ink); }
+.advanced { margin-top: 1rem; border: 1px solid var(--line); border-radius: .9rem; padding: 1rem; background: rgba(255,255,255,.55); }
+.advanced summary { cursor: pointer; color: var(--accent); font-weight: 800; }
 @media (max-width: 850px) {
   .header, .playerHero { align-items: flex-start; flex-direction: column; display: flex; }
   .resumeCard, .playerOverview { grid-template-columns: 1fr; }
